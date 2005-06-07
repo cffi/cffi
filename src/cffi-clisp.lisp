@@ -175,6 +175,14 @@ or Lisp number."
      (ffi::%offset
       (foreign-variable ptr type) offset type))))
 
+(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+  "Set a pointer OFFSET bytes from PTR to an object of built-in
+foreign TYPE to VALUE."
+  (let ((type (convert-foreign-type type)))
+    (setf (ffi:foreign-value
+            (ffi::%offset (foreign-variable ptr type) offset type))
+          value)))
+
 ;;;# Foreign Function Calling
 
 (defun parse-foreign-funcall-args (args)
@@ -187,7 +195,7 @@ values to pass to the function, and the CLisp FFI return type."
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (library name &rest args)
+(defmacro %foreign-funcall (name &rest args)
   "Invoke a foreign function called NAME, taking pairs of
 foreign-type/value pairs from ARGS.  If a single element is left
 over at the end of ARGS, it specifies the foreign return type of
@@ -195,21 +203,16 @@ the function call."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
     (let* ((ctype `(ffi:c-function (:arguments ,@types)
-                                   (:return-type ,rettype))))
+                                   (:return-type ,rettype)
+                                   (:language :stdc))))
       `(funcall
         (load-time-value
          (ffi::foreign-library-function
-          ,name (ffi::foreign-library ,library)
+          ,name (ffi::foreign-library "libSystem.dylib")
           nil ,(ffi:parse-c-type ctype)))
         ,@fargs))))
 
-(defun test ()
-  (%foreign-funcall "libSystem.dylib" "sqrtf" :float 16.0 :float))
+(defun %load-foreign-library (name)
+  "Load a foreign library from NAME."
+  (declare (ignore name)))
 
-(defun get-c-time ()
-  (with-foreign-ptr (time 4)
-    (let ((rv 
-           (%foreign-funcall
-            "libSystem.dylib" "time"
-            :pointer time :unsigned-long)))
-      (assert (equal rv (%mem-ref time :unsigned-long))))))

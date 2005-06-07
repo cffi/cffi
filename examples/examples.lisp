@@ -85,7 +85,8 @@
   (with-foreign-ptr-as-string (buf 255 buf-size)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
-     string "%d %x!" :int 666 :unsigned-int #xcafebabe)))
+     string "%d #x%x!" :int 666 :unsigned-int #xcafebabe
+     :void)))
 
 ;; Proposed syntax for nested structures:
 #+nil
@@ -97,7 +98,13 @@
 ;;
 ;; (foreign-slot-value ptr 'nested-example 'timeval 'tv-sec)
 
+(defun cffi-version ()
+  (asdf:component-version (asdf:find-system 'cffi)))
+
 (defun run-examples ()
+  (format t "~&;;; CFFI version ~A on ~A ~A:~%"
+          (cffi-version) (lisp-implementation-type)
+          (lisp-implementation-version))
   (format t "~&;; hostname:     ~A~%" (gethostname))
   (format t "~&;; shell:        ~A~%" (getenv "SHELL"))
   (format t "~&;; sprintf test: ~A~%" (sprintf-test))

@@ -30,10 +30,12 @@ shlibs:
 
 clean:
 	@$(MAKE) -wC tests clean
-	find . -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -exec rm {} \;
+	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" \) -exec rm {} \;
 
 test:
 	test -x `which openmcl` && openmcl --load examples/run-examples.lisp
 	test -x `which sbcl` && sbcl --noinform --load examples/run-examples.lisp
+	test -x `which lisp` && lisp -load examples/run-examples.lisp
+	test -x `which clisp` && clisp examples/run-examples.lisp
 
 # vim: ft=make ts=3 noet

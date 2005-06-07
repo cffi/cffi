@@ -25,11 +25,14 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(let ((*load-verbose* nil) (*compile-verbose* nil))
-  #-asdf 
-  (require "asdf")
-  (asdf:operate 'asdf:load-op 'cffi-examples :verbose nil))
+(setf *load-verbose* nil *compile-verbose* nil)
 
+#+(and (not asdf) (or sbcl openmcl))
+(require "asdf")
+#+clisp
+(load "~/Downloads/asdf")
+
+(asdf:operate 'asdf:load-op 'cffi-examples :verbose nil)
 (cffi-examples:run-examples)
 (force-output)
 (quit)

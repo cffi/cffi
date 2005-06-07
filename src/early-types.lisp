@@ -77,11 +77,10 @@
 (defun canonicalize-foreign-type (type)
   "Convert TYPE to a built-in type by following aliases.
 Signals an error if the type cannot be resolved."
-  (loop until (or (null type) (builtin-type-p type))
-        for ftype = (find-foreign-type type)
-        when (null ftype) do (error "Undefined foreign type ~A." type)
-        do (setf type (alias ftype))
-        finally (return type)))
+  (loop for xtype = type then (alias (find-foreign-type xtype))
+        until (builtin-type-p xtype)
+        when (null xtype) do (error "Undefined foreign type> ~S." type)
+        finally (return xtype)))
 
 (defmacro defctype (name type)
   "Define NAME to be an alias for foreign type TYPE."
