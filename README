@@ -1,0 +1,23 @@
+
+CFFI, the Common Foreign Function Interface, purports to be a portable
+foreign function interface, similar in spirit to UFFI.
+
+Unlike UFFI, CFFI requires only a small set of low-level functionality
+from the Lisp implementation, such as calling a foreign function by
+name, allocating foreign memory, and dereferencing pointers.
+
+More complex tasks like accessing foreign structures can be done in
+portable "user space" code, making use of the low-level memory access
+operations defined by the implementation-specific bits.
+
+CFFI also aims to be more efficient than UFFI when possible.  In
+particular, UFFI's use of aliens in CMUCL and SBCL can be tricky to
+get right.  CFFI avoids this by using system area pointers directly
+instead of alien objects.  All foreign function definitions and uses
+should compile without alien-value compiler notes in CMUCL/SBCL.
+
+CFFI is being developed initially against SBCL and OpenMCL.  Support
+for CMUCL should be straightforward.  From cursory inspection of the
+documentation it should be possible to support Allegro CL, but a
+Lispworks port may be difficult without vendor support.  Whether CLISP
+can be supported easily is currently unknown.

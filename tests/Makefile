@@ -1,0 +1,52 @@
+# -*- Mode: Makefile; tab-width: 3; indent-tabs-mode: t -*-
+#
+# Makefile --- Make targets for various tasks.
+#
+# Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use, copy,
+# modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+
+OSTYPE = $(shell uname)
+
+ifeq ($(OSTYPE), Darwin)
+CC                := gcc
+CFLAGS            := -Wall
+SHLIB_CFLAGS      := -bundle
+SHLIB_EXT         := .so
+else
+ifeq ($(OSTYPE), Linux)
+CC                := gcc
+CFLAGS            := -Wall
+SHLIB_CFLAGS      := -dynamic
+SHLIB_EXT         := .so
+endif
+endif
+
+shlibs: struct-tests$(SHLIB_EXT)
+
+%$(SHLIB_EXT): %.c
+	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+
+clean:
+	rm -f struct-tests$(SHLIB_EXT)
+
+# vim: ft=make ts=3 noet
