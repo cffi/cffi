@@ -27,23 +27,10 @@
 
 ;;;# A CLisp backend for CFFI.
 ;;;
-;;; This port is incomplete---several crucial operators are
-;;; unimplemented, notably %MEM-REF and %FOREIGN-FUNCALL.
-;;;
-;;; See the CFFI-SYS specification at:
-;;;
-;;;   http://www.jamesjb.com/cffi-sys-specification.html
-;;;
-;;; CFFI pointers are represented as FFI:FOREIGN-ADDRESS objects, to
-;;; keep with the strategy used in SBCL and OpenMCL of working only
-;;; with untyped pointers.  However, I cannot find an operator in
-;;; CLisp to dereference a FOREIGN-ADDRESS given type information at
-;;; run-time.
-;;;
-;;; This clisp mailing list post mentions a FOREIGN-ADDRESS-FUNCTION
-;;; operator that looks like what we'd need for %FOREIGN-FUNCALL.
-;;;
-;;;   http://article.gmane.org/gmane.lisp.clisp.general/6626
+;;; This is a preliminary port.  As of 7 June 2006 it looks like we'll
+;;; need some things that are only present in the CVS version of CLISP
+;;; (which doesn't compile for me at the moment).  Hopefully we will
+;;; be able to fully support CLISP after the next release.
 
 ;;;# Administrivia
 
