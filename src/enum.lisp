@@ -37,7 +37,7 @@
 ;;; constant for the type by a type translator when passed as
 ;;; arguments or a return value to a foreign function.
 
-(defclass foreign-enum (foreign-typedef)
+(defclass foreign-enum (foreign-type)
   ((keyword-values
     :initform (make-hash-table)
     :reader keyword-values)
@@ -49,7 +49,8 @@
 (defun notice-foreign-enum (type-name base-type values)
   "Defines TYPE-NAME to be a foreign enum type."
   (let ((type (make-instance 'foreign-enum :name type-name
-                             :actual-type (find-foreign-type base-type))))
+                             :alias base-type
+                             :size (foreign-type-size base-type))))
     (loop for (keyword value) in values
           do (setf (gethash keyword (keyword-values type)) value)
              (setf (gethash value (value-keywords type)) keyword))

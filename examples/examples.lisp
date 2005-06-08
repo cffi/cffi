@@ -88,6 +88,16 @@
      string "%d #x%x!" :int 666 :unsigned-int #xcafebabe
      :void)))
 
+;; Defining an emerated type.
+(defcenum test-enum
+  (:invalid 0)
+  (:positive 1)
+  (:negative -1))
+
+;; Use the absolute value function to test keyword/enum translation.
+(defcfun ("abs" c-abs) test-enum
+  (n test-enum))
+
 ;; Proposed syntax for nested structures:
 #+nil
 (defcstruct nested-example
@@ -105,9 +115,10 @@
   (format t "~&;;; CFFI version ~A on ~A ~A:~%"
           (cffi-version) (lisp-implementation-type)
           (lisp-implementation-version))
-  (format t "~&;; hostname:     ~A~%" (gethostname))
-  (format t "~&;; shell:        ~A~%" (getenv "SHELL"))
-  (format t "~&;; sprintf test: ~A~%" (sprintf-test))
-  (format t "~&;; gettimeofday: ~A~%" (multiple-value-list (gettimeofday)))
+  (format t "~&;; hostname:          ~A~%" (gethostname))
+  (format t "~&;; shell:             ~A~%" (getenv "SHELL"))
+  (format t "~&;; sprintf test:      ~A~%" (sprintf-test))
+  (format t "~&;; gettimeofday:      ~A~%" (multiple-value-list (gettimeofday)))
+  (format t "~&;; (c-abs :positive): ~A~%" (c-abs :positive))
+  (format t "~&;; (c-abs :negative): ~A~%" (c-abs :negative))
   (force-output))
-

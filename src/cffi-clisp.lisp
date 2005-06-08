@@ -202,4 +202,3 @@ the function call."
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
   (declare (ignore name)))
-

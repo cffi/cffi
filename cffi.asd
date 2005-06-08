@@ -50,6 +50,7 @@
      (:file "libraries")
      (:file "early-types")
      (:file "types")
+     (:file "enum")
      (:file "strings")
      (:file "functions")))))
 

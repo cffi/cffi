@@ -53,6 +53,7 @@
    ;; Foreign type operations.
    #:defcstruct
    #:defctype
+   #:defcenum
    #:define-type-translator
    #:foreign-object-alloc
    #:foreign-object-free
