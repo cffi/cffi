@@ -46,33 +46,20 @@
 
 ;;;# Basic Pointer Operations
 
+(declaim (inline pointerp))
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (sys:system-area-pointer-p ptr))
 
+(declaim (inline null-ptr))
 (defun null-ptr ()
   "Construct and return a null pointer."
   (sys:int-sap 0))
 
+(declaim (inline null-ptr-p))
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null pointer."
   (zerop (sys:sap-int ptr)))
-
-
-;;;# Allocation
-;;;
-;;; Functions and macros for allocating foreign memory on the stack
-;;; and on the heap.  The main CFFI package defines macros that wrap
-;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common usage
-;;; when the memory has dynamic extent.
-
-(defun foreign-alloc (size)
-  "Allocate SIZE bytes on the heap and return a pointer."
-  (alien-sap (make-alien (unsigned 8) size)))
-
-(defun foreign-free (ptr)
-  "Free a PTR allocated by FOREIGN-ALLOC."
-  (free-alien (sap-alien ptr (* (unsigned 8)))))
 
 (defmacro with-foreign-ptr ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
@@ -95,6 +82,31 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
          (unwind-protect
               (progn ,@body)
            (foreign-free ,var)))))
+
+;;;# Allocation
+;;;
+;;; Functions and macros for allocating foreign memory on the stack
+;;; and on the heap.  The main CFFI package defines macros that wrap
+;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common usage
+;;; when the memory has dynamic extent.
+
+(defun foreign-alloc (size)
+  "Allocate SIZE bytes on the heap and return a pointer."
+  (declare (type (unsigned-byte 32) size))
+  (alien-funcall
+   (extern-alien
+    "malloc"
+    (function system-area-pointer unsigned))
+   size))
+
+(defun foreign-free (ptr)
+  "Free a PTR allocated by FOREIGN-ALLOC."
+  (declare (type system-area-pointer ptr))
+  (alien-funcall
+   (extern-alien
+    "free"
+    (function (values) system-area-pointer))
+   ptr))
 
 ;;;# Dereferencing
 
@@ -198,7 +210,7 @@ to open-code (SETF %MEM-REF) forms."
     (:unsigned-long    'unsigned-long)
     (:float            'single-float)
     (:double           'double-float)
-    (:pointer          '(* t))
+    (:pointer          'system-area-pointer)
     (:void             'void)))
 
 (defun %foreign-type-size (type-keyword)
@@ -232,9 +244,7 @@ to open-code (SETF %MEM-REF) forms."
   "Perform a foreign function call, document it more later."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    (if (equal rettype '(* t))
-        `(alien-sap (%%foreign-funcall ,name ,types ,fargs ,rettype))
-        `(%%foreign-funcall ,name ,types ,fargs ,rettype))))
+    `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
 ;;;# Loading Foreign Libraries
 
