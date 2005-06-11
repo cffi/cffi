@@ -30,10 +30,6 @@
 
 #+(and (not asdf) (or sbcl openmcl))
 (require "asdf")
-#+clisp
-(load "~/Downloads/asdf")
-#+clisp
-(push "~/.asdf-install-dir/systems/" asdf:*central-registry*)
 
 (asdf:operate 'asdf:load-op 'cffi-tests :verbose nil)
 (in-package #:cffi-tests)

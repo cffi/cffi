@@ -196,10 +196,10 @@ the function call."
       `(funcall
         (load-time-value
          (ffi::foreign-library-function
-          ,name (ffi::foreign-library "libSystem.dylib")
+          ,name (ffi::foreign-library :default)
           nil ,(ffi:parse-c-type ctype)))
         ,@fargs))))
 
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
-  (declare (ignore name)))
+  (ffi::foreign-library name))

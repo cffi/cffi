@@ -36,6 +36,6 @@ test: shlibs
 	@-test -x `which openmcl` && echo "-------- Running unit tests in OpenMCL: --------" && openmcl --load tests/run-tests.lisp
 	@-test -x `which sbcl` && echo "-------- Running unit tests in SBCL: --------" && sbcl --noinform --load tests/run-tests.lisp
 	@-test -x `which lisp` && echo "-------- Running unit tests in CMU CL: --------" && lisp -load tests/run-tests.lisp
-	@-test -x `which clisp` && echo "-------- Running unit tests in CLISP: --------" && clisp tests/run-tests.lisp
+	@-test -x `which clisp` && echo "-------- Running unit tests in CLISP: --------" && clisp -x '(load "tests/run-tests.lisp")'
 
 # vim: ft=make ts=3 noet
