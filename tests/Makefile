@@ -36,17 +36,16 @@ else
 ifeq ($(OSTYPE), Linux)
 CC                := gcc
 CFLAGS            := -Wall
-SHLIB_CFLAGS      := -dynamic
+SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .so
 endif
 endif
 
-shlibs: struct-tests$(SHLIB_EXT)
+shlibs: 
 
 %$(SHLIB_EXT): %.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 clean:
-	rm -f struct-tests$(SHLIB_EXT)
 
 # vim: ft=make ts=3 noet
