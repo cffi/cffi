@@ -33,9 +33,15 @@
    #:foreign-alloc
    #:foreign-aref
    #:mem-ref
+   #:pointerp
    #:null-ptr
    #:null-ptr-p
+   #:inc-ptr
    #:with-foreign-ptr
+
+   ;; Shareable vectors.
+   #:make-shareable-vector
+   #:with-pointer-to-vector-data
 
    ;; Foreign string operations.
    #:foreign-string-alloc
@@ -55,6 +61,8 @@
    #:defctype
    #:defcenum
    #:define-type-translator
+   #:foreign-enum-keyword
+   #:foreign-enum-value
    #:foreign-object-alloc
    #:foreign-object-free
    #:foreign-slot-value

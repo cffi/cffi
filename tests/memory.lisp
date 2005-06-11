@@ -29,85 +29,24 @@
 
 (deftest deref.char
     (with-foreign-object (p :char)
-      (setf (mem-ref p :char) -127)
+      (setf (mem-ref p :char) 127)
       (mem-ref p :char))
-  -127)
-
-(deftest deref.unsigned-char
-    (with-foreign-object (p :unsigned-char)
-      (setf (mem-ref p :unsigned-char) 255)
-      (mem-ref p :unsigned-char))
-  255)
+  127)
 
 (deftest deref.short
     (with-foreign-object (p :short)
-      (setf (mem-ref p :short) -32767)
+      (setf (mem-ref p :short) 32767)
       (mem-ref p :short))
-  -32767)
-
-(deftest deref.unsigned-short
-    (with-foreign-object (p :unsigned-short)
-      (setf (mem-ref p :unsigned-short) 65535)
-      (mem-ref p :unsigned-short))
-  65535)
+  32767)
 
 (deftest deref.int
     (with-foreign-object (p :int)
-      (setf (mem-ref p :int) -131072)
+      (setf (mem-ref p :int) 131072)
       (mem-ref p :int))
-  -131072)
-
-(deftest deref.unsigned-int
-    (with-foreign-object (p :unsigned-int)
-      (setf (mem-ref p :unsigned-int) 262144)
-      (mem-ref p :unsigned-int))
-  262144)
+  131072)
 
 (deftest deref.long
     (with-foreign-object (p :long)
-      (setf (mem-ref p :long) -536870911)
+      (setf (mem-ref p :long) 536870912)
       (mem-ref p :long))
-  -536870911)
-
-(deftest deref.unsigned-long
-    (with-foreign-object (p :unsigned-long)
-      (setf (mem-ref p :unsigned-long) 536870912)
-      (mem-ref p :unsigned-long))
   536870912)
-
-(deftest deref.float.1
-    (with-foreign-object (p :float)
-      (setf (mem-ref p :float) 0.0)
-      (mem-ref p :float))
-  0.0)
-
-(deftest deref.float.2
-    (with-foreign-object (p :float)
-      (setf (mem-ref p :float) most-positive-single-float)
-      (mem-ref p :float))
-  #.most-positive-single-float)
-
-(deftest deref.float.3
-    (with-foreign-object (p :float)
-      (setf (mem-ref p :float) least-positive-single-float)
-      (mem-ref p :float))
-  #.least-positive-single-float)
-
-(deftest deref.double.1
-    (with-foreign-object (p :double)
-      (setf (mem-ref p :double) 0.0d0)
-      (mem-ref p :double))
-  0.0d0)
-
-(deftest deref.double.2
-    (with-foreign-object (p :double)
-      (setf (mem-ref p :double) most-positive-double-float)
-      (mem-ref p :double))
-  #.most-positive-double-float)
-
-(deftest deref.double.3
-    (with-foreign-object (p :double)
-      (setf (mem-ref p :double) least-positive-double-float)
-      (mem-ref p :double))
-  #.least-positive-double-float)
-

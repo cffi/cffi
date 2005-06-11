@@ -25,14 +25,15 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(format t "~&-------- Running tests in ~A --------~%"
-        (lisp-implementation-type))
-
 (setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
 #+cmu (setf ext:*gc-verbose* nil)
 
 #+(and (not asdf) (or sbcl openmcl))
 (require "asdf")
+#+clisp
+(load "~/Downloads/asdf")
+#+clisp
+(push "~/.asdf-install-dir/systems/" asdf:*central-registry*)
 
 (asdf:operate 'asdf:load-op 'cffi-tests :verbose nil)
 (in-package #:cffi-tests)

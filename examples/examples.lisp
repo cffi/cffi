@@ -85,7 +85,9 @@
   (with-foreign-ptr-as-string (buf 255 buf-size)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
-     string "%d #x%x!" :int 666 :unsigned-int #xcafebabe
+     string "%d %f #x%x!" :int 666 
+     :double (coerce pi 'double-float)
+     :unsigned-int #xcafebabe
      :void)))
 
 ;; Defining an emerated type.
@@ -98,11 +100,10 @@
 (defcfun ("abs" c-abs) test-enum
   (n test-enum))
 
-;; Proposed syntax for nested structures:
-#+nil
+;; Nested structure example:
 (defcstruct nested-example
-  (name    :pointer)
-  (timeval :struct timeval))
+  (name    :char 100)
+  (timeval timeval))
 
 ;; Access the nested structure fields with:
 ;;

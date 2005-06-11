@@ -25,8 +25,11 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;; TODO: Make a separate CFFI-TESTS package for this later.
-(in-package #:cffi)
+(asdf:operate 'asdf:load-op 'cffi :verbose nil)
+
+(defpackage #:cffi-tests
+  (:use #:cl #:cffi))
+(in-package #:cffi-tests)
 
 (load-foreign-library
  (namestring
@@ -45,10 +48,11 @@
 
 (defun align-test ()
   "Load an ALIGN-TEST foreign structure."
-  (with-foreign-struct (a align-test)
+  (with-foreign-object (a align-test)
     (do-align-test a)
     (values
      (foreign-slot-value a 'align-test 'c)
      (foreign-slot-value a 'align-test 'd)
      (foreign-slot-value a 'align-test 's)
      (foreign-slot-value a 'align-test 'i))))
+

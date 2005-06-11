@@ -40,6 +40,7 @@
    #:pointerp
    #:null-ptr
    #:null-ptr-p
+   #:inc-ptr
    #:foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
@@ -101,6 +102,11 @@
   "Return true if PTR is a null foreign pointer."
   (zerop (ffi:foreign-address-unsigned ptr)))
 
+(defun inc-ptr (ptr offset)
+  "Return a pointer pointing OFFSET bytes past PTR."
+  (ffi:unsigned-foreign-address
+   (+ offset (ffi:foreign-address-unsigned ptr))))
+
 ;;;# Foreign Memory Allocation
 
 (defun foreign-alloc (size)
@@ -130,11 +136,6 @@ SIZE during BODY."
            ,@body)))))
 
 ;;;# Memory Access
-
-(defun %inc-ptr (ptr offset)
-  "Return a new pointer OFFSET bytes past PTR."
-  (ffi:unsigned-foreign-address
-   (+ offset (ffi:foreign-address-unsigned ptr))))
 
 (eval-when (:compile-toplevel)
   (if (fboundp 'ffi:foreign-variable)

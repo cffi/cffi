@@ -32,10 +32,10 @@ clean:
 	@$(MAKE) -wC tests clean
 	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" \) -exec rm {} \;
 
-test:
-	test -x `which openmcl` && openmcl --load examples/run-examples.lisp
-	test -x `which sbcl` && sbcl --noinform --load examples/run-examples.lisp
-	test -x `which lisp` && lisp -load examples/run-examples.lisp
-	test -x `which clisp` && clisp examples/run-examples.lisp
+test: shlibs
+	@test -x `which openmcl` && echo "-------- Running unit tests in OpenMCL: --------" && openmcl --load tests/run-tests.lisp
+	@test -x `which sbcl` && echo "-------- Running unit tests in SBCL: --------" && sbcl --noinform --load tests/run-tests.lisp
+	@test -x `which lisp` && echo "-------- Running unit tests in CMU CL: --------" && lisp -load tests/run-tests.lisp
+	@test -x `which clisp` && echo "-------- Running unit tests in CLISP: --------" && clisp tests/run-tests.lisp
 
 # vim: ft=make ts=3 noet

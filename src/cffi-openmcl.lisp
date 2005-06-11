@@ -35,11 +35,14 @@
    #:with-foreign-ptr
    #:null-ptr
    #:null-ptr-p
+   #:inc-ptr
    #:%mem-ref
    #:%foreign-funcall
    #:%foreign-type-alignment
    #:%foreign-type-size
-   #:%load-foreign-library))
+   #:%load-foreign-library
+   #:make-shareable-byte-vector
+   #:with-pointer-to-vector-data))
  
 (in-package #:cffi-sys)
 
@@ -79,6 +82,26 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null pointer."
   (%null-ptr-p ptr))
+
+(defun inc-ptr (ptr offset)
+  "Return a pointer OFFSET bytes past PTR."
+  (ccl:%inc-ptr ptr offset))
+
+;;;# Shareable Vectors
+;;;
+;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
+;;; should be defined to perform a copy-in/copy-out if the Lisp
+;;; implementation can't do this.
+
+(defun make-shareable-byte-vector (size)
+  "Create a Lisp vector of SIZE bytes that can passed to
+WITH-POINTER-TO-VECTOR-DATA."
+  (make-array size :element-type '(unsigned-byte 8)))
+
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
+  `(ccl:with-pointer-to-ivector (,ptr-var ,vector)
+     ,@body))
 
 ;;;# Dereferencing
 

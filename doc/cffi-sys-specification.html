@@ -1,6 +1,13 @@
 <html>
   <head>
-  <title>CFFI-SYS Specification</title>
+    <title>CFFI-SYS Specification</title>
+    <style type="text/css">
+      PRE.example {
+        background-color: #eeeeee;
+        padding: 5px;
+        border: 2px solid black;
+      }
+    </style>
   </head>
   <body>
     <h1>CFFI-SYS Interface Specfication</h1>
@@ -8,150 +15,154 @@
     <h2>Introduction</h2>
 
     <p>
-    CFFI, the Common Foreign Function Interface, purports to be a portable
-    foreign function interface for Common Lisp.
+      CFFI, the Common Foreign Function Interface, purports to be a
+      portable foreign function interface for Common Lisp.
     </p>
 
     <p>
-    This specification defines a set of low-level primitives that must
-    be defined for each Lisp implementation supported by CFFI.  These
-    operators are defined in the <tt>CFFI-SYS</tt> package.
+      This specification defines a set of low-level primitives that
+      must be defined for each Lisp implementation supported by CFFI.
+      These operators are defined in the <tt>CFFI-SYS</tt> package.
     </p>
 
     <p>
-    The <tt>CFFI</tt> package uses the <tt>CFFI-SYS</tt> interface to
-    implement an extensible foreign type system with support for typedefs,
-    structures, and unions, a declarative interface for defining foreign
-    function calls, and automatic conversion of foreign function arguments
-    to/from Lisp types.
+      The <tt>CFFI</tt> package uses the <tt>CFFI-SYS</tt> interface
+      to implement an extensible foreign type system with support for
+      typedefs, structures, and unions, a declarative interface for
+      defining foreign function calls, and automatic conversion of
+      foreign function arguments to/from Lisp types.
     </p>
 
     <h3>Naming Convention</h3>
 
     <p>
-    Functions in <tt>CFFI-SYS</tt> that are low-level versions of functions
-    exported from the <tt>CFFI</tt> package begin with a leading 
-    percent-sign (eg. <tt>%mem-ref</tt>).
+      Functions in <tt>CFFI-SYS</tt> that are low-level versions of
+      functions exported from the <tt>CFFI</tt> package begin with a
+      leading percent-sign (eg. <tt>%mem-ref</tt>).
     </p>
 
     <h2>Built-In Foreign Types</h2>
 
     <p>
-    <u>Foreign Type:</u> <b>:char</b><br>
-    <u>Foreign Type:</u> <b>:unsigned-char</b><br>
-    <u>Foreign Type:</u> <b>:short</b><br>
-    <u>Foreign Type:</u> <b>:unsigned-short</b><br>
-    <u>Foreign Type:</u> <b>:int</b><br>
-    <u>Foreign Type:</u> <b>:unsigned-int</b><br>
-    <u>Foreign Type:</u> <b>:long</b><br>
-    <u>Foreign Type:</u> <b>:unsigned-long</b><br>
-    <u>Foreign Type:</u> <b>:long-long</b><br>
-    <u>Foreign Type:</u> <b>:unsigned-long-long</b><br>
+      <u>Foreign Type:</u> <b>:char</b><br>
+      <u>Foreign Type:</u> <b>:unsigned-char</b><br>
+      <u>Foreign Type:</u> <b>:short</b><br>
+      <u>Foreign Type:</u> <b>:unsigned-short</b><br>
+      <u>Foreign Type:</u> <b>:int</b><br>
+      <u>Foreign Type:</u> <b>:unsigned-int</b><br>
+      <u>Foreign Type:</u> <b>:long</b><br>
+      <u>Foreign Type:</u> <b>:unsigned-long</b><br>
+      <u>Foreign Type:</u> <b>:long-long</b><br>
+      <u>Foreign Type:</u> <b>:unsigned-long-long</b><br>
     </p>
 
     <p>
-    These types correspond to the native C integer types according to
-    the ABI of the system the Lisp implementation is compiled against.
+      These types correspond to the native C integer types according
+      to the ABI of the system the Lisp implementation is compiled
+      against.
     </p>
 
     <p>
-    <u>Foreign Type:</u> <b>:int8</b><br>
-    <u>Foreign Type:</u> <b>:uint8</b><br>
-    <u>Foreign Type:</u> <b>:int16</b><br>
-    <u>Foreign Type:</u> <b>:uint16</b><br>
-    <u>Foreign Type:</u> <b>:int32</b><br>
-    <u>Foreign Type:</u> <b>:uint32</b><br>
-    <u>Foreign Type:</u> <b>:int64</b><br>
-    <u>Foreign Type:</u> <b>:uint64</b><br>
+      <u>Foreign Type:</u> <b>:int8</b><br>
+      <u>Foreign Type:</u> <b>:uint8</b><br>
+      <u>Foreign Type:</u> <b>:int16</b><br>
+      <u>Foreign Type:</u> <b>:uint16</b><br>
+      <u>Foreign Type:</u> <b>:int32</b><br>
+      <u>Foreign Type:</u> <b>:uint32</b><br>
+      <u>Foreign Type:</u> <b>:int64</b><br>
+      <u>Foreign Type:</u> <b>:uint64</b><br>
     </p>
 
     <p>
-    Foreign integer types of specific sizes, corresponding to the 
-    C types defined in <tt>stdint.h</tt>.
+      Foreign integer types of specific sizes, corresponding to the C
+      types defined in <tt>stdint.h</tt>.
     </p>
 
     <p>
-    <u>Foreign Type:</u> <b>:size</b><br>
-    <u>Foreign Type:</u> <b>:ssize</b><br>
-    <u>Foreign Type:</u> <b>:ptrdiff</b><br>
- <u>Foreign Type:</u> <b>:time</b><br>
+      <u>Foreign Type:</u> <b>:size</b><br>
+      <u>Foreign Type:</u> <b>:ssize</b><br>
+      <u>Foreign Type:</u> <b>:ptrdiff</b><br>
+      <u>Foreign Type:</u> <b>:time</b><br>
     </p>
 
     <p>
-    Foreign integer types corresponding to the standard C types (without
-    the <tt>_t</tt> suffix).
+      Foreign integer types corresponding to the standard C types
+      (without the <tt>_t</tt> suffix).
     </p>
 
     <p>
-    <font color="green">
-    I'm sure there are more of these that could be useful, let's add
-    any types that can't be defined portably to this list as necessary.
-    </font>
+      <font color="green">
+        I'm sure there are more of these that could be useful, let's
+        add any types that can't be defined portably to this list as
+        necessary.
+      </font>
     </p>
 
     <p>
-    <u>Foreign Type:</u> <b>:float</b><br>
-    <u>Foreign Type:</u> <b>:double</b><br>
+      <u>Foreign Type:</u> <b>:float</b><br>
+      <u>Foreign Type:</u> <b>:double</b><br>
     </p>
 
     <p>
-    The <tt>:float</tt> type represents a C <tt>float</tt> and a Lisp 
-    <tt>single-float</tt>.  <tt>:double</tt> represents a C <tt>double</tt>
-    and a Lisp <tt>double-float</tt>.
+      The <tt>:float</tt> type represents a C <tt>float</tt> and a Lisp 
+      <tt>single-float</tt>.  <tt>:double</tt> represents a
+      C <tt>double</tt> and a Lisp <tt>double-float</tt>.
     </p>
 
     <p><u>Foreign Type:</u> <b>:pointer</b></p>
 
     <p>
-    A foreign pointer to an object of any type, corresponding to 
-    <tt>void *</tt>.
+      A foreign pointer to an object of any type, corresponding to 
+      <tt>void *</tt>.
     </p>
 
     <p><u>Foreign Type:</u> <b>:void</b></p>
 
     <p>
-    No type at all.  Only valid as the return type of a function.
+      No type at all.  Only valid as the return type of a function.
     </p>
 
     <p><u>Function:</u> <b>%foreign-type-size</b> <i>type</i> =&gt; <i>size</i></p>
+
     <p>
-    Return the size, in bytes, of objects having foreign type <i>type</i>.
-    An error is signalled if <i>type</i> is not a known built-in foreign
-    type.
+      Return the size, in bytes, of objects having foreign type <i>type</i>.
+      An error is signalled if <i>type</i> is not a known built-in foreign
+      type.
     </p>
 
     <p><u>Function:</u> <b>%foreign-type-alignment</b> <i>type</i> =&gt; <i>alignment</i></p>
 
     <p>
-    Return the default alignment in bytes for structure members of foreign
-    type <i>type</i>.
-    An error is signalled if <i>type</i> is not a known built-in foreign
-    type.
+      Return the default alignment in bytes for structure members of
+      foreign type <i>type</i>.  An error is signalled if <i>type</i>
+      is not a known built-in foreign type.
     </p>
 
     <p>
-    <font color="green">
-    Maybe this should take an optional keyword argument specifying
-    an alternate alignment system, eg. :mac68k for 68000-compatible
-    alignment on Darwin.</i>
-    </font>
+      <font color="green">
+        Maybe this should take an optional keyword argument specifying
+        an alternate alignment system, eg. :mac68k for 68000-compatible
+        alignment on Darwin.
+      </font>
     </p>
     
     <h2>Basic Pointer Operations</h2>
 
     <p><u>Function:</u> <b>pointerp</b> <i>ptr</i> =&gt; <i>boolean</i></p>
+
     <p>
-    Return true if <i>ptr</i> is a foreign pointer.
+      Return true if <i>ptr</i> is a foreign pointer.
     </p>
 
     <p><u>Function:</u> <b>null-ptr</b> =&gt; <i>pointer</i></p>
+
     <p>
     Return a null foreign pointer.
     </p>
-
+    
     <p><u>Function:</u> <b>null-ptr-p</b> <i>ptr</i> =&gt; <i>boolean</i></p>
     <p>
-    Return true if <i>ptr</i> is a null foreign pointer.
+      Return true if <i>ptr</i> is a null foreign pointer.
     </p>
 
     <h2>Foreign Memory Allocation</h2>
@@ -159,26 +170,30 @@
     <p><u>Function:</u> <b>foreign-alloc</b> <i>size</i> =&gt; <i>pointer</i></p>
 
     <p>
-    Allocate <i>size</i> bytes of foreign-addressable memory and return
-    a <i>pointer</i> to the allocated block.  An implementation-specific
-    error is signalled if the memory cannot be allocated.
+      Allocate <i>size</i> bytes of foreign-addressable memory and
+      return a <i>pointer</i> to the allocated block.  An
+      implementation-specific error is signalled if the memory cannot
+      be allocated.
     </p>
 
     <p><u>Function:</u> <b>foreign-free</b> <i>ptr</i> =&gt; <i>unspecified</i></p>
 
     <p>
-    Free a pointer <i>ptr</i> allocated by <tt>foreign-alloc</tt>.  
-    The results are undefined if <i>ptr</i> is used after being freed.
+      Free a pointer <i>ptr</i> allocated by <tt>foreign-alloc</tt>.
+      The results are undefined if <i>ptr</i> is used after being
+      freed.
     </p>
 
-    <p><u>Macro:</u> <b>with-foreign-ptr</b> (<i>var</i> <i>size</i> &amp;optional <i>size-var</i>) &amp;body <i>body</i></p>
+    <p><u>Macro:</u> <b>with-foreign-ptr</b> (<i>var</i> <i>size</i>
+    &amp;optional <i>size-var</i>) &amp;body <i>body</i></p>
 
     <p>
-    Bind <i>var</i> to a pointer to <i>size</i> bytes of foreign-accessible
-    memory during <i>body</i>.  Both <i>ptr</i> and the memory block it
-    points to have dynamic extent and may be stack allocated if supported 
-    by the implementation.  If <i>size-var</i> is supplied, it will be bound 
-    to <i>size</i> during <i>body</i>.
+      Bind <i>var</i> to a pointer to <i>size</i> bytes of
+      foreign-accessible memory during <i>body</i>.  Both <i>ptr</i>
+      and the memory block it points to have dynamic extent and may be
+      stack allocated if supported by the implementation.
+      If <i>size-var</i> is supplied, it will be bound to <i>size</i>
+      during <i>body</i>.
     </p>
 
     <h2>Memory Access</h2>
@@ -186,14 +201,14 @@
     <p><u>Accessor:</u> <b>%mem-ref</b> <i>ptr</i> <i>type</i> &amp;optional (<i>offset</i> 0) =&gt; <i>object</i></p>
 
     <p>
-    Dereference a pointer <i>offset</i> bytes from <i>ptr</i> to an object 
-    for reading (or writing when used with <tt>setf</tt>) of built-in type 
-    <i>type</i>.
+      Dereference a pointer <i>offset</i> bytes from <i>ptr</i> to an
+      object for reading (or writing when used with <tt>setf</tt>) of
+      built-in type <i>type</i>.
     </p>
 
     <p>Example:</b>
 
-<pre>
+<pre class="example">
 ;; An impractical example, since 'time' returns the time as well, but it
 ;; demonstrates %MEM-REF.  Better (simple) examples wanted!
 (with-foreign-ptr (p (foreign-type-size :time))
@@ -203,29 +218,31 @@
 
     <h2>Foreign Function Calling</h2>
 
-    <p><u>Macro:</u> <b>%foreign-funcall</b> <i>name</i> {<i>arg-type</i> <i>arg</i>}* &amp;optional <i>result-type</i> =&gt; <i>object</i></p>
+    <p><u>Macro:</u> <b>%foreign-funcall</b> <i>name</i>
+    {<i>arg-type</i> <i>arg</i>}* &amp;optional <i>result-type</i>
+    =&gt; <i>object</i></p>
 
     <p>
-    Invoke a foreign function called <i>name</i>, which may be mangled
-    depending on the ABI of the system (eg. adding leading underscore for
-    Darwin).
+      Invoke a foreign function called <i>name</i>, which may be
+      mangled depending on the ABI of the system (eg. adding leading
+      underscore for Darwin).
     </p>
 
     <p>
-    The remaining arguments are pairs of foreign types and their values,
-    followed by the return type of the function, assumed to be <tt>:void</tt>
-    if not supplied.
+      The remaining arguments are pairs of foreign types and their
+      values, followed by the return type of the function, assumed to
+      be <tt>:void</tt> if not supplied.
     </p>
 
     <p>
-    <font color="green">
-    This wording is pretty awkward, rewrite this description.
-    </font>
+      <font color="green">
+        This wording is pretty awkward, rewrite this description.
+      </font>
     </p>
 
     <p>Examples:</p>
 
-<pre>
+<pre class="example">
 ;; Calling a standard C library function:
 (%foreign-funcall "sqrtf" :float 16.0 :float) =&gt; 4.0
 
@@ -242,24 +259,23 @@
     <p><u>Function:</u> <b>%load-foreign-library</b> <i>name</i> =&gt; <i>unspecified</i></p>
 
     <p>
-    Loads the foreign shared library <i>name</i>.
+      Loads the foreign shared library <i>name</i>.
     </p>
 
     <p>
-    <font color="green">
-    There is a lot of behavior to decide here.  Currently I lean toward
-    not requiring NAME to be a full path to the library so we can search
-    the system library directories (maybe even get LD_LIBRARY_PATH from
-    the environment) as necessary.
-    </font>
+      <font color="green">
+        There is a lot of behavior to decide here.  Currently I lean
+        toward not requiring NAME to be a full path to the library so
+        we can search the system library directories (maybe even get
+        LD_LIBRARY_PATH from the environment) as necessary.
+      </font>
     </p>
 
     <p>
-    <font size="small">
-    <i>6 June 2005 / James Bielman / jamesjb at jamesjb dot com</i>
-    </font>
+      <font size="small">
+        <i>6 June 2005 / James Bielman / jamesjb at jamesjb dot com</i>
+      </font>
     </p>
   
   </body>
 </html>
-

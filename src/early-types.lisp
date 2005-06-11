@@ -56,7 +56,8 @@
 
 (defun find-foreign-type (name)
   "Return the foreign type instance for NAME or nil."
-  (gethash name *foreign-types*))
+  (or (gethash name *foreign-types*)
+      (error "Undefined foreign type: ~S" name)))
 
 (defun (setf find-foreign-type) (value name)
   "Set the foreign type object for NAME to VALUE."

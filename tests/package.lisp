@@ -26,5 +26,5 @@
 ;;;
 
 (defpackage #:cffi-tests
-  (:use #:cl #:cffi #+lispworks #:regression-test #-lispworks #:rt)
+  (:use #:cl #:cffi #:rt)
   (:export #:do-tests))
