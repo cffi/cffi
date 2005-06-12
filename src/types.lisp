@@ -27,6 +27,21 @@
 
 (in-package #:cffi)
 
+;;;# Built-In Types
+
+(define-built-in-foreign-type :char)
+(define-built-in-foreign-type :unsigned-char)
+(define-built-in-foreign-type :short)
+(define-built-in-foreign-type :unsigned-short)
+(define-built-in-foreign-type :int)
+(define-built-in-foreign-type :unsigned-int)
+(define-built-in-foreign-type :long)
+(define-built-in-foreign-type :unsigned-long)
+(define-built-in-foreign-type :float)
+(define-built-in-foreign-type :double)
+(define-built-in-foreign-type :pointer)
+(define-built-in-foreign-type :void)
+
 ;;;# Dereferencing Foreign Pointers
 
 (defun mem-ref (ptr type &optional (offset 0))
@@ -226,15 +241,13 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 
 ;;;# Operations on Types
 
-(defun foreign-type-alignment (type)
+(defmethod foreign-type-alignment ((type symbol))
   "Return the alignment in bytes of a foreign type."
   (%foreign-type-alignment (canonicalize-foreign-type type)))
 
-(defun foreign-type-size (type)
+(defmethod foreign-type-size ((type symbol))
   "Return the size in bytes of a foreign type."
-  (if (builtin-type-p type)
-      (%foreign-type-size type)
-      (size (find-foreign-type type))))
+  (foreign-type-size (find-foreign-type type)))
 
 (defun adjust-for-alignment (type offset)
   "Return OFFSET aligned properly for TYPE."

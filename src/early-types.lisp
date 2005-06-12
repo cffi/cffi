@@ -33,26 +33,42 @@
 
 (in-package #:cffi)
 
-;;;# Foreign Type Classes
+;;;# Generic Functions on Types
 
-(defvar *foreign-types* (make-hash-table)
-  "Hash table of all user-defined foreign types.")
+(defgeneric canonicalize (foreign-type)
+  (:documentation
+   "Return the built-in foreign type for FOREIGN-TYPE.
+Signals an error if FOREIGN-TYPE is undefined."))
+
+(defgeneric aggregatep (foreign-type)
+  (:documentation
+   "Return true if FOREIGN-TYPE is an aggregate type."))
+
+(defgeneric foreign-type-alignment (foreign-type)
+  (:documentation
+   "Return the structure alignment in bytes of a foreign type."))
+
+(defgeneric foreign-type-size (foreign-type)
+  (:documentation
+   "Return the size in bytes of a foreign type."))
+
+;;;# Foreign Types
 
 (defclass foreign-type ()
-  ((name :initform nil :initarg :name :accessor name)
-   (alias :initform nil :initarg :alias :accessor alias)
-   (size :initform 1 :initarg :size :accessor size))
+  ((name
+    ;; Name of this foreign type, a symbol.
+    :initform (error "A type name is required.")
+    :initarg :name
+    :accessor name))
   (:documentation "Contains information about a basic foreign type."))
 
 (defmethod print-object ((type foreign-type) stream)
   "Print a FOREIGN-TYPE instance to STREAM unreadably."
   (print-unreadable-object (type stream :type t :identity nil)
-    (format stream "~A" (name type))))
+    (format stream "~S" (name type))))
 
-(defclass foreign-struct-type (foreign-type)
-  ((slots :initform (make-hash-table) :initarg :slots :accessor slots))
-  (:default-initargs :alias :pointer)
-  (:documentation "Hash table of plists containing slot information."))
+(defvar *foreign-types* (make-hash-table)
+  "Hash table of all user-defined foreign types.")
 
 (defun find-foreign-type (name)
   "Return the foreign type instance for NAME or nil."
@@ -63,28 +79,102 @@
   "Set the foreign type object for NAME to VALUE."
   (setf (gethash name *foreign-types*) value))
 
-;;;# Foreign Type Aliases
+(defun canonicalize-foreign-type (type)
+  "Convert TYPE to a built-in type by following aliases.
+Signals an error if the type cannot be resolved."
+  (canonicalize (find-foreign-type type)))
+
+;;;# Built-In Foreign Types
+
+(defclass foreign-built-in-type (foreign-type)
+  ((type-keyword
+    ;; Keyword in CFFI-SYS representing this type.
+    :initform (error "A type keyword is required.")
+    :initarg :type-keyword
+    :accessor type-keyword))
+  (:documentation "A built-in foreign type."))
+
+(defmethod canonicalize ((type foreign-built-in-type))
+  "Return the built-in type keyword for TYPE."
+  (type-keyword type))
+
+(defmethod aggregatep ((type foreign-built-in-type))
+  "Returns false, built-in types are never aggregate types."
+  nil)
+
+(defmethod foreign-type-alignment ((type foreign-built-in-type))
+  "Return the alignment of a built-in type."
+  (%foreign-type-alignment (type-keyword type)))
+
+(defmethod foreign-type-size ((type foreign-built-in-type))
+  "Return the size of a built-in type."
+  (%foreign-type-size (type-keyword type)))
+
+(defmacro define-built-in-foreign-type (keyword)
+  "Defines a built-in foreign type."
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (find-foreign-type ,keyword)
+           (make-instance 'foreign-built-in-type :name ,keyword
+                          :type-keyword ,keyword))))
+
+;;;# Foreign Typedefs
+
+(defclass foreign-typedef (foreign-type)
+  ((actual-type
+    ;; The FOREIGN-TYPE instance this type is an alias for.
+    :initarg :actual-type
+    :accessor actual-type))
+  (:documentation "A type that aliases another type."))
+
+(defmethod canonicalize ((type foreign-typedef))
+  "Return the built-in type keyword for TYPE."
+  (canonicalize (actual-type type)))
+
+(defmethod aggregatep ((type foreign-built-in-type))
+  "Return true if TYPE's actual type is aggregate."
+  (aggregatep (actual-type type)))
+
+(defmethod foreign-type-alignment ((type foreign-typedef))
+  "Return the alignment of a foreign typedef."
+  (foreign-type-alignment (actual-type type)))
+
+(defmethod foreign-type-size ((type foreign-typedef))
+  "Return the size in bytes of a foreign typedef."
+  (foreign-type-size (actual-type type)))
 
 (defun notice-type-definition (name alias)
   "Install a type definition for NAME aliased to ALIAS."
   (setf (find-foreign-type name)
-        (make-instance 'foreign-type :name name :alias alias
-                       :size (foreign-type-size alias))))
-
-(defun builtin-type-p (symbol)
-  "Return true if SYMBOL is a built-in CFFI type."
-  (keywordp symbol))
-
-(defun canonicalize-foreign-type (type)
-  "Convert TYPE to a built-in type by following aliases.
-Signals an error if the type cannot be resolved."
-  (loop for xtype = type then (alias (find-foreign-type xtype))
-        until (builtin-type-p xtype)
-        when (null xtype) do (error "Undefined foreign type> ~S." type)
-        finally (return xtype)))
+        (make-instance 'foreign-typedef :name name
+                       :actual-type (find-foreign-type alias))))
 
 (defmacro defctype (name type)
   "Define NAME to be an alias for foreign type TYPE."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-type-definition ',name ',type)))
 
+;;;# Structure Type
+
+(defclass foreign-struct-type (foreign-type)
+  ((slots
+    ;; Hash table of slots in this structure, keyed by name.
+    :initform (make-hash-table)
+    :initarg :slots
+    :accessor slots)
+   (size
+    ;; Cached size in bytes of this structure.
+    :initarg :size
+    :accessor size))
+  (:documentation "Hash table of plists containing slot information."))
+
+(defmethod canonicalize ((type foreign-struct-type))
+  "Returns :POINTER, since structures can not be passed by value."
+  :pointer)
+
+(defmethod aggregatep ((type foreign-built-in-type))
+  "Returns true, structure types are aggregate."
+  t)
+
+(defmethod foreign-type-size ((type foreign-struct-type))
+  "Return the size in bytes of a foreign structure type."
+  (size type))
