@@ -137,23 +137,6 @@ SIZE during BODY."
 
 ;;;# Memory Access
 
-(eval-when (:compile-toplevel)
-  (if (fboundp 'ffi:foreign-variable)
-      (import 'ffi:foreign-variable)
-      (push :cffi-need-foreign-variable *features*)))
-
-#+cffi-need-foreign-variable
-(defun foreign-variable (address type &key name)
-  (etypecase address
-    (ffi:foreign-variable
-     (ffi::%offset address 0 type))
-    (ffi:foreign-address
-     (ffi:with-foreign-object (x 'ffi:c-pointer address)
-       (let ((y (ffi::%offset x 0 type)))
-         (setf (sys::%record-ref y 0) (or name 'ffi:cast))
-         (setf (sys::%record-ref y 1) address)
-         y)))))
-
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference a pointer OFFSET bytes from PTR to an object of
 built-in foreign TYPE.  Returns the object as a foreign pointer
@@ -161,14 +144,14 @@ or Lisp number."
   (let ((type (convert-foreign-type type)))
     (ffi:foreign-value
      (ffi::%offset
-      (foreign-variable ptr type) offset type))))
+      (ffi:foreign-variable ptr type) offset type))))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set a pointer OFFSET bytes from PTR to an object of built-in
 foreign TYPE to VALUE."
   (let ((type (convert-foreign-type type)))
     (setf (ffi:foreign-value
-            (ffi::%offset (foreign-variable ptr type) offset type))
+            (ffi::%offset (ffi:foreign-variable ptr type) offset type))
           value)))
 
 ;;;# Foreign Function Calling
