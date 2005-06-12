@@ -105,6 +105,13 @@
   (name    :char 100)
   (timeval timeval))
 
+(defun nested-example ()
+  "Example using nested structures."
+  (with-foreign-object (n nested-example)
+    (foreign-slot-value n 'nested-example 'timeval)
+    ;; This signals an error!
+    (setf (foreign-slot-value n 'nested-example 'timeval) nil)))
+
 ;; Access the nested structure fields with:
 ;;
 ;; (foreign-slot-value ptr 'nested-example 'timeval 'tv-sec)

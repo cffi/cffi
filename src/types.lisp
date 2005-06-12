@@ -100,19 +100,45 @@ to open-code (SETF MEM-REF) forms."
 ;;;## Foreign Structure Slots
 
 (defgeneric foreign-struct-slot-address (ptr slot)
-  (:documentation "Get the address of SLOT relative to PTR."))
+  (:documentation
+   "Get the address of SLOT relative to PTR."))
+
+(defgeneric foreign-struct-slot-address-form (ptr slot)
+  (:documentation
+   "Return a form to get the address of SLOT in PTR."))
 
 (defgeneric foreign-struct-slot-value (ptr slot)
-  (:documentation "Return the value of SLOT in structure PTR."))
+  (:documentation
+   "Return the value of SLOT in structure PTR."))
+
+(defgeneric (setf foreign-struct-slot-value) (value ptr slot)
+  (:documentation
+   "Set the value of a SLOT in structure PTR."))
+
+(defgeneric foreign-struct-slot-value-form (ptr slot)
+  (:documentation
+   "Return a form to get the value of SLOT in struct PTR."))
+
+(defgeneric foreign-struct-slot-set-form (value ptr slot)
+  (:documentation
+   "Return a form to set the value of SLOT in struct PTR."))
 
 (defclass foreign-struct-slot ()
-  ((offset :initarg :offset :accessor slot-offset)
+  ((name   :initarg :name   :reader   slot-name)
+   (offset :initarg :offset :accessor slot-offset)
    (type   :initarg :type   :accessor slot-type))
   (:documentation "Base class for simple and aggregate slots."))
 
 (defmethod foreign-struct-slot-address (ptr (slot foreign-struct-slot))
   "Return the address of SLOT relative to PTR."
   (inc-ptr ptr (slot-offset slot)))
+
+(defmethod foreign-struct-slot-address-form (ptr (slot foreign-struct-slot))
+  "Return a form to get the address of SLOT relative to PTR."
+  (let ((offset (slot-offset slot)))
+    (if (zerop offset)
+        ptr
+        `(inc-ptr ,ptr ,offset))))
 
 ;;;### Simple Slots
 
@@ -124,43 +150,80 @@ to open-code (SETF MEM-REF) forms."
   "Return the value of a simple SLOT from a struct at PTR."
   (mem-ref ptr (slot-type slot) (slot-offset slot)))
 
+(defmethod foreign-struct-slot-value-form (ptr (slot simple-struct-slot))
+  "Return a form to get the value of a slot from PTR."
+  `(mem-ref ,ptr ,(slot-type slot) ,(slot-offset slot)))
+
+(defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
+  "Set the value of a simple SLOT to VALUE in PTR."
+  (setf (mem-ref ptr (slot-type slot) (slot-offset slot)) value))
+
+(defmethod foreign-struct-slot-set-form (value ptr (slot simple-struct-slot))
+  "Return a form to set the value of a simple structure slot."
+  `(setf (mem-ref ,ptr ,(slot-type slot) ,(slot-offset slot)) ,value))
+
 ;;;### Aggregate Slots
 
 (defclass aggregate-struct-slot (foreign-struct-slot)
-  ((count :initarg count :accessor slot-count))
+  ((count :initarg :count :accessor slot-count))
   (:documentation "Aggregate structure slots."))
 
+;;; A case could be made for just returning an error here instead of
+;;; this rather DWIM-ish behavior to return the address.  It would
+;;; complicate being able to chain together slot names when accessing
+;;; slot values in nested structures though.
 (defmethod foreign-struct-slot-value (ptr (slot aggregate-struct-slot))
   "Return a pointer to SLOT relative to PTR."
   (foreign-struct-slot-address ptr slot))
 
+(defmethod foreign-struct-slot-value-form (ptr (slot aggregate-struct-slot))
+  "Return a form to get the value of SLOT relative to PTR."
+  (foreign-struct-slot-address-form ptr slot))
+
+;;; This is definately an error though.  Eventually, we could define a
+;;; new type of type translator that can convert certain aggregate
+;;; types, notably C strings or arrays of integers.  For now, just error.
+(defmethod (setf foreign-struct-slot-value) (value ptr (slot aggregate-struct-slot))
+  "Signal an error; setting aggregate slot values is forbidden."
+  (declare (ignore value ptr))
+  (error "Cannot set value of aggregate slot ~A." slot))
+
+(defmethod foreign-struct-slot-set-form (value ptr (slot aggregate-struct-slot))
+  "Signal an error; setting aggregate slot values is forbidden."
+  (declare (ignore value ptr))
+  (error "Cannot set value of aggregate slot ~A." slot))
+
 ;;;## Defining Foreign Structures
 
-(defun new-notice-foreign-struct-definition (name slots)
-  "Parse and install a foreign structure definition."
-  (let ((struct (make-instance 'foreign-struct-type :name name))
-        (offset 0))
-    (declare (ignore struct))
-    (dolist (slotdef slots)
-      (destructuring-bind (slotname type &optional (count 1)) slotdef
-        (declare (ignore slotname))
-        (setf offset (adjust-for-alignment type offset))
-        ;; If TYPE is an aggregate type or COUNT is non-nil, create an
-        ;; AGGREGATE-STRUCT-SLOT, otherwise create a SIMPLE-STRUCT
-        ;; slot.  Add the slot to STRUCT's hash of slot objects.
-        (incf offset (* count (foreign-type-size type)))))))
+(defun make-struct-slot (name offset type count)
+  "Make the appropriate type of structure slot."
+  ;; If TYPE is an aggregate type or COUNT is >1, create an
+  ;; AGGREGATE-STRUCT-SLOT, otherwise a SIMPLE-STRUCT-SLOT.
+  (if (or (> count 1) (aggregatep (find-foreign-type type)))
+      (make-instance 'aggregate-struct-slot :offset offset :type type
+                     :name name :count count)
+      (make-instance 'simple-struct-slot :offset offset :type type
+                     :name name)))
+
+(defun adjust-for-alignment (type offset)
+  "Return OFFSET aligned properly for TYPE."
+  (let* ((align (foreign-type-alignment type))
+         (rem (mod offset align)))
+    (if (zerop rem)
+        offset
+        (+ offset (- align rem)))))
 
 (defun notice-foreign-struct-definition (name slots)
   "Parse and install a foreign structure definition."
-  (new-notice-foreign-struct-definition name slots)
   (let ((struct (make-instance 'foreign-struct-type :name name))
         (offset 0))
-    (loop for (slot type . nil) in slots
-          do (setf offset (adjust-for-alignment type offset))
-             (setf (gethash slot (slots struct))
-                   `(:offset ,offset :type ,type))
-             (incf offset (foreign-type-size type))
-          finally (setf (size struct) offset))
+    (dolist (slotdef slots)
+      (destructuring-bind (slotname type &optional (count 1)) slotdef
+        (setf offset (adjust-for-alignment type offset))
+        (let ((slot (make-struct-slot slotname offset type count)))
+          (setf (gethash slotname (slots struct)) slot))
+        (incf offset (* count (foreign-type-size type)))))
+    (setf (size struct) offset)
     (setf (find-foreign-type name) struct)))
 
 (defmacro defcstruct (name &body fields)
@@ -171,7 +234,7 @@ to open-code (SETF MEM-REF) forms."
 ;;;## Accessing Foreign Structure Slots
 
 (defun get-slot-info (type slot-name)
-  "Return a plist containing the slot info or raise an error."
+  "Return the slot info for SLOT-NAME or raise an error."
   (let ((struct (find-foreign-type type)))
     (unless struct
       (error "Undefined foreign type ~A." type))
@@ -185,17 +248,17 @@ to open-code (SETF MEM-REF) forms."
 ;; the structure type and slot name are known at compile time.
 (defun foreign-slot-value (ptr type slot-name)
   "Return the value of SLOT-NAME in the foreign structure at PTR."
-  (destructuring-bind (&key offset type)
-      (get-slot-info type slot-name)
-    (mem-ref ptr type offset)))
+  (foreign-struct-slot-value ptr (get-slot-info type slot-name)))
 
 (define-compiler-macro foreign-slot-value (&whole form ptr type slot-name)
   "Optimizer for FOREIGN-SLOT-VALUE when TYPE is constant."
-  (if (and (constantp type) (constantp slot-name))
-      (destructuring-bind (&key offset type)
-          (get-slot-info (eval type) (eval slot-name))
-        `(mem-ref ,ptr ',type ,offset))
-      form))
+  (declare (ignore ptr type slot-name))
+  form
+  #+nil (if (and (constantp type) (constantp slot-name))
+            (destructuring-bind (&key offset type)
+                (get-slot-info (eval type) (eval slot-name))
+              `(mem-ref ,ptr ',type ,offset))
+            form))
 
 (define-setf-expander foreign-slot-value (ptr type slot-name)
   "SETF expander for MEM-REF that doesn't rebind TYPE.
@@ -216,13 +279,14 @@ to open-code (SETF MEM-REF) forms."
 
 (defun foreign-slot-set (value ptr type slot-name)
   "Set the value of SLOT-NAME in a foreign structure."
-  (destructuring-bind (&key offset type)
-      (get-slot-info type slot-name)
-    (setf (mem-ref ptr type offset) value)))
+  (setf (foreign-struct-slot-value ptr (get-slot-info type slot-name)) value))
 
 (define-compiler-macro foreign-slot-set
     (&whole form value ptr type slot-name)
   "Optimizer when TYPE and SLOT-NAME are constant."
+  (declare (ignore value ptr type slot-name))
+  form
+  #+nil
   (if (and (constantp type) (constantp slot-name))
       (destructuring-bind (&key offset type)
           (get-slot-info (eval type) (eval slot-name))
@@ -248,14 +312,6 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 (defmethod foreign-type-size ((type symbol))
   "Return the size in bytes of a foreign type."
   (foreign-type-size (find-foreign-type type)))
-
-(defun adjust-for-alignment (type offset)
-  "Return OFFSET aligned properly for TYPE."
-  (let* ((align (foreign-type-alignment type))
-         (rem (mod offset align)))
-    (if (zerop rem)
-        offset
-        (+ offset (- align rem)))))
 
 (defun foreign-object-alloc (type &optional (count 1))
   "Allocate COUNT foreign objects of type TYPE.
@@ -334,4 +390,3 @@ bound to VALUE unmodified."
                ,@unwinds)))
         `(let ((,var ,value))
            ,@body))))
-
