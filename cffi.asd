@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-#-(or openmcl sbcl cmu clisp)
+#-(or openmcl sbcl cmu clisp lispworks)
 (error "Sorry, this Lisp is not yet supported.  Patches welcome!")
 
 (defpackage #:cffi-system
@@ -42,10 +42,11 @@
     :serial t
     :components
     (
-     #+openmcl (:file "cffi-openmcl")
-     #+sbcl    (:file "cffi-sbcl")
-     #+cmu     (:file "cffi-cmucl")
-     #+clisp   (:file "cffi-clisp")
+     #+openmcl   (:file "cffi-openmcl")
+     #+sbcl      (:file "cffi-sbcl")
+     #+cmu       (:file "cffi-cmucl")
+     #+clisp     (:file "cffi-clisp")
+     #+lispworks (:file "cffi-lispworks")
      (:file "package")
      (:file "libraries")
      (:file "early-types")
