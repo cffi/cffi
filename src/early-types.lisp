@@ -130,7 +130,7 @@ Signals an error if the type cannot be resolved."
   "Return the built-in type keyword for TYPE."
   (canonicalize (actual-type type)))
 
-(defmethod aggregatep ((type foreign-built-in-type))
+(defmethod aggregatep ((type foreign-typedef))
   "Return true if TYPE's actual type is aggregate."
   (aggregatep (actual-type type)))
 
@@ -171,7 +171,7 @@ Signals an error if the type cannot be resolved."
   "Returns :POINTER, since structures can not be passed by value."
   :pointer)
 
-(defmethod aggregatep ((type foreign-built-in-type))
+(defmethod aggregatep ((type foreign-struct-type))
   "Returns true, structure types are aggregate."
   t)
 
