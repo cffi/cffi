@@ -25,6 +25,8 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+(format t "-------- Running tests in ~A --------~%" (lisp-implementation-type))
+
 (setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
 #+cmu (setf ext:*gc-verbose* nil)
 

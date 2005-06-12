@@ -30,12 +30,20 @@ shlibs:
 
 clean:
 	@$(MAKE) -wC tests clean
-	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" \) -exec rm {} \;
+	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" -o -name "*.nfasl" \) -exec rm {} \;
 
-test: shlibs
-	@-test -x `which openmcl` && echo "-------- Running unit tests in OpenMCL: --------" && openmcl --load tests/run-tests.lisp
-	@-test -x `which sbcl` && echo "-------- Running unit tests in SBCL: --------" && sbcl --noinform --load tests/run-tests.lisp
-	@-test -x `which lisp` && echo "-------- Running unit tests in CMU CL: --------" && lisp -load tests/run-tests.lisp
-	@-test -x `which clisp` && echo "-------- Running unit tests in CLISP: --------" && clisp -x '(load "tests/run-tests.lisp")'
+test-openmcl:
+	@-openmcl --load tests/run-tests.lisp
+
+test-sbcl:
+	@-sbcl --noinform --load tests/run-tests.lisp
+
+test-cmucl:
+	@-lisp -load tests/run-tests.lisp
+
+test-clisp:
+	@-clisp -x '(load "tests/run-tests.lisp")'
+	
+test: test-openmcl test-sbcl test-cmucl
 
 # vim: ft=make ts=3 noet
