@@ -1,7 +1,7 @@
 
 # Block Memory Operations
 
-Function: mem-fill ptr type count value &optional (offset 0)
+Function: mem-fill ptr type count value &key (offset 0)
 
 Fill COUNT objects of TYPE, starting at PTR plus offset, with VALUE.
 
@@ -10,7 +10,7 @@ Fill COUNT objects of TYPE, starting at PTR plus offset, with VALUE.
       for off from offset by (%foreign-type-size type)
       do (setf (%mem-ref ptr type off) value))
 
-Function: mem-read-vector vector ptr type count &optional (offset 0)
+Function: mem-read-vector vector ptr type count &key (offset 0)
 
 Copy COUNT objects of TYPE from foreign memory at PTR plus OFFSET into
 VECTOR.  If VECTOR is not large enough to contain COUNT objects, it
@@ -30,7 +30,7 @@ Returns the number of objects copied.
       finally (return i))
 
 
-Function: mem-read-c-string string ptr &optional (offset 0)
+Function: mem-read-c-string string ptr &key (offset 0)
 
 Copy a null-terminated C string from PTR plus OFFSET into STRING, a
 Lisp string.  If STRING is not large enough to contain the data at PTR
@@ -45,7 +45,7 @@ Returns the number of characters copied into STRING.
       finally (return i))
 
 
-Function: mem-write-vector vector ptr type &optional
+Function: mem-write-vector vector ptr type &key
                            (count (length vector)) (offset 0)
 
 Copy COUNT objects from VECTOR into objects of TYPE in foreign memory,
@@ -63,7 +63,7 @@ Returns the number of objects copied from VECTOR to PTR.
       finally (return i))
 
 
-Function: mem-write-c-string string ptr &optional (offset 0)
+Function: mem-write-c-string string ptr &key (offset 0)
 
 Copy the characters from a Lisp STRING to PTR plus OFFSET, adding a
 final null terminator at the end.  The results are undefined if the
