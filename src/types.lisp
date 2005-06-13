@@ -243,6 +243,10 @@ to open-code (SETF MEM-REF) forms."
         (error "Undefined slot ~A in foreign type ~A." slot-name type))
       info)))
 
+(defun foreign-slot-address (ptr type slot-name)
+  "Return the address of SLOT-NAME in the structure at PTR."
+  (foreign-struct-slot-address ptr (get-slot-info type slot-name)))
+
 ;; This is the slow interface to getting the fields of foreign slots.
 ;; Eventually there will be a compiler macro that optimizes this when
 ;; the structure type and slot name are known at compile time.

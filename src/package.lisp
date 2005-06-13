@@ -65,6 +65,7 @@
    #:foreign-enum-value
    #:foreign-object-alloc
    #:foreign-object-free
+   #:foreign-slot-address
    #:foreign-slot-value
    #:foreign-type-alignment
    #:foreign-type-size
