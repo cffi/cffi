@@ -3,9 +3,6 @@
 
 Function: make-shareable-byte-vector size
 
-Create a vector of element type (UNSIGNED-BYTE 8) suitable for passing
-to WITH-POINTER-TO-VECTOR-DATA.
-
 ;; Minimal implementation:
 (defun make-shareable-byte-vector (size)
   (make-array size :element-type '(unsigned-byte 8)))
