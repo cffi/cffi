@@ -112,6 +112,21 @@
     ;; This signals an error!
     (setf (foreign-slot-value n 'nested-example 'timeval) nil)))
 
+#-(and)
+(defcstruct nested-example2
+  (times timeval 20))
+
+#-(and)
+(defun nested-example2 ()
+  (with-foreign-object (n nested-example2)
+    ;; Set the fields of each of timeval in N to zero.
+    (dotimes (i 20)
+      ;; n->times[i].tv_sec = 0; n->times[i].tv_usec = 0;
+      (setf (foreign-slot-value n 'nested-example2 'times i 'tv-sec) 0)
+      (setf (foreign-slot-value n 'nested-example2 'times i 'tv-usec) 0))
+    ;; In the real world, we'd do this instead:
+    (mem-fill n :uint8 (foreign-type-size 'nested-example2) 0)))
+
 ;; Access the nested structure fields with:
 ;;
 ;; (foreign-slot-value ptr 'nested-example 'timeval 'tv-sec)
