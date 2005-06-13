@@ -7,6 +7,9 @@ Function: make-shareable-byte-vector size
 (defun make-shareable-byte-vector (size)
   (make-array size :element-type '(unsigned-byte 8)))
 
+Create a vector of element type (UNSIGNED-BYTE 8) suitable for passing
+to WITH-POINTER-TO-VECTOR-DATA.
+
 
 Macro: with-pointer-to-vector-data (ptr-var vector) &body body
 
