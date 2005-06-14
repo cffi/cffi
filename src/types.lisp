@@ -307,6 +307,30 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
                   collect `(,var (foreign-slot-value ,ptr-var ',type ',var)))
          ,@body))))
 
+;;;# Foreign Unions
+;;;
+;;; A union is a FOREIGN-STRUCT-TYPE in which all slots have an offset
+;;; of zero.
+
+(defun notice-foreign-union-definition (name slots)
+  "Parse and install a foreign union definition."
+  (let ((struct (make-instance 'foreign-struct-type :name name))
+        (max-size 0))
+    (dolist (slotdef slots)
+      (destructuring-bind (slotname type &optional (count 1)) slotdef
+        (let ((slot (make-struct-slot slotname 0 type count))
+              (size (* count (foreign-type-size type))))
+          (setf (gethash slotname (slots struct)) slot)
+          (when (> size max-size)
+            (setf max-size size)))))
+    (setf (size struct) max-size)
+    (setf (find-foreign-type name) struct)))
+
+(defmacro defcunion (name &body fields)
+  "Define the layout of a foreign union."
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (notice-foreign-union-definition ',name ',fields)))
+
 ;;;# Operations on Types
 
 (defmethod foreign-type-alignment ((type symbol))

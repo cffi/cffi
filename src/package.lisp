@@ -58,6 +58,7 @@
 
    ;; Foreign type operations.
    #:defcstruct
+   #:defcunion
    #:defctype
    #:defcenum
    #:define-type-translator
