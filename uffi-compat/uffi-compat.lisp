@@ -74,6 +74,11 @@
      (if (listp uffi-type)
          (case (car uffi-type)
            (* :pointer)
+           ;; TODO: This function should accept an addition CONTEXT
+           ;; parameter which handles :ARRAY types differently when
+           ;; used as the argument to DEREF-ARRAY vs other macros.  It
+           ;; also should probably return a second value indicating
+           ;; the number of objects to allocate in certain situations.
            (:array (error "Array types are not yet supported.")))
          uffi-type))))
 
@@ -98,9 +103,10 @@
   `(zerop ,val))
 
 (defmacro def-enum (enum-name args &key (separator-string "#"))
-  "Creates a constants for a C type enum list, symbols are created
-in the created in the current package. The symbol is the concatenation
-of the enum-name name, separator-string, and field-name"
+  "Creates a constants for a C type enum list, symbols are
+created in the created in the current package. The symbol is the
+concatenation of the enum-name name, separator-string, and
+field-name"
   (let ((counter 0)
         (cmds nil)
         (constants nil))
@@ -144,6 +150,14 @@ of the enum-name name, separator-string, and field-name"
   (declare (ignore type))
   `(cffi:defctype ,name :pointer))
 
+;;; This is very wrong.  TYPE actually contains the type of ARRAY, not
+;;; the element type.  Unfortunately this means we have to crack the
+;;; type open, possibly following typedefs to (:ARRAY ...)  types,
+;;; which has no equivalent in CFFI.
+;;;
+;;; We will probably need to add a new subclass of FOREIGN-TYPE that
+;;; stores array element-type information for UFFI array types.  I
+;;; don't want to add such a type to CFFI proper.
 (defmacro deref-array (array type position)
   "Dereference an array."
   `(cffi:foreign-aref ,array ,type ,position))
