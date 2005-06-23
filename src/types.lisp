@@ -180,7 +180,7 @@ to open-code (SETF MEM-REF) forms."
   "Return a form to get the value of SLOT relative to PTR."
   (foreign-struct-slot-address-form ptr slot))
 
-;;; This is definately an error though.  Eventually, we could define a
+;;; This is definitely an error though.  Eventually, we could define a
 ;;; new type of type translator that can convert certain aggregate
 ;;; types, notably C strings or arrays of integers.  For now, just error.
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot aggregate-struct-slot))
