@@ -43,10 +43,8 @@
 (deftest union.1
     (let ((bytes (int-to-bytes #x12345678)))
       (cond ((equal bytes '(#x12 #x34 #x56 #x78))
-             (format t " (big-endian)")
              t)
             ((equal bytes '(#x78 #x56 #x34 #x12))
-             (format t " (little-endian)")
              t)
             (t bytes)))
   t)

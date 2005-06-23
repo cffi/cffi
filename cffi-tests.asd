@@ -39,6 +39,7 @@
     ((:file "package")
      (:file "funcall")
      (:file "memory")
+     (:file "struct")
      (:file "union")))))
 
 ;;; vim: ft=lisp et
