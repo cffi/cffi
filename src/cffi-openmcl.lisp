@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:ccl)
   (:export
+   #:pointerp
    #:foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
