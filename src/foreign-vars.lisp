@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi.asd --- ASDF system definition for CFFI.
+;;; foreign-vars.lisp --- High-level interface to foreign globals.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,35 +25,35 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-#-(or openmcl sbcl cmu clisp lispworks)
-(error "Sorry, this Lisp is not yet supported.  Patches welcome!")
+(in-package #:cffi)
 
-(defpackage #:cffi-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-system)
+;;;# Accessing Foreign Globals
 
-(defsystem cffi
-  :description "The Common Foreign Function Interface"
-  :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.1.0"
-  :licence "MIT"
-  :components 
-  ((:module src
-    :serial t
-    :components
-    (
-     #+openmcl   (:file "cffi-openmcl")
-     #+sbcl      (:file "cffi-sbcl")
-     #+cmu       (:file "cffi-cmucl")
-     #+clisp     (:file "cffi-clisp")
-     #+lispworks (:file "cffi-lispworks")
-     (:file "package")
-     (:file "libraries")
-     (:file "early-types")
-     (:file "types")
-     (:file "enum")
-     (:file "strings")
-     (:file "functions")
-     (:file "foreign-vars")))))
+(defun lisp-var-name (name)
+  "Return the Lisp symbol for foreign var NAME."
+  (etypecase name
+    (list (second name))
+    (string (intern
+             (format nil "*~A*"
+                     (string-upcase (substitute #\- #\_ name)))))))
 
-;; vim: ft=lisp et
+;; TODO: also convert lisp-name -> foreign-name? --luis
+(defun foreign-var-name (name)
+  "Return the foreign var name of NAME."
+  (etypecase name
+    (list (first name))
+    (string name)))
+
+(defmacro defcvar (name &key type)
+  "Define a foreign global variable."
+  (let ((lisp-name (lisp-var-name name))
+        (foreign-name (foreign-var-name name)))
+    `(progn
+       (setf (get ',lisp-name 'foreign-ptr-to-var)
+             (foreign-var-ptr ,foreign-name))
+       (define-symbol-macro ,lisp-name
+         (mem-ref (get ',lisp-name 'foreign-ptr-to-var) ,type)))))
+
+(defmacro get-var-ptr (var)
+  "Return a pointer to the foreign global variable VAR."
+  `(get ,var 'foreign-ptr-to-var))

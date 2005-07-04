@@ -71,4 +71,9 @@
    #:foreign-type-alignment
    #:foreign-type-size
    #:with-foreign-object
-   #:with-foreign-slots))
+   #:with-foreign-slots
+
+   ;; Foreign globals.
+   #:defcvar
+   #:get-var-ptr
+   #:foreign-var-ptr))

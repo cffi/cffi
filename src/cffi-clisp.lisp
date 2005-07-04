@@ -48,7 +48,8 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
-   #:%mem-ref))
+   #:%mem-ref
+   #:foreign-var-ptr))
 
 (in-package #:cffi-sys)
 
@@ -186,3 +187,14 @@ the function call."
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
   (ffi::foreign-library name))
+
+;;;# Foreign Globals
+
+;; Tiny detail: do we want to skip clisp's foreign-variable
+;; stuff and somehow get the address directly? --luis
+(defun foreign-var-ptr (name)
+  "Return a pointer pointing to the foreign variable NAME."
+  (ffi:c-var-address
+   (ffi:foreign-value
+    (ffi::foreign-library-variable
+     name (ffi::foreign-library :default) nil nil))))

@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi.asd --- ASDF system definition for CFFI.
+;;; foreign-globals.lisp --- Tests on foreign globals.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,35 +25,15 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-#-(or openmcl sbcl cmu clisp lispworks)
-(error "Sorry, this Lisp is not yet supported.  Patches welcome!")
+(in-package #:cffi-tests)
 
-(defpackage #:cffi-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-system)
+(defcvar "forty_two" :type :int)
 
-(defsystem cffi
-  :description "The Common Foreign Function Interface"
-  :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.1.0"
-  :licence "MIT"
-  :components 
-  ((:module src
-    :serial t
-    :components
-    (
-     #+openmcl   (:file "cffi-openmcl")
-     #+sbcl      (:file "cffi-sbcl")
-     #+cmu       (:file "cffi-cmucl")
-     #+clisp     (:file "cffi-clisp")
-     #+lispworks (:file "cffi-lispworks")
-     (:file "package")
-     (:file "libraries")
-     (:file "early-types")
-     (:file "types")
-     (:file "enum")
-     (:file "strings")
-     (:file "functions")
-     (:file "foreign-vars")))))
+(deftest foreign-globals.ref.1
+    *forty-two*
+  42)
 
-;; vim: ft=lisp et
+(deftest foreign-globals.pointer
+    (pointerp (get-var-ptr '*forty-two*))
+  t)
+

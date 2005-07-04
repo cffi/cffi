@@ -43,7 +43,8 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data))
+   #:with-pointer-to-vector-data
+   #:foreign-var-ptr))
  
 (in-package #:cffi-sys)
 
@@ -233,7 +234,7 @@ to open-code (SETF %MEM-REF) forms."
         collect (convert-foreign-type type)
         if arg collect arg))
 
-(defun convert-function-name (name)
+(defun convert-external-name (name)
   "Add an underscore to NAME if necessary for the ABI."
   #+darwinppc-target (concatenate 'string "_" name)
   #-darwinppc-target name)
@@ -241,7 +242,7 @@ to open-code (SETF %MEM-REF) forms."
 (defmacro %foreign-funcall (function-name &rest args)
   "Perform a foreign function all, document it more later."
   `(external-call
-    ,(convert-function-name function-name)
+    ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
 
 ;;;# Loading Foreign Libraries
@@ -249,3 +250,9 @@ to open-code (SETF %MEM-REF) forms."
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (open-shared-library name))
+
+;;;# Foreign Globals
+
+(defun foreign-var-ptr (name)
+  "Return a pointer pointing to the foreign variable NAME."
+  (foreign-symbol-address (convert-external-name name)))

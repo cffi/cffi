@@ -43,7 +43,8 @@
    #:%load-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data))
+   #:with-pointer-to-vector-data
+   #:foreign-var-ptr))
 
 (in-package #:cffi-sys)
 
@@ -276,3 +277,9 @@ to open-code (SETF %MEM-REF) forms."
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (load-foreign name))
+
+;;;# Foreign Globals
+
+(defun foreign-var-ptr (name)
+  "Return a pointer pointing to the foreign variable NAME."
+  (sys:foreign-symbol-address name :flavor :data))

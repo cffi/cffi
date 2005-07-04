@@ -29,6 +29,23 @@
   (:use #:cl #:asdf))
 (in-package #:cffi-tests-system)
 
+(defvar *tests-dir* (append (pathname-directory *load-truename*) '("tests")))
+
+(defclass c-test-lib (c-source-file)
+  ())
+
+(defmethod perform ((o load-op) (c c-test-lib))
+  nil)
+
+(defmethod perform ((o compile-op) (c c-test-lib))
+  #-(or win32 mswindows)
+  (unless (zerop (run-shell-command
+                   #-freebsd "cd ~A; make"
+                   #+freebsd "cd ~A; gmake"
+                   (namestring (make-pathname :name nil :type nil
+                                              :directory *tests-dir*))))
+    (error 'operation-error :component c :operation o)))
+
 (defsystem cffi-tests
   :description "Unit tests for CFFI."
   :depends-on (cffi rt)
@@ -36,10 +53,18 @@
   ((:module "tests"
     :serial t
     :components
-    ((:file "package")
+    ((:c-test-lib "libtest")
+     (:file "package")
+     (:file "bindings")
      (:file "funcall")
+     (:file "foreign-globals")
      (:file "memory")
      (:file "struct")
      (:file "union")))))
+
+(defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
+  (or (funcall (intern (symbol-name '#:do-tests)
+                       (find-package '#:regression-test)))
+      (error "test-op failed.")))
 
 ;;; vim: ft=lisp et

@@ -41,11 +41,14 @@ SHLIB_EXT         := .so
 endif
 endif
 
-shlibs: 
+all: shlibs
+
+shlibs: libtest$(SHLIB_EXT)
 
 %$(SHLIB_EXT): %.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 clean:
+	rm -f *.so
 
 # vim: ft=make ts=3 noet
