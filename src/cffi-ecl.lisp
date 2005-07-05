@@ -136,7 +136,6 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 	  (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
 		  0 (max 0 (1- (* nargs 3))))))
 
-;;; Incorporating this into ECL would make life grand.
 (defun foreign-function-inline-form (name arg-types arg-values return-type)
   "Generate a C-INLINE form for a foreign function call."
   `(ffi:c-inline
