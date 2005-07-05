@@ -222,7 +222,7 @@ to open-code (SETF %MEM-REF) forms."
     (:unsigned-long    'unsigned-long)
     (:float            'single-float)
     (:double           'double-float)
-    (:pointer          '(* t))
+    (:pointer          'system-area-pointer)
     (:void             'void)))
 
 (defun %foreign-type-size (type-keyword)
@@ -256,9 +256,7 @@ to open-code (SETF %MEM-REF) forms."
   "Perform a foreign function call, document it more later."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    (if (equal rettype '(* t))
-        `(alien-sap (%%foreign-funcall ,name ,types ,fargs ,rettype))
-        `(%%foreign-funcall ,name ,types ,fargs ,rettype))))
+    `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
 ;;;# Loading Foreign Libraries
 
