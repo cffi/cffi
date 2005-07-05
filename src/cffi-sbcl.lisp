@@ -116,9 +116,11 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  `(sb-sys:without-gcing
-     (let ((,ptr-var (sb-sys:vector-sap ,vector)))
-       ,@body)))
+  (let ((vector-var (gensym "VECTOR")))
+    `(let ((,vector-var ,vector))
+       (sb-sys:with-pinned-objects (,vector-var)
+         (let ((,ptr-var (sb-sys:vector-sap ,vector-var)))
+           ,@body)))))
 
 ;;;# Dereferencing
 
