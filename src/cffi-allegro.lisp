@@ -224,14 +224,18 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx
   ;; At least ACL 6.2 sets this to '("dylib") only.. not good.
   (let ((excl::*load-foreign-types* '("dylib" "so" "bundle")))
-    (load name)) 
+    (load name))
   #-macosx
   (load name))
 
 ;;;# Foreign Globals
 
+(defun convert-external-name (name)
+  "Add an underscore to NAME if necessary for the ABI."
+  #+macosx (concatenate 'string "_" name)
+  #-macosx name)
+
 ;; FIXME: ff:get-entry-point will also grab functions
-;; FIXME: doesn't seem to work on OSX?
 (defun foreign-var-ptr (name)
   "Return a pointer pointing to the foreign variable NAME."
-  (nth-value 0 (ff:get-entry-point name)))
+  (nth-value 0 (ff:get-entry-point (convert-external-name name))))
