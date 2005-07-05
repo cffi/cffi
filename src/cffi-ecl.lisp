@@ -51,7 +51,7 @@
 
 (defun foreign-alloc (size)
   "Allocate SIZE bytes of foreign-addressable memory."
-  (si:allocate-foreign-data :unsigned-byte size))
+  (si:allocate-foreign-data :void size))
 
 (defun foreign-free (ptr)
   "Free a pointer PTR allocated by FOREIGN-ALLOC."
@@ -74,7 +74,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun null-ptr ()
   "Construct and return a null pointer."
-  (si:allocate-foreign-data :pointer-void 0))
+  (si:allocate-foreign-data :void 0))
 
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null pointer."
@@ -82,24 +82,18 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun inc-ptr (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
-  (ffi:make-pointer
-   (+ offset (ffi:pointer-address ptr)) :unsigned-byte))
+  ;; XXX this is bogus, don't know how to get SIZE
+  (si:foreign-data-pointer ptr offset 0 :void))
 
 ;;;# Dereferencing
 
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (ffi:deref-array
-   (inc-ptr ptr offset)
-   `(:array ,(convert-foreign-type type))
-   0))
+  (si:foreign-data-ref-elt ptr offset (convert-foreign-type type)))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
-  (setf (ffi:deref-array
-         (inc-ptr ptr offset)
-         `(:array ,(convert-foreign-type type))
-         0) value))
+  (si:foreign-data-set-elt ptr offset (convert-foreign-type type) value))
 
 ;;;# Type Operations
 
