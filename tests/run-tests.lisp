@@ -41,5 +41,9 @@
 (in-package #:cl-user)
 (terpri)
 (force-output)
+
+#-allegro
 (quit)
 
+#+allegro
+(exit)

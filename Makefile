@@ -43,7 +43,10 @@ test-cmucl:
 
 test-clisp:
 	@-clisp -x '(load "tests/run-tests.lisp")'
+
+test-allegro:
+	@-acl -L tests/run-tests.lisp
 	
-test: test-openmcl test-sbcl test-cmucl
+test: test-openmcl test-sbcl test-cmucl test-allegro
 
 # vim: ft=make ts=3 noet
