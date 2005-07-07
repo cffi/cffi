@@ -25,6 +25,8 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+(in-package #:cl-user)
+
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys)
   (:export
