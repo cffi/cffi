@@ -61,7 +61,7 @@
           if arg collect type into types
              and collect (canonicalize-foreign-type type) into ctypes
              and collect arg into fargs
-          else do (setf return-type type)
+          else do (setf return-type (canonicalize-foreign-type type))
           finally (return (values types ctypes fargs return-type)))))
 
 (defmacro foreign-funcall (name &rest args)
@@ -106,7 +106,9 @@
         (arg-types (mapcar #'cadr args))
         (syms (loop repeat (length args) collect (gensym))))
     (multiple-value-bind (prelude caller)
-        (defcfun-helper foreign-name return-type syms
+        (defcfun-helper foreign-name
+                        (canonicalize-foreign-type return-type)
+                        syms
                         (mapcar #'canonicalize-foreign-type arg-types))
       `(progn
          ,prelude

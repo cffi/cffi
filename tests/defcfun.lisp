@@ -94,4 +94,10 @@
       (strcpy s "Hello")
       (strcat s ", world!"))
   "Hello, world!")
-  
+
+(defcfun "strerror" string
+  (n :int))
+
+(deftest defcfun.string.3
+    (typep (strerror 1) 'string)
+  t)
