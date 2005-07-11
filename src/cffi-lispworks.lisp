@@ -43,9 +43,16 @@
    #:%load-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data))
+   #:with-pointer-to-vector-data
+   #:foreign-var-ptr
+   #:defcfun-helper))
 
 (in-package #:cffi-sys)
+
+;; Helper package where some foreign functions are kept.
+(defpackage #:cffi-sys-ff)
+;; Helper package where some foreign variables are kept.
+(defpackage #:cffi-sys-fv)
 
 ;;;# Basic Pointer Operations
 
@@ -147,12 +154,43 @@ be stack allocated if supported by the implementation."
 
 ;;;# Calling Foreign Functions
 
+(defun foreign-funcall-type-and-args (args)
+  "Returns a list of types, list of args and return type."
+  (let ((return-type :void))
+    (loop for (type arg) on args by #'cddr
+       if arg collect (convert-foreign-type type) into types
+          and collect arg into fargs
+       else do (setf return-type (convert-foreign-type type))
+       finally (return (values types fargs return-type)))))
+
 (defmacro %foreign-funcall (name &rest args)
   "Call a foreign function NAME passing arguments ARGS."
   `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))
+
+(defun defcfun-helper (name rettype args types)
+  (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
+                         '#:cffi-sys-ff)))
+    (values
+     `(fli:define-foreign-function (,ff-name ,name :source)
+          ,(mapcar (lambda (ty) (list (gensym) (convert-foreign-type ty)))
+                   types)
+        :result-type ,rettype
+        :language :ansi-c
+        :calling-convention :cdecl)
+     `(,ff-name ,@args))))
 
 ;;;# Loading Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (fli:register-module name))
+
+;;;# Foreign Globals
+
+(defmacro foreign-var-ptr (name)
+  "Return a pointer pointing to the foreign variable NAME."
+  (let ((fv-name (intern name '#:cffi-sys-fv)))
+    `(progn
+       (fli:define-foreign-variable (,fv-name ,name)
+           :accessor :address-of)
+       (,fv-name))))
