@@ -57,6 +57,7 @@
      (:file "package")
      (:file "bindings")
      (:file "funcall")
+     (:file "defcfun")
      (:file "foreign-globals")
      (:file "memory")
      (:file "struct")
