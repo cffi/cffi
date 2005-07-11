@@ -47,6 +47,6 @@ test-clisp:
 test-allegro:
 	@-acl -L tests/run-tests.lisp
 	
-test: test-openmcl test-sbcl test-cmucl test-allegro
+test: test-openmcl test-sbcl test-cmucl test-clisp
 
 # vim: ft=make ts=3 noet
