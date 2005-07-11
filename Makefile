@@ -42,7 +42,7 @@ test-cmucl:
 	@-lisp -load tests/run-tests.lisp
 
 test-clisp:
-	@-clisp -x '(load "tests/run-tests.lisp")'
+	@-clisp -q -x '(load "tests/run-tests.lisp")'
 
 test-allegro:
 	@-acl -L tests/run-tests.lisp
