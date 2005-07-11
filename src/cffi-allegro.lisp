@@ -44,34 +44,30 @@
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-var-ptr))
+   #:foreign-var-ptr
+   #:defcfun-helper))
 
 (in-package #:cffi-sys)
 
-;;;# Basic Pointer Operations
+;; Helper package where some foreign functions are kept.
+(defpackage #:cffi-sys-ff)
 
-;; TODO: figure out if there might be any issue with using
-;; integers as pointers directly..
+;;;# Basic Pointer Operations
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (integerp ptr))
-  ;(ff:foreign-pointer-p ptr))
 
 (defun null-ptr ()
   "Return a null pointer."
-  ;(ff:make-foreign-pointer :foreign-address 0))
   0)
 
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null pointer."
-  ;(zerop (ff:foreign-pointer-address ptr)))
   (zerop ptr))
 
 (defun inc-ptr (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
-  ;(ff:make-foreign-pointer
-  ; :foreign-address (+ (ff:foreign-pointer-address ptr) offset)))
   (+ ptr offset))
 
 ;;;# Allocation
@@ -96,14 +92,11 @@ may be stack-allocated if supported by the implementation.  If
 SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
-  ;; I *think* ff:allocate-fobject stack allocates
-  `(let* ((,size-var ,size)
-          (,var (foreign-alloc ,size-var)))
+  `(let ((,size-var ,size))
      (declare (ignorable ,size-var))
-     (unwind-protect
-          (progn ,@body)
-       (foreign-free ,var))))
-
+     (ff:with-stack-fobject (,var :char :c ,size)
+       ,@body)))
+     
 ;;;# Shareable Vectors
 ;;;
 ;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
@@ -123,9 +116,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Dereferencing
 
-;; Looking at UFFI, I see that this will probably
-;; depend on the context --luis
-(defun convert-foreign-type (type-keyword)
+(defun convert-foreign-type (type-keyword &optional (context :normal))
   "Convert a CFFI type keyword to an Allegro type."
   (ecase type-keyword
     (:char             :char)
@@ -138,7 +129,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:unsigned-long    :unsigned-long)
     (:float            :float)
     (:double           :double)
-    (:pointer          :foreign-address)
+    (:pointer          (ecase context
+                         (:normal '(* :void))
+                         (:funcall :foreign-address)))
     (:void             :void)))
 
 (defun %mem-ref (ptr type &optional (offset 0))
@@ -157,72 +150,105 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
-  (ff:sizeof-fobject type-keyword))
+  (ff:sizeof-fobject (convert-foreign-type type-keyword)))
 
-;; FIXME: figure out which Allegro function has this info --luis
 (defun %foreign-type-alignment (type-keyword)
-  "Return the alignment in bytes of a foreign type."
-  ;; hmm, according to the docs this is always equal to the size
-  ;; except for :double on Linux/x86 FreeBSD/x86 and RS/6000
-  ;; nhe, I'm not sure about these features, couldn't find a list
-  ;; --luis
-  #+(or linux86 (and freebsd x86))
-  (when (eq type-keyword :double)
-    (return-from %foreign-type-alignment 4))
-  (%foreign-type-size type-keyword))
+  (ff::sized-ftype-prim-align
+   (ff::iforeign-type-sftype
+    (ff:get-foreign-type
+     (convert-foreign-type type-keyword)))))
 
 (defun foreign-funcall-type-and-args (args)
   "Returns a list of types, list of args and return type."
   (let ((return-type :void))
     (loop for (type arg) on args by #'cddr
-       if arg collect (convert-foreign-type type) into types
+       if arg collect (convert-foreign-type type :funcall) into types
           and collect arg into fargs
-       else do (setf return-type (convert-foreign-type type))
+       else do (setf return-type (convert-foreign-type type :funcall))
        finally (return (values types fargs return-type)))))
 
-;(SYSTEM::FF-FUNCALL
-; (LOAD-TIME-VALUE (EXCL::DETERMINE-FOREIGN-ADDRESS
-;                   '("foo" :LANGUAGE :C)  2 NIL))
-; '(:INT (INTEGER * *)) ARG1
-; '(:DOUBLE (DOUBLE-FLOAT * *)) ARG2
-; '(:INT (INTEGER * *)))
-
 (defun convert-to-lisp-type (type)
-  (ecase type
-    ((:char :unsigned-char
-      :short :unsigned-short
-      :int :unsigned-int
-      :long :unsigned-long) '(integer * *))
-    (:float '(single-float * *))
-    (:double '(double-float * *))
-    (:foreign-address :foreign-address)
-    (:void 'null)))
+  (if (equal '(* :void) type)
+      '(* :void)
+      (ecase type
+        ((:char           
+          :unsigned-char) 'unsigned-byte)
+        ((:short
+          :unsigned-short
+          :int
+          :unsigned-int
+          :long
+          :unsigned-long) 'integer)
+        (:float 'single-float)
+        (:double 'double-float)
+        (:foreign-address :foreign-address)
+        (:void 'null))))
 
 (defun foreign-allegro-type (type)
   (if (eq type :foreign-address)
       nil
       type))
 
+(defun allegro-type-pair (type)
+  (list (foreign-allegro-type type)
+        (convert-to-lisp-type type)))
+
+#+ignore
+(defun note-named-foreign-function (symbol name types rettype)
+  "Give Allegro's compiler a hint to perform a direct call."
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (get ',symbol 'system::direct-ff-call)
+           (list '(,name :language :c)
+                 t  ; callback
+                 :c ; convention
+                 ;; return type '(:c-type lisp-type)
+                 ',(allegro-type-pair (convert-foreign-type rettype :funcall))
+                 ;; arg types '({(:c-type lisp-type)}*)
+                 '(,@(loop for type in types
+                           collect (allegro-type-pair
+                                    (convert-foreign-type type :funcall))))
+                 nil ; arg-checking
+                 ff::ep-flag-never-release))))
+
 (defmacro %foreign-funcall (name &rest args)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(system::ff-funcall
       (load-time-value (excl::determine-foreign-address
-                        '(,name :language :c) 2 nil))
-      ,@(mapcan #'(lambda (type arg)
-                    `('(,(foreign-allegro-type type)
-                        ,(convert-to-lisp-type type))
-                       ,arg))
+                        '(,name :language :c)
+                        ff::ep-flag-never-release
+                        nil ; method-index
+                        ))
+      ;; arg types {'(:c-type lisp-type) argN}*
+      ,@(mapcan (lambda (type arg)
+                  `(',(allegro-type-pair type) ,arg))
                 types fargs)
-      '(,(foreign-allegro-type rettype)
-        ,(convert-to-lisp-type rettype)))))
+      ;; return type '(:c-type lisp-type)
+      ',(allegro-type-pair rettype))))
+
+(defun defcfun-helper (name rettype args types)
+  "Return two 2 values for DEFCFUN. A prelude form and a caller form."
+  (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
+                         '#:cffi-sys-ff)))
+    (values
+     `(ff:def-foreign-call (,ff-name ,name)
+          ,(mapcar (lambda (ty) 
+                     (let ((allegro-type (convert-foreign-type ty)))
+                       (list (gensym) allegro-type
+                             (convert-to-lisp-type allegro-type))))
+                   types)
+        :returning ,(allegro-type-pair
+                     (convert-foreign-type rettype :funcall))
+        :call-direct t
+        :arg-checking nil
+        :strings-convert nil)
+     `(,ff-name ,@args))))
 
 ;;;# Loading Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  #+macosx
-  ;; At least ACL 6.2 sets this to '("dylib") only.. not good.
+  #+macosx ; At least ACL 6.2 sets this to '("dylib") only.. not good.
   (let ((excl::*load-foreign-types* '("dylib" "so" "bundle")))
     (load name))
   #-macosx
@@ -235,7 +261,17 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx (concatenate 'string "_" name)
   #-macosx name)
 
-;; FIXME: ff:get-entry-point will also grab functions
-(defun foreign-var-ptr (name)
+(defmacro foreign-var-ptr (name)
   "Return a pointer pointing to the foreign variable NAME."
-  (nth-value 0 (ff:get-entry-point (convert-external-name name))))
+  `(load-time-value
+    (nth-value 0 (ff:get-entry-point ,(convert-external-name name)))))
+
+;  `(excl::foreign-global-address
+;    (load-time-value
+;     (excl::determine-foreign-address
+;      '(,name :language :c)
+;      ,(logior ff::ep-flag-never-release
+;               ff::ep-flag-variable-address)))))
+
+;(declare (ignore kind))
+;(nth-value 0 (ff:get-entry-point (convert-external-name name))))
