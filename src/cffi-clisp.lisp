@@ -190,11 +190,10 @@ the function call."
 
 ;;;# Foreign Globals
 
-;; Tiny detail: do we want to skip clisp's foreign-variable
-;; stuff and somehow get the address directly? --luis
-(defun foreign-var-ptr (name)
+(defmacro foreign-var-ptr (name)
   "Return a pointer pointing to the foreign variable NAME."
-  (ffi:c-var-address
-   (ffi:foreign-value
-    (ffi::foreign-library-variable
-     name (ffi::foreign-library :default) nil nil))))
+  `(ffi:c-var-address
+    (ffi:foreign-value
+     (load-time-value
+      (ffi::foreign-library-variable
+       ,name (ffi::foreign-library :default) nil nil)))))

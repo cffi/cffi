@@ -44,7 +44,7 @@
     (list (first name))
     (string name)))
 
-(defmacro defcvar (name &key type)
+(defmacro defcvar (name type)
   "Define a foreign global variable."
   (let ((lisp-name (lisp-var-name name))
         (foreign-name (foreign-var-name name)))

@@ -280,6 +280,6 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-(defun foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign variable NAME."
-  (sys:foreign-symbol-address name :flavor :data))
+(defmacro foreign-var-ptr (name)
+  "Return a pointer pointing to the external variable NAME."
+  `(sys:foreign-symbol-address ,name :flavor :data))

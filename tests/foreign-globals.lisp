@@ -27,7 +27,7 @@
 
 (in-package #:cffi-tests)
 
-(defcvar "forty_two" :type :int)
+(defcvar "forty_two" :int)
 
 (deftest foreign-globals.ref.1
     *forty-two*
@@ -36,4 +36,3 @@
 (deftest foreign-globals.pointer
     (pointerp (get-var-ptr '*forty-two*))
   t)
-
