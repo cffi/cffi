@@ -45,7 +45,7 @@
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:defcfun-helper))
+   #:defcfun-helper-forms))
 
 (in-package #:cffi-sys)
 
@@ -226,8 +226,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
       ;; return type '(:c-type lisp-type)
       ',(allegro-type-pair rettype))))
 
-(defun defcfun-helper (name rettype args types)
-  "Return two 2 values for DEFCFUN. A prelude form and a caller form."
+(defun defcfun-helper-forms (name rettype args types)
+  "Return 2 values for DEFCFUN. A prelude form and a caller form."
   (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
                          '#:cffi-sys-ff)))
     (values

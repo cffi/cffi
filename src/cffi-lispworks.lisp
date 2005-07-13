@@ -45,7 +45,7 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:defcfun-helper))
+   #:defcfun-helper-forms))
 
 (in-package #:cffi-sys)
 
@@ -167,7 +167,8 @@ be stack allocated if supported by the implementation."
   "Call a foreign function NAME passing arguments ARGS."
   `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))
 
-(defun defcfun-helper (name rettype args types)
+(defun defcfun-helper-forms (name rettype args types)
+  "Return 2 values for DEFCFUN. A prelude form and a caller form."
   (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
                          '#:cffi-sys-ff)))
     (values

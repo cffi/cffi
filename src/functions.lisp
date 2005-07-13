@@ -92,8 +92,8 @@
     (string name)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (not (find-symbol "DEFCFUN-HELPER" '#:cffi-sys))
-    (defun defcfun-helper (name rettype args types)
+  (when (not (find-symbol "DEFCFUN-HELPER-FORMS" '#:cffi-sys))
+    (defun defcfun-helper-forms (name rettype args types)
       (values
        '()
        `(%foreign-funcall ,name ,@(mapcan #'list types args) ,rettype)))))
@@ -106,10 +106,9 @@
         (arg-types (mapcar #'cadr args))
         (syms (loop repeat (length args) collect (gensym))))
     (multiple-value-bind (prelude caller)
-        (defcfun-helper foreign-name
-                        (canonicalize-foreign-type return-type)
-                        syms
-                        (mapcar #'canonicalize-foreign-type arg-types))
+        (defcfun-helper-forms
+         foreign-name (canonicalize-foreign-type return-type)
+         syms (mapcar #'canonicalize-foreign-type arg-types))
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
