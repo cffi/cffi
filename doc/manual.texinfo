@@ -1,0 +1,382 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename cffi.info
+@settitle CFFI User Manual
+@c %**end of header
+
+@c Show types in the same index as the functions.
+@synindex tp fn
+
+@copying
+Copyright @copyright{} 2005, James Bielman  <jamesjb at jamesjb.com>
+
+@quotation
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the ``Software''), to deal in the Software without
+restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+@end quotation
+@end copying
+
+@titlepage
+@title CFFI User Manual
+@c @subtitle Version X.X
+@c @author James Bielman
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top cffi
+@insertcopying
+@end ifnottex
+
+@menu
+* Introduction::                
+* Foreign Types::               
+* Foreign Pointers::            
+* Foreign Functions::           
+* Foreign Libraries::           
+* Limitations::                 
+* Symbol Index::                
+@end menu
+
+@node Introduction
+@chapter Introduction
+
+@section Motivation
+
+@section Design Philosophy
+
+@itemize
+@item Pointers do not carry around type information. Instead, type
+      information is supplied when pointers are dereferenced.
+@item A type safe pointer interface can be developed on top of an
+      untyped one.  It is difficult to do the opposite.
+@item Functions are better than macros.  When a macro could be used
+      for performance, use a compiler-macro instead.
+@end itemize
+
+
+@node Foreign Types
+@chapter Foreign Types
+
+@section Built-In Types
+
+@deftp {Foreign Type} :char
+@end deftp
+@deftp {Foreign Type} :unsigned-char
+@end deftp
+@deftp {Foreign Type} :short
+@end deftp
+@deftp {Foreign Type} :unsigned-short
+@end deftp
+@deftp {Foreign Type} :int
+@end deftp
+@deftp {Foreign Type} :unsigned-int
+@end deftp
+@deftp {Foreign Type} :long
+@end deftp
+@deftp {Foreign Type} :unsigned-long
+@end deftp
+@deftp {Foreign Type} :long-long
+@end deftp
+@deftp {Foreign Type} :unsigned-long-long
+These types correspond to the native C integer types according to the
+ABI of the system the Lisp implementation is compiled against.
+@end deftp
+
+@deftp {Foreign Type} :int8
+@end deftp
+@deftp {Foreign Type} :uint8
+@end deftp
+@deftp {Foreign Type} :int16
+@end deftp
+@deftp {Foreign Type} :uint16
+@end deftp
+@deftp {Foreign Type} :int32
+@end deftp
+@deftp {Foreign Type} :uint32
+@end deftp
+@deftp {Foreign Type} :int64
+@end deftp
+@deftp {Foreign Type} :uint64
+Foreign integer types of specific sizes, corresponding to the C types
+defined in @code{stdint.h}.
+@end deftp
+
+@deftp {Foreign Type} :size
+@end deftp
+@deftp {Foreign Type} :ssize
+@end deftp
+@deftp {Foreign Type} :ptrdiff
+@end deftp
+@deftp {Foreign Type} :time
+Foreign integer types corresponding to the standard C types (without
+the @code{_t} suffix).
+@end deftp
+
+@emph{I'm sure there are more of these that could be useful, let's
+add any types that can't be defined portably to this list as
+necessary.}
+
+@deftp {Foreign Type} :float
+@end deftp
+@deftp {Foreign Type} :double
+The @code{:float} type represents a C @code{float} and a Lisp
+@code{single-float}. @code{:double} represents a C @code{double} and a
+Lisp @code{double-float}.
+@end deftp
+
+@deftp {Foreign Type} :pointer
+A foreign pointer to an object of any type, corresponding to
+@code{void *}.
+@end deftp
+
+@deftp {Foreign Type} :void
+No type at all. Only valid as the return type of a function.
+@end deftp
+
+@section Defining Typedefs
+
+@defmac defctype name type &optional documentation
+@end defmac
+
+@section Foreign Structure Types
+
+@defmac defcstruct name &body doc-options-and-slots
+@end defmac
+
+A structure slot is either simple, or aggregate.
+
+Simple structure slots contain a single instance of a type that
+canonicalizes to a built-in type, such as @code{:long} or
+@code{:pointer}.
+
+Aggregate slots contain an embedded structure or union, or an array
+of objects.
+
+@subsubheading Example:
+
+@lisp
+(defcstruct timeval
+  (tv-sec  :long)
+  (tv-usec :long))
+@end lisp
+
+@deffn {Accessor} foreign-slot-value ptr type &rest slot-names => object
+For simple slots, @code{foreign-slot-value} returns the value of the
+object, such as a Lisp integer or pointer. In C, this would be
+expressed as @code{ptr->slot}.
+
+For aggregate slots, a pointer inside the structure to the beginning
+of the slot's data is returned.  In C, this would be expressed as
+@code{&ptr->slot}.  This pointer and the memory it points to have the
+same extent as @code{ptr}.
+
+There are compiler macros for @code{foreign-slot-value} and its
+@code{setf} expansion that open code the memory access when 
+@code{type} and @code{slot-names} are constant at compile-time.
+@end deffn
+
+@defmac explain-foreign-slot-value ptr type &rest slot-names
+This macro translates the slot access that would occur by calling
+@code{FOREIGN-SLOT-VALUE} with the same arguments into an equivalent
+expression in C and prints it to @code{*STANDARD-OUTPUT*}.
+@end defmac
+
+@subsubheading Examples:
+
+@lisp
+CFFI> (explain-foreign-slot-value ptr 'timeval 'tv-secs)
+ptr->tv_secs
+
+CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
+emp->hire_date.tv_usecs
+@end lisp
+
+@defun foreign-slot-pointer ptr type &rest slot-names => pointer
+Returns a pointer to a slot referred by @code{slot-names} in a foreign
+object of type @code{type} at @code{ptr}. The returned pointer points
+inside the structure. Both the pointer and the memory it points to
+have the same extent as @code{ptr}.
+
+For aggregate slots, this is the same value returned by
+@code{foreign-slot-value}.
+@end defun
+
+@subheading Foreign Structure Example
+
+@lisp
+;; A hairy structure definition that illustrates some of the rules
+;; governing foreign structs.
+(defcstruct person
+  "A person in the employee database."
+  ;; the first argument after the name may be a docstring
+  :alignment :packed      ;; keyword options allowed before first slot
+  (id :int)
+  ;; these are defined as char[255]'s in the c code
+  (first-name  :char 255)
+  (last-name   :char 255)
+  ;; an embedded structure
+  (birthdate timeval)
+  ;; a pointer to another PERSON
+  (supervisor :pointer))
+
+;;; If P is a pointer to a PERSON structure:
+
+;; This returns p->first_name, a pointer.
+(foreign-slot-value p 'person 'first-name)
+
+;; This returns &p->birthdate, a pointer.
+(foreign-slot-value p 'person 'birthdate)
+
+;; This returns p->birthdate.tv_secs as a Lisp integer.
+(foreign-slot-value p 'person 'birthdate 'tv-secs)
+
+;; The previous form is equivalent to (but may be faster than):
+(foreign-slot-value
+ (foreign-slot-value p 'person 'birthdate) 'timeval 'tv-secs)
+
+;; Attempting to set the slot value of an embedded structure or
+;; embedded array causes an error.  Eventually, there may be a
+;; type converter that can handle this situation for some types.
+;; This would be: p->birthdate = ... in C.
+(setf (foreign-slot-value p 'person 'timeval) ...) => error
+@end lisp
+
+@section Operations on Types
+
+@defun builtin-foreign-type-p type => boolean
+@end defun
+
+@defun canonicalize-foreign-type type => built-in-type
+@end defun
+
+@defun foreign-type-size type => size
+@end defun
+
+@defun foreign-type-alignment type => alignment
+@end defun
+
+@emph{Should these functions be part of the documented interface? They
+may be useful for libraries built on top of CFFI---defining a type-safe
+interface on top of CFFI pointers, for example.}
+
+@section Allocating Foreign Objects
+
+@defun foreign-object-alloc type &optional (count 1) => ptr
+@end defun
+
+@lisp
+(let ((ptr (foreign-object-alloc <type> <count>)))
+  ...)
+
+==>
+
+@{
+   void *ptr = malloc(sizeof(<type>) * <count>);
+
+   if (ptr == NULL)
+      raise_storage_condition();
+
+   ...
+@}
+@end lisp
+
+@defun foreign-object-free ptr => unspecified
+@end defun
+
+@lisp
+(foreign-object-free ptr)
+
+==>
+
+free(ptr);
+@end lisp
+
+@defmac with-foreign-object (var type &optional (count 1)) &body body
+@end defmac
+
+@lisp
+(with-foreign-object (ptr <type> <count>)
+  ...)
+
+==>
+@{
+  void *ptr = alloca(sizeof(<type>) * <count>);
+  ...
+@}
+@end lisp
+
+
+@node Foreign Pointers
+@chapter Foreign Pointers
+
+@emph{Describe the theory of how foreign variables work---they are
+always pointers, even when accessing integer types or embedded
+structures. You cannot represent a structure by value.}
+
+@section Basic Pointer Operations
+
+@section Allocating Foreign Memory
+
+@section Accessing Foreign Memory
+
+
+@node Foreign Functions
+@chapter Foreign Functions
+
+@section Calling Foreign Functions
+
+@section Defining Foreign Functions
+
+@section Foreign Type Translators
+
+@subsubheading Example:
+
+@lisp
+;; Here is how the CFFI:BOOLEAN type translator is defined:
+(define-type-translator boolean :in (arg result-var)
+  "Type translator to convert t/nil to a C boolean."
+  (values `(if ,arg 1 0) nil))
+
+(define-type-translator boolean :result (arg result-var)
+  "Type translator to convert C booleans to t/nil."
+  (values `(if (zerop ,arg) nil t)))
+@end lisp
+
+
+@node Foreign Libraries
+@chapter Foreign Libraries
+
+
+@node Limitations
+@chapter Limitations
+
+
+@node Symbol Index
+@unnumbered Symbol Index
+@printindex fn
+
+@bye
