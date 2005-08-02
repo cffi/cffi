@@ -76,6 +76,8 @@
     (:uint64 'ffi:uint64)
     (:float 'ffi:single-float)
     (:double 'ffi:double-float)
+    ;; Clisp's FFI:C-POINTER converts NULL to NIL. For now
+    ;; we have a workaround in the pointer operations...
     (:pointer 'ffi:c-pointer)
     (:void nil)))
 
@@ -101,12 +103,15 @@
 
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null foreign pointer."
-  (zerop (ffi:foreign-address-unsigned ptr)))
+  (or (null ptr)
+      (zerop (ffi:foreign-address-unsigned ptr))))
 
 (defun inc-ptr (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (ffi:unsigned-foreign-address
-   (+ offset (ffi:foreign-address-unsigned ptr))))
+   (+ offset (if (null ptr)
+                 0
+                 (ffi:foreign-address-unsigned ptr)))))
 
 ;;;# Foreign Memory Allocation
 

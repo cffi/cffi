@@ -111,3 +111,9 @@
       (mem-ref p :double))
   #.least-positive-double-float)
 
+;; make sure the lisp doesn't convert NULL to NIL
+(deftest deref.pointer.null
+    (with-foreign-object (p :pointer)
+      (setf (mem-ref p :pointer) (null-ptr))
+      (null-ptr-p (mem-ref p :pointer)))
+  t)
