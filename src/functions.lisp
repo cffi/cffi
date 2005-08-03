@@ -91,8 +91,10 @@
     (list (first name))
     (string name)))
 
+;; If cffi-sys doesn't provide a defcfun-helper-forms,
+;; we define one that uses %foreign-funcall.
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (not (find-symbol "DEFCFUN-HELPER-FORMS" '#:cffi-sys))
+  (unless (fboundp 'defcfun-helper-forms)
     (defun defcfun-helper-forms (name rettype args types)
       (values
        '()
