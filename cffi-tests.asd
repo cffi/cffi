@@ -56,7 +56,7 @@
     ((:c-test-lib "libtest")
      (:file "package")
      (:file "bindings")
-     (:file "funcall")
+     #-cffi/no-foreign-funcall (:file "funcall")
      (:file "defcfun")
      (:file "foreign-globals")
      (:file "memory")

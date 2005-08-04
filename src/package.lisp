@@ -77,5 +77,12 @@
 
    ;; Foreign globals.
    #:defcvar
-   #:get-var-ptr
-   #:foreign-var-ptr))
+   #:get-var-ptr))
+
+
+;; Push the :cffi/no-foreign-funcall "feature" when
+;; the host lisp doesn't support %foreign-funcall.
+;; The following lisps don't:
+#+(or corman gcl lispworks)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-foreign-funcall *features*))
