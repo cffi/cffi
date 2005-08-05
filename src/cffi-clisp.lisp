@@ -49,7 +49,8 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
-   #:foreign-var-ptr))
+   #:foreign-var-ptr
+   #:make-callback))
 
 (in-package #:cffi-sys)
 
@@ -188,6 +189,25 @@ the function call."
           ,name (ffi::foreign-library :default)
           nil (ffi:parse-c-type ',ctype)))
         ,@fargs))))
+
+;;;# Callbacks
+
+(defmacro make-callback (name rettype arg-names arg-types body-form)
+  (declare (ignore name))
+  (let ((var (gensym)))
+    `(ffi:with-c-var
+         (,var '(ffi:c-ptr
+                 (ffi:c-function
+                  (:arguments
+                   ,@(mapcar (lambda (sym type)
+                               (list sym (convert-foreign-type type)))
+                             arg-names arg-types))
+                  (:return-type ,(convert-foreign-type rettype))
+                  (:language :stdc)))
+               (lambda ,arg-names ,body-form))
+       (ffi:c-var-address (ffi:foreign-value ,var)))))
+
+;;;# Loading Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."

@@ -58,6 +58,11 @@
    #:foreign-funcall
    #:load-foreign-library
 
+   ;; Callbacks.
+   #:callback
+   #:get-callback
+   #:defcallback
+
    ;; Foreign type operations.
    #:defcstruct
    #:defcunion

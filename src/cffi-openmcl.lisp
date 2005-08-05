@@ -44,7 +44,8 @@
    #:%load-foreign-library
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-var-ptr))
+   #:foreign-var-ptr
+   #:make-callback))
  
 (in-package #:cffi-sys)
 
@@ -244,6 +245,17 @@ to open-code (SETF %MEM-REF) forms."
   `(external-call
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
+
+;;;# Callbacks
+
+(defmacro make-callback (name rettype arg-names arg-types body-form)
+  (let ((cb-sym (intern (format nil "%callback/~A" name))))
+    `(symbol-value
+      (defcallback ,cb-sym (,@(mapcan (lambda (sym type)
+                                        (list (convert-foreign-type type) sym))
+                                      arg-names arg-types)
+                              ,(convert-foreign-type rettype))
+          ,body-form))))
 
 ;;;# Loading Foreign Libraries
 

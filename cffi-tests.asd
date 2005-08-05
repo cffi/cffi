@@ -58,6 +58,7 @@
      (:file "bindings")
      #-cffi/no-foreign-funcall (:file "funcall")
      (:file "defcfun")
+     (:file "callbacks")
      (:file "foreign-globals")
      (:file "memory")
      (:file "struct")

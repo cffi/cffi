@@ -44,7 +44,8 @@
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-var-ptr))
+   #:foreign-var-ptr
+   #:make-callback))
 
 (in-package #:cffi-sys)
 
@@ -259,6 +260,16 @@ to open-code (SETF %MEM-REF) forms."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
+
+;;;# Callbacks
+
+(defmacro make-callback (name rettype arg-names arg-types body-form)
+  (declare (ignore name))
+  `(alien-sap
+    (sb-alien::alien-lambda ,(convert-foreign-type rettype)
+        ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
+                 arg-names arg-types)
+      ,body-form)))
 
 ;;;# Loading Foreign Libraries
 

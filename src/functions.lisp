@@ -130,4 +130,37 @@
 (define-compiler-macro defcfun (&whole form name return-type &body args)
   (format nil "running compiler macro!")
   (defcfun-compiler-macro form name return-type args))
-|#
+
+;;;# Defining Callbacks
+
+(defmacro inverse-translate-objects (args types rettype call)
+  "Helper macro for DEFCALLBACK."
+  (cond
+    ((null args)
+     (let ((sym (gensym)))
+       `(with-object-translated (,sym ,call ,rettype :to-c)
+          ,sym)))
+    (t `(with-object-translated (,(car args) ,(car args) ,(car types) :from-c)
+          (inverse-translate-objects
+           ,(rest args) ,(rest types) ,rettype ,call)))))
+
+(defun get-callback (symbol)
+  (get symbol 'cffi-callback-ptr))
+
+(defun (setf get-callback) (value symbol)
+  (setf (get symbol 'cffi-callback-ptr) value))
+
+(defmacro callback (name)
+  `(get ',name 'cffi-callback-ptr))
+
+(defmacro defcallback (name return-type args &body body)
+  (when (typep (car body) 'string)
+    (setq body (cdr body))) ; discard docstring
+  (let ((arg-names (mapcar #'car args))
+        (arg-types (mapcar #'cadr args)))
+    `(setf (callback ,name)
+           (make-callback
+            ,name ,(canonicalize-foreign-type return-type)
+            ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
+            (inverse-translate-objects ,arg-names ,arg-types ,return-type
+                                       (block ,name ,@body))))))

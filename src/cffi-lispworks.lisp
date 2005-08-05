@@ -45,7 +45,8 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:defcfun-helper-forms))
+   #:defcfun-helper-forms
+   #:make-callback))
 
 (in-package #:cffi-sys)
 
@@ -55,7 +56,6 @@
 (defpackage #:cffi-sys-fv)
 
 ;;;# Basic Pointer Operations
-
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (fli:pointerp ptr))
@@ -179,6 +179,21 @@ be stack allocated if supported by the implementation."
         :language :ansi-c
         :calling-convention :cdecl)
      `(,ff-name ,@args))))
+
+;;;# Callbacks
+
+(defmacro make-callback (name rettype arg-names arg-types body-form)
+  (let ((cb-name (format nil "%callback/~A:~A"
+                         (package-name (symbol-package name))
+                         (symbol-name name))))
+    `(progn
+       (fli:define-foreign-callable
+           (,cb-name :result-type ,(convert-foreign-type rettype)
+                     :calling-convention :c)
+           ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
+                    arg-names arg-types)
+         ,body-form)
+        (fli:make-pointer :symbol-name ,cb-name :module :callbacks))))
 
 ;;;# Loading Foreign Libraries
 

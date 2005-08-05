@@ -45,7 +45,8 @@
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:defcfun-helper-forms))
+   #:defcfun-helper-forms
+   #:make-callback))
 
 (in-package #:cffi-sys)
 
@@ -243,6 +244,22 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
         :arg-checking nil
         :strings-convert nil)
      `(,ff-name ,@args))))
+
+;;;# Callbacks
+
+;; TODO: figure out if we want a coerce/check-type here for the return
+;; value since allegro's defun-foreign-callable doesn't specify a return
+;; type. Also, need to understand the second arg to r-f-c. --luis
+(defmacro make-callback (name rettype arg-names arg-types body-form)
+  (declare (ignore rettype))
+  (let ((cb-sym (intern (format nil "%callback/~A" name)))) 
+    `(progn
+       (ff:defun-foreign-callable ,cb-sym
+           ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
+                    arg-names arg-types)
+         (declare (:convention :c))
+         ,body-form)
+       (ff:register-foreign-callable ',cb-sym :reuse t))))
 
 ;;;# Loading Foreign Libraries
 
