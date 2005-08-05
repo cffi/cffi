@@ -44,16 +44,28 @@
     (list (first name))
     (string name)))
 
-(defmacro defcvar (name type)
-  "Define a foreign global variable."
-  (let ((lisp-name (lisp-var-name name))
-        (foreign-name (foreign-var-name name)))
-    `(progn
-       (setf (get ',lisp-name 'foreign-ptr-to-var)
-             (foreign-var-ptr ,foreign-name))
-       (define-symbol-macro ,lisp-name
-         (mem-ref (get ',lisp-name 'foreign-ptr-to-var) ,type)))))
+(defun get-var-ptr (symbol)
+  "Return a pointer to the foreign global variable relative to SYMBOL."
+  (get symbol 'cffi-ptr-to-var))
 
-(defmacro get-var-ptr (var)
-  "Return a pointer to the foreign global variable VAR."
-  `(get ,var 'foreign-ptr-to-var))
+(defmacro defcvar (name type &key read-only)
+  "Define a foreign global variable."
+  (let* ((lisp-name (lisp-var-name name))
+         (foreign-name (foreign-var-name name))
+         (fn (intern (concatenate 'string "%access-var-" foreign-name))))
+    `(progn
+       (setf (get ',lisp-name 'cffi-ptr-to-var)
+             (foreign-var-ptr ,foreign-name))
+       (defun ,fn ()
+         (with-object-translated
+             (var (mem-ref (get-var-ptr ',lisp-name) ',type) ,type :from-c)
+           var))
+       (defun (setf ,fn) (value)
+         ,(if read-only
+              `(error ,(format nil "Trying to modify read-only foreign var: ~A."
+                               lisp-name))
+              `(with-object-translated
+                   (c-value value ,type :to-c)
+                 (setf (mem-ref (get-var-ptr ',lisp-name) ',type) c-value)
+                 value)))
+       (define-symbol-macro ,lisp-name (,fn)))))
