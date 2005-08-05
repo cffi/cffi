@@ -50,9 +50,6 @@
 
 (in-package #:cffi-sys)
 
-;; Helper package where some foreign functions are kept.
-(defpackage #:cffi-sys-ff)
-
 ;;;# Basic Pointer Operations
 
 (defun pointerp (ptr)
@@ -95,7 +92,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (setf size-var (gensym "SIZE")))
   `(let ((,size-var ,size))
      (declare (ignorable ,size-var))
-     (ff:with-stack-fobject (,var :char :c ,size)
+     (ff:with-stack-fobject (,var :char :c ,size-var)
        ,@body)))
      
 ;;;# Shareable Vectors
@@ -172,8 +169,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (if (equal '(* :void) type)
       '(* :void)
       (ecase type
-        ((:char           
-          :unsigned-char) 'unsigned-byte)
+        (:char 'signed-byte)
+        (:unsigned-char 'unsigned-byte)
         ((:short
           :unsigned-short
           :int
