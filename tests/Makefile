@@ -29,13 +29,13 @@ OSTYPE = $(shell uname)
 
 ifeq ($(OSTYPE), Darwin)
 CC                := gcc
-CFLAGS            := -Wall
+CFLAGS            := -lm -Wall
 SHLIB_CFLAGS      := -bundle
 SHLIB_EXT         := .so
 else
 ifeq ($(OSTYPE), Linux)
 CC                := gcc
-CFLAGS            := -Wall
+CFLAGS            := -lm -Wall
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .so
 endif

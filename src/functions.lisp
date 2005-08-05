@@ -120,7 +120,7 @@
 
 ;;;# Per-implementation DEFCFUN optimization
 
-#|
+#+ignore
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (when (and (not (find-symbol "DEFCFUN-COMPILER-MACRO" '#:cffi-sys))
     (defun defcfun-compiler-macro (form &rest other-args)
@@ -128,8 +128,9 @@
       (format nil "compiler macro returning: ~A" form) 
       form))))
 
+#+ignore
 (define-compiler-macro defcfun (&whole form name return-type &body args)
-  (format nil "running compiler macro!")
+  (format t "running defcfun compiler macro!")
   (defcfun-compiler-macro form name return-type args))
 
 ;;;# Defining Callbacks

@@ -45,7 +45,7 @@
   131072)
 
 (deftest funcall.float
-    (foreign-funcall "sqrtf" :float 16.0 :float)
+    (foreign-funcall "my_sqrtf" :float 16.0 :float)
   4.0)
 
 (deftest funcall.double

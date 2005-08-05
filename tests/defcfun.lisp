@@ -56,11 +56,11 @@
   131072)
 
 
-(defcfun "sqrtf" :float
+(defcfun "my_sqrtf" :float
   (n :float))
 
 (deftest defcfun.float
-    (sqrtf 16.0)
+    (my-sqrtf 16.0)
   4.0)
 
 
