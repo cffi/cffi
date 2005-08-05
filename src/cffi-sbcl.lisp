@@ -25,6 +25,12 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;;; Notes:
+;;;
+;;; * requires SBCL >= 0.9.3 because SB-SYS:FOREIGN-SYMBOL-ADDRESS was
+;;;   renamed to SB-SYS:FOREIGN-SYMBOL-SAP in SBCL 0.9.3 and prior versions
+;;;   had a buggy SB-SYS:FOREIGN-SYMBOL-ADDRESS anyway. --luis
+
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
@@ -279,6 +285,7 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
+;; XXX figure out linkage table issues --luis
 (defmacro foreign-var-ptr (name)
   "Return a pointer pointing to the foreign var NAME."
-  `(sb-sys:foreign-symbol-address ,name t))
+  `(sb-sys:foreign-symbol-sap ,name t))
