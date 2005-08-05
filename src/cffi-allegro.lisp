@@ -224,10 +224,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
       ;; return type '(:c-type lisp-type)
       ',(allegro-type-pair rettype))))
 
-(defun defcfun-helper-forms (name rettype args types)
+(defun defcfun-helper-forms (name lisp-name rettype args types)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
-  (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
-                         '#:cffi-sys-ff)))
+  (let ((ff-name (intern (format nil "%cffi-foreign-function/~A" lisp-name))))
     (values
      `(ff:def-foreign-call (,ff-name ,name)
           ,(mapcar (lambda (ty) 

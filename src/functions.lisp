@@ -95,7 +95,8 @@
 ;; we define one that uses %foreign-funcall.
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (fboundp 'defcfun-helper-forms)
-    (defun defcfun-helper-forms (name rettype args types)
+    (defun defcfun-helper-forms (name lisp-name rettype args types)
+      (declare (ignore lisp-name))
       (values
        '()
        `(%foreign-funcall ,name ,@(mapcan #'list types args) ,rettype)))))
@@ -109,7 +110,7 @@
         (syms (loop repeat (length args) collect (gensym))))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
-         foreign-name (canonicalize-foreign-type return-type)
+         foreign-name lisp-name (canonicalize-foreign-type return-type)
          syms (mapcar #'canonicalize-foreign-type arg-types))
       `(progn
          ,prelude

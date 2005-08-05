@@ -50,11 +50,6 @@
 
 (in-package #:cffi-sys)
 
-;; Helper package where some foreign functions are kept.
-(defpackage #:cffi-sys-ff)
-;; Helper package where some foreign variables are kept.
-(defpackage #:cffi-sys-fv)
-
 ;;;# Basic Pointer Operations
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
@@ -181,10 +176,9 @@ be stack allocated if supported by the implementation."
   "Call a foreign function NAME passing arguments ARGS."
   `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))
 
-(defun defcfun-helper-forms (name rettype args types)
+(defun defcfun-helper-forms (name lisp-name rettype args types)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
-  (let ((ff-name (intern (format nil "~A%%~A" (length args) name)
-                         '#:cffi-sys-ff)))
+  (let ((ff-name (intern (format nil "%cffi-foreign-function/~A"  lisp-name))))
     (values
      `(fli:define-foreign-function (,ff-name ,name :source)
           ,(mapcar (lambda (ty) (list (gensym) (convert-foreign-type ty)))
