@@ -70,7 +70,15 @@
 
 (defun inc-ptr (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
-  (fli:incf-pointer (fli:copy-pointer ptr) offset))
+  (fli:make-pointer :type :void
+                    :address (+ (fli:pointer-address ptr) offset)))
+
+;; FLI:INCF-POINTER doesn't seem to work at all..
+;; tested on lispworks 4.4.5 darwin/ppc and linux/x86:
+;; (fli:incf-pointer (fli:make-pointer :type :void :address #xBEEF)
+;;                   #xDEAD0000)
+;; => #<Pointer to type :VOID = #x0000BEEF>
+;(fli:incf-pointer (fli:copy-pointer ptr) offset))
 
 ;;;# Allocation
 
@@ -88,10 +96,16 @@ pointer in VAR and the memory it points to have dynamic extent and may
 be stack allocated if supported by the implementation."
   (unless size-var
     (setf size-var (gensym "SIZE")))
-  `(fli:with-dynamic-foreign-objects ()
-     (let* ((,size-var ,size)
-            (,var (fli:alloca :pointer-type :pointer :nelems ,size-var)))
-       ,@body)))
+  `(let* ((,size-var ,size)
+          (,var (foreign-alloc ,size-var)))
+     (unwind-protect
+          (progn ,@body)
+       (foreign-free ,var))))
+
+;  `(fli:with-dynamic-foreign-objects ()
+;     (let* ((,size-var ,size)
+;            (,var (fli:alloca :pointer-type :pointer :nelems ,size-var)))
+;       ,@body)))
 
 ;;;# Shareable Vectors
 
@@ -137,10 +151,10 @@ be stack allocated if supported by the implementation."
     (setf ptr (inc-ptr ptr offset)))
   (setf (fli:dereference ptr :type (convert-foreign-type type)) value))
 
-(defun test-foreign-aref ()
-  (with-foreign-ptr (p 100)
-    (setf (%mem-ref p :double) pi)
-    (%mem-ref p :double)))
+;(defun test-foreign-aref ()
+;  (with-foreign-ptr (p 100)
+;    (setf (%mem-ref p :double) pi)
+;    (%mem-ref p :double)))
 
 ;;;# Foreign Type Operations
 
@@ -175,9 +189,10 @@ be stack allocated if supported by the implementation."
      `(fli:define-foreign-function (,ff-name ,name :source)
           ,(mapcar (lambda (ty) (list (gensym) (convert-foreign-type ty)))
                    types)
-        :result-type ,rettype
+        :result-type ,(convert-foreign-type rettype)
         :language :ansi-c
-        :calling-convention :cdecl)
+        ;; avoid warning about cdecl not being supported on mac platforms
+        #-mac ,@'(:calling-convention :cdecl))
      `(,ff-name ,@args))))
 
 ;;;# Callbacks
@@ -205,8 +220,4 @@ be stack allocated if supported by the implementation."
 
 (defmacro foreign-var-ptr (name)
   "Return a pointer pointing to the foreign variable NAME."
-  (let ((fv-name (intern name '#:cffi-sys-fv)))
-    `(progn
-       (fli:define-foreign-variable (,fv-name ,name)
-           :accessor :address-of)
-       (,fv-name))))
+  `(load-time-value (fli:make-pointer :symbol-name ,name :type :void)))
