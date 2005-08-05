@@ -86,16 +86,13 @@ the return value of an implcit PROGN around BODY."
        (foreign-string-to-lisp ,var))))
 
 ;;;# Automatic Conversion of Foreign Strings
-;;;
-;;; A foreign type and translator for foreign strings.
 
-(defctype string :pointer)
-
-(define-type-translator string :in (arg result-var)
-  "Type translator for string input arguments."
-  (values `(foreign-string-alloc ,arg) `((foreign-string-free ,result-var))))
-
-(define-type-translator string :result (arg result-var)
-  "Type translator for string return values."
-  (declare (ignore result-var))
-  (values `(foreign-string-to-lisp ,arg) nil))
+(define-type-translation string :pointer
+  "Translation between C and Lisp strings."
+  :to-c-arg (lambda (var value body)
+              `(with-foreign-string (,var ,value)
+                 ,@body))
+  :to-c (lambda (value)
+          `(foreign-string-alloc ,value))
+  :from-c (lambda (value)
+            `(foreign-string-to-lisp ,value)))

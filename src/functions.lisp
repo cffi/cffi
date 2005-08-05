@@ -46,11 +46,11 @@
     ;; the return value and perform the call.
     ((null args)
      (let ((sym (gensym)))
-       `(with-object-translated (,sym ,call ,rettype :result)
+       `(with-object-translated (,sym ,call ,rettype :from-c)
           ,sym)))
     ;; More than one argument is available---translate the first
     ;; argument/type pair and recurse.
-    (t `(with-object-translated (,(car syms) ,(car args) ,(car types) :in)
+    (t `(with-object-translated (,(car syms) ,(car args) ,(car types) :to-c-arg)
           (translate-objects
            ,(rest syms) ,(rest args) ,(rest types) ,rettype ,call)))))
 

@@ -380,41 +380,43 @@ time."
   "Set the type translator function for TYPE in DIRECTION."
   (setf (gethash (list type direction) *type-translators*) func))
 
-(defmacro define-type-translator (type direction lambda-list &body body)
-  "Define a type translator for TYPE in DIRECTION.
+(defmacro define-type-translation (type c-type &body args)
+  "Define type translation for TYPE. If C-TYPE is not nil, TYPE is setup
+as an alias for C-TYPE via DEFCTYPE. ARGS consist of optional keyword
+arguments :TO-C-ARG, :TO-C and :FROM-C. These should be functions accepting
+a <value> argument in the case of :TO-C and :FROM-C and an addional 2
+arguments <body> and <var> in the case of :TO-C-ARG."
+  (when (typep (car args) 'string) ; discard docstring
+    (setf args (cdr args)))
+  (destructuring-bind (&key to-c-arg to-c from-c) args
+    `(progn
+       ,(when c-type `(defctype ,type ,c-type))
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         ,@(loop for direction in '(:to-c-arg :to-c :from-c)
+                 and func in (list to-c-arg to-c from-c)
+                 when func collect
+                 `(setf (find-type-translator ',type ,direction) ,func))))))
 
-TYPE is a symbol describing the foreign type to translate.
-
-DIRECTION is either :IN or :RESULT, depending on whether the
-translator is converting input arguments or a return value.
-Eventually, :OUT arguments may be supported.
-
-The function should accept two arguments---the value to translate
-and a symbol containing the name of the result for use in
-unwinds.
-
-Type translators return two values; a form that evaluates to the
-result of applying the transformation, and a list of forms to
-evaluate in the unwind arm of an UNWIND-PROTECT."
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (setf (find-type-translator ',type ,direction)
-           (lambda ,lambda-list ,@body))))
 
 ;;; TODO: This should probably chase the type alias chain and call all
 ;;; the type translators in most-specific-last order, so users can
 ;;; define typedefs for STRING that still get translated.
 (defmacro with-object-translated ((var value type direction) &body body)
   "Bind VAR to VALUE translated according to TYPE and DIRECTION in BODY.
-An UNWIND-PROTECT is set up to perform cleanup necessary for the
-type translator.  If there is no translator for TYPE, VAR is
-bound to VALUE unmodified."
+If there is no translator for TYPE, VAR is bound to VALUE unmodified."
   (let ((func (find-type-translator type direction)))
+    ;; If there is no TO-C-ARG translator, but a TO-C translator
+    ;; is available, make this a TO-C translation.
+    (when (and (eq direction :to-c-arg) (not func))
+      (let ((to-c-func (find-type-translator type :to-c)))
+        (when to-c-func
+          (setq func to-c-func
+                direction :to-c))))
+    ;; Translation.
     (if func
-        (multiple-value-bind (result unwinds)
-            (funcall func value var)
-          `(let ((,var ,result))
-             (unwind-protect
-                  (progn ,@body)
-               ,@unwinds)))
+        (case direction
+          (:to-c-arg (funcall func var value body))
+          (t `(let ((,var ,(funcall func value)))
+                ,@body)))
         `(let ((,var ,value))
            ,@body))))
