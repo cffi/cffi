@@ -119,10 +119,8 @@ be stack allocated if supported by the implementation."
 (defun convert-foreign-type (cffi-type)
   "Convert a CFFI type keyword to an FLI type."
   (ecase cffi-type
-    ;; Using (:SIGNED :CHAR) instead of :CHAR seems to prevent FLI
-    ;; from converting :CHAR objects into Lisp characters.
-    (:char            '(:signed :char))
-    (:unsigned-char   '(:unsigned :char))
+    (:char            :byte)
+    (:unsigned-char   '(:unsigned :byte))
     (:short           :short)
     (:unsigned-short  '(:unsigned :short))
     (:int             :int)
