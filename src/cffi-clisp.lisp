@@ -104,15 +104,12 @@
 
 (defun null-ptr-p (ptr)
   "Return true if PTR is a null foreign pointer."
-  (or (null ptr)
-      (zerop (ffi:foreign-address-unsigned ptr))))
+  (ffi:foreign-address-null ptr)) ; will be true also when (eq ptr nil)
 
 (defun inc-ptr (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (ffi:unsigned-foreign-address
-   (+ offset (if (null ptr)
-                 0
-                 (ffi:foreign-address-unsigned ptr)))))
+   (+ offset (if (null ptr) 0 (ffi:foreign-address-unsigned ptr)))))
 
 ;;;# Foreign Memory Allocation
 
