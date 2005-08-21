@@ -25,7 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;
 ;;; GCL specific notes:
 ;;;
 ;;; On ELF systems, a library can be loaded with the help of this:
@@ -36,7 +35,6 @@
 ;;;
 ;;; As GCL's FFI is not dynamic, CFFI declarations will only work
 ;;; after compiled and loaded.
-;;;
 
 ;;; *** this port is broken ***
 ;;; gcl doesn't compile the rest of CFFI anyway..
@@ -64,6 +62,10 @@
    #:make-callback))
  
 (in-package #:cffi-sys)
+
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-foreign-funcall *features*))
 
 ;;;# Allocation
 ;;;

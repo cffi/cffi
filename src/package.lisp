@@ -28,7 +28,7 @@
 (in-package #:cl-user)
 
 (defpackage #:cffi
-  (:use #:common-lisp #:cffi-sys)
+  (:use #:common-lisp #:cffi-sys #:cffi-utils)
   (:export
    ;; Primitive pointer operations.
    #:foreign-free
@@ -83,11 +83,3 @@
    ;; Foreign globals.
    #:defcvar
    #:get-var-ptr))
-
-
-;; Push the :cffi/no-foreign-funcall "feature" when
-;; the host lisp doesn't support %foreign-funcall.
-;; The following lisps don't:
-#+(or corman gcl lispworks)
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-foreign-funcall *features*))

@@ -50,6 +50,10 @@
 
 (in-package #:cffi-sys)
 
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-foreign-funcall *features*))
+
 ;;;# Basic Pointer Operations
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."

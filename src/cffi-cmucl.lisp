@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:alien #:c-call)
+  (:use #:common-lisp #:alien #:c-call #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -276,7 +276,7 @@ to open-code (SETF %MEM-REF) forms."
 ;;;# Callbacks
 
 (defmacro make-callback (name rettype arg-names arg-types body-form)
-  (let ((cb-sym (intern (format nil "%callback/~A" name))))
+  (let ((cb-sym (callback-symbol-name name)))
     `(progn
        (def-callback ,cb-sym
            (,(convert-foreign-type rettype)

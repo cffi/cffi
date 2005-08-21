@@ -32,6 +32,11 @@
 ;;; Tests calling standard C library functions both passing and
 ;;; returning each built-in type.
 
+;;; Don't run these tests if the implementation does not support
+;;; foreign-funcall.
+#-cffi/no-foreign-funcall 
+(progn
+
 (deftest funcall.char
     (foreign-funcall "toupper" :char (char-code #\a) :char)
   #.(char-code #\A))
@@ -101,3 +106,5 @@
       (foreign-funcall "sprintf" :pointer s string "%s, %s!"
                        string "Hello" string "world" :void))
   "Hello, world!")
+
+) ;; #-cffi/no-foreign-funcall

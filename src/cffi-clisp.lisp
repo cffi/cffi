@@ -96,7 +96,7 @@
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (typep ptr 'ffi:foreign-address))
+  (or (null ptr) (typep ptr 'ffi:foreign-address)))
 
 (defun null-ptr ()
   "Return a null foreign pointer."

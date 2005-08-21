@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp)
+  (:use #:common-lisp #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -248,7 +248,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;; type. Also, need to understand the second arg to r-f-c. --luis
 (defmacro make-callback (name rettype arg-names arg-types body-form)
   (declare (ignore rettype))
-  (let ((cb-sym (intern (format nil "%callback/~A" name)))) 
+  (let ((cb-sym (callback-symbol-name name))) 
     `(progn
        (ff:defun-foreign-callable ,cb-sym
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))

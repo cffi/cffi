@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:c-types)
+  (:use #:common-lisp #:c-types #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -49,6 +49,10 @@
    #:make-callback))
 
 (in-package #:cffi-sys)
+
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-foreign-funcall *features*))
 
 ;;;# Basic Pointer Operations
 
@@ -229,7 +233,7 @@ the DLL's name (a string), else returns NIL."
 ;; defun-c-callback vs. defun-direct-c-callback?
 (defmacro make-callback (name rettype arg-names arg-types body-form)
   (declare (ignore rettype))
-  (let ((cb-sym (intern (format nil "%callback/~A" name))))
+  (let ((cb-sym (callback-symbol-name name)))
     `(progn
        (defun-c-callback ,cb-sym
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))

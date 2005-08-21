@@ -41,7 +41,8 @@
   ((:module src
     :serial t
     :components
-    (#+openmcl    (:file "cffi-openmcl")
+    ((:file "utils")
+     #+openmcl    (:file "cffi-openmcl")
      #+sbcl       (:file "cffi-sbcl")
      #+cmu        (:file "cffi-cmucl")
      #+clisp      (:file "cffi-clisp")
