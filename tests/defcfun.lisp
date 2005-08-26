@@ -73,7 +73,7 @@
 
 
 (defcfun "strlen" :int
-  (n string))
+  (n :string))
 
 (deftest defcfun.string.1
     (strlen "Hello")
@@ -82,11 +82,11 @@
 
 (defcfun "strcpy" :pointer
   (dest :pointer)
-  (src string))
+  (src :string))
 
 (defcfun "strcat" :pointer
   (dest :pointer)
-  (src string))
+  (src :string))
 
 (deftest defcfun.string.2
     (with-foreign-ptr-as-string (s 100)
@@ -95,7 +95,7 @@
       (strcat s ", world!"))
   "Hello, world!")
 
-(defcfun "strerror" string
+(defcfun "strerror" :string
   (n :int))
 
 (deftest defcfun.string.3

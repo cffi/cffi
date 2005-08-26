@@ -54,8 +54,8 @@
 
 ;; This definition uses the STRING type translator to automatically
 ;; convert Lisp strings to foreign strings and vice versa.
-(defcfun "getenv" string
-  (name string))
+(defcfun "getenv" :string
+  (name :string))
 
 ;; Defining a foreign structure.
 (defcstruct timeval
@@ -85,7 +85,7 @@
   (with-foreign-ptr-as-string (buf 255 buf-size)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
-     string "%d %f #x%x!" :int 666 
+     :string "%d %f #x%x!" :int 666 
      :double (coerce pi 'double-float)
      :unsigned-int #xcafebabe
      :void)))

@@ -85,15 +85,40 @@ to open-code (SETF MEM-REF) forms."
 
 ;;;# Dereferencing Foreign Arrays
 
-;;; TODO: FOREIGN-AREF needs its own SETF expander and a compiler
-;;; macro to optimize array references when TYPE is constant.
-(defun foreign-aref (ptr type &optional (index 0))
-  "Like MEM-REF except for accessing arrays."
+(defun mem-aref (ptr type &optional (index 0))
+  "Like MEM-REF except for accessing 1d arrays."
   (mem-ref ptr type (* index (foreign-type-size type))))
 
-(defun (setf foreign-aref) (value ptr type &optional (index 0))
-  "Set the INDEXth element of an array of TYPE at PTR to VALUE."
-  (setf (mem-ref ptr type (* index (foreign-type-size type))) value))
+(define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
+  "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
+  (if (constantp type)
+      (if (constantp index)
+          `(mem-ref ,ptr ,type
+                    ,(* (eval index) (foreign-type-size (eval type))))
+          `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
+      form))
+
+(define-setf-expander mem-aref (ptr type &optional (index 0))
+  "SETF expander for MEM-AREF."
+  (multiple-value-bind (dummies vals newval setter getter)
+      (get-setf-expansion ptr)
+    (declare (ignore setter newval))
+    (let ((store (gensym)))
+      (values
+       dummies
+       vals
+       `(,store)
+       `(progn
+          ,(if (constantp type)
+               (if (constantp index)
+                   `(mem-set ,store ,getter ,type
+                             ,(* (eval index) (foreign-type-size (eval type))))
+                   `(mem-ref ,store ,getter ,type
+                             (* ,index ,(foreign-type-size (eval type)))))
+               `(mem-set ,store ,getter ,type
+                         (* ,index (foreign-type-size ,type))))
+          ,store)
+       `(mem-ref ,getter)))))
 
 ;;;# Foreign Structures
 
@@ -199,7 +224,7 @@ to open-code (SETF MEM-REF) forms."
   "Make the appropriate type of structure slot."
   ;; If TYPE is an aggregate type or COUNT is >1, create an
   ;; AGGREGATE-STRUCT-SLOT, otherwise a SIMPLE-STRUCT-SLOT.
-  (if (or (> count 1) (aggregatep (find-foreign-type type)))
+  (if (or (> count 1) (aggregatep (parse-type type)))
       (make-instance 'aggregate-struct-slot :offset offset :type type
                      :name name :count count)
       (make-instance 'simple-struct-slot :offset offset :type type
@@ -224,7 +249,7 @@ to open-code (SETF MEM-REF) forms."
           (setf (gethash slotname (slots struct)) slot))
         (incf offset (* count (foreign-type-size type)))))
     (setf (size struct) offset)
-    (setf (find-foreign-type name) struct)))
+    (notice-foreign-type struct)))
 
 (defmacro defcstruct (name &body fields)
   "Define the layout of a foreign structure."
@@ -235,7 +260,7 @@ to open-code (SETF MEM-REF) forms."
 
 (defun get-slot-info (type slot-name)
   "Return the slot info for SLOT-NAME or raise an error."
-  (let ((struct (find-foreign-type type)))
+  (let ((struct (parse-type type)))
     (unless struct
       (error "Undefined foreign type ~A." type))
     (let ((info (gethash slot-name (slots struct))))
@@ -324,7 +349,7 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
           (when (> size max-size)
             (setf max-size size)))))
     (setf (size struct) max-size)
-    (setf (find-foreign-type name) struct)))
+    (notice-foreign-type struct)))
 
 (defmacro defcunion (name &body fields)
   "Define the layout of a foreign union."
@@ -333,13 +358,15 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 
 ;;;# Operations on Types
 
-(defmethod foreign-type-alignment ((type symbol))
+;; Should these two methods perhaps specialize on symbol and
+;; list/cons instead of simply T.
+(defmethod foreign-type-alignment (type)
   "Return the alignment in bytes of a foreign type."
   (%foreign-type-alignment (canonicalize-foreign-type type)))
 
-(defmethod foreign-type-size ((type symbol))
+(defmethod foreign-type-size (type)
   "Return the size in bytes of a foreign type."
-  (foreign-type-size (find-foreign-type type)))
+  (foreign-type-size (parse-type type)))
 
 (defun foreign-object-alloc (type &optional (count 1))
   "Allocate COUNT foreign objects of type TYPE.
@@ -365,58 +392,369 @@ time."
 
 ;;;# Type Translators
 ;;;
-;;; Type translators are functions that return multiple forms
-;;; containing code to automatically convert foreign values to Lisp
-;;; objects when calling foreign functions.
+;;; Type translators are functions that come in two flavours:
+;;;   - expanders generate code to automatically convert foreign
+;;;     values to Lisp objects (and vice-versa), eg, when calling
+;;;     foreign functions.
+;;;   - converters are the runtime versions of the expanders
+;;;     and will take a value at runtime and perform the appropriate
+;;;     translation/conversion.
+;;;
+;;; Note: This whole code still needs a few more iterations. For
+;;; future reference, here's an earlier version of this file that
+;;; used a generic function for the translators which is an idea
+;;; I might try again: <http://paste.lisp.org/display/10952>
+;;; (next time I will probably have a different generic function
+;;; for each direction, not put the (let ((,var ...))) directly
+;;; in the expanders and have define-type-translator work only
+;;; for foreign-typdefs among other changes) --luis
 
-(defvar *type-translators* (make-hash-table :test 'equal)
-  "Hash table of defined type translators.")
+(defun install-type-translator (type expander converter direction)
+  (multiple-value-bind (expander-slot converter-slot)
+      (ecase direction
+        (:to-c (values 'to-c-expander 'to-c-converter))
+        (:from-c (values 'from-c-expander 'from-c-converter))
+        (:to-c-dynamic (values 'to-c-dynamic-expander nil)))
+    (setf (slot-value type expander-slot) expander)
+    (when converter
+      (setf (slot-value type converter-slot) converter))))
 
-(defun find-type-translator (type direction)
-  "Return the type translator function for TYPE in DIRECTION."
-  (gethash (list type direction) *type-translators*))
+(defgeneric generate-expander
+    (type direction body type-arg value-arg &optional var-arg body-arg)
+  (:documentation "Generate and expander for the given TYPE."))
 
-(defun (setf find-type-translator) (func type direction)
-  "Set the type translator function for TYPE in DIRECTION."
-  (setf (gethash (list type direction) *type-translators*) func))
+(defmethod generate-expander (type direction body type-arg value-arg
+                              &optional var-arg body-arg)
+  "Generate an expander for a simple type."
+  (declare (ignore type))
+  (with-unique-names (type-obj)
+    (ecase direction
+      ((:to-c :from-c)
+       `(lambda (,type-obj ,type-arg ,value-arg)
+          (declare (ignore ,type-obj) (ignorable ,type-arg))
+          ,@body))
+      (:to-c-dynamic
+       `(lambda (,type-obj ,type-arg ,value-arg ,var-arg ,body-arg)
+          (declare (ignore ,type-obj) (ignorable ,type-arg))
+          ,@body)))))
 
-(defmacro define-type-translation (type c-type &body args)
-  "Define type translation for TYPE. If C-TYPE is not nil, TYPE is setup
-as an alias for C-TYPE via DEFCTYPE. ARGS consist of optional keyword
-arguments :TO-C-ARG, :TO-C and :FROM-C. These should be functions accepting
-a <value> argument in the case of :TO-C and :FROM-C and an addional 2
-arguments <body> and <var> in the case of :TO-C-ARG."
-  (when (typep (car args) 'string) ; discard docstring
-    (setf args (cdr args)))
-  (destructuring-bind (&key to-c-arg to-c from-c) args
-    `(progn
-       ,(when c-type `(defctype ,type ,c-type))
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         ,@(loop for direction in '(:to-c-arg :to-c :from-c)
-                 and func in (list to-c-arg to-c from-c)
-                 when func collect
-                 `(setf (find-type-translator ',type ,direction) ,func))))))
+(defmethod generate-expander ((type foreign-typedef) direction body type-arg
+                              value-arg &optional var-arg body-arg)
+  "Generate expanders for FOREIGN-TYPEDEFs. Inherits the ACTUAL-TYPE's
+translators most specific first or most specific last, as appropriate."
+  (with-unique-names (type-obj)
+    (ecase direction
+      (:to-c ;; Expand the parent type (most-specific-first)
+       `(lambda (,type-obj ,type-arg ,value-arg)
+          (declare (ignorable ,type-arg))
+          (if (null (slot-value (actual-type ,type-obj) 'to-c-expander))
+              (progn ,@body)
+              (let ((,value-arg (progn ,@body)))
+                (funcall (slot-value (actual-type ,type-obj) 'to-c-expander)
+                         (actual-type ,type-obj) `(actual-type ,,type-arg)
+                         ,value-arg)))))
+    (:from-c ;; Expand the parent type (most-specific-last)
+     `(lambda (,type-obj ,type-arg ,value-arg)
+        (declare (ignorable ,type-arg))
+        (if (null (slot-value (actual-type ,type-obj) 'from-c-expander))
+            (progn ,@body)
+            (let ((,value-arg
+                   (funcall (slot-value (actual-type ,type-obj)
+                                        'from-c-expander)
+                            (actual-type ,type-obj) `(actual-type ,,type-arg)
+                            ,value-arg)))
+              ,@body))))
+    (:to-c-dynamic
+     `(lambda (,type-obj ,type-arg ,value-arg ,var-arg ,body-arg)
+        (declare (ignorable ,type-arg))
+        (cond
+          ;; Parent type has a TO-C-DYNAMIC-EXPANDER.
+          ((slot-value (actual-type ,type-obj) 'to-c-dynamic-expander)
+           (let ((,body-arg
+                  (list (funcall (slot-value (actual-type ,type-obj)
+                                             'to-c-dynamic-expander)
+                                 (actual-type ,type-obj) `(actual-type ,,type-arg)
+                                 ,var-arg ,var-arg ,body-arg))))
+             ,@body))
+          ;; There is no TO-C-DYNAMIC-EXPANDER we try the
+          ;; TO-C-EXPANDER instead.
+          ((slot-value (actual-type ,type-obj) 'to-c-expander)
+           (let ((,value-arg
+                  (funcall (slot-value (actual-type ,type-obj) 'to-c-expander)
+                           (actual-type ,type-obj) `(actual-type ,,type-arg)
+                           ,value-arg)))
+             ,@body))
+          ;; No expanders whatsoever.
+          (t ,@body)))))))
 
+(defgeneric generate-converter (type expander translator-body direction
+                                type-arg value-arg &optional var-arg body-arg)
+  (:documentation "Generate a converter."))
 
-;;; TODO: This should probably chase the type alias chain and call all
-;;; the type translators in most-specific-last order, so users can
-;;; define typedefs for STRING that still get translated.
-(defmacro with-object-translated ((var value type direction) &body body)
-  "Bind VAR to VALUE translated according to TYPE and DIRECTION in BODY.
-If there is no translator for TYPE, VAR is bound to VALUE unmodified."
-  (let ((func (find-type-translator type direction)))
-    ;; If there is no TO-C-ARG translator, but a TO-C translator
-    ;; is available, make this a TO-C translation.
-    (when (and (eq direction :to-c-arg) (not func))
-      (let ((to-c-func (find-type-translator type :to-c)))
-        (when to-c-func
-          (setq func to-c-func
-                direction :to-c))))
-    ;; Translation.
-    (if func
-        (case direction
-          (:to-c-arg (funcall func var value body))
-          (t `(let ((,var ,(funcall func value)))
-                ,@body)))
-        `(let ((,var ,value))
-           ,@body))))
+(defmethod generate-converter (type expander translator-body direction
+                               type-arg value-arg &optional var-arg body-arg)
+  "Simply expand the expander (hah!) into a function."
+  (declare (ignore translator-body direction))
+    (let ((arg-list (list* type-arg value-arg
+                          (delete-if #'null (list var-arg body-arg)))))
+      `(lambda ,arg-list
+         (declare (ignorable ,type-arg))
+         ,(apply expander (list* type arg-list)))))
+
+;;; See DEFINE-FOREIGN-TYPE for a clue on how this is used.
+(defvar *translator-holders* (make-hash-table)
+  "Hash table of translator holders")
+
+(defun find-holder (name)
+  (gethash name *translator-holders*))
+
+(defun notice-holder (holder)
+  (setf (gethash (name holder) *translator-holders*) holder))
+
+(defun find-holder-or-type-or-lose (type-name)
+  (or (find-holder type-name)
+      (find-type-or-lose type-name)))
+
+(defmacro define-type-translator
+    (type direction (type-arg value-arg &optional var-arg body-arg) &body body)
+  "Defines a translator for TYPE."
+  (cond ((and (eq direction :to-c-dynamic) (not (and var-arg body-arg)))
+         (error "Both VAR-ARG and BODY-ARG must be specified when defining ~
+                 a :TO-C-DYNAMIC translator."))
+        ((and (not (eq direction :to-c-dynamic)) (or var-arg body-arg))
+         (error "Neither VAR-ARG or BODY-ARG should be specified when defining ~
+                 a :TO-C or :FROM-C translator.")))
+  (discard-docstring body)
+  (let* ((type-obj (find-holder-or-type-or-lose type))
+         (expander (generate-expander type-obj direction body type-arg value-arg
+                                      var-arg body-arg)))
+    ;(format t "~%~%D-T-P: ~A~%~%" expander)
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (install-type-translator
+        (find-holder-or-type-or-lose ',type)
+        ,expander
+        ,(unless (eq direction :to-c-dynamic)
+           (let ((conv (generate-converter
+                        type-obj (compile nil expander) body direction type-arg
+                        value-arg var-arg body-arg)))
+             ;(format t "Converter: ~A~%~%:" conv)
+             conv))
+        ,direction))))
+
+;;; TODO: try this idea out... the closure would be something like
+;;; (lambda (x y z) `(%foreign-funcall :int ,x :char ,y, :foo ,z))
+;;; --luis
+
+;; (defun call-with-objects-translated-to-c-dynamic (values types closure)
+;;   )
+
+(defmacro with-object-translated ((var value type-spec direction) &body body)
+  "Bind VAR to VALUE translated according to TYPE-SPEC and DIRECTION in BODY."
+  (let* ((type (parse-type type-spec))
+         (type-arg `(find-type-or-lose ',(name type))))
+    (with-slots (to-c-expander from-c-expander to-c-dynamic-expander)
+        type
+      (let ((expander (ecase direction
+                        (:to-c-dynamic (or to-c-dynamic-expander
+                                           (progn (setq direction :to-c)
+                                                  to-c-expander)))
+                        (:to-c to-c-expander)
+                        (:from-c from-c-expander))))
+    
+        (if expander
+            (if (eq direction :to-c-dynamic)
+                (funcall expander type type-arg value var body) 
+                `(let ((,var ,(funcall expander type type-arg value)))
+                   ,@body))
+            `(let ((,var ,value))
+               ,@body))))))
+
+(defun translate-to-c (value type)
+    "Translates the VALUE of type TYPE from Lisp to C. TYPE should
+already be parsed, ie, it should be an instance of FOREIGN-TYPE."
+  (funcall (slot-value type 'to-c-converter) type value))
+
+(defun translate-from-c (value type)
+  "Translates the VALUE of type TYPE to from C to Lisp. TYPE should
+already be parsed, ie, it should be an instance of FOREIGN-TYPE."
+  (funcall (slot-value type 'from-c-converter) type value))
+
+;;; TODO: figure out something like this in order to use the same
+;;; interface. We'd have to accept both parsed and unparsed types,
+;;; and in case of a constant unparsed type (a symbol), we could
+;;; expand directly. But then the runtime version would need to
+;;; check for unparsed types. Good, bad? --luis
+;; (define-compiler-macro translate-from-c (&whole form value type)
+;;   (if (constantp type) ;<-- this wouldn't happen
+;;       (bif (expander (slot-value (eval type) 'from-c-expander))
+;;            (funcall (expander value)
+;;            value)
+;;       form))
+
+;;;# Anonymous Type Translators
+;;;
+;;; It'd be nice to pass #'fun or (lambda (value) ...) instead of just
+;;; a simple symbol. Should look into that.
+;;;
+;;; So, here's an example of supported usage for now:
+;;;
+;;; (defctype foo (:wrapper :to-c   some-function
+;;;                         :from-c another-function))
+
+(define-type-spec-parser :wrapper (base-type &key to-c from-c)
+  (let ((type (make-instance 'foreign-typedef
+                             :actual-type (parse-type base-type))))
+        
+    (when to-c
+      (install-type-translator
+       type
+       ;; Expander
+       (lambda (type-obj type value)
+         (if (null (slot-value (actual-type type-obj) 'to-c-expander))
+             `(funcall ',to-c ,value)
+             (let ((value `(funcall ',to-c ,value)))
+               (funcall (slot-value (actual-type type-obj) 'to-c-expander)
+                        (actual-type type-obj) type value))))
+       ;; Converter
+       (lambda (type value)
+         (if (null (slot-value (actual-type type) 'to-c-converter))
+             (funcall to-c value)
+             (let ((value (funcall to-c value)))
+               (funcall (slot-value (actual-type type) 'to-c-converter)
+                        (actual-type type) value))))
+       :to-c)
+      ;; Also, let's add a to-c-dynamic-expander in case the actual-type
+      ;; has one so that the actual-type's to-c-dynamic-expander doesn't
+      ;; shadow this wrapper's to-c-expander.
+      (when (slot-value (actual-type type) 'to-c-dynamic-expander)
+        (setf (slot-value type 'to-c-dynamic-expander)
+              (lambda (type-obj type value var body)
+                (funcall (slot-value (actual-type type-obj)
+                                     'to-c-dynamic-expander)
+                         (actual-type type-obj) type
+                         `(funcall ',to-c ,value) ; value
+                         var body)))))
+    (when from-c
+      (install-type-translator
+       type
+       ;; Expander
+       (lambda (type-obj type value)
+         (if (null (slot-value (actual-type type-obj) 'from-c-expander))
+             `(funcall ',from-c ,value)
+             (let ((value (funcall (slot-value (actual-type type-obj)
+                                               'from-c-expander)
+                                   (actual-type type-obj) type value)))
+               `(funcall ',from-c ,value))))
+       ;; Converter
+       (lambda (type value)
+         (if (null (slot-value (actual-type type) 'from-c-converter))
+             (funcall from-c value)
+             (let ((value (funcall (slot-value (actual-type type)
+                                               'from-c-converter)
+                                   (actual-type type) value)))
+               (funcall from-c value))))
+       :from-c))
+    type))
+
+;;;# User-defined Types.
+
+(defun copy-translators (from-type to-type)
+  "Copy all translators from one type to another."
+  (dolist (slot '(to-c-expander from-c-expander to-c-dynamic-expander
+                   to-c-converter from-c-converter))
+    (setf (slot-value to-type slot) (slot-value from-type slot))))
+
+(defclass type-translator-holder (foreign-type)
+  ()
+  (:documentation "Holder for the translators of some parameterized-type."))
+
+(defmethod generate-converter ((type type-translator-holder) expander
+                               translator-body direction type-arg value-arg
+                               &optional var-arg body-arg)
+  "For parameterized types we don't know the actual type until
+the type is actually parsed. Since this can happen at runtime,
+we need to make the converter funcall the parent type's converter."
+  (declare (ignore expander))
+  (let* ((arg-list (list* type-arg value-arg
+                          (delete-if #'null (list var-arg body-arg))))
+         ;; Note to avoid future confusion: here we create a temporary
+         ;; expander which is a little different from the normal expanders
+         ;; since we don't bother to pass the type. Btw, the reason why
+         ;; we create a new expander is because the normal expander will
+         ;; try to access (actual-type TYPE) which doesn't exist for these
+         ;; type-translator-holders. --luis
+         (converter (apply (compile nil `(lambda ,arg-list
+                                           (declare (ignorable ,type-arg))
+                                           ,@translator-body))
+                                    arg-list)))
+    `(lambda ,arg-list
+       ,(ecase direction
+          (:to-c
+           `(if (null (slot-value (actual-type ,type-arg) 'to-c-converter))
+                (progn ,converter)
+                (let ((,value-arg (progn ,converter)))
+                  (funcall (slot-value (actual-type ,type-arg) 'to-c-converter)
+                           (actual-type ,type-arg) ,value-arg))))
+          (:from-c
+           `(if (null (slot-value (actual-type ,type-arg) 'from-c-converter))
+                (progn ,converter)
+                (let ((,value-arg (funcall (slot-value (actual-type ,type-arg)
+                                                       'from-c-converter)
+                                           (actual-type ,type-arg) ,value-arg)))
+                  ,converter)))))))
+
+(defmacro define-foreign-type (type lambda-list &body body)
+  "Define a parameterized type."
+  (discard-docstring body)
+  `(progn
+     ;; Make a dummy type that will carry the translators.
+     (eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-holder (make-instance 'type-translator-holder :name ',type)))
+     ;; Default translators
+     (define-type-translator ,type :to-c (type value)
+       value)
+     (define-type-translator ,type :from-c (type value)
+       value) 
+     ;; Define the type-spec-parser
+     (define-type-spec-parser ,type ,lambda-list
+       (let ((type (make-instance 'foreign-typedef ;',class-name
+                                  :actual-type (parse-type (progn ,@body)))))
+         (copy-translators (find-holder ',type) type)
+         ;; If the actual-type has a to-c-dynamic-expander but
+         ;; the type doesn't (ie. the user didn't define one) then
+         ;; we inherit it.
+         (when (and (slot-value (actual-type type) 'to-c-dynamic-expander)
+                    (null (slot-value type 'to-c-dynamic-expander)))
+           (setf (slot-value type 'to-c-dynamic-expander)
+                 (lambda (type-obj type value var body)
+                   (funcall (slot-value (actual-type type-obj)
+                                        'to-c-dynamic-expander)
+                            (actual-type type-obj) type value var body))))
+         type))))
+
+;;; Here we copy the translators from the parent type after
+;;; creating the type, it might make sense to implement this
+;;; in a initialize-instance :after method. --luis
+(defmacro defctype (name base-type &optional docstring)
+  "Utility macro for simple C-like typedefs. A similar effect could be
+obtained using define-foreign-type."
+  (declare (ignore docstring))
+  `(progn
+     (eval-when (:compile-toplevel :load-toplevel :execute)
+       (let* ((type (parse-type ',base-type))
+              (new-type (make-instance 'foreign-typedef :name ',name
+                                       :actual-type type)))
+         ;;(copy-translators type new-type)
+         (notice-foreign-type new-type)
+         (when (slot-value type 'to-c-dynamic-expander)
+         (setf (slot-value new-type 'to-c-dynamic-expander)
+               (lambda (type-obj type value var body)
+                 (funcall (slot-value (actual-type type-obj)
+                                      'to-c-dynamic-expander)
+                          (actual-type type-obj) type value var body))))))
+     ;; Default translators.
+     (define-type-translator ,name :to-c (type value)
+       value)
+     (define-type-translator ,name :from-c (type value)
+       value)
+     ',name))

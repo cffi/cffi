@@ -62,7 +62,9 @@
      (:file "foreign-globals")
      (:file "memory")
      (:file "struct")
-     (:file "union")))))
+     (:file "union")
+     (:file "enum")
+     (:file "misc-types")))))
 
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
   (or (funcall (intern "DO-TESTS" '#:regression-test))

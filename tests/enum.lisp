@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi.asd --- ASDF system definition for CFFI.
+;;; enum.lisp --- Tests on C enums.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,39 +25,50 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-#-(or openmcl sbcl cmu clisp lispworks ecl allegro cormanlisp)
-(error "Sorry, this Lisp is not yet supported.  Patches welcome!")
+(in-package #:cffi-tests)
 
-(defpackage #:cffi-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-system)
+(defcenum numeros
+  (:one 1)
+  :two
+  :three
+  :four
+  (:forty-one 41)
+  :forty-two)
 
-(defsystem cffi
-  :description "The Common Foreign Function Interface"
-  :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.1.0"
-  :licence "MIT"
-  :components 
-  ((:module src
-    :serial t
-    :components
-    ((:file "utils")
-     #+openmcl    (:file "cffi-openmcl")
-     #+sbcl       (:file "cffi-sbcl")
-     #+cmu        (:file "cffi-cmucl")
-     #+clisp      (:file "cffi-clisp")
-     #+lispworks  (:file "cffi-lispworks")
-     #+ecl        (:file "cffi-ecl")
-     #+allegro    (:file "cffi-allegro")
-     #+cormanlisp (:file "cffi-corman")
-     (:file "package")
-     (:file "libraries")
-     (:file "early-types")
-     (:file "types")
-     (:file "enum")
-     (:file "strings")
-     (:file "functions")
-     (:file "foreign-vars")
-     (:file "objects")))))
+(defcfun "check_enums" :int
+  (one numeros)
+  (two numeros)
+  (three numeros)
+  (four numeros)
+  (forty-one numeros)
+  (forty-two numeros))
 
-;; vim: ft=lisp et
+(deftest enum.1
+    (check-enums :one :two :three 4 :forty-one :forty-two)
+  1)
+
+(defcenum another-boolean :false :true)
+(defcfun "return_enum" another-boolean (x :int))
+
+(deftest enum.2
+    (and (eq :false (return-enum 0))
+         (eq :true (return-enum 1)))
+  t)
+
+(defctype yet-another-boolean another-boolean)
+(defcfun ("return_enum" return-enum2) yet-another-boolean
+  (x yet-another-boolean))
+
+(deftest enum.3
+    (and (eq :false (return-enum2 :false))
+         (eq :true (return-enum2 :true)))
+  t)
+
+(defcfun ("return_enum" return-enum3)
+    (:enum :false :true)
+  (x (:enum :falso :verdadeiro)))
+
+(deftest enum.4
+    (and (eq :false (return-enum3 :falso))
+         (eq :true (return-enum3 :verdadeiro)))
+  t)

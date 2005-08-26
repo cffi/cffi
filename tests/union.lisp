@@ -36,7 +36,7 @@
   (with-foreign-object (obj uint32-bytes)
     (setf (foreign-slot-value obj 'uint32-bytes 'int-value) n)
     (loop for i from 0 below 4
-          collect (foreign-aref
+          collect (mem-aref
                    (foreign-slot-value obj 'uint32-bytes 'bytes)
                    :unsigned-char i))))
 

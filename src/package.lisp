@@ -33,7 +33,7 @@
    ;; Primitive pointer operations.
    #:foreign-free
    #:foreign-alloc
-   #:foreign-aref
+   #:mem-aref
    #:mem-ref
    #:pointerp
    #:null-ptr
@@ -69,6 +69,8 @@
    #:defctype
    #:defcenum
    #:define-type-translator
+   #:define-type-spec-parser
+   #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
    #:foreign-object-alloc

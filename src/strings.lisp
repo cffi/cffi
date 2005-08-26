@@ -87,12 +87,48 @@ the return value of an implcit PROGN around BODY."
 
 ;;;# Automatic Conversion of Foreign Strings
 
-(define-type-translation string :pointer
-  "Translation between C and Lisp strings."
-  :to-c-arg (lambda (var value body)
-              `(with-foreign-string (,var ,value)
-                 ,@body))
-  :to-c (lambda (value)
-          `(foreign-string-alloc ,value))
-  :from-c (lambda (value)
-            `(foreign-string-to-lisp ,value)))
+(defctype :string :pointer)
+
+(define-type-translator :string :to-c-dynamic (type value var body)
+  "Type translator for string input arguments."
+  `(with-foreign-string (,var ,value)
+     ,@body))
+
+(define-type-translator :string :to-c (type value)
+  "Type translator for string arguments."
+  `(foreign-string-alloc ,value))
+
+(define-type-translator :string :from-c (type value)
+  "Type translator for string arguments."
+  `(foreign-string-to-lisp ,value))
+
+;;; It'd be pretty nice if returning multiple values from translators
+;;; worked as expected:
+;;;
+;;; (define-type-translator :string :from-c (type value)
+;;;  "Type translator for string arguments."
+;;;  (once-only (value)
+;;;    `(values (foreign-string-to-lisp ,value) ,value)))
+;;;
+;;; For now we'll just define a new type.
+;;;
+;;; Also as this examples shows, it'd be nice to specify
+;;; that we don't want to inherit the from-c translators.
+;;; So we could use (defctype :string+ptr :string) and
+;;; just add the new :from-c translator.
+
+(defctype :string+ptr :pointer)
+
+(define-type-translator :string+ptr :to-c-dynamic (type value var body)
+  "Type translator for string input arguments."
+  `(with-foreign-string (,var ,value)
+     ,@body))
+
+(define-type-translator :string+ptr :to-c (type value)
+  "Type translator for string arguments."
+  `(foreign-string-alloc ,value))
+
+(define-type-translator :string+ptr :from-c (type value)
+  "Return both the string and the pointer in list."
+  (once-only (value)
+    `(list (foreign-string-to-lisp ,value) ,value)))

@@ -82,14 +82,11 @@
   ;(format t "~%}}} a: ~A, b: ~A {{{~%" a b)
   (+ a b))
 
-;; For some reason, SBCL doesn't support passing/receiving
-;; pointer with callbacks, yet.
-#-sbcl
 (defcallback sum-pointer :pointer ((ptr :pointer) (offset :int))
   (inc-ptr ptr offset))
 
-#-sbcl
-(defcallback lisp-strcat string ((a string) (b string))
+#-sbcl ; bug
+(defcallback lisp-strcat :string ((a :string) (b :string))
   (concatenate 'string a b))
 
 

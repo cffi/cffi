@@ -36,7 +36,7 @@
            #:make-gensym-list
            #:symbolicate
            #:let-when
-           #:let-if
+           #:bif
            #:post-incf
            #:callback-symbol-name))
 
@@ -75,12 +75,12 @@
   `(when (stringp (car ,body-var))
      (setq ,body-var (cdr ,body-var))))
 
-;;; LET-IF and LET-WHEN taken from KMRCL
+;;; LET-IF (renamed to BIF) and LET-WHEN taken from KMRCL
 (defmacro let-when ((var test-form) &body body)
   `(let ((,var ,test-form))
       (when ,var ,@body)))
 
-(defmacro let-if ((var test-form) if-true &optional if-false)
+(defmacro bif ((var test-form) if-true &optional if-false)
   `(let ((,var ,test-form))
       (if ,var ,if-true ,if-false)))
 

@@ -33,6 +33,68 @@
 
 (in-package #:cffi)
 
+;;;# Foreign Types
+
+(defvar *foreign-types* (make-hash-table)
+  "Hash table of all user-defined foreign types.")
+
+(defun find-type (name)
+  "Return the foreign type instance for NAME or nil."
+  (gethash name *foreign-types*))
+  
+(defun find-type-or-lose (name)
+  "Return the foreign type instance for NAME or signal an error."
+  (or (find-type name)
+      (error "Undefined foreign type: ~S" name)))
+
+(defun notice-foreign-type (type)
+  "Inserts TYPE in the *FOREIGN-TYPES* hashtable."
+  (setf (gethash (name type) *foreign-types*) type)
+  (name type))
+
+;;;# Parsing Type Specifications
+;;;
+;;; Type specifications are of the form (type {args}*). The
+;;; type parser can specify how its arguments should look like
+;;; through a lambda list.
+;;;
+;;; "type" is a shortcut for "(type)", ie, no args were specified.
+;;;
+;;; Examples of such types: boolean, (boolean), (boolean :int)
+;;; If the boolean type parser specifies the lambda list:
+;;; &optional (base-type :int), then all of the above three
+;;; type specs would be parsed to an identical type.
+;;;
+;;; Type parsers, defined with DEFINE-TYPE-SPEC-PARSER should
+;;; return a subtype of the foreign-type class.
+
+(defvar *type-parsers* (make-hash-table)
+  "Hash table of defined type parsers.")
+
+(defun find-type-parser (symbol)
+  "Return the type parser for SYMBOL."
+  (gethash symbol *type-parsers*))
+
+(defun (setf find-type-parser) (func symbol)
+  "Set the type parser for SYMBOL."
+  (setf (gethash symbol *type-parsers*) func))
+
+(defmacro define-type-spec-parser (symbol lambda-list &body body)
+  "Define a type parser on SYMBOL and lists whose CAR is SYMBOL."
+  (when (stringp (car body)) ; discard-docstring
+    (setq body (cdr body)))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (find-type-parser ',symbol)
+           (lambda ,lambda-list ,@body))))
+
+(defun parse-type (type-spec-or-name)
+  (or (find-type type-spec-or-name)
+      (let* ((type-spec (mklist type-spec-or-name))
+             (parser (find-type-parser (car type-spec))))
+        (if parser
+            (apply parser (cdr type-spec))
+            (error "Unknown CFFI type: ~S." type-spec-or-name)))))
+
 ;;;# Generic Functions on Types
 
 (defgeneric canonicalize (foreign-type)
@@ -54,35 +116,46 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 ;;;# Foreign Types
 
+;;; Ever since I changed translators to get the type as an argument,
+;;; naming anonymous types is not really important. TODO: decide if
+;;; this is still desirable nevertheless. --luis
+
+(defvar *anon-count* 0
+  "Counter for anonymous types.")
+
 (defclass foreign-type ()
   ((name
     ;; Name of this foreign type, a symbol.
-    :initform (error "A type name is required.")
+    ;:initform (error "A type name is required.")
     :initarg :name
-    :accessor name))
+    :accessor name)
+   ;; The following slots form the basis for the type
+   ;; translator mechanism. (implemented in types.lisp)
+   (to-c-converter   :initform nil)
+   (to-c-expander    :initform nil)
+   (from-c-converter :initform nil)
+   (from-c-expander  :initform nil)
+   (to-c-dynamic-expander :initform nil))
   (:documentation "Contains information about a basic foreign type."))
+
+(defmethod initialize-instance :after ((self foreign-type) &key)
+  "Give a unique name to FOREIGN-TYPE in case none was specified."
+  (unless (slot-boundp self 'name)
+    (setf (name self)
+          (intern (format nil "~A-~A-~D"
+                          (symbol-name '#:anon)
+                          (class-name (class-of self))
+                          (post-incf *anon-count*))))))
 
 (defmethod print-object ((type foreign-type) stream)
   "Print a FOREIGN-TYPE instance to STREAM unreadably."
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (name type))))
 
-(defvar *foreign-types* (make-hash-table)
-  "Hash table of all user-defined foreign types.")
-
-(defun find-foreign-type (name)
-  "Return the foreign type instance for NAME or nil."
-  (or (gethash name *foreign-types*)
-      (error "Undefined foreign type: ~S" name)))
-
-(defun (setf find-foreign-type) (value name)
-  "Set the foreign type object for NAME to VALUE."
-  (setf (gethash name *foreign-types*) value))
-
 (defun canonicalize-foreign-type (type)
   "Convert TYPE to a built-in type by following aliases.
 Signals an error if the type cannot be resolved."
-  (canonicalize (find-foreign-type type)))
+  (canonicalize (parse-type type)))
 
 ;;;# Built-In Foreign Types
 
@@ -111,11 +184,11 @@ Signals an error if the type cannot be resolved."
   (%foreign-type-size (type-keyword type)))
 
 (defmacro define-built-in-foreign-type (keyword)
-  "Defines a built-in foreign type."
+  "Defines a built-in foreign-type."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (setf (find-foreign-type ,keyword)
-           (make-instance 'foreign-built-in-type :name ,keyword
-                          :type-keyword ,keyword))))
+     (notice-foreign-type
+      (make-instance 'foreign-built-in-type :name ,keyword
+                     :type-keyword ,keyword))))
 
 ;;;# Foreign Typedefs
 
@@ -142,17 +215,6 @@ Signals an error if the type cannot be resolved."
   "Return the size in bytes of a foreign typedef."
   (foreign-type-size (actual-type type)))
 
-(defun notice-type-definition (name alias)
-  "Install a type definition for NAME aliased to ALIAS."
-  (setf (find-foreign-type name)
-        (make-instance 'foreign-typedef :name name
-                       :actual-type (find-foreign-type alias))))
-
-(defmacro defctype (name type)
-  "Define NAME to be an alias for foreign type TYPE."
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-type-definition ',name ',type)))
-
 ;;;# Structure Type
 
 (defclass foreign-struct-type (foreign-type)
@@ -178,3 +240,23 @@ Signals an error if the type cannot be resolved."
 (defmethod foreign-type-size ((type foreign-struct-type))
   "Return the size in bytes of a foreign structure type."
   (size type))
+
+;;;# Typed Pointer Type
+
+(defclass foreign-pointer-type (foreign-type)
+  ((to :initarg :to :accessor to))
+  (:documentation "Typed pointer."))
+
+(defmethod canonicalize ((type foreign-pointer-type))
+  "It's a :POINTER, of course."
+  :pointer)
+
+(defmethod aggregatep ((type foreign-pointer-type))
+  "A pointer is not aggregate."
+  nil)
+
+(defmethod foreign-type-size ((type foreign-pointer-type))
+  (%foreign-type-size :pointer))
+
+(defmethod foreign-type-alignment ((type foreign-pointer-type))
+  (%foreign-type-alignment :pointer))

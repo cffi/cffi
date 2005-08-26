@@ -38,7 +38,7 @@
 (defcvar "var_float"             :float)
 (defcvar "var_double"            :double)
 (defcvar "var_pointer"           :pointer)
-(defcvar "var_string"            string)
+(defcvar "var_string"            :string)
 
 (deftest foreign-globals.ref.char
     *char-var*

@@ -124,5 +124,57 @@ int expect_strcat(char* (*f)(char*, char*))
     return res;
 }
 
+/*
+ * Enums
+ */
+
+typedef enum {
+    ONE = 1,
+    TWO,
+    THREE,
+    FOUR,
+    FORTY_ONE = 41,
+    FORTY_TWO
+} numeros;
+
+int check_enums(numeros one, numeros two, numeros three, numeros four,
+                numeros forty_one, numeros forty_two)
+{
+    if (one == ONE && two == TWO && three == THREE && four == FOUR &&
+        forty_one == FORTY_ONE && forty_two == FORTY_TWO)
+        return 1;
+
+    return 0;
+}
+
+typedef enum { FALSE, TRUE } another_boolean;
+
+another_boolean return_enum(int x)
+{
+    if (x == 0)
+        return FALSE;
+    else
+        return TRUE;
+}
+
+/*
+ * Booleans
+ */
+
+int equalequal(int a, unsigned int b)
+{
+    return a == b;
+}
+
+char bool_and(unsigned char a, char b)
+{
+    return a && b;
+}
+
+unsigned long bool_xor(long a, unsigned long b)
+{
+    return (a && !b) || (!a && b);
+}
+
 /* vim: ts=4 et
 */

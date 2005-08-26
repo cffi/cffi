@@ -50,7 +50,8 @@
           ,sym)))
     ;; More than one argument is available---translate the first
     ;; argument/type pair and recurse.
-    (t `(with-object-translated (,(car syms) ,(car args) ,(car types) :to-c-arg)
+    (t `(with-object-translated (,(car syms) ,(car args) ,(car types)
+                                  :to-c-dynamic)
           (translate-objects
            ,(rest syms) ,(rest args) ,(rest types) ,rettype ,call)))))
 
@@ -118,21 +119,6 @@
            (translate-objects
             ,syms ,arg-names ,arg-types ,return-type ,caller))))))
 
-;;;# Per-implementation DEFCFUN optimization
-
-#+ignore
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (and (not (find-symbol "DEFCFUN-COMPILER-MACRO" '#:cffi-sys))
-    (defun defcfun-compiler-macro (form &rest other-args)
-      (declare (ignore other-args))
-      (format nil "compiler macro returning: ~A" form) 
-      form))))
-
-#+ignore
-(define-compiler-macro defcfun (&whole form name return-type &body args)
-  (format t "running defcfun compiler macro!")
-  (defcfun-compiler-macro form name return-type args))
-
 ;;;# Defining Callbacks
 
 (defmacro inverse-translate-objects (args types rettype call)
@@ -156,8 +142,7 @@
   `(get ',name 'cffi-callback-ptr))
 
 (defmacro defcallback (name return-type args &body body)
-  (when (typep (car body) 'string)
-    (setq body (cdr body))) ; discard docstring
+  (discard-docstring body)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args)))
     `(setf (callback ,name)
