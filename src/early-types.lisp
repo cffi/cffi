@@ -240,23 +240,3 @@ Signals an error if the type cannot be resolved."
 (defmethod foreign-type-size ((type foreign-struct-type))
   "Return the size in bytes of a foreign structure type."
   (size type))
-
-;;;# Typed Pointer Type
-
-(defclass foreign-pointer-type (foreign-type)
-  ((to :initarg :to :accessor to))
-  (:documentation "Typed pointer."))
-
-(defmethod canonicalize ((type foreign-pointer-type))
-  "It's a :POINTER, of course."
-  :pointer)
-
-(defmethod aggregatep ((type foreign-pointer-type))
-  "A pointer is not aggregate."
-  nil)
-
-(defmethod foreign-type-size ((type foreign-pointer-type))
-  (%foreign-type-size :pointer))
-
-(defmethod foreign-type-alignment ((type foreign-pointer-type))
-  (%foreign-type-alignment :pointer))

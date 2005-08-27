@@ -730,7 +730,8 @@ we need to make the converter funcall the parent type's converter."
                    (funcall (slot-value (actual-type type-obj)
                                         'to-c-dynamic-expander)
                             (actual-type type-obj) type value var body))))
-         type))))
+         type))
+     ',type))
 
 ;;; Here we copy the translators from the parent type after
 ;;; creating the type, it might make sense to implement this
