@@ -664,7 +664,7 @@ already be parsed, ie, it should be an instance of FOREIGN-TYPE."
                    to-c-converter from-c-converter))
     (setf (slot-value to-type slot) (slot-value from-type slot))))
 
-(defclass type-translator-holder (foreign-type)
+(defclass type-translator-holder (foreign-typedef)
   ()
   (:documentation "Holder for the translators of some parameterized-type."))
 

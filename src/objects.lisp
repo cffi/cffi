@@ -68,6 +68,7 @@
 ;;;# Boolean Type
 
 (define-foreign-type :boolean (&optional (base-type :int))
+  "Boolean type. Maps to an :int by default. Only accepts integer types."
   (ecase base-type
     ((:char
       :unsigned-char
