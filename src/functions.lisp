@@ -62,18 +62,18 @@
           if arg collect type into types
              and collect (canonicalize-foreign-type type) into ctypes
              and collect arg into fargs
-          else do (setf return-type (canonicalize-foreign-type type))
+          else do (setf return-type type)
           finally (return (values types ctypes fargs return-type)))))
 
 (defmacro foreign-funcall (name &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
-    (let ((syms (loop repeat (length fargs) collect (gensym))))
-      `(translate-objects ,syms ,fargs ,types ,rettype
-                          (%foreign-funcall ,name
-                                            ,@(mapcan #'list ctypes syms)
-                                            ,rettype)))))
+    (let ((syms (make-gensym-list (length fargs))))
+      `(translate-objects
+        ,syms ,fargs ,types ,rettype
+        (%foreign-funcall ,name ,@(mapcan #'list ctypes syms)
+                          ,(canonicalize-foreign-type rettype))))))
 
 ;;;# Defining Foreign Functions
 ;;;
@@ -84,13 +84,15 @@
   "Return the Lisp function name for foreign function NAME."
   (etypecase name
     (list (second name))
-    (string (intern (string-upcase (substitute #\- #\_ name))))))
+    (string (intern (string-upcase (substitute #\- #\_ name))))
+    (symbol name)))
 
 (defun foreign-function-name (name)
   "Return the foreign function name of NAME."
   (etypecase name
     (list (first name))
-    (string name)))
+    (string name)
+    (symbol (substitute #\_ #\- (string-downcase (symbol-name name))))))
 
 ;; If cffi-sys doesn't provide a defcfun-helper-forms,
 ;; we define one that uses %foreign-funcall.
@@ -108,7 +110,7 @@
         (foreign-name (foreign-function-name name))
         (arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args))
-        (syms (loop repeat (length args) collect (gensym))))
+        (syms (make-gensym-list (length args))))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
          foreign-name lisp-name (canonicalize-foreign-type return-type)
@@ -145,9 +147,11 @@
   (discard-docstring body)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args)))
-    `(setf (callback ,name)
-           (make-callback
-            ,name ,(canonicalize-foreign-type return-type)
-            ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
-            (inverse-translate-objects ,arg-names ,arg-types ,return-type
-                                       (block ,name ,@body))))))
+    `(progn
+       (setf (callback ,name)
+             (make-callback
+              ,name ,(canonicalize-foreign-type return-type)
+              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
+              (inverse-translate-objects ,arg-names ,arg-types ,return-type
+                                         (block ,name ,@body))))
+       ',name)))

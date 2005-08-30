@@ -90,16 +90,16 @@ the return value of an implcit PROGN around BODY."
 (defctype :string :pointer)
 
 (define-type-translator :string :to-c-dynamic (type value var body)
-  "Type translator for string input arguments."
+  "Convert a lisp string to a foreign string with dynamic extent."
   `(with-foreign-string (,var ,value)
      ,@body))
 
 (define-type-translator :string :to-c (type value)
-  "Type translator for string arguments."
+  "Convert a lisp string to a foreign string."
   `(foreign-string-alloc ,value))
 
 (define-type-translator :string :from-c (type value)
-  "Type translator for string arguments."
+  "Convert a foreign string to a lisp string."
   `(foreign-string-to-lisp ,value))
 
 ;;; It'd be pretty nice if returning multiple values from translators

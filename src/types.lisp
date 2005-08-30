@@ -113,7 +113,7 @@ to open-code (SETF MEM-REF) forms."
                (if (constantp index)
                    `(mem-set ,store ,getter ,type
                              ,(* (eval index) (foreign-type-size (eval type))))
-                   `(mem-ref ,store ,getter ,type
+                   `(mem-set ,store ,getter ,type
                              (* ,index ,(foreign-type-size (eval type)))))
                `(mem-set ,store ,getter ,type
                          (* ,index (foreign-type-size ,type))))
@@ -253,6 +253,7 @@ to open-code (SETF MEM-REF) forms."
 
 (defmacro defcstruct (name &body fields)
   "Define the layout of a foreign structure."
+  (discard-docstring fields)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-struct-definition ',name ',fields)))
 
@@ -353,6 +354,7 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 
 (defmacro defcunion (name &body fields)
   "Define the layout of a foreign union."
+  (discard-docstring fields)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-union-definition ',name ',fields)))
 

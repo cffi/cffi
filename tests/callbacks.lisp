@@ -137,3 +137,29 @@
 (deftest callbacks.string
     (expect-strcat (callback lisp-strcat))
   1)
+
+;;; This one tests mem-aref too.
+(defcfun "qsort" :void
+  (base :pointer)
+  (nmemb :int)
+  (size :int)
+  (fun-compar :pointer))
+
+(defcallback < :int ((a :pointer) (b :pointer))
+  (let ((x (mem-ref a :int))
+        (y (mem-ref b :int)))
+    (cond ((> x y) 1)
+          ((< x y) -1)
+          (t 0))))
+
+(deftest callbacks.qsort
+    (with-foreign-object (array :int 10)
+      ;; Initialize array.
+      (loop for i from 0 and n in '(7 2 10 4 3 5 1 6 9 8)
+            do (setf (mem-aref array :int i) n))
+      ;; Sort it.
+      (qsort array 10 (foreign-type-size :int) (callback <))
+      ;; Return it as a list.
+      (loop for i from 0 below 10
+            collect (mem-aref array :int i)))
+  (1 2 3 4 5 6 7 8 9 10))

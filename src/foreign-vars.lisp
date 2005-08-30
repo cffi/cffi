@@ -37,12 +37,17 @@
              (format nil "*~A*"
                      (string-upcase (substitute #\- #\_ name)))))))
 
-;; TODO: also convert lisp-name -> foreign-name? --luis
 (defun foreign-var-name (name)
   "Return the foreign var name of NAME."
   (etypecase name
     (list (first name))
-    (string name)))
+    (string name)
+    (symbol
+     (let ((sn (substitute #\_ #\- (string-downcase (symbol-name name)))))
+       (if (eql (char sn 0) #\*)
+           ;; remove asterisks around the var name
+           (subseq 1 (1- (length sn)))
+           sn)))))
 
 (defun get-var-ptr (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
@@ -52,7 +57,7 @@
   "Define a foreign global variable."
   (let* ((lisp-name (lisp-var-name name))
          (foreign-name (foreign-var-name name))
-         (fn (intern (concatenate 'string "%access-var-" foreign-name))))
+         (fn (symbolicate "%VAR-ACCESSOR-" lisp-name)))
     `(progn
        (setf (get ',lisp-name 'cffi-ptr-to-var)
              (foreign-var-ptr ,foreign-name))
@@ -61,6 +66,7 @@
              (var (mem-ref (get-var-ptr ',lisp-name) ',type) ,type :from-c)
            var))
        (defun (setf ,fn) (value)
+         ,(if read-only '(declare (ignore value)) (values))
          ,(if read-only
               `(error ,(format nil "Trying to modify read-only foreign var: ~A."
                                lisp-name))

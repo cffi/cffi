@@ -79,7 +79,7 @@
       (error "~S is not defined as a keyword for enym type ~S."
                keyword type)))
 
-(defun foreign-enum-values (type keyword)
+(defun foreign-enum-value (type keyword)
   (let ((type-obj (parse-type type)))
     (if (not (typep type-obj 'foreign-enum))
       (error "~S is not a foreign enum type." type)
@@ -97,11 +97,12 @@
         (error "~S is not a foreign enum type." type)
         (%foreign-enum-keyword type-obj value))))
 
-(defmacro defcenum (name &body values)
+(defmacro defcenum (name &body enum-list)
   "Define an foreign enumerated type."
+  (discard-docstring enum-list)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-type
-      (make-foreign-enum ',name :int ',values))
+      (make-foreign-enum ',name :int ',enum-list))
      ;; to-c translator
      (define-type-translator ,name :to-c (type value)
        `(if (keywordp ,value)

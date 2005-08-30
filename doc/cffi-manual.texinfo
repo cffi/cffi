@@ -1,0 +1,2007 @@
+\input texinfo   @c -*- Mode: Texinfo; coding: utf-8; indent-tabs-mode: nil -*-
+@c %**start of header
+@setfilename cffi.info
+@settitle CFFI User Manual
+@exampleindent 2
+
+@c @documentencoding utf-8
+@c %**end of header
+
+
+@c ============================= Macros =============================
+@c The following macros are used throughout this manual.
+
+@macro Function {args}
+@defun \args\
+@end defun
+@end macro
+
+@macro Macro {args}
+@defmac \args\
+@end defmac
+@end macro
+
+@macro Accessor {args}
+@deffn {Accessor} \args\
+@end deffn
+@end macro
+
+@macro ForeignType {args}
+@deftp {Foreign Type} \args\
+@end deftp
+@end macro
+
+@c ============================= Macros =============================
+
+
+@c Show types in the same index as the functions.
+@synindex tp fn
+
+@copying
+Copyright @copyright{} 2005, James Bielman  <jamesjb at jamesjb.com> @*
+Copyright @copyright{} 2005, Luis Oliveira  <loliveira at common-lisp.net>
+@c I wanted to spell my name correctly, with an acute accent over the
+@c 'i' in Luis but PDF output won't display correctly if I do so.
+
+@quotation
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the ``Software''), to deal in the Software without
+restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+@end quotation
+@end copying
+
+@titlepage
+@title CFFI User Manual
+@c @subtitle Version X.X
+@c @author James Bielman
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top cffi
+@insertcopying
+@end ifnottex
+
+@menu
+* Introduction::                
+* Foreign Types::               
+* Pointers::                    
+* Strings::                     
+* Variables::                   
+* Functions::                   
+* Libraries::                   
+* Callbacks::                   
+* Limitations::                 
+* Symbol Index::                
+@end menu
+
+@node Introduction
+@chapter Introduction
+
+@section Motivation
+
+@section Design Philosophy
+
+@itemize
+@item
+Pointers do not carry around type information. Instead, type
+information is supplied when pointers are dereferenced.
+@item
+A type safe pointer interface can be developed on top of an
+untyped one.  It is difficult to do the opposite.
+@item
+Functions are better than macros.  When a macro could be used
+for performance, use a compiler-macro instead.
+@end itemize
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Foreign Types
+
+@node Foreign Types
+@chapter Foreign Types
+
+Foreign types describe how data is translated back and forth between C
+and Lisp. CFFI provides various built-in types and allows the user to
+define new types.
+
+@menu
+* Built-In Types::              
+* Defining Typedefs::           
+* Foreign Type Translators::    
+* Foreign Structure Types::     
+* Operations on Types::         
+* Allocating Foreign Objects::  
+
+Dictionary
+
+* defcstruct::                  
+* defcunion::                   
+* defctype::                    
+* defcenum::                    
+* define-type-translator::      
+* define-type-spec-parser::     
+* define-foreign-type::         
+* explain-slot-address::        
+* foreign-enum-keyword::        
+* foreign-enum-value::          
+* foreign-slot-address::        
+* foreign-slot-value::          
+* foreign-type-alignment::      
+* foreign-type-size::           
+* with-foreign-object::         
+* with-foreign-slots::          
+@end menu
+
+@c @menu
+@c Dictionary
+@c 
+@c * defctype::
+@c * define-foreign-type::
+@c * define-type-translator::
+@c @end menu
+
+@node Built-In Types
+@section Built-In Types
+
+@ForeignType{:char}
+@ForeignType{:unsigned-char}
+@ForeignType{:short}
+@ForeignType{:unsigned-short}
+@ForeignType{:int}
+@ForeignType{:unsigned-int}
+@ForeignType{:long}
+@ForeignType{:unsigned-long}
+@ForeignType{:long-long}
+@ForeignType{:unsigned-long-long}
+
+These types correspond to the native C integer types according to the
+ABI of the system the Lisp implementation is compiled against.
+
+@emph{:long-long and :unsigned-long-long are not available yet and
+probably won't ever be supported in all implementations/platforms. The
+following types aren't avaiable yet either.}
+
+@ForeignType{:int8}
+@ForeignType{:uint8}
+@ForeignType{:int16}
+@ForeignType{:uint16}
+@ForeignType{:int32}
+@ForeignType{:uint32}
+@ForeignType{:int64}
+@ForeignType{:uint64}
+
+Foreign integer types of specific sizes, corresponding to the C types
+defined in @code{stdint.h}.
+
+@ForeignType{:size}
+@ForeignType{:ssize}
+@ForeignType{:ptrdiff}
+@ForeignType{:time}
+
+Foreign integer types corresponding to the standard C types (without
+the @code{_t} suffix).
+
+@emph{I'm sure there are more of these that could be useful, let's
+add any types that can't be defined portably to this list as
+necessary. --james}
+
+@ForeignType{:float}
+@ForeignType{:double}
+
+The @code{:float} type represents a C @code{float} and a Lisp
+@code{single-float}. @code{:double} represents a C @code{double} and a
+Lisp @code{double-float}.
+
+@emph{Note: this is not true for Lispworks (on linux/x86 and win32 at
+least). --luis}
+
+@ForeignType{:pointer}
+
+A foreign pointer to an object of any type, corresponding to
+@code{void *}.
+
+@ForeignType{:void}
+
+No type at all. Only valid as the return type of a function.
+
+@node Defining Typedefs
+@section Defining Typedefs
+
+@node Foreign Type Translators
+@section Foreign Type Translators
+
+Foo bar.
+
+@node Foreign Structure Types
+@section Foreign Structure Types
+
+@subheading Foreign Structure Example
+
+@lisp
+;; A hairy structure definition that illustrates some of the rules
+;; governing foreign structs.
+(defcstruct person
+  "A person in the employee database."
+  ;; the first argument after the name may be a docstring
+  :alignment :packed      ;; keyword options allowed before first slot
+  (id :int)
+  ;; these are defined as char[255]'s in the c code
+  (first-name  :char 255)
+  (last-name   :char 255)
+  ;; an embedded structure
+  (birthdate timeval)
+  ;; a pointer to another PERSON
+  (supervisor :pointer))
+
+;;; If P is a pointer to a PERSON structure:
+
+;; This returns p->first_name, a pointer.
+(foreign-slot-value p 'person 'first-name)
+
+;; This returns &p->birthdate, a pointer.
+(foreign-slot-value p 'person 'birthdate)
+
+;; This returns p->birthdate.tv_secs as a Lisp integer.
+(foreign-slot-value p 'person 'birthdate 'tv-secs)
+
+;; The previous form is equivalent to (but may be faster than):
+(foreign-slot-value
+ (foreign-slot-value p 'person 'birthdate) 'timeval 'tv-secs)
+
+;; Attempting to set the slot value of an embedded structure or
+;; embedded array causes an error.  Eventually, there may be a
+;; type converter that can handle this situation for some types.
+;; This would be: p->birthdate = ... in C.
+(setf (foreign-slot-value p 'person 'timeval) ...) => error
+@end lisp
+
+@node Operations on Types
+@section Operations on Types
+
+@node Allocating Foreign Objects
+@section Allocating Foreign Objects
+
+
+
+
+@c ===================================================================
+@c DEFCSTRUCT
+
+@node defcstruct
+@heading defcstruct
+@subheading Syntax
+@Macro{defcstruct name &body doc-and-slots => name}
+
+doc-and-slots ::= [docstring] @{ (slot-name slot-type [count]) @}*
+
+@subheading Arguments and Values
+@table @emph
+@item name
+The name of new structure type.
+
+@item docstring
+A documentation string, ignored.
+
+@item slot-name
+A symbol naming the slot.
+
+@item slot-type
+The type specifier for the slot.
+
+@item count
+Used to declare an array of size @emph{count} inside the
+structure. @emph{(will probably be removed once we have an array
+type?) --luis}
+@end table
+
+@subheading Description
+A structure slot is either simple, or aggregate.
+
+Simple structure slots contain a single instance of a type that
+canonicalizes to a built-in type, such as @code{:long} or
+@code{:pointer}.
+
+Aggregate slots contain an embedded structure or union, or an array
+of objects.
+
+@subheading Examples
+@lisp
+(defcstruct point
+  "Pointer structure."
+  (x :int)
+  (y :int))
+
+CFFI> (with-foreign-object (ptr point)
+        ;; Initialize the slots
+        (setf (foreign-slot-value ptr 'point 'x) 42
+              (foreign-slot-value ptr 'point 'y) 42)
+        ;; Return a list with the coordinates
+        (with-foreign-slots ((x y) ptr point)
+          (list x y)))
+(42 42)
+@end lisp
+
+@subheading See Also
+@ref{foreign-slot-address} @*
+@ref{foreign-slot-value} @*
+@ref{with-foreign-slots}
+
+
+
+
+@c ===================================================================
+@c DEFCUNION
+
+@node defcunion
+@heading defcunion
+@subheading Syntax
+@Macro{defcunion name &body doc-and-slots => name}
+
+doc-and-slots ::= [docstring] @{ (slot-name slot-type [count]) @}*
+
+@subheading Arguments and Values
+@table @emph
+@item name
+The name of new union type.
+
+@item docstring
+A documentation string, ignored.
+
+@item slot-name
+A symbol naming the slot.
+
+@item slot-type
+The type specifier for the slot.
+
+@item count
+Used to declare an array of size @emph{count} inside the
+structure. @emph{(will probably be removed once we have an array
+type?) --luis}
+@end table
+
+@subheading Description
+A union is a structure in which all slots have an offset of
+zero. Therefore, you should use the usual foreign structure operations
+for accessing a union's slots.
+
+@subheading Examples
+@lisp
+(defcunion uint32-bytes
+  (int-value :unsigned-int)
+  (bytes :unsigned-char 4))
+@end lisp
+
+@subheading See Also
+@ref{foreign-slot-address} @*
+@ref{foreign-slot-value}
+
+
+
+
+@c ===================================================================
+@c DEFCTYPE
+
+@node defctype
+@heading defctype
+@subheading Syntax
+@Macro{defctype name base-type &optional docstring}
+
+@subheading Arguments and Values
+@table @emph
+@item name
+The name of the new foreign type.
+
+@item base-type
+A symbol or a list defining the new type.
+
+@item docstring
+A documentation string, ignored.
+@end table
+
+@subheading Description
+The @code{defctype} macro provides a mechanism similar to C's
+@code{typedef} to define new types.
+
+The new type inherits @emph{base-type}'s translators.
+
+@subheading Examples
+@lisp
+(defctype my-string :string
+  "My own string type.")
+
+(defctype long-bools (:boolean :long)
+  "Booleans that map to C longs.")
+@end lisp
+
+@subheading See Also
+@ref{define-foreign-type} @*
+@ref{define-type-translator}
+
+
+
+
+@c ===================================================================
+@c DEFCENUM
+
+@node defcenum
+@heading defcenum
+@subheading Syntax
+@Macro{defcenum name &body enum-list}
+
+enum-list ::= [docstring] @{ keyword | (keyword value) @}*
+
+@subheading Arguments and Values
+@table @emph
+@item name
+The name of the new enum type.
+
+@item docstring
+A documentation string, ignored.
+
+@item keyword
+A keyword symbol.
+
+@item value
+An index value for a keyword.
+@end table
+
+@subheading Description
+The @code{defcenum} macro is used to define foreign types that map
+keyword symbols to integer values, similar to the C @code{enum} type.
+
+If @emph{value} is omitted its value will either be 0, if it's the
+first entry, or it it will continue the progression from the last
+specified value.
+
+Keywords will be automatically converted to values and vice-versa when
+being passed as arguments to or returned from foreign functions,
+respectively. The same applies to any other situations where an object
+of an @code{enum} type is expected.
+
+@subheading Examples
+@lisp
+(defcenum boolean
+  :no
+  :yes)
+
+CFFI> (foreign-enum-value 'boolean :no)
+0
+
+(defcenum numbers
+  (:one 1)
+  :two
+  (:four 4))
+
+CFFI> (foreign-enum-keyword 'numbers 2)
+:TWO
+@end lisp
+
+@subheading See Also
+@ref{foreign-enum-value} @*
+@ref{foreign-enum-keyword}
+
+
+
+
+@c ===================================================================
+@c DEFINE-TYPE-TRANSLATOR
+
+@node define-type-translator
+@heading define-type-translator
+@subheading Syntax
+@Macro{define-type-translator type direction arguments &body body}
+
+arguments ::= (type-arg value-arg &optional var-arg body-arg)
+
+@subheading Arguments and Values
+@table @emph
+@item type
+A symbol naming a previously user-defined foreign type.
+
+@item direction
+One of @code{:to-c}, @code{:from-c} or @code{:to-c-dynamic}
+
+@item type-arg
+...
+
+@item value-arg
+...
+
+@item var-arg
+...
+
+@item body-arg
+...
+
+@item body
+The body of this type translator.
+@end table
+
+@subheading Description
+
+
+@subheading Examples
+Here is how CFFI's @code{:boolean} type translator is defined:
+@lisp
+(define-type-translator :boolean :from-c (type value) 
+  "Type translator to convert t/nil to a C boolean."
+  `(if ,value 1 0))
+
+(define-type-translator :boolean :to-c (type value)
+  "Type translator to convert C booleans to t/nil."
+  `(not (zerop ,value)))
+@end lisp
+
+And the @code{:string} type:
+
+@lisp
+(define-type-translator :string :to-c-dynamic (type value var body)
+  "Convert a lisp string to a foreign string with dynamic extent."
+  `(with-foreign-string (,var ,value)
+     ,@@body))
+
+(define-type-translator :string :to-c (type value)
+  "Convert a lisp string to a foreign string."
+  `(foreign-string-alloc ,value))
+
+(define-type-translator :string :from-c (type value)
+  "Convert a foreign string to a lisp string."
+  `(foreign-string-to-lisp ,value))
+@end lisp
+
+@subheading See Also
+@ref{defctype} @*
+@ref{define-foreign-type}
+
+
+
+@c ===================================================================
+@c DEFINE-TYPE-SPEC-PARSER
+
+@node define-type-spec-parser
+@heading define-type-spec-parser
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@emph{Note: It doesn't make much sense for this macro to be exported
+yet. --luis}
+
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c DEFINE-FOREIGN-TYPE
+
+@node define-foreign-type
+@heading define-foreign-type
+@subheading Syntax
+@Macro{define-foreign-type type-name lambda-list &body body => type-name}
+
+@subheading Arguments and Values
+@table @emph
+@item type-name
+A symbol naming the new foreign type.
+
+@item lambda-list
+A lambda list which is the argument list of the new foreign type.
+
+@item body
+One or more forms that provide a definition of the new foreign type.
+@end table
+
+@subheading Description
+The macro @code{define-foreign-type} defines a new parameterized type
+called @emph{type-name}. Given the arguments specified in
+@emph{lambda-list}, executing @emph{body} should return a type
+specifier which will determine the behaviour of @emph{type-name}.
+The behaviour of parameterized types can be further customized using
+@code{define-type-translator}.
+
+Unlike @code{defctype}, which is used to define simple C-like
+typedefs, @code{define-foreign-type} provides a mechanism for type
+aliases to take arguments. The following examples illustrate this
+capability.
+
+@subheading Examples
+Taken from CFFI's @code{:boolean} type definition:
+@lisp
+(define-foreign-type :boolean (&optional (base-type :int))
+  "Boolean type. Maps to an :int by default. Only accepts integer types."
+  (ecase base-type
+    ((:char
+      :unsigned-char
+      :int
+      :unsigned-int
+      :long
+      :unsigned-long) base-type)))
+
+CFFI> (canonicalize-foreign-type :boolean)
+:INT
+CFFI> (canonicalize-foreign-type '(:boolean :long))
+:LONG
+CFFI> (canonicalize-foreign-type '(:boolean :float))
+; Error, signaled by ECASE.
+@end lisp
+
+This next example is hypothetical as there is no @code{:array} type
+yet.
+@lisp
+(define-foreign-type int-array (&rest dimensions)
+  `(:array :int ,@@dimensions))
+@end lisp
+
+@subheading See Also
+@ref{defctype} @*
+@ref{define-type-translator}
+
+
+
+
+@c ===================================================================
+@c EXPLAIN-FOREIGN-SLOT-VALUE
+
+@node explain-slot-address
+@heading explain-slot-address
+@subheading Syntax
+@Macro{explain-foreign-slot-value ptr type &rest slot-names}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+...
+
+@item type
+...
+
+@item slot-names
+...
+@end table
+
+@subheading Description
+This macro translates the slot access that would occur by calling
+@code{FOREIGN-SLOT-VALUE} with the same arguments into an equivalent
+expression in C and prints it to @code{*STANDARD-OUTPUT*}.
+
+@emph{Note: this is not implemented yet.}
+
+@subheading Examples
+@lisp
+CFFI> (explain-foreign-slot-value ptr 'timeval 'tv-secs)
+ptr->tv_secs
+
+CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
+emp->hire_date.tv_usecs
+@end lisp
+
+@c @subheading See Also
+
+
+
+
+@c ===================================================================
+@c FOREIGN-ENUM-KEYWORD
+
+@node foreign-enum-keyword
+@heading foreign-enum-keyword
+@subheading Syntax
+@Function{foreign-enum-keyword type value => keyword}
+
+@subheading Arguments and Values
+@table @emph
+@item type
+An @code{enum} type.
+
+@item value
+An integer.
+
+@item keyword
+A keyword symbol.
+@end table
+
+@subheading Description
+The function @code{foreign-enum-keyword} returns the keyword symbol
+that corresponds to @emph{value} in @emph{type}.
+
+An error is signaled if @emph{type} doesn't contain such @emph{value}.
+
+@subheading Examples
+@lisp
+(defcenum boolean
+  :no
+  :yes)
+
+CFFI> (foreign-enum-keyword 'boolean 1)
+:YES
+@end lisp
+@subheading See Also
+@ref{defcenum} @*
+@ref{foreign-enum-value}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-ENUM-VALUE
+
+@node foreign-enum-value
+@heading foreign-enum-value
+@subheading Syntax
+@Function{foreign-enum-value type keyword => value}
+
+@subheading Arguments and Values
+@table @emph
+@item type
+An @code{enum} type.
+
+@item keyword
+A keyword symbol.
+
+@item value
+An integer.
+@end table
+
+@subheading Description
+The function @code{foreign-enum-keyword} returns the @emph{value} that
+corresponds to @emph{keyword} in @emph{type}.
+
+An error is signaled if @emph{type} doesn't contain such @emph{keyword}.
+
+@subheading Examples
+@lisp
+(defcenum boolean
+  :no
+  :yes)
+
+CFFI> (foreign-enum-keyword 'boolean :yes)
+1
+@end lisp
+
+@subheading See Also
+@ref{defcenum} @*
+@ref{foreign-enum-value}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-SLOT-ADDRESS
+
+@node foreign-slot-address
+@heading foreign-slot-address
+@subheading Syntax
+@Function{foreign-slot-address ptr type &rest slot-names => pointer}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A pointer to structure.
+
+@item type
+A foreign structure type.
+
+@item slot-names
+One or more slot names.
+
+@item pointer
+A pointer to the slot specified in @emph{slot-names}.
+@end table
+
+@subheading Description
+Returns a pointer to a slot referred by @emph{slot-names} in a foreign
+object of type @emph{type} at @emph{ptr}. The returned pointer points
+inside the structure. Both the pointer and the memory it points to
+have the same extent as @emph{ptr}.
+
+For aggregate slots, this is the same value returned by
+@code{foreign-slot-value}.
+
+@subheading Examples
+@lisp
+(defcstruct point
+  "Pointer structure."
+  (x :int)
+  (y :int))
+
+CFFI> (with-foreign-object (ptr point)
+        (foreign-slot-address ptr 'point 'x))
+#<FOREIGN-ADDRESS #xBFFF6E60>
+;; Note: the exact pointer representation varies from lisp to lisp.
+@end lisp
+
+@subheading See Also
+@ref{defcstruct} @*
+@ref{foreign-slot-value}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-SLOT-VALUE
+
+@node foreign-slot-value
+@heading foreign-slot-value
+@subheading Syntax
+@Accessor{foreign-slot-value ptr type &rest slot-names => object}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A pointer to structure.
+
+@item type
+A foreign structure type.
+
+@item slot-names
+One or more slot names.
+
+@item object
+The object contained in the slot specified in @emph{slot-names}.
+@end table
+
+@subheading Description
+For simple slots, @code{foreign-slot-value} returns the value of the
+object, such as a Lisp integer or pointer. In C, this would be
+expressed as @code{ptr->slot}.
+
+For aggregate slots, a pointer inside the structure to the beginning
+of the slot's data is returned. In C, this would be expressed as
+@code{&ptr->slot}. This pointer and the memory it points to have the
+same extent as @emph{ptr}.
+
+There are compiler macros for @code{foreign-slot-value} and its
+@code{setf} expansion that open code the memory access when 
+@emph{type} and @emph{slot-names} are constant at compile-time.
+
+@subheading Examples
+@lisp
+(defcstruct point
+  "Pointer structure."
+  (x :int)
+  (y :int))
+
+CFFI> (with-foreign-object (ptr point)
+        ;; Initialize the slots
+        (setf (foreign-slot-value ptr 'point 'x) 42
+              (foreign-slot-value ptr 'point 'y) 42)
+        ;; Return a list with the coordinates
+        (with-foreign-slots ((x y) ptr point)
+          (list x y)))
+(42 42)
+@end lisp
+
+@subheading See Also
+@ref{defcstruct} @*
+@ref{foreign-slot-address} @*
+@ref{with-foreign-slots}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-TYPE-ALIGNMENT
+
+@node foreign-type-alignment
+@heading foreign-type-alignment
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c FOREIGN-TYPE-SIZE
+
+@node foreign-type-size
+@heading foreign-type-size
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c WITH-FOREIGN-OBJECT
+
+@node with-foreign-object
+@heading with-foreign-object
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c WITH-FOREIGN-SLOTS
+
+@node with-foreign-slots
+@heading with-foreign-slots
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Pointers
+
+@node Pointers
+@chapter Pointers
+
+@emph{Describe the theory of how foreign variables work---they are
+always pointers, even when accessing integer types or embedded
+structures. You cannot represent a structure by value.}
+
+@menu
+* Basic Pointer Operations::    
+* Allocating Foreign Memory::   
+* Accessing Foreign Memory::    
+
+Dictionary
+
+* foreign-free::                
+* foreign-alloc::               
+* mem-aref::                    
+* mem-ref::                     
+* pointerp::                    
+* null-ptr::                    
+* null-ptr-p::                  
+* inc-ptr::                     
+* with-foreign-ptr::            
+@end menu
+
+@node Basic Pointer Operations
+@section Basic Pointer Operations
+
+@node Allocating Foreign Memory
+@section Allocating Foreign Memory
+
+@node Accessing Foreign Memory
+@section Accessing Foreign Memory
+
+
+
+
+@c ===================================================================
+@c FOREIGN-FREE
+
+@node foreign-free
+@heading foreign-free
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c FOREIGN-ALLOC
+
+@node foreign-alloc
+@heading foreign-alloc
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c MEM-AREF
+
+@node mem-aref
+@heading mem-aref
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@lisp
+CFFI> (with-foreign-string (str "Hello, foreign world!")
+        (mem-aref str :char 6))
+32
+CFFI> (code-char *)
+#\Space
+@end lisp
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c MEM-REF
+
+@node mem-ref
+@heading mem-ref
+@subheading Syntax
+@Accessor{mem-ref ptr type &optional offset => object}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A pointer.
+
+@item type
+A foreign type.
+
+@item offset
+An integer.
+
+@item object
+The value @emph{ptr} points to.
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c POINTERP
+
+@node pointerp
+@heading pointerp
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c NULL-PTR
+
+@node null-ptr
+@heading null-ptr
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c NULL-PTR-P
+
+@node null-ptr-p
+@heading null-ptr-p
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c INC-PTR
+
+@node inc-ptr
+@heading inc-ptr
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c WITH-FOREIGN-PTR
+
+@node with-foreign-ptr
+@heading with-foreign-ptr
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Strings
+
+@node Strings
+@chapter Strings
+
+@menu
+Dictionary
+
+* foreign-string-alloc::        
+* foreign-string-free::         
+* foreign-string-to-lisp::      
+* lisp-string-to-foreign::      
+* with-foreign-string::         
+* with-foreign-ptr-as-string::  
+@end menu
+
+
+
+
+@c ===================================================================
+@c FOREIGN-STRING-ALLOC
+
+@node foreign-string-alloc
+@heading foreign-string-alloc
+@subheading Syntax
+@Function{foreign-string-alloc string => pointer}
+
+@subheading Arguments and Values
+@table @emph
+@item string
+A Lisp string.
+
+@item pointer
+A pointer to the newly allocated foreign string containg @emph{string}.
+@end table
+
+@subheading Description
+The @code{foreign-string-alloc} function allocates a foreign string
+containing a Lisp @emph{string}.
+
+This string must be freed with @code{foreign-string-free}.
+
+@subheading Examples
+@lisp
+CFFI> (setq str (foreign-string-alloc "Hello, foreign world!"))
+#<FOREIGN-ADDRESS #x00400560>
+CFFI> (foreign-funcall "strlen" :pointer str :int)
+21
+@end lisp
+
+@subheading See Also
+@ref{foreign-string-free} @*
+@ref{with-foreign-string}
+@c @ref{:string}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-STRING-FREE
+
+@node foreign-string-free
+@heading foreign-string-free
+@subheading Syntax
+@Function{foreign-string-free pointer}
+
+@subheading Arguments and Values
+@table @emph
+@item pointer
+A pointer to string allocated by @code{foreign-string-alloc}.
+@end table
+
+@subheading Description
+The @code{foreign-string-free} function frees a foreign string
+allocated by @code{foreign-string-alloc}.
+
+@subheading Examples
+
+@subheading See Also
+@ref{foreign-string-alloc}
+
+
+
+@c ===================================================================
+@c FOREIGN-STRING-TO-LISP
+
+@node foreign-string-to-lisp
+@heading foreign-string-to-lisp
+@subheading Syntax
+@Function{foreign-string-to-lisp ptr &optional size null-terminated-p
+=> string}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A pointer.
+
+@item size
+The maximum string size. @code{most-positive-fixnum}, by default.
+
+@item null-terminated-p
+Specifies if the string @emph{ptr} points to is null terminated. True,
+by default.
+@end table
+
+@subheading Description
+The @code{foreign-string-to-lisp} function copies at most @emph{size}
+characters from @emph{ptr} into a Lisp string.
+
+When @emph{null-terminated-p} is true (the default), characters are
+copied until @emph{size} is reached or a @code{NULL} character is
+found.
+
+If @emph{ptr} is a null pointer, returns nil.
+
+Note that the @code{:string} type will automatically convert between
+Lisp strings and foreign strings.
+
+@subheading Examples
+@lisp
+CFFI> (foreign-funcall "getenv" :string "HOME" :pointer)
+#<FOREIGN-ADDRESS #xBFFFFFD5>
+CFFI> (foreign-string-to-lisp *)
+"/Users/luis"
+@end lisp
+
+@subheading See Also
+@ref{foreign-string-to-lisp}
+
+
+
+
+@c ===================================================================
+@c LISP-STRING-TO-FOREIGN
+
+@node lisp-string-to-foreign
+@heading lisp-string-to-foreign
+@subheading Syntax
+@Function{lisp-string-to-foreign string ptr size}
+
+@subheading Arguments and Values
+@table @emph
+@item string
+A Lisp string.
+
+@item ptr
+A foreign pointer.
+
+@item size
+An integer.
+@end table
+
+@subheading Description
+The @code{lisp-string-to-foreign} function copies at most
+@emph{size}-1 characters from a Lisp @emph{string} to @emph{ptr}. The
+foreign string will be null-terminated.
+
+@subheading Examples
+@lisp
+CFFI> (with-foreign-ptr-as-string (str 255)
+        (lisp-string-to-foreign "Hello, foreign world!" str 6))
+"Hello"
+@end lisp
+
+@subheading See Also
+@ref{foreign-string-alloc} @*
+@ref{foreign-string-to-lisp} @*
+@ref{with-foreign-ptr-as-string}
+
+
+
+
+@c ===================================================================
+@c WITH-FOREIGN-STRING
+
+@node with-foreign-string
+@heading with-foreign-string
+@subheading Syntax
+@Macro{with-foreign-string (var lisp-string) &body body}
+
+@subheading Arguments and Values
+@table @emph
+@item var
+A symbol.
+
+@item lisp-string
+A Lisp string.
+
+@item body
+A list of forms to be executed.
+@end table
+
+@subheading Description
+The @code{with-foreign-string} macro will bind @emph{var} to a newly
+allocated foreign string containing @emph{lisp-string}.
+
+@subheading Examples
+@lisp
+CFFI> (with-foreign-string (foo "12345")
+        (foreign-funcall "strlen" :pointer foo :int))
+5
+@end lisp
+
+@subheading See Also
+@ref{foreign-string-alloc} @*
+@ref{with-foreign-ptr-as-string}
+
+
+
+
+@c ===================================================================
+@c WITH-FOREIGN-PTR-AS-STRING
+
+@node with-foreign-ptr-as-string
+@heading with-foreign-ptr-as-string
+@subheading Syntax
+@Macro{with-foreign-ptr-as-string (var size &optional size-var) &body body}
+
+@subheading Arguments and Values
+@table @emph
+@item var
+A symbol.
+
+@item lisp-string
+A Lisp string.
+
+@item body
+List of forms to be executed.
+@end table
+
+@subheading Description
+The @code{with-foreign-ptr-as-string} macro is similar to
+@code{with-foreign-ptr} except that @emph{var}, as a Lisp string, is
+used as the returned value of an implicit @code{progn} around @emph{body}.
+
+@subheading Examples
+@lisp
+CFFI> (with-foreign-ptr-as-string (str 6 str-size)
+        (lisp-string-to-foreign "Hello, foreign world!" str str-size))
+"Hello"
+@end lisp
+
+@subheading See Also
+@ref{foreign-string-alloc} @*
+@ref{with-foreign-string}
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Variables
+
+@node Variables
+@chapter Variables
+
+@menu
+Dictionary
+
+* defcvar::                     
+* get-var-ptr::                 
+@end menu
+
+
+
+
+@c ===================================================================
+@c DEFCVAR
+
+@node defcvar
+@heading defcvar
+@subheading Syntax
+@Macro{defcvar name type &key read-only => lisp-name}
+
+name ::= lisp-name | foreign-name | (foreign-name lisp-name)
+
+@subheading Arguments and Values
+@table @emph
+@item foreign-name
+A string denoting a foreign function.
+
+@item lisp-name
+A symbol naming the Lisp function to be created.
+
+@item type
+A foreign type.
+
+@item read-only
+A boolean.
+@end table
+
+@subheading Description
+The @code{defcvar} macro 
+
+When one of @emph{lisp-name} or @emph{foreign-name} is omitted, the
+other is automatically derived using the following rules:
+
+@itemize
+@item
+Foreign names are converted to Lisp names by uppercasing, replacing
+underscores with hyphens, and wrapping around asterisks.
+@item
+Lisp names are converted to foreign names by lowercasing, replacing
+hyphens with underscores, and removing asterisks, if any.
+@end itemize
+
+@subheading Examples
+@lisp
+CFFI> (defcvar "errno" :int)
+*ERRNO*
+CFFI> (foreign-funcall "strerror" :int *errno* :string)
+"Inappropriate ioctl for device"
+CFFI> (setf *errno* 1)
+1
+CFFI> (foreign-funcall "strerror" :int *errno* :string)
+"Operation not permitted"
+@end lisp
+
+Trying to modify a read-only foreign variable:
+
+@lisp
+CFFI> (defcvar ("errno" +error-number+) :int :read-only t)
++ERROR-NUMBER+
+CFFI> (setf +error-number+ 12)
+; Error: Trying to modify read-only foreign var: +ERROR-NUMBER+.
+@end lisp
+
+@emph{Note that accessing @code{errno} this way won't work with every
+C standard library.}
+
+@subheading See Also
+@ref{get-var-ptr}
+
+
+
+
+@c ===================================================================
+@c GET-VAR-PTR
+
+@node get-var-ptr
+@heading get-var-ptr
+@subheading Syntax
+
+@subheading Arguments and Values
+@table @emph
+@item ...
+asd
+
+@item ...
+asd
+@end table
+
+@subheading Description
+@subheading Examples
+@subheading See Also
+@ref{defcvar}
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Functions
+
+@node Functions
+@chapter Functions
+
+@menu
+* Calling Foreign Functions::   
+* Defining Foreign Functions::  
+
+Dictionary
+
+* defcfun::                     
+* foreign-funcall::             
+@end menu
+
+@node Calling Foreign Functions
+@section Calling Foreign Functions
+
+@node Defining Foreign Functions
+@section Defining Foreign Functions
+
+
+
+
+@c ===================================================================
+@c DEFCFUN
+
+@node defcfun
+@heading defcfun
+@subheading Syntax
+@Macro{defcfun name return-type &body arguments => lisp-name}
+
+name ::= lisp-name | foreign-name | (foreign-name lisp-name) @*
+arguments ::= @{ (arg-name arg-type) @}*
+
+@subheading Arguments and Values
+@table @emph
+@item foreign-name
+A string denoting a foreign function.
+
+@item lisp-name
+A symbol naming the Lisp function to be created.
+
+@item arg-name
+A symbol.
+
+@item return-type, arg-type
+A foreign type.
+@end table
+
+@subheading Description
+The @code{defcfun} macro provides a declarative interface for defining
+Lisp functions that call foreign functions.
+
+When one of @emph{lisp-name} or @emph{foreign-name} is omitted, the
+other is automatically derived using the following rules:
+
+@itemize
+@item
+Foreign names are converted to Lisp names by uppercasing and replacing
+underscores with hyphens.
+@item
+Lisp names are converted to foreign names by lowercasing and replacing
+hyphens with underscores.
+@end itemize
+
+@subheading Examples
+@lisp
+(defcfun "strlen" :int (n :string))
+
+CFFI> (strlen "123")
+3
+
+(defcfun ("abs" c-abs) :int (n :int))
+
+CFFI> (c-abs -42)
+42
+@end lisp
+
+@subheading See Also
+@ref{foreign-funcall}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-FUNCALL
+
+@node foreign-funcall
+@heading foreign-funcall
+@subheading Syntax
+@Macro{foreign-funcall name &rest arguments => return-value}
+
+arguments ::= @{ arg-type arg @}* [return-type] 
+
+@subheading Arguments and Values
+@table @emph
+@item name
+The name of the foreign function, a string.
+
+@item arg-type
+A foreign type.
+
+@item arg
+An argument of type @emph{arg-type}.
+
+@item return-type
+A foreign type, @code{:void} by default.
+
+@item return-value
+A lisp object.
+@end table
+
+@subheading Description
+The @code{foreign-funcall} macro is the main primitive for calling
+foreign functions.
+
+@emph{Note: The return value of foreign-funcall on functions with a
+:void return type is still undefined.}
+
+@subheading Implementation-specific Notes
+@itemize
+@item
+Lispworks and Corman Lisp do not support @code{foreign-funcall}. In
+these implementations, @code{:no-foreign-funcall} will be present in
+@code{*features*}.
+@end itemize
+
+@subheading Examples
+@lisp
+CFFI> (foreign-funcall "strlen" :string "foo" :int)
+3
+@end lisp
+
+@lisp
+;; void print_number(int n)
+;; @{
+;;     printf("N: %d\n", n);
+;; @}
+
+CFFI> (foreign-funcall "print_number" :int 123456)
+N: 123456
+NIL
+@end lisp
+
+@subheading See Also
+@ref{defcfun}
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Libraries
+
+@node Libraries
+@chapter Libraries
+
+@menu
+Dictionary
+
+* load-foreign-library::        
+@end menu
+
+
+
+
+@c ===================================================================
+@c LOAD-FOREIGN-LIBRARY
+
+@node load-foreign-library
+@heading load-foreign-library
+@subheading Syntax
+@Function{load-foreign-library name}
+
+@subheading Arguments and Values
+@table @emph
+@item name
+...
+@end table
+
+@subheading Description
+@emph{For now, this interface is dirt simple. It simply passes the
+library name to the underlying function in CFFI-SYS. Once we get some
+user feedback about implementing a search strategy this will get
+fancier. --james}
+
+@subheading Examples
+@subheading See Also
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Callbacks
+
+@node Callbacks
+@chapter Callbacks
+
+@menu
+Dictionary
+
+* callback::                    
+* defcallback::                 
+* get-callback::                
+@end menu
+
+
+
+
+@c ===================================================================
+@c CALLBACK
+
+@node callback
+@heading callback
+@subheading Syntax
+@Macro{callback symbol => pointer}
+
+(setf (@strong{callback} symbol) @emph{new-value})
+
+@subheading Arguments and Values
+@table @emph
+@item symbol
+A symbol denoting a callback.
+
+@item pointer, new-value
+A pointer.
+@end table
+
+@subheading Description
+The @code{callback} macro is analogous to the standard CL special
+operator @code{function} and will return a pointer to the callback
+denoted by the symbol @emph{name}.
+
+@subheading Examples
+@lisp
+CFFI> (defcallback sum :int ((a :int) (b :int))
+        (+ a b))
+SUM
+CFFI> (callback sum)
+#<A Mac Pointer #x102350>
+CFFI> (setf (callback sum) (null-ptr))
+#<A Null Mac Pointer>
+CFFI> (callback sum)
+#<A Null Mac Pointer>
+@end lisp
+
+@subheading See Also
+@ref{get-callback} @*
+@ref{defcallback}
+
+
+
+
+@c ===================================================================
+@c DEFCALLBACK
+
+@node defcallback
+@heading defcallback
+@subheading Syntax
+@Macro{defcallback name return-type arguments &body body => name}
+
+arguments ::= (@{ (arg-name arg-type) @}*)
+
+@subheading Arguments and Values
+@table @emph
+@item name
+A symbol naming the callback created.
+
+@item return-type
+The foreign type for the callback's return value.
+
+@item arg-name
+A symbol.
+
+@item arg-type
+A foreign type.
+@end table
+
+@subheading Description
+The macro @code{defcallback} defines a Lisp function the can be called
+from C (but not from Lisp). The arguments passed to this function will
+be converted to the appropriate Lisp representation and its return
+value will be converted to its C representation.
+
+This Lisp function can be accessed by the @code{callback} macro or the
+@code{get-callback} function.
+
+@subheading Examples
+@lisp
+(defcfun "qsort" :void
+  (base :pointer)
+  (nmemb :int)
+  (size :int)
+  (fun-compar :pointer))
+
+(defcallback < :int ((a :pointer) (b :pointer))
+  (let ((x (mem-ref a :int))
+        (y (mem-ref b :int)))
+    (cond ((> x y) 1)
+          ((< x y) -1)
+          (t 0))))
+
+CFFI> (with-foreign-object (array :int 10)
+        ;; Initialize array.
+        (loop for i from 0 and n in '(7 2 10 4 3 5 1 6 9 8)
+              do (setf (mem-aref array :int i) n))
+        ;; Sort it.
+        (qsort array 10 (foreign-type-size :int) (callback <))
+        ;; Return it as a list.
+        (loop for i from 0 below 10
+              collect (mem-aref array :int i)))
+(1 2 3 4 5 6 7 8 9 10)
+@end lisp
+
+@subheading See Also
+@ref{callback} @*
+@ref{get-callback}
+
+
+
+
+@c ===================================================================
+@c CALLBACK
+
+@node get-callback
+@heading get-callback
+@subheading Syntax
+@Accessor{get-callback symbol => pointer}
+
+(setf (@strong{get-callback} @emph{symbol}) @emph{new-value})
+
+@subheading Arguments and Values
+@table @emph
+@item symbol
+A symbol denoting a callback.
+
+@item new-value, pointer
+A pointer.
+@end table
+
+@subheading Description
+This is the functional version of the @code{callback} macro. It
+returns a pointer to the callback named by @emph{symbol} suitable, for
+example, to pass as arguments to foreign functions.
+
+@subheading Examples
+@lisp
+CFFI> (defcallback sum :int ((a :int) (b :int))
+        (+ a b))
+SUM
+CFFI> (get-callback 'sum)
+#<A Mac Pointer #x102350>
+CFFI> (setf (get-callback 'sum) (null-ptr))
+#<A Null Mac Pointer>
+CFFI> (get-callback 'sum)
+#<A Null Mac Pointer>
+@end lisp
+
+@subheading See Also
+@ref{callback} @*
+@ref{defcallback}
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Limitations
+
+@node Limitations
+@chapter Limitations
+
+
+@node Symbol Index
+@unnumbered Symbol Index
+@printindex fn
+
+@bye

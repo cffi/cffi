@@ -68,6 +68,12 @@
       (foreign-funcall "strcat" :pointer s :string ", world!" :pointer))
   "Hello, world!")
 
+(deftest funcall.string.3
+    (with-foreign-ptr (ptr 100)
+      (lisp-string-to-foreign "Hello, " ptr 8)
+      (foreign-funcall "strcat" :pointer ptr :string "world!" :string))
+  "Hello, world!")
+
 ;;;# Calling Varargs Functions
 
 ;; The CHAR argument must be passed as :INT because chars are promoted
