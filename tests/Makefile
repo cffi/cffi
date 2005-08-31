@@ -38,6 +38,12 @@ CC                := gcc
 CFLAGS            := -lm -Wall
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .so
+else
+# Let's assume this is win32
+CC                := gcc
+CFLAGS            := -lm -Wall
+SHLIB_CFLAGS      := -shared
+SHLIB_EXT         := .dll 
 endif
 endif
 
