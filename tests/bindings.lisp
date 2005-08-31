@@ -28,7 +28,10 @@
 (in-package #:cffi-tests)
 
 ;; hmm..
-(defvar *lib* (make-pathname :name "libtest" :type "so"
-                             :directory (pathname-directory *load-truename*)))
+(defparameter *lib*
+  (make-pathname :name "libtest"
+                 :type #-mswindows "so" #+mswindows "dll"
+                 :directory (pathname-directory *load-truename*)
+                 :device (pathname-device *load-truename*)))
 
 (load-foreign-library (namestring *lib*))

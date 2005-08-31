@@ -49,6 +49,6 @@ shlibs: libtest$(SHLIB_EXT)
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 clean:
-	rm -f *.so
+	rm -f *.so *.dylib *.dll *.bundle
 
 # vim: ft=make ts=3 noet

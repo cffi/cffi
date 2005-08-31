@@ -27,7 +27,7 @@
 
 (in-package #:cffi-tests)
 
-(defcfun "strdup" :string+ptr (str :string))
+(defcfun ("my_strdup" strdup) :string+ptr (str :string))
 
 (deftest misc-types.string+ptr
     (destructuring-bind (string pointer)
@@ -80,7 +80,7 @@
 (defctype funky-string (:wrapper my-string :to-c funkify :from-c 3rd-person)
   "A useful type.")
 
-(defcfun ("strdup" funky-strdup) funky-string
+(defcfun ("my_strdup" funky-strdup) funky-string
   (str funky-string))
 
 (deftest misc-types.wrapper
