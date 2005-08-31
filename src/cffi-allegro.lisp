@@ -38,6 +38,7 @@
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
+   #:%foreign-funcall-ptr
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -167,10 +168,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun convert-to-lisp-type (type)
   (if (equal '(* :void) type)
-      '(* :void)
+      'integer
       (ecase type
         (:char 'signed-byte)
-        (:unsigned-char 'unsigned-byte)
+        (:unsigned-char 'integer) ;'unsigned-byte)
         ((:short
           :unsigned-short
           :int
@@ -240,6 +241,22 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
         :arg-checking nil
         :strings-convert nil)
      `(,ff-name ,@args))))
+
+;;; See doc/allegro-internals.txt for a clue about entry-vec.
+(defmacro %foreign-funcall-ptr (ptr &rest args)
+  (multiple-value-bind (types fargs rettype)
+      (foreign-funcall-type-and-args args)
+    (with-unique-names (entry-vec)
+      `(let ((,entry-vec (excl::make-entry-vec-boa)))
+         (setf (aref ,entry-vec 1) ,ptr) ; set jump address
+         (system::ff-funcall
+          ,entry-vec
+          ;; arg types {'(:c-type lisp-type) argN}*
+          ,@(mapcan (lambda (type arg)
+                      `(',(allegro-type-pair type) ,arg))
+                    types fargs)
+          ;; return type '(:c-type lisp-type)
+          ',(allegro-type-pair rettype)))))) 
 
 ;;;# Callbacks
 

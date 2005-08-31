@@ -46,7 +46,7 @@
      (let ((sn (substitute #\_ #\- (string-downcase (symbol-name name)))))
        (if (eql (char sn 0) #\*)
            ;; remove asterisks around the var name
-           (subseq 1 (1- (length sn)))
+           (subseq sn 1 (1- (length sn)))
            sn)))))
 
 (defun get-var-ptr (symbol)

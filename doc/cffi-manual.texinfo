@@ -1719,14 +1719,14 @@ CFFI> (c-abs -42)
 @node foreign-funcall
 @heading foreign-funcall
 @subheading Syntax
-@Macro{foreign-funcall name &rest arguments => return-value}
+@Macro{foreign-funcall name-or-pointer &rest arguments => return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type] 
 
 @subheading Arguments and Values
 @table @emph
-@item name
-The name of the foreign function, a string.
+@item name-or-pointer
+Either a string or a pointer.
 
 @item arg-type
 A foreign type.

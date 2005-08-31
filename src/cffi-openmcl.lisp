@@ -39,6 +39,7 @@
    #:inc-ptr
    #:%mem-ref
    #:%foreign-funcall
+   #:%foreign-funcall-ptr
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -245,6 +246,9 @@ to open-code (SETF %MEM-REF) forms."
   `(external-call
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
+
+(defmacro %foreign-funcall-ptr (ptr &rest args)
+  `(ff-call ,ptr ,@(convert-foreign-funcall-types args)))
 
 ;;;# Callbacks
 

@@ -45,6 +45,7 @@
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
+   #:%foreign-funcall-ptr
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -186,6 +187,18 @@ the function call."
           ,name (ffi::foreign-library :default)
           nil (ffi:parse-c-type ',ctype)))
         ,@fargs))))
+
+;;; FFI:PARSE-C-TYPE could probably be wrapped around a LOAD-TIME-VALUE. --luis
+(defmacro %foreign-funcall-ptr (ptr &rest args)
+  "Similar to %foreign-funcall but takes a pointer instead of a string."
+  (multiple-value-bind (types fargs rettype)
+      (parse-foreign-funcall-args args)
+    `(funcall (ffi:foreign-function ,ptr (ffi:parse-c-type
+                                          '(ffi:c-function
+                                            (:arguments ,@types)
+                                            (:return-type ,rettype)
+                                            (:language :stdc))))
+              ,@fargs)))
 
 ;;;# Callbacks
 

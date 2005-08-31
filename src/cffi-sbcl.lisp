@@ -34,7 +34,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:sb-alien)
+  (:use #:common-lisp #:sb-alien #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -44,6 +44,7 @@
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
+   #:%foreign-funcall-ptr
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -266,6 +267,14 @@ to open-code (SETF %MEM-REF) forms."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
+
+(defmacro %foreign-funcall-ptr (ptr &rest args)
+  "Funcall a pointer to a foreign function."
+  (multiple-value-bind (types fargs rettype)
+      (foreign-funcall-type-and-args args)
+    (with-unique-names (function)
+      `(with-alien ((,function (* (function ,rettype ,@types)) ,ptr))
+         (alien-funcall ,function ,@fargs)))))
 
 ;;;# Callbacks
 
