@@ -100,9 +100,10 @@
 (defmacro defcenum (name &body enum-list)
   "Define an foreign enumerated type."
   (discard-docstring enum-list)
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-foreign-type
-      (make-foreign-enum ',name :int ',enum-list))
+  `(progn
+     (eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-type
+        (make-foreign-enum ',name :int ',enum-list)))
      ;; to-c translator
      (define-type-translator ,name :to-c (type value)
        `(if (keywordp ,value)
