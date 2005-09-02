@@ -211,5 +211,84 @@ unsigned long bool_xor(long a, unsigned long b)
     return (a && !b) || (!a && b);
 }
 
+/*
+ * Test struct alignment issues. These comments assume the x86 gABI.
+ * Hopefully these tests will spot alignment issues in others archs
+ * too.
+ */
+
+/*
+ * STRUCT.ALIGNMENT.1
+ */
+
+struct s_ch {
+    char a_char;
+};
+
+/* This struct's size should be 2 bytes */
+struct s_s_ch {
+    char another_char;
+    struct s_ch a_s_ch; 
+};
+
+DLLEXPORT
+struct s_s_ch the_s_s_ch = { 2, { 1 } };
+
+/*
+ * STRUCT.ALIGNMENT.2
+ */
+
+/* This one should be alignment should be the same as short's alignment. */
+struct s_short {
+    char a_char;
+    char another_char;
+    short a_short;
+};
+
+struct s_s_short {
+    char yet_another_char;
+    struct s_short a_s_short; /* so this should be 2-byte aligned */
+};  /* size: 6 bytes */
+
+DLLEXPORT
+struct s_s_short the_s_s_short = { 4, { 1, 2, 3 } };
+
+/*
+ * STRUCT.ALIGNMENT.3
+ */
+
+/* This test will, among other things, check for the existence tail padding. */
+
+struct s_double {
+    char a_char;       /* 1 byte */
+                       /* padding: 3 bytes */
+    double a_double;   /* 8 bytes */
+    char another_char; /* 1 byte */
+                       /* padding: 3 bytes */
+};                     /* total size: 16 bytes */
+
+struct s_s_double {
+    char yet_another_char;      /* 1 byte */
+                                /* 3 bytes padding */
+    struct s_double a_s_double; /* 16 bytes */
+    short a_short;              /* 2 byte */
+                                /* 2 bytes padding */
+};                              /* total size: 24 bytes */
+
+DLLEXPORT
+struct s_s_double the_s_s_double = { 4, { 1, 2.0, 3 }, 5 };
+
+/* STRUCT.ALIGNMENT.4 */
+struct s_s_s_double {
+    short another_short;            /* 2 bytes */
+                                    /* 2 bytes padding */
+    struct s_s_double a_s_s_double; /* 24 bytes */
+    char last_char;                 /* 1 byte */
+                                    /* 3 bytes padding */
+};                                  /* total size: 32 */
+
+DLLEXPORT
+struct s_s_s_double the_s_s_s_double = { 6, { 4, { 1, 2.0, 3 }, 5 }, 7 };
+
 /* vim: ts=4 et
 */

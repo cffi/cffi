@@ -238,16 +238,38 @@ to open-code (SETF MEM-REF) forms."
         offset
         (+ offset (- align rem)))))
 
+;;; TODO: figure out what to do with empty structures.
+;;; XXX: the struct alignment/size stuff here might be specific to the x86 ABI.
+;;; XXX: figure out other ABI's
+;;;
+;;; Rules used here: (from the x86 gABI)
+;;;
+;;;   1. "An entire structure or union object is aligned on the same boundary
+;;;       as its most strictly aligned member."
+;;;   2. "Each member is assigned to the lowest available offset with the
+;;;       appropriate alignment. This may require internal padding, depending
+;;;       on the previous member."
+;;;   3. "A structure's size is increased, if necessary, to make it a multiple
+;;;       of the alignment. This may requiretail padding, depending on the last
+;;;       member."
 (defun notice-foreign-struct-definition (name slots)
   "Parse and install a foreign structure definition."
   (let ((struct (make-instance 'foreign-struct-type :name name))
-        (offset 0))
+        (offset 0)
+        (max-align 0))
     (dolist (slotdef slots)
       (destructuring-bind (slotname type &optional (count 1)) slotdef
         (setf offset (adjust-for-alignment type offset))
-        (let ((slot (make-struct-slot slotname offset type count)))
-          (setf (gethash slotname (slots struct)) slot))
+        (let* ((slot (make-struct-slot slotname offset type count))
+               (align (foreign-type-alignment (slot-type slot))))
+          (setf (gethash slotname (slots struct)) slot)
+          (when (> align max-align)
+            (setq max-align align)))
         (incf offset (* count (foreign-type-size type)))))
+    (setf (alignment struct) max-align)  ; See point 1 above.
+    (let ((tail-padding (- max-align (rem offset max-align))))
+      (unless (= tail-padding max-align) ; See point 3 above.
+        (incf offset tail-padding)))
     (setf (size struct) offset)
     (notice-foreign-type struct)))
 
@@ -338,18 +360,25 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 ;;; A union is a FOREIGN-STRUCT-TYPE in which all slots have an offset
 ;;; of zero.
 
+;;; See also the notes regarding ABI requirements in
+;;; NOTICE-FOREIGN-STRUCT-DEFINITION
 (defun notice-foreign-union-definition (name slots)
   "Parse and install a foreign union definition."
   (let ((struct (make-instance 'foreign-struct-type :name name))
-        (max-size 0))
+        (max-size 0)
+        (max-align 0))
     (dolist (slotdef slots)
       (destructuring-bind (slotname type &optional (count 1)) slotdef
-        (let ((slot (make-struct-slot slotname 0 type count))
-              (size (* count (foreign-type-size type))))
+        (let* ((slot (make-struct-slot slotname 0 type count))
+               (size (* count (foreign-type-size type)))
+               (align (foreign-type-alignment (slot-type slot))))
           (setf (gethash slotname (slots struct)) slot)
           (when (> size max-size)
-            (setf max-size size)))))
+            (setf max-size size))
+          (when (> align max-align)
+            (setf max-align align)))))
     (setf (size struct) max-size)
+    (setf (alignment struct) max-align)
     (notice-foreign-type struct)))
 
 (defmacro defcunion (name &body fields)
@@ -360,11 +389,9 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 
 ;;;# Operations on Types
 
-;; Should these two methods perhaps specialize on symbol and
-;; list/cons instead of simply T.
 (defmethod foreign-type-alignment (type)
   "Return the alignment in bytes of a foreign type."
-  (%foreign-type-alignment (canonicalize-foreign-type type)))
+  (foreign-type-alignment (parse-type type)))
 
 (defmethod foreign-type-size (type)
   "Return the size in bytes of a foreign type."

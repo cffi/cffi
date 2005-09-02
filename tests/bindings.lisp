@@ -30,8 +30,10 @@
 ;; hmm..
 (defparameter *lib*
   (make-pathname :name "libtest"
-                 :type #-mswindows "so" #+mswindows "dll"
-                 :directory (pathname-directory *load-truename*)
-                 :device (pathname-device *load-truename*)))
+                 :type
+                 #-(or win32 mswindows) "so"
+                 #+(or win32 mswindows) "dll"
+                 :defaults *load-truename*
+                 :version :newest))
 
 (load-foreign-library (namestring *lib*))

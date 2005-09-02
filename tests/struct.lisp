@@ -54,3 +54,90 @@
         (setf tv-secs 100 tv-usecs 200)
         (values tv-secs tv-usecs)))
   100 200)
+
+;;;# Structure Alignment Tests
+
+(defcstruct s-ch
+  (a-char :char))
+
+(defcstruct s-s-ch
+  (another-char :char)
+  (a-s-ch s-ch))
+
+(defcvar "the_s_s_ch" s-s-ch)
+
+(deftest struct.alignment.1
+    (list 'a-char (foreign-slot-value
+                   (foreign-slot-value *the-s-s-ch* 's-s-ch 'a-s-ch)
+                   's-ch 'a-char)
+          'another-char (foreign-slot-value *the-s-s-ch* 's-s-ch 'another-char))
+  (a-char 1 another-char 2))
+
+
+(defcstruct s-short
+  (a-char :char)
+  (another-char :char)
+  (a-short :short))
+
+(defcstruct s-s-short
+  (yet-another-char :char)
+  (a-s-short s-short))
+
+(defcvar "the_s_s_short" s-s-short)
+
+(deftest struct.alignment.2
+    (with-foreign-slots ((yet-another-char a-s-short) *the-s-s-short* s-s-short)
+      (with-foreign-slots ((a-char another-char a-short) a-s-short s-short)
+        (list 'a-char           a-char
+              'another-char     another-char
+              'a-short          a-short
+              'yet-another-char yet-another-char)))
+  (a-char 1 another-char 2 a-short 3 yet-another-char 4))
+
+
+(defcstruct s-double
+  (a-char :char)
+  (a-double :double)
+  (another-char :char))
+
+(defcstruct s-s-double
+  (yet-another-char :char)
+  (a-s-double s-double)
+  (a-short :short))
+
+(defcvar "the_s_s_double" s-s-double)
+
+(deftest struct.alignment.3
+    (with-foreign-slots
+        ((yet-another-char a-s-double a-short) *the-s-s-double* s-s-double)
+      (with-foreign-slots ((a-char a-double another-char) a-s-double s-double)
+        (list 'a-char            a-char
+              'a-double          a-double
+              'another-char      another-char
+              'yet-another-char  yet-another-char
+              'a-short           a-short)))
+  (a-char 1 a-double 2.0d0 another-char 3 yet-another-char 4 a-short 5))
+
+
+(defcstruct s-s-s-double
+  (another-short :short)
+  (a-s-s-double s-s-double)
+  (last-char :char))
+
+(defcvar "the_s_s_s_double" s-s-s-double)
+
+(deftest struct.alignment.4
+    (with-foreign-slots
+        ((another-short a-s-s-double last-char) *the-s-s-s-double* s-s-s-double)
+      (with-foreign-slots
+          ((yet-another-char a-s-double a-short) a-s-s-double s-s-double)
+        (with-foreign-slots ((a-char a-double another-char) a-s-double s-double)
+          (list 'a-char            a-char
+                'a-double          a-double
+                'another-char      another-char
+                'yet-another-char  yet-another-char
+                'a-short           a-short
+                'another-short     another-short
+                'last-char         last-char))))
+  (a-char 1 a-double 2.0d0 another-char 3 yet-another-char 4 a-short 5
+   another-short 6 last-char 7))

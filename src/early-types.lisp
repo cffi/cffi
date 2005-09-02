@@ -228,7 +228,11 @@ Signals an error if the type cannot be resolved."
    (size
     ;; Cached size in bytes of this structure.
     :initarg :size
-    :accessor size))
+    :accessor size)
+   (alignment
+    ;; This struct's alignment requirements
+    :initarg :alignment
+    :accessor alignment))
   (:documentation "Hash table of plists containing slot information."))
 
 (defmethod canonicalize ((type foreign-struct-type))
@@ -242,3 +246,7 @@ Signals an error if the type cannot be resolved."
 (defmethod foreign-type-size ((type foreign-struct-type))
   "Return the size in bytes of a foreign structure type."
   (size type))
+
+(defmethod foreign-type-alignment ((type foreign-struct-type))
+  "Return the alignment requirements for this struct."
+  (alignment type))

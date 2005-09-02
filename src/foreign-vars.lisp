@@ -57,14 +57,20 @@
   "Define a foreign global variable."
   (let* ((lisp-name (lisp-var-name name))
          (foreign-name (foreign-var-name name))
-         (fn (symbolicate "%VAR-ACCESSOR-" lisp-name)))
+         (fn (symbolicate "%VAR-ACCESSOR-" lisp-name))
+         (ptype (parse-type type)))
+    (when (aggregatep ptype) ; we can't really setf an aggregate type...
+      (setq read-only t))    ; at least not yet...
     `(progn
        (setf (get ',lisp-name 'cffi-ptr-to-var)
              (foreign-var-ptr ,foreign-name))
        (defun ,fn ()
-         (with-object-translated
-             (var (mem-ref (get-var-ptr ',lisp-name) ',type) ,type :from-c)
-           var))
+         ,(if (aggregatep ptype)
+              `(get-var-ptr ',lisp-name) ; no dereference for aggregate types.
+              `(with-object-translated
+                   (var (mem-ref (get-var-ptr ',lisp-name) ',type)
+                        ,type :from-c)
+                 var)))
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
          ,(if read-only
