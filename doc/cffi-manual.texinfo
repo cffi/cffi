@@ -266,6 +266,7 @@ Foo bar.
 ;; This returns &p->birthdate, a pointer.
 (foreign-slot-value p 'person 'birthdate)
 
+;; NOTE: this is not implemented yet.
 ;; This returns p->birthdate.tv_secs as a Lisp integer.
 (foreign-slot-value p 'person 'birthdate 'tv-secs)
 
@@ -543,7 +544,7 @@ The body of this type translator.
 @end table
 
 @subheading Description
-
+@emph{This interface is not very stable yet. --luis}
 
 @subheading Examples
 Here is how CFFI's @code{:boolean} type translator is defined:
@@ -920,19 +921,40 @@ CFFI> (with-foreign-object (ptr point)
 @node foreign-type-alignment
 @heading foreign-type-alignment
 @subheading Syntax
+@c XXX: This is actually a generic function.
+@Function{foreign-type-alignment type => alignment}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item type
+A foreign type.
 
-@item ...
-asd
+@item alignment
+An integer.
 @end table
 
 @subheading Description
+The function @code{foreign-type-alignment} returns the
+@emph{alignment} of @emph{type} in bytes.
+
 @subheading Examples
+@lisp
+CFFI> (foreign-type-alignment :char)
+1
+CFFI> (foreign-type-alignment :short)
+2
+CFFI> (foreign-type-alignment :int)
+4
+
+(defcstruct foo
+  (a :char))
+
+CFFI> (foreign-type-alignment 'foo)
+1
+@end lisp
+
 @subheading See Also
+@ref{foreign-type-size}
 
 
 
@@ -943,19 +965,38 @@ asd
 @node foreign-type-size
 @heading foreign-type-size
 @subheading Syntax
+@c XXX: this is actually a generic function.
+@Function{foreign-type-size type => size}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item type
+A foreign type.
 
-@item ...
-asd
+@item size
+An integer.
 @end table
 
 @subheading Description
+The function @code{foreign-type-size} return the @emph{size} of
+@emph{type} in bytes.
+
 @subheading Examples
+@lisp
+(defcstruct foo
+  (a :double)
+  (c :char))
+
+CFFI> (foreign-type-size :double)
+8
+CFFI> (foreign-type-size :char)
+1
+CFFI> (foreign-type-size 'foo)
+12
+@end lisp
+
 @subheading See Also
+@ref{foreign-type-alignment}
 
 
 
@@ -989,19 +1030,57 @@ asd
 @node with-foreign-slots
 @heading with-foreign-slots
 @subheading Syntax
+@Macro{with-foreign-slots (vars ptr type) &body body}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item vars
+A list of symbols.
 
-@item ...
-asd
+@item ptr
+A foreign pointer to a structure.
+
+@item type
+A structure type.
+
+@item body
+A list of forms to be executed.
 @end table
 
 @subheading Description
+The @code{with-foreign-slots} macro creates local symbol macros for
+each var in @emph{vars} to reference foreign slots in @emph{ptr} of
+@emph{type}. It is similar to Common Lisp's @code{with-slots} macro.
+
 @subheading Examples
+@lisp
+(defcstruct tm
+  (sec :int)
+  (min :int)
+  (hour :int)
+  (mday :int)
+  (mon  :int)
+  (year :int)
+  (wday :int)
+  (yday :int)
+  (isdst  :boolean)
+  (zone   :string)
+  (gmtoff :long))
+
+CFFI> (with-foreign-object (time :int)
+        (setf (mem-ref time :int)
+              (foreign-funcall "time" :pointer (null-ptr) :int))
+        (foreign-funcall "gmtime" :pointer time tm))
+#<A Mac Pointer #x102A30>
+CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
+        (format nil "~A:~A:~A, ~A/~A/~A" hour min sec (+ 1900 year) mon mday))
+"7:22:47, 2005/8/2"
+@end lisp
+
 @subheading See Also
+@ref{defcstruct} @*
+@ref{defcunion} @*
+@ref{foreign-slot-value}
 
 
 
@@ -1052,19 +1131,30 @@ Dictionary
 @node foreign-free
 @heading foreign-free
 @subheading Syntax
+@Function{foreign-free ptr => undefined}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
-
-@item ...
-asd
+@item ptr
+A foreign pointer.
 @end table
 
 @subheading Description
+The @code{foreign-free} frees a @code{ptr} previously allocated by
+@code{foreign-alloc}. The consequences of freeing a given pointer
+twice are undefined.
+
 @subheading Examples
+@lisp
+CFFI> (foreign-alloc 32)
+#<A Mac Pointer #x1022E0>
+CFFI> (foreign-free *)
+NIL
+@end lisp
+
 @subheading See Also
+@ref{foreign-alloc} @*
+@ref{with-foreign-ptr}
 
 
 
@@ -1075,19 +1165,33 @@ asd
 @node foreign-alloc
 @heading foreign-alloc
 @subheading Syntax
+@Function{foreign-alloc size => pointer}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item size
+An integer.
 
-@item ...
-asd
+@item pointer
+A foreign pointer to newly allocated memory.
 @end table
 
 @subheading Description
+The @code{foreign-alloc} function allocates @code{size} bytes on the
+heap and returns a @emph{pointer}. This memory must be explicitly
+freed using @code{foreign-free} once it is no longer needed.
+
 @subheading Examples
+@lisp
+CFFI> (foreign-alloc 32)
+#<A Mac Pointer #x1022E0>
+CFFI> (foreign-free *)
+NIL
+@end lisp
+
 @subheading See Also
+@ref{foreign-free} @*
+@ref{with-foreign-ptr}
 
 
 
@@ -1098,6 +1202,9 @@ asd
 @node mem-aref
 @heading mem-aref
 @subheading Syntax
+@Accessor{mem-aref ptr type &optional (index 0)}
+
+(setf (@strong{mem-aref} @emph{ptr type &optional (index 0)) new-value})
 
 @subheading Arguments and Values
 @table @emph
@@ -1118,6 +1225,7 @@ CFFI> (code-char *)
 #\Space
 @end lisp
 @subheading See Also
+@ref{mem-ref}
 
 
 
@@ -1147,7 +1255,25 @@ The value @emph{ptr} points to.
 
 @subheading Description
 @subheading Examples
+@lisp
+CFFI> (with-foreign-string (ptr "Saluton")
+        (setf (mem-ref ptr :char 3) (char-code #\a))
+        (loop for i from 0 below 8
+              collect (code-char (mem-ref ptr :char i))))
+(#\S #\a #\l #\a #\t #\o #\n #\Null)
+
+CFFI> (setq ptr-to-int (foreign-object-alloc :int))
+#<A Mac Pointer #x1047D0>
+CFFI> (mem-ref ptr-to-int :int)
+1054619
+CFFI> (setf (mem-ref ptr-to-int :int) 1984)
+1984
+CFFI> (mem-ref ptr-to-int :int)
+1984
+@end lisp
+
 @subheading See Also
+@ref{mem-aref}
 
 
 
@@ -1158,19 +1284,37 @@ The value @emph{ptr} points to.
 @node pointerp
 @heading pointerp
 @subheading Syntax
+@Function{pointerp ptr => boolean}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item ptr
+An object that may be a foreign pointer.
 
-@item ...
-asd
+@item boolean
+@code{T} or @code{NIL}.
 @end table
 
 @subheading Description
+The function @code{pointerp} returns true if @emph{ptr} is a foreign
+pointer and false otherwise.
+
+@subheading Implementation-specific Notes
+In Allegro CL, foreign pointers are integers thus in this
+implementation @code{pointerp} will return true for any ordinary integer.
+
 @subheading Examples
+@lisp
+CFFI> (foreign-alloc 32)
+#<A Mac Pointer #x102D20>
+CFFI> (pointerp *)
+T
+CFFI> (pointerp "this is not a pointer")
+NIL
+@end lisp
+
 @subheading See Also
+@ref{null-ptr-p}
 
 
 
@@ -1181,19 +1325,27 @@ asd
 @node null-ptr
 @heading null-ptr
 @subheading Syntax
+@Function{null-ptr => pointer}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
-
-@item ...
-asd
+@item pointer
+A @code{NULL} pointer.
 @end table
 
 @subheading Description
+The function @code{null-ptr} returns a null pointer.
+
 @subheading Examples
+@lisp
+CFFI> (null-ptr)
+#<A Null Mac Pointer>
+CFFI> (pointerp *)
+T
+@end lisp
+
 @subheading See Also
+@ref{null-ptr-p}
 
 
 
@@ -1204,19 +1356,38 @@ asd
 @node null-ptr-p
 @heading null-ptr-p
 @subheading Syntax
+@Function{null-ptr-p ptr => boolean}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item ptr
+A foreign pointer that may be a null pointer.
 
-@item ...
-asd
+@item boolean
+@code{T} or @code{NIL}.
 @end table
 
 @subheading Description
+The function @code{null-ptr-p} returns true if @emph{ptr} is a null
+pointer and false otherwise.
+
 @subheading Examples
+@lisp
+CFFI> (null-ptr-p (null-ptr))
+T
+
+(defun contains-str-p (big little)
+  (not (null-ptr-p
+        (foreign-funcall "strstr" :string big :string little :pointer))))
+
+CFFI> (contains-str-p "Popcorns" "corn")
+T
+CFFI> (contains-str-p "Popcorns" "salt")
+NIL
+@end lisp
+
 @subheading See Also
+@ref{null-ptr}
 
 
 
@@ -1227,19 +1398,35 @@ asd
 @node inc-ptr
 @heading inc-ptr
 @subheading Syntax
+@Function{inc-ptr ptr offset => new-pointer}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item ptr, new-pointer
+A foreign pointer.
 
-@item ...
-asd
+@item offset
+An integer.
 @end table
 
 @subheading Description
+The function @code{inc-ptr} will return a @emph{new-pointer} pointing
+@emph{offset} bytes past @emph{ptr}.
+
 @subheading Examples
+@lisp
+CFFI> (foreign-string-alloc "Common Lisp")
+#<A Mac Pointer #x102EA0>
+CFFI> (inc-ptr * 7)
+#<A Mac Pointer #x102EA7>
+CFFI> (foreign-string-to-lisp *)
+"Lisp"
+@end lisp
+
 @subheading See Also
+@ref{pointerp} @*
+@ref{null-ptr} @*
+@ref{null-ptr-p}
 
 
 
@@ -1250,19 +1437,42 @@ asd
 @node with-foreign-ptr
 @heading with-foreign-ptr
 @subheading Syntax
+@Macro{with-foreign-ptr (var size &optional size-var) &body body}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item var, size-var
+A symbol.
 
-@item ...
-asd
+@item size
+An integer.
+
+@item body
+A list of forms to be executed.
 @end table
 
 @subheading Description
+The @code{with-foreign-ptr} macro, binds @emph{var} to @emph{size}
+bytes of foreign memory during @emph{body}. The pointer in @emph{var}
+is invalid beyond the dynamic extend of @emph{body} and may be
+stack-allocated if supported by the implementation.
+
+If @emph{size-var} is supplied, it will be bound to @emph{size} during
+@emph{body}.
+
 @subheading Examples
+@lisp
+CFFI> (with-foreign-ptr (string 4 size)
+        (setf (mem-ref string :char (1- size)) 0)
+        (lisp-string-to-foreign "Popcorns" string size)
+        (loop for i from 0 below size
+              collect (code-char (mem-ref string :char i))))
+(#\P #\o #\p #\Null)
+@end lisp
+
 @subheading See Also
+@ref{foreign-alloc} @*
+@ref{foreign-free}
 
 
 
@@ -1609,18 +1819,34 @@ C standard library.}
 @node get-var-ptr
 @heading get-var-ptr
 @subheading Syntax
+@Function{get-var-ptr symbol => pointer}
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item symbol
+A symbol denoting a foreign variable defined with @code{defcvar}.
 
-@item ...
-asd
+@item pointer
+A foreign pointer.
 @end table
 
 @subheading Description
+The function @code{get-var-ptr} will return a @emph{pointer} to the
+foreign global variable @emph{symbol} previously defined with
+@code{defcvar}.
+
 @subheading Examples
+@lisp
+CFFI> (defcvar "errno" :int :read-only t)
+*ERRNO*
+CFFI> *errno*
+25
+CFFI> (get-var-ptr '*errno*)
+#<A Mac Pointer #xA0008130>
+CFFI> (mem-ref * :int)
+25
+@end lisp
+
 @subheading See Also
 @ref{defcvar}
 
@@ -1845,7 +2071,7 @@ Dictionary
 @subheading Syntax
 @Macro{callback symbol => pointer}
 
-(setf (@strong{callback} symbol) @emph{new-value})
+(setf (@strong{callback} @emph{symbol) new-value})
 
 @subheading Arguments and Values
 @table @emph
@@ -1957,7 +2183,7 @@ CFFI> (with-foreign-object (array :int 10)
 @subheading Syntax
 @Accessor{get-callback symbol => pointer}
 
-(setf (@strong{get-callback} @emph{symbol}) @emph{new-value})
+(setf (@strong{get-callback} @emph{symbol) new-value})
 
 @subheading Arguments and Values
 @table @emph
