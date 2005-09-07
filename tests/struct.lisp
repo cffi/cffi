@@ -141,3 +141,17 @@
                 'last-char         last-char))))
   (a-char 1 a-double 2.0d0 another-char 3 yet-another-char 4 a-short 5
    another-short 6 last-char 7))
+
+
+(defcstruct empty-struct)
+
+(defcstruct with-empty-struct
+  (foo empty-struct)
+  (an-int :int))
+
+(defcvar "the_with_empty_struct" with-empty-struct)
+
+(deftest struct.alignment.5
+    (with-foreign-slots ((foo an-int) *the-with-empty-struct* with-empty-struct)
+      an-int)
+  42)

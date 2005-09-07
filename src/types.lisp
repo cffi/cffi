@@ -238,7 +238,6 @@ to open-code (SETF MEM-REF) forms."
         offset
         (+ offset (- align rem)))))
 
-;;; TODO: figure out what to do with empty structures.
 ;;; XXX: the struct alignment/size stuff here might be specific to the x86 ABI.
 ;;; XXX: figure out other ABI's
 ;;;
@@ -256,7 +255,7 @@ to open-code (SETF MEM-REF) forms."
   "Parse and install a foreign structure definition."
   (let ((struct (make-instance 'foreign-struct-type :name name))
         (offset 0)
-        (max-align 0))
+        (max-align 1))
     (dolist (slotdef slots)
       (destructuring-bind (slotname type &optional (count 1)) slotdef
         (setf offset (adjust-for-alignment type offset))

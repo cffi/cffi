@@ -290,5 +290,16 @@ struct s_s_s_double {
 DLLEXPORT
 struct s_s_s_double the_s_s_s_double = { 6, { 4, { 1, 2.0, 3 }, 5 }, 7 };
 
+/* STRUCT.ALIGNMENT.5 */
+struct empty_struct {};
+
+struct with_empty_struct {
+    struct empty_struct foo;
+    int an_int;
+};
+
+DLLEXPORT
+struct with_empty_struct the_with_empty_struct = { {}, 42 };
+
 /* vim: ts=4 et
 */
