@@ -237,7 +237,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                    types)
         :returning ,(allegro-type-pair
                      (convert-foreign-type rettype :funcall))
-        :call-direct t
+        ;; Don't use call-direct when there are no arguments.
+        ,@(unless (null args) '(:call-direct t))
         :arg-checking nil
         :strings-convert nil)
      `(,ff-name ,@args))))

@@ -85,7 +85,6 @@
 (defcallback sum-pointer :pointer ((ptr :pointer) (offset :int))
   (inc-ptr ptr offset))
 
-#-sbcl ; bug
 (defcallback lisp-strcat :string ((a :string) (b :string))
   (concatenate 'string a b))
 

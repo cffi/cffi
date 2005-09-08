@@ -301,5 +301,19 @@ struct with_empty_struct {
 DLLEXPORT
 struct with_empty_struct the_with_empty_struct = { {}, 42 };
 
+/*
+ * DEFCFUN.NOARGS and DEFCFUN.NOOP
+ */
+
+int noargs ()
+{
+    return 42;
+}
+
+void noop ()
+{
+    return;
+}
+
 /* vim: ts=4 et
 */

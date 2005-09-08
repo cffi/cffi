@@ -101,3 +101,20 @@
 (deftest defcfun.string.3
     (typep (strerror 1) 'string)
   t)
+
+
+;;; Regression test. Allegro would warn on direct calls to
+;;; functions with no arguments.
+;;; Also, let's check if void functions will return NIL.
+
+(defcfun "noargs" :int)
+
+(deftest defcfun.noargs
+    (noargs)
+  42)
+
+(defcfun "noop" :void)
+
+(deftest defcfun.noop
+    (noop)
+  nil)
