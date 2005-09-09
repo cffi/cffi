@@ -40,7 +40,7 @@
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
-   #:foreign-alloc
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
@@ -81,7 +81,7 @@
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common usage
 ;;; when the memory has dynamic extent.
 
-(defun foreign-alloc (size)
+(defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
   (alien-sap (make-alien (unsigned 8) size)))
 
@@ -105,7 +105,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
              (declare (ignorable ,size-var))
              ,@body)))
       `(let* ((,size-var ,size)
-              (,var (foreign-alloc ,size-var)))
+              (,var (%foreign-alloc ,size-var)))
          (declare (ignorable ,size-var))
          (unwind-protect
               (progn ,@body)

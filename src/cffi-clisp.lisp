@@ -41,7 +41,7 @@
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
-   #:foreign-alloc
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
@@ -114,7 +114,7 @@
 
 ;;;# Foreign Memory Allocation
 
-(defun foreign-alloc (size)
+(defun %foreign-alloc (size)
   "Allocate SIZE bytes of foreign-addressable memory and return a
 pointer to the allocated block.  An implementation-specific error
 is signalled if the memory cannot be allocated."

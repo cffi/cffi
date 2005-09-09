@@ -34,7 +34,7 @@
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
-   #:foreign-alloc
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
@@ -81,7 +81,7 @@
 
 ;;;# Allocation
 
-(defun foreign-alloc (size)
+(defun %foreign-alloc (size)
   "Allocate SIZE bytes of memory and return a pointer."
   (fli:malloc :pointer-type :pointer :nelems size))
 
@@ -96,7 +96,7 @@ be stack allocated if supported by the implementation."
   (unless size-var
     (setf size-var (gensym "SIZE")))
   `(let* ((,size-var ,size)
-          (,var (foreign-alloc ,size-var)))
+          (,var (%foreign-alloc ,size-var)))
      (unwind-protect
           (progn ,@body)
        (foreign-free ,var))))

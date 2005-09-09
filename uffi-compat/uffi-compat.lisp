@@ -25,7 +25,10 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;;; Code borrowed from UFFI is Copyright (c) Kevin M. Rosenberg.
+
 (defpackage #:cffi-uffi-compat
+  (:nicknames #:uffi) ;; is this a good idea?
   (:use #:cl)
   (:export
    #:def-type
@@ -42,25 +45,43 @@
    #:allocate-foreign-object
    #:free-foreign-object
    #:with-foreign-object
+   #:with-foreign-objects
    #:size-of-foreign-type
    #:pointer-address
    #:deref-pointer
    #:ensure-char-character
    #:ensure-char-integer
-   #:ensure-char-storage
-   #:make-null-pointer
+   #:ensure-char-storable
    #:null-pointer-p
+   #:make-null-pointer
    #:+null-cstring-pointer+
+   #:char-array-to-pointer
    #:with-cast-pointer
+   #:def-foreign-var
    #:convert-from-cstring
    #:convert-to-cstring
    #:free-cstring
    #:with-cstring
+   #:with-cstrings
+   #:def-function
+   #:find-foreign-library
+   #:load-foreign-library
+   #:default-foreign-library-type
+   #:run-shell-command
    #:convert-from-foreign-string
-   #:def-foreign-var
-   #:def-function))
+   #:convert-to-foreign-string
+   #:allocate-foreign-string
+   #:with-foreign-string
+   #:foreign-string-length              ; not implemented
+   #:convert-from-foreign-usb8
+   ))
 
 (in-package #:cffi-uffi-compat)
+
+#+clisp
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (when (equal (machine-type) "POWER MACINTOSH")
+    (pushnew :ppc *features*)))
 
 (defun convert-uffi-type (uffi-type)
   "Convert a UFFI primitive type to a CFFI type."
@@ -70,17 +91,40 @@
     (:cstring :pointer)
     (:pointer-void :pointer)
     (:pointer-self :pointer)
+    (:char '(uffi-char :char))
+    (:unsigned-char '(uffi-char :unsigned-char))
+    (:byte :char)
+    (:unsigned-byte :unsigned-char)
     (t
      (if (listp uffi-type)
          (case (car uffi-type)
            (* :pointer)
-           ;; TODO: This function should accept an addition CONTEXT
-           ;; parameter which handles :ARRAY types differently when
-           ;; used as the argument to DEREF-ARRAY vs other macros.  It
-           ;; also should probably return a second value indicating
-           ;; the number of objects to allocate in certain situations.
-           (:array (error "Array types are not yet supported.")))
+           (:array `(uffi-array ,(convert-uffi-type (second uffi-type))))
+           (:union (second uffi-type))
+           (:struct (convert-uffi-type (second uffi-type))))
          uffi-type))))
+
+(defclass uffi-array-type (cffi::foreign-typedef)
+  ;; ELEMENT-TYPE should be /unparsed/, suitable for passing to mem-aref.
+  ((element-type :initform (error "An element-type is required.")
+                 :accessor element-type :initarg :element-type))
+  (:documentation "UFFI's :array type."))
+
+(defmethod initialize-instance :after ((self uffi-array-type) &key)
+  (setf (cffi::actual-type self) :pointer))
+
+(cffi:define-type-spec-parser uffi-array (element-type)
+  (make-instance 'uffi-array-type :element-type element-type))
+
+;; UFFI's :(unsigned-)char
+(cffi:define-foreign-type uffi-char (base-type)
+  base-type)
+
+(cffi:define-type-translator uffi-char :to-c (type value)
+  `(char-code ,value))
+
+(cffi:define-type-translator uffi-char :from-c (type value)
+  `(code-char ,value))
 
 (defmacro def-type (name type)
   "Define a Common Lisp type NAME for UFFI type TYPE."
@@ -96,11 +140,12 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (defconstant ,name ,value)
      ,@(when export `((export ',name)))
-     ,'name))
+     ',name))
 
 (defmacro null-char-p (val)
   "Return true if character is null."
-  `(zerop ,val))
+  `(zerop (char-code ,val)))
+  ;`(zerop ,val))
 
 (defmacro def-enum (enum-name args &key (separator-string "#"))
   "Creates a constants for a C type enum list, symbols are
@@ -136,49 +181,66 @@ field-name"
              for cffi-type = (convert-uffi-type uffi-type)
              collect (list name cffi-type))))
 
+;; TODO: figure out why the compiler macro is kicking in before
+;; the setf expander.
+(defun %foreign-slot-value (obj type field)
+  (cffi:foreign-slot-value obj type field))
+
+(defun (setf %foreign-slot-value) (value obj type field)
+  (setf (cffi:foreign-slot-value obj type field) value))
+             
 (defmacro get-slot-value (obj type field)
   "Access a slot value from a structure."
-  `(cffi:foreign-slot-value ,obj ,type ,field))
+  `(%foreign-slot-value ,obj ,type ,field))
 
+;; I'm not sure why this was unimplemented before, I'm probably missing
+;; something. --luis
 (defmacro get-slot-pointer (obj type field)
   "Access a pointer slot value from a structure."
-  (declare (ignore obj type field))
-  (error "GET-SLOT-POINTER not implemented yet."))
+  `(cffi:foreign-slot-value ,obj ,type ,field))
+;  (declare (ignore obj type field))
+;  (error "GET-SLOT-POINTER not implemented yet."))
 
 (defmacro def-array-pointer (name type)
   "Define a foreign array type."
-  (declare (ignore type))
-  `(cffi:defctype ,name :pointer))
+  `(cffi:defctype ,name '(:uffi-array ,type)))
 
-;;; This is very wrong.  TYPE actually contains the type of ARRAY, not
-;;; the element type.  Unfortunately this means we have to crack the
-;;; type open, possibly following typedefs to (:ARRAY ...)  types,
-;;; which has no equivalent in CFFI.
-;;;
-;;; We will probably need to add a new subclass of FOREIGN-TYPE that
-;;; stores array element-type information for UFFI array types.  I
-;;; don't want to add such a type to CFFI proper.
 (defmacro deref-array (array type position)
   "Dereference an array."
-  `(cffi:foreign-aref ,array ,type ,position))
+  `(cffi:mem-aref ,array (element-type
+                          (cffi::parse-type
+                           (convert-uffi-type ,type)))
+                  ,position))
 
+;; UFFI's documentation on DEF-UNION is a bit scarce, I'm not sure
+;; if DEFCUNION and DEF-UNION are strictly compatible.
 (defmacro def-union (name &body fields)
   "Define a foreign union type."
-  (declare (ignore name fields))
-  (error "DEF-UNION is not implemented yet."))
+  `(cffi:defcunion ,name
+     ,@(loop for (name uffi-type) in fields
+             for cffi-type = (convert-uffi-type uffi-type)
+             collect (list name cffi-type))))
 
 (defmacro allocate-foreign-object (type &optional (size 1))
   "Allocate one or more instance of a foreign type."
-  `(cffi:foreign-object-alloc ,type ,size))
+  `(cffi:foreign-alloc (convert-uffi-type ,type) :count ,size))
 
 (defmacro free-foreign-object (ptr)
   "Free a foreign object allocated by ALLOCATE-FOREIGN-OBJECT."
-  `(cffi:foreign-object-free ,ptr))
+  `(cffi:foreign-free ,ptr))
 
 (defmacro with-foreign-object ((var type) &body body)
   "Wrap the allocation of a foreign object around BODY."
   `(cffi:with-foreign-object (,var ,(convert-uffi-type (eval type)))
      ,@body))
+
+;; Taken from UFFI's src/objects.lisp
+(defmacro with-foreign-objects (bindings &rest body)
+  (if bindings
+      `(with-foreign-object ,(car bindings)
+         (with-foreign-objects ,(cdr bindings)
+           ,@body))
+      `(progn ,@body)))
 
 (defmacro size-of-foreign-type (type)
   "Return the size in bytes of a foreign type."
@@ -186,12 +248,27 @@ field-name"
 
 (defmacro pointer-address (ptr)
   "Return the address of a pointer."
-  (declare (ignore ptr))
-  (error "POINTER-ADDRESS not implemented, who uses this?"))
+  #+sbcl `(sb-sys:sap-int ,ptr)
+  #+clisp `(ffi:foreign-address-unsigned ,ptr)
+  #+cmucl `(sys:sap-int ,ptr)
+  #+corman `(c-types:foreign-ptr-to-int ,ptr)
+  #+lispworks `(fli:pointer-address ,ptr)
+  #+openmcl `(ccl:%ptr-to-int ,ptr)
+  #+allegro ptr
+  #-(or sbcl allegro clisp cmucl corman lispworks openmcl allegro)
+  (error "POINTER-ADDRESS not implemented"))
+
+;; Hmm, we need to translate chars, so translations are necessary here.
+(defun %deref-pointer (ptr type)
+  (cffi::translate-from-c (cffi:mem-ref ptr type) (cffi::parse-type type)))
+
+(defun (setf %deref-pointer) (value ptr type)
+  (setf (cffi:mem-ref ptr type)
+        (cffi::translate-to-c value (cffi::parse-type type))))
 
 (defmacro deref-pointer (ptr type)
   "Dereference a pointer."
-  `(cffi:mem-ref ,ptr ,type))
+  `(%deref-pointer ,ptr (convert-uffi-type ,type)))
 
 (defmacro ensure-char-character (obj &environment env)
   "Convert OBJ to a character if it is an integer."
@@ -206,7 +283,8 @@ field-name"
 (defmacro ensure-char-integer (obj &environment env)
   "Convert OBJ to an integer if it is a character."
   (if (constantp obj env)
-      (if (characterp obj) (char-code obj) obj)
+      (let ((the-obj (eval obj)))
+        (if (characterp the-obj) (char-code the-obj) the-obj))
       (let ((obj-var (gensym)))
         `(let ((,obj-var ,obj))
            (if (characterp ,obj-var)
@@ -229,6 +307,9 @@ field-name"
 (defparameter +null-cstring-pointer+ (cffi:null-ptr)
   "A constant NULL string pointer.")
 
+(defmacro char-array-to-pointer (obj)
+  obj)
+
 (defmacro with-cast-pointer ((var ptr type) &body body)
   "Cast a pointer, does nothing in CFFI."
   (declare (ignore type))
@@ -237,30 +318,50 @@ field-name"
 
 (defmacro def-foreign-var (name type module)
   "Define a symbol macro to access a foreign variable."
-  (declare (ignore name type module))
-  (error "DEF-FOREIGN-VAR is not implemented yet."))
+  (declare (ignore module))
+  `(cffi:defcvar ,(if (listp name)
+                      name
+                      (list name (intern (string-upcase
+                                          (substitute #\- #\_ name)))))
+       ,(convert-uffi-type type)))
 
 (defmacro convert-from-cstring (s)
   "Convert a cstring to a Lisp string."
-  `(cffi:foreign-string-to-lisp ,s))
+  (let ((ret (gensym)))
+    `(let ((,ret (cffi:foreign-string-to-lisp ,s)))
+       (if (equal ,ret "")
+           nil
+           ,ret))))
 
-(defmacro convert-to-cstring (s)
+(defmacro convert-to-cstring (obj)
   "Convert a Lisp string to a cstring."
-  `(cffi:foreign-string-alloc ,s))
+  (let ((str (gensym)))
+    `(let ((,str ,obj))
+       (if (null ,str)
+           (cffi:null-ptr)
+           (cffi:foreign-string-alloc ,str)))))
 
 (defmacro free-cstring (ptr)
   "Free a cstring."
   `(cffi:foreign-string-free ,ptr))
 
-(defmacro with-cstring ((var string) &body body)
+(defmacro with-cstring ((foreign-string lisp-string) &body body)
   "Binds a newly creating string."
-  `(cffi:with-foreign-string (,var ,string)
-     ,@body))
+  (let ((str (gensym)))
+    `(let ((,str ,lisp-string))
+       (if (null ,str)
+           (let ((,foreign-string (cffi:null-ptr)))
+             ,@body)
+           (cffi:with-foreign-string (,foreign-string ,str)
+             ,@body)))))
 
-(defmacro convert-from-foreign-string (s &key (length most-positive-fixnum)
-                                       (null-terminated-p t))
-  "Convert a foreign string to a Lisp string."
-  `(cffi:foreign-string-to-lisp ,s ,length ,null-terminated-p))
+;; Taken from UFFI's src/strings.lisp
+(defmacro with-cstrings (bindings &rest body)
+  (if bindings
+      `(with-cstring ,(car bindings)
+         (with-cstrings ,(cdr bindings)
+           ,@body))
+      `(progn ,@body)))
 
 (defmacro def-function (name args &key module (returning :void))
   "Define a foreign function."
@@ -268,3 +369,193 @@ field-name"
   `(cffi:defcfun ,name ,(convert-uffi-type returning)
      ,@(loop for (name type) in args
              collect `(,name ,(convert-uffi-type type)))))
+
+;;; Taken from UFFI's src/libraries.lisp
+
+(defvar *loaded-libraries* nil
+  "List of foreign libraries loaded. Used to prevent reloading a library")
+
+(defun default-foreign-library-type ()
+  "Returns string naming default library type for platform"
+  #+(or win32 mswindows) "dll"
+  #+(or macos macosx darwin ccl-5.0) "dylib"
+  #-(or win32 mswindows macos macosx darwin ccl-5.0) "so")
+
+(defun foreign-library-types ()
+  "Returns list of string naming possible library types for platform, sorted by preference"
+  #+(or win32 mswindows) '("dll" "lib")
+  #+(or macos macosx darwin ccl-5.0) '("dylib" "bundle")
+  #-(or win32 mswindows macos macosx darwin ccl-5.0) '("so" "a" "o"))
+
+(defun find-foreign-library (names directories &key types drive-letters)  
+  "Looks for a foreign library. directories can be a single
+string or a list of strings of candidate directories. Use default
+library type if type is not specified."
+  (unless types
+    (setq types (foreign-library-types)))
+  (unless (listp types)
+    (setq types (list types)))
+  (unless (listp names)
+    (setq names (list names)))
+  (unless (listp directories)
+    (setq directories (list directories)))
+  #+(or win32 mswindows)
+  (unless (listp drive-letters)
+    (setq drive-letters (list drive-letters)))
+  #-(or win32 mswindows)
+  (setq drive-letters '(nil))
+  (dolist (drive-letter drive-letters)
+    (dolist (name names)
+      (dolist (dir directories)
+	(dolist (type types)
+	  (let ((path (make-pathname 
+		       #+lispworks :host
+		       #+lispworks (when drive-letter drive-letter)
+		       #-lispworks :device
+		       #-lispworks (when drive-letter drive-letter)
+		       :name name 
+		       :type type
+		       :directory 
+		       (etypecase dir
+			 (pathname
+			  (pathname-directory dir))
+			 (list
+			  dir)
+			 (string
+			  (pathname-directory 
+			   (parse-namestring dir)))))))
+	    (when (probe-file path)
+	      (return-from find-foreign-library path)))))))
+  nil)
+
+(defun convert-supporting-libraries-to-string (libs)
+  (let (lib-load-list)
+    (dolist (lib libs)
+      (push (format nil "-l~A" lib) lib-load-list))
+    (nreverse lib-load-list)))
+
+(defun load-foreign-library (filename &key module supporting-libraries
+                             force-load)
+  #+(or allegro mcl sbcl clisp) (declare (ignore module supporting-libraries))
+  #+(or cmu scl sbcl) (declare (ignore module))
+  
+  (when (and filename (probe-file filename))
+    (if (pathnamep filename) ;; ensure filename is a string to check if
+	(setq filename (namestring filename))) ; already loaded
+
+    (if (and (not force-load)
+	     (find filename *loaded-libraries* :test #'string-equal))
+	t ;; return T, but don't reload library
+        (progn
+          #+cmu
+          (let ((type (pathname-type (parse-namestring filename))))
+            (if (string-equal type "so")
+                (sys::load-object-file filename)
+                (alien:load-foreign filename 
+                                    :libraries
+                                    (convert-supporting-libraries-to-string
+                                     supporting-libraries))))
+          #+scl
+          (let ((type (pathname-type (parse-namestring filename))))
+            (alien:load-foreign filename 
+                                :libraries
+                                (convert-supporting-libraries-to-string
+                                 supporting-libraries)))
+
+          #-cmu
+          (cffi:load-foreign-library filename)
+          
+          (push filename *loaded-libraries*)
+          t))))
+
+;; Taken from UFFI's src/os.lisp
+;; modified from function ASDF -- Copyright Dan Barlow and Contributors
+(defun run-shell-command (control-string  &rest args &key output)
+  "Interpolate ARGS into CONTROL-STRING as if by FORMAT, and
+synchronously execute the result using a Bourne-compatible shell, with
+output to *trace-output*.  Returns the shell's exit code."
+  (unless output
+    (setq output *trace-output*))
+
+  (let ((command (apply #'format nil control-string args)))
+    #+sbcl
+    (sb-impl::process-exit-code
+     (sb-ext:run-program
+      "/bin/sh"
+      (list "-c" command)
+      :input nil :output output))
+
+    #+(or cmu scl)
+    (ext:process-exit-code
+     (ext:run-program
+      "/bin/sh"
+      (list "-c" command)
+      :input nil :output output))
+
+    #+allegro
+    (excl:run-shell-command command :input nil :output output)
+
+    #+lispworks
+    (system:call-system-showing-output
+     command
+     :shell-type "/bin/sh"
+     :output-stream output)
+
+    #+clisp             ;XXX not exactly *trace-output*, I know
+    (ext:run-shell-command  command :output :terminal :wait t)
+
+    #+openmcl
+    (nth-value 1
+           (ccl:external-process-status
+        (ccl:run-program "/bin/sh" (list "-c" command)
+                 :input nil :output output
+                 :wait t)))
+
+    #-(or openmcl clisp lispworks allegro scl cmu sbcl)
+    (error "RUN-SHELL-PROGRAM not implemented for this Lisp")
+    ))
+
+;;; Some undocumented UFFI operators...
+
+(defmacro convert-from-foreign-string (obj &key (length most-positive-fixnum)
+                                       (locale :default)
+                                       (null-terminated-p t))
+  (declare (ignore locale))
+  (let ((ret (gensym)))
+    `(let ((,ret (cffi:foreign-string-to-lisp ,obj ,length ,null-terminated-p)))
+       (if (equal ,ret "")
+           nil
+           ,ret))))
+
+;; What's the difference between this and convert-to-cstring?
+(defmacro convert-to-foreign-string (obj)
+  (let ((str (gensym)))
+    `(let ((,str ,obj))
+       (if (null ,str)
+           (cffi:null-ptr)
+           (cffi:foreign-string-alloc ,str)))))
+
+(defmacro allocate-foreign-string (size &key unsigned)
+  (declare (ignore unsigned))
+  `(cffi:foreign-alloc :char :count ,size))
+
+;; Ditto.
+(defmacro with-foreign-string ((foreign-string lisp-string) &body body)
+  (let ((str (gensym)))
+    `(let ((,str ,lisp-string))
+       (if (null ,str)
+           (let ((,foreign-string (cffi:null-ptr)))
+             ,@body)
+           (cffi:with-foreign-string (,foreign-string ,str)
+             ,@body)))))
+
+;; This function returns a form? Where is this used in user-code?
+(defun foreign-string-length (foreign-string)
+  (declare (ignore foreign-string))
+  (error "FOREIGN-STRING-LENGTH not implemented."))
+
+;; This should be optimized.
+(defun convert-from-foreign-usb8 (s len)
+  (let ((a (make-array len :element-type '(unsigned-byte 8))))
+    (dotimes (i len a)
+      (setf (aref a i) (cffi:mem-ref s :unsigned-char i)))))

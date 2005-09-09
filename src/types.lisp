@@ -396,16 +396,48 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
   "Return the size in bytes of a foreign type."
   (foreign-type-size (parse-type type)))
 
-(defun foreign-object-alloc (type &optional (count 1))
-  "Allocate COUNT foreign objects of type TYPE.
-The object must be freed with FOREIGN-TYPE-FREE.  Does not yet
-support allocating structures, but it should."
-  (foreign-alloc (* count (foreign-type-size type))))
+(defun foreign-alloc (type &key (initial-element nil initial-element-p)
+                      (initial-contents nil initial-contents-p)
+                      (count 1 count-p))
+  "Allocate enough memory to hold COUNT objects of type TYPE. If INITIAL-ELEMENT
+is supplied, each element of the newly allocated memory is initialized with its
+value. If INITIAL-CONTENTS is supplied, each of its elements will be used to
+initialize the contents of the newly allocated memory."
+  (let (contents-length)
+    ;; Some error checking, etc...
+    (when (and initial-element-p initial-contents-p)
+      (error "Cannot specify both :INITIAL-ELEMENT and :INITIAL-CONTENTS"))
+    (when initial-contents-p
+      (setq contents-length (length initial-contents))
+      (if count-p
+          (assert (>= count contents-length))
+          (setq count contents-length)))
+    ;; Everything looks good.
+    (let ((ptr (%foreign-alloc (* (foreign-type-size type) count))))
+      (when initial-element-p
+        (let ((value (translate-to-c initial-element (parse-type type))))
+          (dotimes (i count)
+            (setf (mem-aref ptr type i) value))))
+      (when initial-contents-p
+        (let ((type-obj (parse-type type)))
+          (dotimes (i contents-length)
+            (setf (mem-aref ptr type i)
+                  (translate-to-c (elt initial-contents i) type-obj))))
+        ;;(let ((remaining (- count contents-length)))
+        ;; <insert mem-fill here>
+        )
+      ptr)))
 
-(defun foreign-object-free (ptr)
-  "Free an object allocated by FOREIGN-OBJECT-ALLOC."
-  (foreign-free ptr))
+;;; Stuff we could optimize here:
+;;;   1. (and (constantp type) (constantp count)) => calculate size
+;;;   2. (constantp type) => use the translators' expanders
+#+nil
+(define-compiler-macro foreign-alloc
+    (&whole form type &key (initial-element nil initial-element-p)
+     (initial-contents nil initial-contents-p) (count 1 count-p))
+  )
 
+;; this will need renaming too
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
 The buffer has dynamic extent and may be stack allocated.  TYPE
@@ -598,14 +630,18 @@ translators most specific first or most specific last, as appropriate."
                ,@body))))))
 
 (defun translate-to-c (value type)
-    "Translates the VALUE of type TYPE from Lisp to C. TYPE should
+  "Translates the VALUE of type TYPE from Lisp to C. TYPE should
 already be parsed, ie, it should be an instance of FOREIGN-TYPE."
-  (funcall (slot-value type 'to-c-converter) type value))
+  (bif (converter (slot-value type 'to-c-converter))
+       (funcall converter type value)
+       value))
 
 (defun translate-from-c (value type)
   "Translates the VALUE of type TYPE to from C to Lisp. TYPE should
 already be parsed, ie, it should be an instance of FOREIGN-TYPE."
-  (funcall (slot-value type 'from-c-converter) type value))
+  (bif (converter (slot-value type 'from-c-converter))
+       (funcall converter type value)
+       value))
 
 ;;; TODO: figure out something like this in order to use the same
 ;;; interface. We'd have to accept both parsed and unparsed types,

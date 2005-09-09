@@ -36,10 +36,11 @@
 (defun lisp-string-to-foreign (string ptr size)
   "Copy at most SIZE-1 characters from a Lisp STRING to PTR.
 The foreign string will be null-terminated."
-  (loop for char across string
-        for i fixnum from 0 below (1- size)
-        do (setf (%mem-ref ptr :unsigned-char i) (char-code char))
-        finally (setf (%mem-ref ptr :unsigned-char (1+ i)) 0)))
+  (decf size)
+  (loop with i = 0 for char across string
+        while (< i size)
+        do (setf (%mem-ref ptr :unsigned-char (post-incf i)) (char-code char))
+        finally (setf (%mem-ref ptr :unsigned-char i) 0)))
 
 (defun foreign-string-to-lisp (ptr &optional (size most-positive-fixnum)
                                (null-terminated-p t))
@@ -58,7 +59,7 @@ If PTR is a null pointer, returns nil."
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
   (let* ((length (1+ (length string)))
-         (ptr (foreign-alloc length)))
+         (ptr (foreign-alloc :char :count length)))
     (lisp-string-to-foreign string ptr length)
     ptr))
 

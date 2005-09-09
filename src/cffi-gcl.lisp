@@ -45,7 +45,7 @@
   (:use #:common-lisp)
   (:export
    #:pointerp
-   #:foreign-alloc
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:null-ptr
@@ -74,7 +74,7 @@
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common
 ;;; usage when the memory has dynamic extent.
 
-(defentry foreign-alloc (int) (int "malloc"))
+(defentry %foreign-alloc (int) (int "malloc"))
 
 ;(defun foreign-alloc (size)
 ;  "Allocate SIZE bytes on the heap and return a pointer."

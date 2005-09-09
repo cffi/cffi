@@ -1165,28 +1165,74 @@ NIL
 @node foreign-alloc
 @heading foreign-alloc
 @subheading Syntax
-@Function{foreign-alloc size => pointer}
+@Function{foreign-alloc type &key initial-element initial-contents
+                        (count 1) => pointer}
 
 @subheading Arguments and Values
 @table @emph
-@item size
-An integer.
+@item type
+A foreign type.
+
+@item initial-element
+A Lisp object.
+
+@item initial-contents
+A sequence.
+
+@item count
+An integer bigger than or equal to 1. 1, by default.
 
 @item pointer
-A foreign pointer to newly allocated memory.
+A foreign pointer to the newly allocated memory.
 @end table
 
 @subheading Description
-The @code{foreign-alloc} function allocates @code{size} bytes on the
-heap and returns a @emph{pointer}. This memory must be explicitly
-freed using @code{foreign-free} once it is no longer needed.
+The @code{foreign-alloc} function allocates enough memory to hold
+@emph{count} objects of type @emph{type} and returns a
+@emph{pointer}. This memory must be explicitly freed using
+@code{foreign-free} once it is no longer needed.
+
+If @emph{initial-element} is supplied, it is used to initialize the
+@emph{count} objects the newly allocated memory holds.
+
+If an @emph{initial-contents} sequence is supplied, it must have a
+length less than or equal to @emph{count} and each of its elements
+will be used to initialize the contents of the newly allocated
+memory.
+
+@emph{initial-element} and @emph{initial-contents} are mutually
+exclusive.
 
 @subheading Examples
 @lisp
-CFFI> (foreign-alloc 32)
+CFFI> (foreign-alloc :char)
+#<A Mac Pointer #x1022E0>     ; A pointer to 1 byte of memory.
+
+CFFI> (foreign-alloc :char :count 20)
+#<A Mac Pointer #x1022E0>     ; A pointer to 20 bytes of memory.
+
+CFFI> (foreign-alloc :int :initial-element 12)
 #<A Mac Pointer #x1022E0>
-CFFI> (foreign-free *)
-NIL
+CFFI> (mem-ref * :int)
+12
+
+CFFI> (foreign-alloc :int :initial-contents '(1 2 3))
+#<A Mac Pointer #x1022E0>
+CFFI> (loop for i from 0 below 3
+            collect (mem-ref * :int i))
+(1 2 3)
+
+CFFI> (foreign-alloc :int :initial-contents #(1 2 3))
+#<A Mac Pointer #x1022E0>
+CFFI> (loop for i from 0 below 3
+            collect (mem-ref * :int i))
+(1 2 3)
+
+CFFI> (foreign-alloc :string :initial-element "foo")
+#<A Mac Pointer #x1022E0>
+;; This will actually allocate a char** pointer that points
+;; to newly allocated memory by the :string type translator
+;; for the "foo" string.
 @end lisp
 
 @subheading See Also
@@ -1208,14 +1254,31 @@ NIL
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item ptr
+A foreign pointer.
 
-@item ...
-asd
+@item type
+A foreign type.
+
+@item index
+An integer.
+
+@item new-value
+A Lisp value compatible with @emph{type}.
 @end table
 
 @subheading Description
+The @code{mem-aref} function is similar to @code{mem-ref} but will
+automatically calculate the offset from an @emph{index}.
+
+@lisp
+(mem-aref ptr type n)
+
+;; is identical to:
+
+(mem-ref ptr type (* n (foreign-type-size type)))
+@end lisp
+
 @subheading Examples
 @lisp
 CFFI> (with-foreign-string (str "Hello, foreign world!")
@@ -1223,6 +1286,12 @@ CFFI> (with-foreign-string (str "Hello, foreign world!")
 32
 CFFI> (code-char *)
 #\Space
+
+CFFI> (with-foreign-object (array :int 10)
+        (loop for i below 10
+              do (setf (mem-aref array :int i) (random 100)))
+        (loop for i below 10 collect (mem-aref array :int i)))
+(22 7 22 52 69 1 46 93 90 65)
 @end lisp
 @subheading See Also
 @ref{mem-ref}
@@ -1262,7 +1331,7 @@ CFFI> (with-foreign-string (ptr "Saluton")
               collect (code-char (mem-ref ptr :char i))))
 (#\S #\a #\l #\a #\t #\o #\n #\Null)
 
-CFFI> (setq ptr-to-int (foreign-object-alloc :int))
+CFFI> (setq ptr-to-int (foreign-alloc :int))
 #<A Mac Pointer #x1047D0>
 CFFI> (mem-ref ptr-to-int :int)
 1054619

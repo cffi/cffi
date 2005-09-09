@@ -34,7 +34,7 @@
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
-   #:foreign-alloc
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:%foreign-funcall
@@ -82,7 +82,7 @@
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common usage
 ;;; when the memory has dynamic extent.
 
-(defun foreign-alloc (size)
+(defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
   (malloc size))
 

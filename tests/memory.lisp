@@ -117,3 +117,12 @@
       (setf (mem-ref p :pointer) (null-ptr))
       (null-ptr-p (mem-ref p :pointer)))
   t)
+
+;; regression test. lisp-string-to-foreign should handle empty strings
+
+(deftest lisp-string-to-foreign.empty
+    (with-foreign-ptr (str 2)
+      (setf (mem-ref str :unsigned-char) 42)
+      (lisp-string-to-foreign "" str 1)
+      (mem-ref str :unsigned-char))
+  0)
