@@ -38,12 +38,17 @@
 (in-package #:cffi-tests)
 (do-tests)
 
+(defparameter *repeat* 0)
+(format t "~2&How many times shall we repeat the tests? [~D]: " *repeat*)
+(force-output *standard-output*)
+(let ((ntimes (or (ignore-errors (parse-integer (read-line))) *repeat*)))
+  (unless (eql ntimes 0)
+    (loop repeat ntimes do (do-tests))
+    (format t "~&Finished running tests ~D times." ntimes)))
+
 (in-package #:cl-user)
 (terpri)
 (force-output)
 
-#-allegro
-(quit)
-
-#+allegro
-(exit)
+#-allegro (quit)
+#+allegro (exit)

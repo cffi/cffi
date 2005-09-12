@@ -89,16 +89,10 @@ pointer in VAR and the memory it points to have dynamic extent and may
 be stack allocated if supported by the implementation."
   (unless size-var
     (setf size-var (gensym "SIZE")))
-  `(let* ((,size-var ,size)
-          (,var (%foreign-alloc ,size-var)))
-     (unwind-protect
-          (progn ,@body)
-       (foreign-free ,var))))
-
-;  `(fli:with-dynamic-foreign-objects ()
-;     (let* ((,size-var ,size)
-;            (,var (fli:alloca :pointer-type :pointer :nelems ,size-var)))
-;       ,@body)))
+  `(fli:with-dynamic-foreign-objects ()
+     (let* ((,size-var ,size)
+            (,var (fli:alloca :type :byte :nelems ,size-var)))
+       ,@body)))
 
 ;;;# Shareable Vectors
 
