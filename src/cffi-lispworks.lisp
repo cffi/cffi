@@ -67,27 +67,21 @@
   "Return true if PTR is a null pointer."
   (fli:null-pointer-p ptr))
 
+;; FLI:INCF-POINTER won't work on FLI pointers to :void so we
+;; increment "manually."
 (defun inc-ptr (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
-  (fli:make-pointer :type :void
-                    :address (+ (fli:pointer-address ptr) offset)))
-
-;; FLI:INCF-POINTER doesn't seem to work at all..
-;; tested on lispworks 4.4.5 darwin/ppc and linux/x86:
-;; (fli:incf-pointer (fli:make-pointer :type :void :address #xBEEF)
-;;                   #xDEAD0000)
-;; => #<Pointer to type :VOID = #x0000BEEF>
-;(fli:incf-pointer (fli:copy-pointer ptr) offset))
+  (fli:make-pointer :type :void :address (+ (fli:pointer-address ptr) offset)))
 
 ;;;# Allocation
 
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes of memory and return a pointer."
-  (fli:malloc :pointer-type :pointer :nelems size))
+  (fli:allocate-foreign-object :type :byte :nelems size))
 
 (defun foreign-free (ptr)
   "Free a pointer PTR allocated by FOREIGN-ALLOC."
-  (fli:free ptr))
+  (fli:free-foreign-object ptr))
 
 (defmacro with-foreign-ptr ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  Both the
@@ -199,8 +193,11 @@ be stack allocated if supported by the implementation."
                          (symbol-name name))))
     `(progn
        (fli:define-foreign-callable
-           (,cb-name :result-type ,(convert-foreign-type rettype)
-                     :calling-convention :c)
+           (,cb-name :encode :source
+                     :result-type ,(convert-foreign-type rettype)
+                     :calling-convention :cdecl
+                     :language :ansi-c
+                     :no-check nil)
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
          ,body-form)
