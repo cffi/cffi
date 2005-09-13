@@ -46,7 +46,7 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:make-callback))
+   #:%defcallback))
 
 (in-package #:cffi-sys)
 
@@ -284,15 +284,16 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Callbacks
 
-(defmacro make-callback (name rettype arg-names arg-types body-form)
-  (let ((cb-sym (callback-symbol-name name)))
+(defmacro %defcallback (name rettype arg-names arg-types &body body)
+  (with-unique-names (cb-sym)
     `(progn
        (def-callback ,cb-sym
            (,(convert-foreign-type rettype)
-            ,@(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
-                      arg-names arg-types))
-         ,body-form)
-       (callback ,cb-sym))))
+             ,@(mapcar (lambda (sym type)
+                         (list sym (convert-foreign-type type)))
+                       arg-names arg-types))
+         ,@body)
+       (setf (get ',name 'callback-ptr) (callback ,cb-sym)))))
 
 ;;;# Loading Foreign Libraries
 

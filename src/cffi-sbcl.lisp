@@ -52,7 +52,7 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-var-ptr
-   #:make-callback))
+   #:%defcallback))
 
 (in-package #:cffi-sys)
 
@@ -278,6 +278,16 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Callbacks
 
+(defmacro %defcallback (name rettype arg-names arg-types &body body)
+  `(setf (get ',name 'callback-ptr)
+         (alien-sap
+          (sb-alien::alien-lambda ,(convert-foreign-type rettype)
+              ,(mapcar (lambda (sym type)
+                         (list sym (convert-foreign-type type)))
+                       arg-names arg-types)
+            ,@body))))
+
+#+nil
 (defmacro make-callback (name rettype arg-names arg-types body-form)
   (declare (ignore name))
   `(alien-sap

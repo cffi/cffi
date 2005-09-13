@@ -137,24 +137,22 @@
           (inverse-translate-objects
            ,(rest args) ,(rest types) ,rettype ,call)))))
 
-(defun get-callback (symbol)
-  (get symbol 'cffi-callback-ptr))
-
-(defun (setf get-callback) (value symbol)
-  (setf (get symbol 'cffi-callback-ptr) value))
-
-(defmacro callback (name)
-  `(get ',name 'cffi-callback-ptr))
-
 (defmacro defcallback (name return-type args &body body)
   (discard-docstring body)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args)))
     `(progn
-       (setf (callback ,name)
-             (make-callback
-              ,name ,(canonicalize-foreign-type return-type)
-              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
-              (inverse-translate-objects ,arg-names ,arg-types ,return-type
-                                         (block ,name ,@body))))
+       (%defcallback ,name ,(canonicalize-foreign-type return-type)
+           ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
+         (inverse-translate-objects ,arg-names ,arg-types ,return-type
+                                    (block ,name ,@body)))
        ',name)))
+
+(defun get-callback (symbol)
+  (get symbol 'cffi-sys::callback-ptr))
+
+(defun (setf get-callback) (value symbol)
+  (setf (get symbol 'cffi-sys::callback-ptr) value))
+
+(defmacro callback (name)
+  `(get ',name 'cffi-sys::callback-ptr))

@@ -37,20 +37,9 @@
            #:symbolicate
            #:let-when
            #:bif
-           #:post-incf
-           #:callback-symbol-name))
+           #:post-incf))
 
 (in-package #:cffi-utils)
-
-;;;# Utilities for CFFI-SYS
-
-(defpackage #:cffi-callbacks)
-
-(defun callback-symbol-name (name)
-  "Return the symbol to use for the callback for NAME."
-  (intern (format nil "~A.~A"
-                  (package-name (symbol-package name))
-                  (symbol-name name)) '#:cffi-callbacks))
 
 ;;;# General Utilities
 

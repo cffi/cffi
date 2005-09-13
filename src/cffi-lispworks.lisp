@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:cl)
+  (:use #:cl #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -46,7 +46,7 @@
    #:with-pointer-to-vector-data
    #:foreign-var-ptr
    #:defcfun-helper-forms
-   #:make-callback))
+   #:%defcallback))
 
 (in-package #:cffi-sys)
 
@@ -181,7 +181,7 @@ be stack allocated if supported by the implementation."
 
 ;;;# Callbacks
 
-(defmacro make-callback (name rettype arg-names arg-types body-form)
+(defmacro %defcallback (name rettype arg-names arg-types &body body)
   (let ((cb-name (format nil "%callback/~A:~A"
                          (package-name (symbol-package name))
                          (symbol-name name))))
@@ -194,8 +194,9 @@ be stack allocated if supported by the implementation."
                      :no-check nil)
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
-         ,body-form)
-        (fli:make-pointer :symbol-name ,cb-name :module :callbacks))))
+         ,@body)
+       (setf (get ',name 'callback-ptr)
+             (fli:make-pointer :symbol-name ,cb-name :module :callbacks)))))
 
 ;;;# Loading Foreign Libraries
 

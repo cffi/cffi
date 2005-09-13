@@ -35,7 +35,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp)
+  (:use #:common-lisp #:cffi-utils)
   (:export
    #:pointerp
    #:null-ptr
@@ -51,7 +51,7 @@
    #:%load-foreign-library
    #:%mem-ref
    #:foreign-var-ptr
-   #:make-callback))
+   #:%defcallback))
 
 (in-package #:cffi-sys)
 
@@ -202,20 +202,20 @@ the function call."
 
 ;;;# Callbacks
 
-(defmacro make-callback (name rettype arg-names arg-types body-form)
-  (declare (ignore name))
-  (let ((var (gensym)))
+(defmacro %defcallback (name rettype arg-names arg-types &body body)
+  (with-unique-names (cb-var)
     `(ffi:with-c-var
-         (,var '(ffi:c-ptr
-                 (ffi:c-function
-                  (:arguments
-                   ,@(mapcar (lambda (sym type)
-                               (list sym (convert-foreign-type type)))
-                             arg-names arg-types))
-                  (:return-type ,(convert-foreign-type rettype))
-                  (:language :stdc)))
-               (lambda ,arg-names ,body-form))
-       (ffi:c-var-address (ffi:foreign-value ,var)))))
+         (,cb-var '(ffi:c-ptr
+                    (ffi:c-function
+                     (:arguments
+                      ,@(mapcar (lambda (sym type)
+                                  (list sym (convert-foreign-type type)))
+                                arg-names arg-types))
+                     (:return-type ,(convert-foreign-type rettype))
+                     (:language :stdc)))
+                  (lambda ,arg-names ,@body))
+       (setf (get ',name 'callback-ptr)
+             (ffi:c-var-address (ffi:foreign-value ,cb-var))))))
 
 ;;;# Loading Foreign Libraries
 
