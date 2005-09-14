@@ -30,7 +30,7 @@ shlibs:
 
 clean:
 	@$(MAKE) -wC tests clean
-	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" -o -name "*.nfasl" \) -exec rm {} \;
+	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" -o -name "*.nfasl" -o -name "*.fsl" \) -exec rm {} \;
 
 test-openmcl:
 	@-openmcl --load tests/run-tests.lisp
