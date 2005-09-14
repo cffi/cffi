@@ -1,4 +1,4 @@
-\input texinfo   @c -*- Mode: Texinfo; coding: utf-8; indent-tabs-mode: nil -*-
+\input texinfo   @c -*- Mode: Texinfo; Mode: auto-fill -*-
 @c %**start of header
 @setfilename cffi.info
 @settitle CFFI User Manual
@@ -95,6 +95,85 @@ DEALINGS IN THE SOFTWARE.
 * Callbacks::                   
 * Limitations::                 
 * Symbol Index::                
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Foreign Types
+
+* Built-In Types::              
+* Defining Typedefs::           
+* Foreign Type Translators::    
+* Foreign Structure Types::     
+* Operations on Types::         
+* Allocating Foreign Objects::  
+
+* defcstruct::                  Defines a C structure type.
+* defcunion::                   Defines a C union type.
+* defctype::                    Defines a foreign typedef.
+* defcenum::                    Defines a C enumeration.
+* define-type-translator::      Defines a type translation.
+* define-type-spec-parser::     <should be exported?>
+* define-foreign-type::         Defines a foreign type specifier.
+* explain-slot-address::        <unimplemented>
+* foreign-enum-keyword::        Finds a keyword in an enum type.
+* foreign-enum-value::          Finds a value in an enum type.
+* foreign-slot-address::        Returns a pointer to a slot in a foreign struct.
+* foreign-slot-value::          Returns the value of a slot in a foreign struct.
+* foreign-type-alignment::      Returns the alignment of a foreign type.
+* foreign-type-size::           Returns the size of a foreign type.
+* with-foreign-object::         <to be renamed>
+* with-foreign-slots::          Access the slots of a foreign structure.
+
+Pointers
+
+* Basic Pointer Operations::    
+* Allocating Foreign Memory::   
+* Accessing Foreign Memory::    
+
+* foreign-free::                Deallocates memory.
+* foreign-alloc::               Allocates memory.
+* mem-aref::                    Accesses the value of an index in an array.
+* mem-ref::                     Dereferences a pointer.
+* pointerp::                    Tests whether an object is a pointer or not.
+* null-ptr::                    Returns a NULL pointer.
+* null-ptr-p::                  Tests a pointer for NULL value.
+* inc-ptr::                     Increments the address held by a pointer.
+* with-foreign-ptr::            Allocates memory with dynamic extent.
+
+Strings
+
+* foreign-string-alloc::        Converts a Lisp string to a foreign string.
+* foreign-string-free::         Deallocates memory used by a foreign string.
+* foreign-string-to-lisp::      Converts a foreign string to a Lisp string.
+* lisp-string-to-foreign::      Copies a Lisp string into a foreign string.
+* with-foreign-string::         Allocates a foreign string with dynamic extent.
+* with-foreign-ptr-as-string::  Similar to CL's with-output-to-string.
+
+Variables
+
+* defcvar::                     Defines a C global variable.
+* get-var-ptr::                 Returns a pointer to a defined global variable.
+
+Functions
+
+* Calling Foreign Functions::   
+* Defining Foreign Functions::  
+
+* defcfun::                     Defines a foreign function.
+* foreign-funcall::             Performs a call to a foreign function.
+
+Libraries
+
+* load-foreign-library::        Loads a foreign library.
+
+Callbacks
+
+* callback::                    Returns a pointer to a defined callback.
+* defcallback::                 Defines a Lisp callback.
+* get-callback::                Returns a pointer to a defined callback.
+
+@end detailmenu
 @end menu
 
 @node Introduction

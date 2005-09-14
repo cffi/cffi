@@ -126,3 +126,12 @@
       (lisp-string-to-foreign "" str 1)
       (mem-ref str :unsigned-char))
   0)
+
+;; regression test. with-foreign-ptr shouldn't evaluate
+;; the size argument twice.
+
+(deftest with-foreign-ptr.evalx2
+    (let* ((count 0))
+      (with-foreign-ptr (x (incf count) size-var)
+        (values count size-var)))
+  1 1)

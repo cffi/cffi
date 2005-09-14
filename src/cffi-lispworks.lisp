@@ -136,11 +136,6 @@ be stack allocated if supported by the implementation."
     (setf ptr (inc-ptr ptr offset)))
   (setf (fli:dereference ptr :type (convert-foreign-type type)) value))
 
-;(defun test-foreign-aref ()
-;  (with-foreign-ptr (p 100)
-;    (setf (%mem-ref p :double) pi)
-;    (%mem-ref p :double)))
-
 ;;;# Foreign Type Operations
 
 (defun %foreign-type-size (type)
