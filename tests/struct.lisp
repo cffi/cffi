@@ -149,9 +149,13 @@
   (foo empty-struct)
   (an-int :int))
 
-(defcvar "the_with_empty_struct" with-empty-struct)
+;; commented out this test because an empty struct is not valid/standard C
+;; left the struct declarations anyway because they should be handled
+;; gracefuly anyway.
 
-(deftest struct.alignment.5
-    (with-foreign-slots ((foo an-int) *the-with-empty-struct* with-empty-struct)
-      an-int)
-  42)
+; (defcvar "the_with_empty_struct" with-empty-struct)
+;
+; (deftest struct.alignment.5
+;     (with-foreign-slots ((foo an-int) *the-with-empty-struct* with-empty-struct)
+;       an-int)
+;   42)

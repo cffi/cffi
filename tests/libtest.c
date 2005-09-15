@@ -196,7 +196,7 @@ another_boolean return_enum(int x)
 DLLEXPORT
 int equalequal(int a, unsigned int b)
 {
-    return a == b;
+    return ((unsigned int) a) == b;
 }
 
 DLLEXPORT
@@ -291,6 +291,11 @@ DLLEXPORT
 struct s_s_s_double the_s_s_s_double = { 6, { 4, { 1, 2.0, 3 }, 5 }, 7 };
 
 /* STRUCT.ALIGNMENT.5 */
+
+/* commented this test out because this is not standard C
+   and MSVC++ (or some versions of it at least) won't compile it. */
+
+/*
 struct empty_struct {};
 
 struct with_empty_struct {
@@ -300,6 +305,7 @@ struct with_empty_struct {
 
 DLLEXPORT
 struct with_empty_struct the_with_empty_struct = { {}, 42 };
+*/
 
 /*
  * DEFCFUN.NOARGS and DEFCFUN.NOOP
