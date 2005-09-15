@@ -305,11 +305,13 @@ struct with_empty_struct the_with_empty_struct = { {}, 42 };
  * DEFCFUN.NOARGS and DEFCFUN.NOOP
  */
 
+DLLEXPORT
 int noargs ()
 {
     return 42;
 }
 
+DLLEXPORT
 void noop ()
 {
     return;
