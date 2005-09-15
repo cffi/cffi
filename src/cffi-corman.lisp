@@ -46,7 +46,7 @@
    ;#:with-pointer-to-vector-data
    #:foreign-var-ptr
    #:defcfun-helper-forms
-   #:make-callback))
+   #:%defcallback))
 
 (in-package #:cffi-sys)
 
@@ -142,18 +142,20 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
+  (unless (eql offset 0)
+    (setq ptr (inc-ptr ptr offset)))
   (ecase type
-    (:char             (cref (:char *) ptr offset))
-    (:unsigned-char    (cref (:unsigned-char *) ptr offset))
-    (:short            (cref (:short *) ptr offset))
-    (:unsigned-short   (cref (:unsigned-short *) ptr offset))
-    (:int              (cref (:long *) ptr offset))
-    (:unsigned-int     (cref (:unsigned-long *) ptr offset))
-    (:long             (cref (:long *) ptr offset))
-    (:unsigned-long    (cref (:unsigned-long *) ptr offset))
-    (:float            (cref (:single-float *) ptr offset))
-    (:double           (cref (:double-float *) ptr offset))
-    (:pointer          (cref (:handle *) ptr offset))))
+    (:char             (cref (:char *) ptr 0))
+    (:unsigned-char    (cref (:unsigned-char *) ptr 0))
+    (:short            (cref (:short *) ptr 0))
+    (:unsigned-short   (cref (:unsigned-short *) ptr 0))
+    (:int              (cref (:long *) ptr 0))
+    (:unsigned-int     (cref (:unsigned-long *) ptr 0))
+    (:long             (cref (:long *) ptr 0))
+    (:unsigned-long    (cref (:unsigned-long *) ptr 0))
+    (:float            (cref (:single-float *) ptr 0))
+    (:double           (cref (:double-float *) ptr 0))
+    (:pointer          (cref (:handle *) ptr 0))))
 
 ;(define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
 ;  (if (constantp type)
@@ -162,18 +164,20 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
+  (unless (eql offset 0)
+    (setq ptr (inc-ptr ptr offset)))
   (ecase type
-    (:char             (setf (cref (:char *) ptr offset) value))
-    (:unsigned-char    (setf (cref (:unsigned-char *) ptr offset) value))
-    (:short            (setf (cref (:short *) ptr offset) value))
-    (:unsigned-short   (setf (cref (:unsigned-short *) ptr offset) value))
-    (:int              (setf (cref (:long *) ptr offset) value))
-    (:unsigned-int     (setf (cref (:unsigned-long *) ptr offset) value))
-    (:long             (setf (cref (:long *) ptr offset) value))
-    (:unsigned-long    (setf (cref (:unsigned-long *) ptr offset) value))
-    (:float            (setf (cref (:single-float *) ptr offset) value))
-    (:double           (setf (cref (:double-float *) ptr offset) value))
-    (:pointer          (setf (cref (:handle *) ptr offset) value))))
+    (:char             (setf (cref (:char *) ptr 0) value))
+    (:unsigned-char    (setf (cref (:unsigned-char *) ptr 0) value))
+    (:short            (setf (cref (:short *) ptr 0) value))
+    (:unsigned-short   (setf (cref (:unsigned-short *) ptr 0) value))
+    (:int              (setf (cref (:long *) ptr 0) value))
+    (:unsigned-int     (setf (cref (:unsigned-long *) ptr 0) value))
+    (:long             (setf (cref (:long *) ptr 0) value))
+    (:unsigned-long    (setf (cref (:unsigned-long *) ptr 0) value))
+    (:float            (setf (cref (:single-float *) ptr 0) value))
+    (:double           (setf (cref (:double-float *) ptr 0) value))
+    (:pointer          (setf (cref (:handle *) ptr 0) value))))
 
 ;;;# Calling Foreign Functions
 
@@ -231,15 +235,17 @@ the DLL's name (a string), else returns NIL."
 ;;;# Callbacks
 
 ;; defun-c-callback vs. defun-direct-c-callback?
-(defmacro make-callback (name rettype arg-names arg-types body-form)
+;; same issue as Allegro, no return type declaration, should we coerce?
+(defmacro %defcallback (name rettype arg-names arg-types body-form)
   (declare (ignore rettype))
-  (let ((cb-sym (callback-symbol-name name)))
+  (with-unique-names (cb-sym)
     `(progn
        (defun-c-callback ,cb-sym
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                             arg-names arg-types)
          ,body-form)
-       (get-callback-procinst ',cb-sym))))
+       (setf (get ',name 'callback-ptr)
+             (get-callback-procinst ',cb-sym)))))
 
 ;;;# Loading Foreign Libraries
 
@@ -250,7 +256,7 @@ the DLL's name (a string), else returns NIL."
 ;;;# Foreign Globals
 
 ;; FFI to GetProcAddress from the Win32 API.
-;; "The  GetProcAddress function retrieves the address of an exported
+;; "The GetProcAddress function retrieves the address of an exported
 ;; function or variable from the specified dynamic-link library (DLL)."
 (defun-dll get-proc-address
     ((module HMODULE)

@@ -179,6 +179,9 @@ Callbacks
 @node Introduction
 @chapter Introduction
 
+@strong{Please note that, at the moment, this manual reflects what's
+available in the cffi-luis branch, not the main cffi branch. --luis}
+
 @section Motivation
 
 @section Design Philosophy
