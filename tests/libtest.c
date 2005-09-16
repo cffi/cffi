@@ -150,7 +150,9 @@ int expect_strcat(char* (*f)(char*, char*))
 {
     char *ret = f("Hello, ", "C world!");
     int res = strcmp(ret, "Hello, C world!") == 0 ? 1 : 0;
-    free(ret); /* is this allowed? */
+    /* commented out as a quick fix on platforms that don't
+       foreign allocate in C malloc space. */
+    /*free(ret);*/ /* is this allowed? */
     return res;
 }
 
