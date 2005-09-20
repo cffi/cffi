@@ -44,7 +44,7 @@
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -266,14 +266,16 @@ the DLL's name (a string), else returns NIL."
   :entry-name "GetProcAddress"
   :linkage-type :pascal)
 
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign variable NAME."
-  `(let ((str (lisp-string-to-c-string ,name)))
-     (unwind-protect
-          (dolist (dll ct::*dlls-loaded*)
-            (let ((ptr (get-proc-address
-                        (int-to-foreign-ptr (ct::dll-record-handle dll))
-                        str)))
-              (when (not (cpointer-null ptr))
-                (return ptr))))
-       (free str))))
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (declare (ignore kind))
+  (let ((str (lisp-string-to-c-string name)))
+    (unwind-protect
+         (dolist (dll ct::*dlls-loaded*)
+           (let ((ptr (get-proc-address
+                       (int-to-foreign-ptr (ct::dll-record-handle dll))
+                       str)))
+             (when (not (cpointer-null otr))
+               (return ptr))))
+      (free str))))

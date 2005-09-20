@@ -45,7 +45,7 @@
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -303,6 +303,7 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the external variable NAME."
-  `(sys:foreign-symbol-address ,name :flavor :data))
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (sys:foreign-symbol-address name :flavor kind))

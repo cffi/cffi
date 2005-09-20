@@ -59,11 +59,12 @@
          (foreign-name (foreign-var-name name))
          (fn (symbolicate "%VAR-ACCESSOR-" lisp-name))
          (ptype (parse-type type)))
-    (when (aggregatep ptype) ; we can't really setf an aggregate type...
+    (when (aggregatep ptype) ; we can't really setf an aggregate type
       (setq read-only t))    ; at least not yet...
     `(progn
        (setf (get ',lisp-name 'cffi-ptr-to-var)
-             (foreign-var-ptr ,foreign-name))
+             (foreign-symbol-ptr ,foreign-name :data))
+       ;; Getter
        (defun ,fn ()
          ,(if (aggregatep ptype)
               `(get-var-ptr ',lisp-name) ; no dereference for aggregate types.
@@ -71,6 +72,7 @@
                    (var (mem-ref (get-var-ptr ',lisp-name) ',type)
                         ,type :from-c)
                  var)))
+       ;; Setter
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
          ,(if read-only
@@ -80,4 +82,5 @@
                    (c-value value ,type :to-c)
                  (setf (mem-ref (get-var-ptr ',lisp-name) ',type) c-value)
                  value)))
+       ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))

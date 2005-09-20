@@ -45,7 +45,7 @@
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -293,17 +293,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx (concatenate 'string "_" name)
   #-macosx name)
 
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign variable NAME."
-  `(load-time-value
-    (nth-value 0 (ff:get-entry-point ,(convert-external-name name)))))
-
-;  `(excl::foreign-global-address
-;    (load-time-value
-;     (excl::determine-foreign-address
-;      '(,name :language :c)
-;      ,(logior ff::ep-flag-never-release
-;               ff::ep-flag-variable-address)))))
-
-;(declare (ignore kind))
-;(nth-value 0 (ff:get-entry-point (convert-external-name name))))
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (declare (ignore kind))
+  (nth-value 0 (ff:get-entry-point (convert-external-name name))))

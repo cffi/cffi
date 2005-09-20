@@ -44,7 +44,7 @@
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -201,6 +201,8 @@ be stack allocated if supported by the implementation."
 
 ;;;# Foreign Globals
 
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign variable NAME."
-  `(load-time-value (fli:make-pointer :symbol-name ,name :type :void)))
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (declare (ignore kind))
+  (fli:make-pointer :symbol-name name :type :void))

@@ -50,7 +50,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -188,7 +188,6 @@ the function call."
           nil (ffi:parse-c-type ',ctype)))
         ,@fargs))))
 
-;;; FFI:PARSE-C-TYPE could probably be wrapped around a LOAD-TIME-VALUE. --luis
 (defmacro %foreign-funcall-ptr (ptr &rest args)
   "Similar to %foreign-funcall but takes a pointer instead of a string."
   (multiple-value-bind (types fargs rettype)
@@ -225,10 +224,16 @@ the function call."
 
 ;;;# Foreign Globals
 
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign variable NAME."
-  `(ffi:c-var-address
-    (ffi:foreign-value
-     (load-time-value
-      (ffi::foreign-library-variable
-       ,name (ffi::foreign-library :default) nil nil)))))
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (ecase kind
+    (:data (ffi:c-var-address
+            (ffi:foreign-value
+             (ffi::foreign-library-variable
+              name (ffi::foreign-library :default) nil nil))))
+    (:code (ffi:c-var-address
+            (ffi:foreign-value
+             (ffi::foreign-library-function
+              name (ffi::foreign-library :default)
+              nil (ffi:parse-c-type '(ffi:c-function (:language :stdc)))))))))

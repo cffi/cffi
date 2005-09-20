@@ -51,7 +51,7 @@
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-var-ptr
+   #:foreign-symbol-ptr
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -304,7 +304,8 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-;; XXX figure out linkage table issues --luis
-(defmacro foreign-var-ptr (name)
-  "Return a pointer pointing to the foreign var NAME."
-  `(sb-sys:foreign-symbol-sap ,name t))
+;; XXX still need to figure out eventual (non-)linkage-table issues?
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (sb-sys:foreign-symbol-sap name (ecase kind (:code nil) (:data t))))
