@@ -297,4 +297,4 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))
-  (nth-value 0 (ff:get-entry-point (convert-external-name name))))
+  (prog1 (ff:get-entry-point (convert-external-name name))))

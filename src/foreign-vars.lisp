@@ -51,8 +51,17 @@
 
 (defun get-var-ptr (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
-  (get symbol 'cffi-ptr-to-var))
+  (foreign-symbol-ptr (get symbol 'foreign-var-name) :data))
 
+;;; a) Should this be exported?
+;;; b) should we define a more specific condition?
+;;; --luis
+(defun foreign-symbol-ptr-or-lose (foreign-name)
+  "Like foreign-symbol-ptr but throws an error instead of
+returning nil when foreign-name is not found."
+  (or (foreign-symbol-ptr foreign-name :data)
+      (error "Trying access undefined foreign variable ~S." foreign-name)))
+  
 (defmacro defcvar (name type &key read-only)
   "Define a foreign global variable."
   (let* ((lisp-name (lisp-var-name name))
@@ -62,14 +71,16 @@
     (when (aggregatep ptype) ; we can't really setf an aggregate type
       (setq read-only t))    ; at least not yet...
     `(progn
-       (setf (get ',lisp-name 'cffi-ptr-to-var)
-             (foreign-symbol-ptr ,foreign-name :data))
+       ;; Save foreign-name for posterior access by get-var-ptr
+       (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)
        ;; Getter
        (defun ,fn ()
          ,(if (aggregatep ptype)
-              `(get-var-ptr ',lisp-name) ; no dereference for aggregate types.
+              ;; no dereference for aggregate types.
+              `(foreign-symbol-ptr-or-lose ,foreign-name) 
               `(with-object-translated
-                   (var (mem-ref (get-var-ptr ',lisp-name) ',type)
+                   (var (mem-ref (foreign-symbol-ptr-or-lose ,foreign-name)
+                                 ',type)
                         ,type :from-c)
                  var)))
        ;; Setter
@@ -80,7 +91,9 @@
                                lisp-name))
               `(with-object-translated
                    (c-value value ,type :to-c)
-                 (setf (mem-ref (get-var-ptr ',lisp-name) ',type) c-value)
+                 (setf (mem-ref (foreign-symbol-ptr-or-lose ,foreign-name)
+                                ',type)
+                       c-value)
                  value)))
        ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))

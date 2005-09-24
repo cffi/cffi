@@ -82,4 +82,6 @@
 
    ;; Foreign globals.
    #:defcvar
-   #:get-var-ptr))
+   #:get-var-ptr
+   #:foreign-symbol-ptr
+   ))

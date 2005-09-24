@@ -306,4 +306,4 @@ to open-code (SETF %MEM-REF) forms."
 (defun foreign-symbol-ptr (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
-  (sys:foreign-symbol-address name :flavor kind))
+  (prog1 (ignore-errors (sys:foreign-symbol-address name :flavor kind))))

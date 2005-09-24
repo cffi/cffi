@@ -205,4 +205,4 @@ be stack allocated if supported by the implementation."
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))
-  (fli:make-pointer :symbol-name name :type :void))
+  (prog1 (ignore-errors (fli:make-pointer :symbol-name name :type :void))))

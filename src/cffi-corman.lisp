@@ -276,6 +276,6 @@ the DLL's name (a string), else returns NIL."
            (let ((ptr (get-proc-address
                        (int-to-foreign-ptr (ct::dll-record-handle dll))
                        str)))
-             (when (not (cpointer-null otr))
+             (when (not (cpointer-null ptr))
                (return ptr))))
       (free str))))

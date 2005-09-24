@@ -304,8 +304,11 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-;; XXX still need to figure out eventual (non-)linkage-table issues?
+;;; We return the address in the linkage-table (well, when there is one)
+;;; in case someone uses this to save addresses somewhere and then dump
+;;; an image. --luis
 (defun foreign-symbol-ptr (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
-  (sb-sys:foreign-symbol-sap name (ecase kind (:code nil) (:data t))))
+  (when (sb-sys:find-foreign-symbol-address name)
+    (sb-sys:foreign-symbol-sap name (ecase kind (:code nil) (:data t)))))

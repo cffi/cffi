@@ -133,6 +133,7 @@ Pointers
 
 * foreign-free::                Deallocates memory.
 * foreign-alloc::               Allocates memory.
+* foreign-symbol-ptr::          Returns a pointer to a foreign symbol.
 * mem-aref::                    Accesses the value of an index in an array.
 * mem-ref::                     Dereferences a pointer.
 * pointerp::                    Tests whether an object is a pointer or not.
@@ -1186,6 +1187,7 @@ Dictionary
 
 * foreign-free::                
 * foreign-alloc::               
+* foreign-symbol-ptr::          
 * mem-aref::                    
 * mem-ref::                     
 * pointerp::                    
@@ -1222,9 +1224,9 @@ A foreign pointer.
 @end table
 
 @subheading Description
-The @code{foreign-free} frees a @code{ptr} previously allocated by
-@code{foreign-alloc}. The consequences of freeing a given pointer
-twice are undefined.
+The @code{foreign-free} function frees a @code{ptr} previously
+allocated by @code{foreign-alloc}. The consequences of freeing a given
+pointer twice are undefined.
 
 @subheading Examples
 @lisp
@@ -1320,6 +1322,60 @@ CFFI> (foreign-alloc :string :initial-element "foo")
 @subheading See Also
 @ref{foreign-free} @*
 @ref{with-foreign-ptr}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-SYMBOL-PTR
+
+@node foreign-symbol-ptr
+@heading foreign-symbol-ptr
+@subheading Syntax
+@Function{foreign-symbol-ptr foreign-name kind => ptr}
+
+@subheading Arguments and Values
+@table @emph
+@item foreign-name
+A string.
+
+@item kind
+Either @code{:code} or @code{:data}.
+
+@item ptr
+A foreign pointer, or @code{nil}.
+@end table
+
+@subheading Description
+The @code{foreign-symbol-ptr} will return a foreign pointer
+corresponding to the foreign symbol denoted by the string
+@emph{foreign-name}. The @emph{kind} argument specifies whether
+@emph{foreign-name} is a function or a variable and should be
+respectively @code{:code} or @code{:data}. If a foreign symbol named
+@emph{foreign-name} doesn't exist, @code{nil} is returned.
+
+ABI name manglings will be performed on @emph{foreign-name} by
+@code{foreign-symbol-ptr} if necessary. (eg: adding a leading
+underscore on darwin/ppc)
+
+@strong{Warning:} the consequences of misspecifying the @emph{kind}
+argument are, unfortunately, unspecified. Some implementations will
+silently ignore this, while others might return erroneous values.
+
+@subheading Examples
+@lisp
+CFFI> (foreign-symbol-ptr "errno" :data)
+#<A Mac Pointer #xA0008130>
+CFFI> (foreign-symbol-ptr "strerror" :code)
+#<A Mac Pointer #x9002D0F8>
+CFFI> (foreign-funcall * :int (mem-ref ** :int) :string)
+"No such file or directory"
+
+CFFI> (foreign-symbol-ptr "unexistant symbol" :data)
+NIL
+@end lisp
+
+@c @subheading See Also
 
 
 

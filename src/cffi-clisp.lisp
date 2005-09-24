@@ -228,12 +228,17 @@ the function call."
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (ecase kind
-    (:data (ffi:c-var-address
-            (ffi:foreign-value
-             (ffi::foreign-library-variable
-              name (ffi::foreign-library :default) nil nil))))
-    (:code (ffi:c-var-address
-            (ffi:foreign-value
-             (ffi::foreign-library-function
-              name (ffi::foreign-library :default)
-              nil (ffi:parse-c-type '(ffi:c-function (:language :stdc)))))))))
+    (:data
+     (prog1 (ignore-errors
+              (ffi:c-var-address
+               (ffi:foreign-value
+                (ffi::foreign-library-variable
+                 name (ffi::foreign-library :default) nil nil))))))
+    (:code
+     (prog1 (ignore-errors
+              (ffi:c-var-address
+               (ffi:foreign-value
+                (ffi::foreign-library-function
+                 name (ffi::foreign-library :default)
+                 nil (ffi:parse-c-type '(ffi:c-function
+                                         (:language :stdc)))))))))))
