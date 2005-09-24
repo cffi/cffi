@@ -33,7 +33,10 @@
                  :type
                  #-(or win32 mswindows) "so"
                  #+(or win32 mswindows) "dll"
-                 :defaults *load-truename*
+                 ;; XXX: find a better way. This is here so that we can find
+                 ;; the library even if the fasls are not placed next to
+                 ;; the source code.
+                 :defaults #.(or *compile-file-truename* *load-truename*)
                  :version :newest))
 
 (load-foreign-library (namestring *lib*))
