@@ -58,22 +58,32 @@
   "Set the value of TYPE at OFFSET from PTR to VALUE."
   (setf (%mem-ref ptr (canonicalize-foreign-type type) offset) value))
 
-(define-setf-expander mem-ref (ptr type &optional (offset 0))
+(define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for MEM-REF that doesn't rebind TYPE.
 This is necessary for the compiler macro on MEM-SET to be able
 to open-code (SETF MEM-REF) forms."
   (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr)
+      (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (let ((store (gensym)))
+    ;; if either TYPE or OFFSET are constant, we avoid rebinding them
+    ;; so that the compiler macros on MEM-SET and %MEM-SET work. 
+    (with-unique-names (store type-tmp offset-tmp)
       (values
-       dummies
-       vals
-       `(,store)
+       (append (unless (constantp type)   (list type-tmp))
+               (unless (constantp offset) (list offset-tmp))
+               dummies)
+       (append (unless (constantp type)   (list type))
+               (unless (constantp offset) (list offset))
+               vals)
+       (list store)
        `(progn
-          (mem-set ,store ,getter ,type ,offset)
+          (mem-set ,store ,getter
+                   ,@(if (constantp type)   (list type)   (list type-tmp))
+                   ,@(if (constantp offset) (list offset) (list offset-tmp)))
           ,store)
-       `(mem-ref ,getter)))))
+       `(mem-ref ,getter
+                 ,@(if (constantp type)   (list type)   (list type-tmp))
+                 ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
 
 (define-compiler-macro mem-set
     (&whole form value ptr type &optional (offset 0))
@@ -98,27 +108,45 @@ to open-code (SETF MEM-REF) forms."
           `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
       form))
 
-(define-setf-expander mem-aref (ptr type &optional (index 0))
+(define-setf-expander mem-aref (ptr type &optional (index 0) &environment env)
   "SETF expander for MEM-AREF."
   (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr)
+      (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (let ((store (gensym)))
+    ;; we avoid rebinding type and index, if possible (and if type is not
+    ;; constant, we don't bother about the index), so that the compiler macros
+    ;; on MEM-SET or %MEM-SET can work.
+    (with-unique-names (store type-tmp index-tmp)
       (values
-       dummies
-       vals
-       `(,store)
+       (append (unless (constantp type)
+                 (list type-tmp))
+               (unless (and (constantp type) (constantp index))
+                 (list index-tmp))
+               dummies)
+       (append (unless (constantp type)
+                 (list type))
+               (unless (and (constantp type) (constantp index))
+                 (list index))
+               vals)
+       (list store)
+       ;; Here we'll try to calculate the offset from the type and index,
+       ;; or if not possible at least get the type size early.
        `(progn
           ,(if (constantp type)
                (if (constantp index)
                    `(mem-set ,store ,getter ,type
                              ,(* (eval index) (foreign-type-size (eval type))))
                    `(mem-set ,store ,getter ,type
-                             (* ,index ,(foreign-type-size (eval type)))))
-               `(mem-set ,store ,getter ,type
-                         (* ,index (foreign-type-size ,type))))
+                             (* ,index-tmp ,(foreign-type-size (eval type)))))
+               `(mem-set ,store ,getter ,type-tmp
+                         (* ,index-tmp (foreign-type-size ,type-tmp))))
           ,store)
-       `(mem-ref ,getter)))))
+       `(mem-ref ,getter
+                 ,@(if (constantp type) (list type)
+                       (list type-tmp))
+                 ,@(if (and (constantp type) (constantp index))
+                       (list index)
+                       (list index-tmp)))))))
 
 ;;;# Foreign Structures
 
@@ -311,22 +339,33 @@ to open-code (SETF MEM-REF) forms."
               `(mem-ref ,ptr ',type ,offset))
             form))
 
-(define-setf-expander foreign-slot-value (ptr type slot-name)
-  "SETF expander for MEM-REF that doesn't rebind TYPE.
-This is necessary for the compiler macro on MEM-SET to be able
-to open-code (SETF MEM-REF) forms."
+(define-setf-expander foreign-slot-value (ptr type slot-name &environment env)
+  "SETF expander for FOREIGN-SLOT-VALUE."
   (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr)
+      (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (let ((store (gensym)))
-      (values
-       dummies
-       vals
-       `(,store)
-       `(progn
-          (foreign-slot-set ,store ,getter ,type ,slot-name)
-          ,store)
-       `(foreign-slot-value ,getter)))))
+    (if (and (constantp type) (constantp slot-name))
+        ;; if TYPE and SLOT-NAME are constant we avoid rebinding them
+        ;; so that the compiler macro on FOREIGN-SLOT-SET works.
+        (with-unique-names (store)
+          (values
+           dummies
+           vals
+           (list store)
+           `(progn
+              (foreign-slot-set ,store ,getter ,type ,slot-name)
+              ,store)
+           `(foreign-slot-value ,getter ,type ,slot-name)))
+        ;; if not...
+        (with-unique-names (store slot-name-tmp type-tmp)
+          (values
+           (list* type-tmp slot-name-tmp dummies)
+           (list* type slot-name vals)
+           (list store)
+           `(progn
+              (foreign-slot-set ,store ,getter ,type-tmp ,slot-name-tmp)
+              ,store)
+           `(foreign-slot-value ,getter ,type-tmp ,slot-name-tmp))))))
 
 (defun foreign-slot-set (value ptr type slot-name)
   "Set the value of SLOT-NAME in a foreign structure."

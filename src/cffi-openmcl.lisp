@@ -144,22 +144,30 @@ WITH-POINTER-TO-VECTOR-DATA."
           (:pointer `(%get-ptr ,ptr ,offset))))
       form))
 
-(define-setf-expander %mem-ref (ptr type &optional (offset 0))
+(define-setf-expander %mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for %MEM-REF that doesn't rebind TYPE.
 This is necessary for the compiler macro on %MEM-SET to be able
 to open-code (SETF %MEM-REF) forms."
   (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr)
+      (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (let ((store (gensym)))
+    (with-unique-names (store type-tmp offset-tmp)
       (values
-       dummies
-       vals
-       `(,store)
+       (append (unless (constantp type)   (list type-tmp))
+               (unless (constantp offset) (list offset-tmp))
+               dummies)
+       (append (unless (constantp type)   (list type))
+               (unless (constantp offset) (list offset))
+               vals)
+       (list store)
        `(progn
-          (%mem-set ,store ,getter ,type ,offset)
+          (%mem-set ,store ,getter
+                   ,@(if (constantp type)   (list type)   (list type-tmp))
+                   ,@(if (constantp offset) (list offset) (list offset-tmp)))
           ,store)
-       `(%mem-ref ,getter)))))
+       `(%mem-ref ,getter
+                 ,@(if (constantp type)   (list type)   (list type-tmp))
+                 ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
 
 (defun %mem-set (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."

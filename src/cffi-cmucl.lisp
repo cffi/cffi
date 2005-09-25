@@ -187,22 +187,30 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:double (setf (sys:sap-ref-double ptr offset) value))
     (:pointer (setf (sys:sap-ref-sap ptr offset) value))))
 
-(define-setf-expander %mem-ref (ptr type &optional (offset 0))
+(define-setf-expander %mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for %MEM-REF that doesn't rebind TYPE.
 This is necessary for the compiler macro on %MEM-SET to be able
 to open-code (SETF %MEM-REF) forms."
   (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr)
+      (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (let ((store (gensym)))
+    (with-unique-names (store type-tmp offset-tmp)
       (values
-       dummies
-       vals
-       `(,store)
+       (append (unless (constantp type)   (list type-tmp))
+               (unless (constantp offset) (list offset-tmp))
+               dummies)
+       (append (unless (constantp type)   (list type))
+               (unless (constantp offset) (list offset))
+               vals)
+       (list store)
        `(progn
-          (%mem-set ,store ,getter ,type ,offset)
+          (%mem-set ,store ,getter
+                   ,@(if (constantp type)   (list type)   (list type-tmp))
+                   ,@(if (constantp offset) (list offset) (list offset-tmp)))
           ,store)
-       `(%mem-ref ,getter)))))
+       `(%mem-ref ,getter
+                 ,@(if (constantp type)   (list type)   (list type-tmp))
+                 ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
 
 (define-compiler-macro %mem-set (&whole form value ptr type &optional (offset 0))
   "Compiler macro to open-code when TYPE is constant."

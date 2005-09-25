@@ -159,3 +159,22 @@
 ;     (with-foreign-slots ((foo an-int) *the-with-empty-struct* with-empty-struct)
 ;       an-int)
 ;   42)
+
+
+;; regression test, setf-ing nested foreign-slot-value forms
+;; the setf expander used to return a bogus getter
+
+(defcstruct s1
+  (an-int :int))
+
+(defcstruct s2
+  (an-s1 s1))
+
+(deftest struct.nested-setf
+    (with-foreign-object (an-s2 s2) 
+      (setf (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
+                                's1 'an-int)
+            1984)
+      (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
+                          's1 'an-int))
+  1984)
