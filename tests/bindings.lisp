@@ -39,4 +39,4 @@
                  :defaults #.(or *compile-file-truename* *load-truename*)
                  :version :newest))
 
-(load-foreign-library (namestring *lib*))
+(load-foreign-library *lib*)

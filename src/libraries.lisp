@@ -36,4 +36,7 @@
 
 (defun load-foreign-library (name)
   "Load a foreign library NAME."
-  (%load-foreign-library name))
+  (%load-foreign-library
+   (etypecase name
+     (pathname (namestring name))
+     (string name))))
