@@ -156,6 +156,13 @@ int expect_strcat(char* (*f)(char*, char*))
     return res;
 }
 
+DLLEXPORT
+void pass_int_ref(void (*f)(int*))
+{
+    int x = 1984;
+    f(&x);
+}
+
 /*
  * Enums
  */

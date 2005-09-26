@@ -162,3 +162,18 @@
       (loop for i from 0 below 10
             collect (mem-aref array :int i)))
   (1 2 3 4 5 6 7 8 9 10))
+
+;;; void callback
+(defparameter *int* -1)
+
+(defcfun "pass_int_ref" :void (f :pointer))
+
+(defcallback read-int-from-pointer :void ((a :pointer))
+  (setq *int* (mem-ref a :int)))
+
+(deftest callbacks.void
+    (progn
+      (pass-int-ref (callback read-int-from-pointer))
+      *int*)
+  1984)
+  
