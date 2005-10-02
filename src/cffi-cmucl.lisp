@@ -31,6 +31,7 @@
   (:use #:common-lisp #:alien #:c-call #:cffi-utils)
   (:export
    #:pointerp
+   #:pointer-eq
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
@@ -56,6 +57,11 @@
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (sys:system-area-pointer-p ptr))
+
+(declaim (inline pointer-eq))
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (sys:sap= ptr1 ptr2))
 
 (declaim (inline null-ptr))
 (defun null-ptr ()

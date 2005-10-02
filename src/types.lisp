@@ -45,13 +45,19 @@
 ;;;# Dereferencing Foreign Pointers
 
 (defun mem-ref (ptr type &optional (offset 0))
-  "Return the value of TYPE at OFFSET from PTR."
-  (%mem-ref ptr (canonicalize-foreign-type type) offset))
+  "Return the value of TYPE at OFFSET from PTR. If TYPE is aggregate,
+we don't return it's 'value' but a pointer to it, which is PTR itself."
+  (let ((parsed-type (parse-type type)))
+    (if (aggregatep parsed-type)
+        (inc-ptr ptr offset)
+        (%mem-ref ptr (canonicalize parsed-type) offset))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
   (if (constantp type)
-      `(%mem-ref ,ptr ,(canonicalize-foreign-type (eval type)) ,offset)
+      (if (aggregatep (parse-type (eval type)))
+          `(inc-ptr ,ptr ,offset)
+          `(%mem-ref ,ptr ,(canonicalize-foreign-type (eval type)) ,offset))
       form))
 
 (defun mem-set (value ptr type &optional (offset 0))
@@ -141,12 +147,13 @@ to open-code (SETF MEM-REF) forms."
                `(mem-set ,store ,getter ,type-tmp
                          (* ,index-tmp (foreign-type-size ,type-tmp))))
           ,store)
-       `(mem-ref ,getter
-                 ,@(if (constantp type) (list type)
-                       (list type-tmp))
-                 ,@(if (and (constantp type) (constantp index))
-                       (list index)
-                       (list index-tmp)))))))
+       `(mem-aref ,getter
+                  ,@(if (constantp type)
+                        (list type)
+                        (list type-tmp))
+                  ,@(if (and (constantp type) (constantp index))
+                        (list index)
+                        (list index-tmp)))))))
 
 ;;;# Foreign Structures
 

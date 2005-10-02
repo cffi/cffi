@@ -31,6 +31,7 @@
   (:use #:common-lisp #:ccl #:cffi-utils)
   (:export
    #:pointerp
+   #:pointer-eq
    #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
@@ -56,6 +57,10 @@
 ;;; and on the heap.  The main CFFI package defines macros that wrap
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common
 ;;; usage when the memory has dynamic extent.
+
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (%ptr-eql ptr1 ptr2))
 
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."

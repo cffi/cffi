@@ -137,6 +137,7 @@ Pointers
 * mem-aref::                    Accesses the value of an index in an array.
 * mem-ref::                     Dereferences a pointer.
 * pointerp::                    Tests whether an object is a pointer or not.
+* pointer-eq::                  Tests if two pointers point to the same address.
 * null-ptr::                    Returns a NULL pointer.
 * null-ptr-p::                  Tests a pointer for NULL value.
 * inc-ptr::                     Increments the address held by a pointer.
@@ -1191,6 +1192,7 @@ Dictionary
 * mem-aref::                    
 * mem-ref::                     
 * pointerp::                    
+* pointer-eq::                  
 * null-ptr::                    
 * null-ptr-p::                  
 * inc-ptr::                     
@@ -1522,6 +1524,52 @@ NIL
 
 @subheading See Also
 @ref{null-ptr-p}
+
+
+
+
+@c ===================================================================
+@c POINTER-EQ
+
+@node pointer-eq
+@heading pointer-eq
+@subheading Syntax
+@Function{pointer-eq ptr1 ptr2 => boolean}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr1, ptr2
+A foreign pointer.
+
+@item boolean
+@code{T} or @code{NIL}.
+@end table
+
+@subheading Description
+The function @code{pointer-eq} returns true if @emph{ptr1} and
+@emph{ptr2} point to the same memory address and false otherwise.
+
+@subheading Implementation-specific Notes
+The representation of foreign pointers varies across the various Lisp
+implementations as does the behaviour of the built-in Common Lisp
+equality predicates. Comparing two pointers that point to the same
+address with @code{EQ} Lisps will return true on some Lisps, others require
+more general predicates like @code{EQL} or @code{EQUALP} and finally
+some will return false using any of these predicates. Therefore, for
+portability, you should use @code{POINTER-EQ}.
+
+@subheading Examples
+This is an example using SBCL, see the implementation-specific notes
+above.
+@lisp
+CFFI> (eql (null-ptr) (null-ptr))
+NIL
+CFFI> (pointer-eq (null-ptr) (null-ptr))
+T
+@end lisp
+
+@subheading See Also
+@ref{inc-ptr}
 
 
 

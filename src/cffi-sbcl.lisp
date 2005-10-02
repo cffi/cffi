@@ -37,6 +37,7 @@
   (:use #:common-lisp #:sb-alien #:cffi-utils)
   (:export
    #:pointerp
+   #:pointer-eq
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
@@ -61,6 +62,10 @@
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (sb-sys:system-area-pointer-p ptr))
+
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (sb-sys:sap= ptr1 ptr2))
 
 (defun null-ptr ()
   "Construct and return a null pointer."

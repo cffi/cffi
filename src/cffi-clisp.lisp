@@ -38,6 +38,7 @@
   (:use #:common-lisp #:cffi-utils)
   (:export
    #:pointerp
+   #:pointer-eq
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr
@@ -98,6 +99,11 @@
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (or (null ptr) (typep ptr 'ffi:foreign-address)))
+
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (eql (ffi:foreign-address-unsigned ptr1)
+       (ffi:foreign-address-unsigned ptr2)))
 
 (defun null-ptr ()
   "Return a null foreign pointer."

@@ -36,6 +36,7 @@
    #:mem-aref
    #:mem-ref
    #:pointerp
+   #:pointer-eq
    #:null-ptr
    #:null-ptr-p
    #:inc-ptr

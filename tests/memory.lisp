@@ -164,3 +164,28 @@
         (setf (mem-aref (mem-ref p :pointer 0) :int 1) 1984)
         (mem-aref i :int 1)))
   1984)
+
+;; regression tests. dereferencing an aggregate type.
+;; dereferencing a struct say, should return a pointer to the
+;; struct itself, not returning the first 4 bytes (or whatever)
+;; as a pointer (since structs are actually pointer).
+;; This important for accessing an array of structs, which is
+;; what the deref.array-of-aggregates test does.
+
+(defcstruct some-struct (x :int))
+
+(deftest deref.aggregate
+    (with-foreign-object (s some-struct)
+      (pointer-eq s (mem-ref s 'some-struct)))
+  t)
+
+(deftest deref.array-of-aggregates
+    (with-foreign-object (arr some-struct 3)
+      (loop for i below 3
+            do (setf (foreign-slot-value (mem-aref arr 'some-struct i)
+                                         'some-struct 'x)
+                     112))
+      (loop for i below 3
+            collect (foreign-slot-value (mem-aref arr 'some-struct i)
+                                        'some-struct 'x)))
+  (112 112 112)) 
