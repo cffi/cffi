@@ -99,22 +99,33 @@
      (if (listp uffi-type)
          (case (car uffi-type)
            (* :pointer)
-           (:array `(uffi-array ,(convert-uffi-type (second uffi-type))))
+           (:array `(uffi-array ,(convert-uffi-type (second uffi-type))
+                                ,(third uffi-type)))
            (:union (second uffi-type))
-           (:struct (convert-uffi-type (second uffi-type))))
+           (:struct (convert-uffi-type (second uffi-type)))
+           (:struct-pointer :pointer))
          uffi-type))))
 
 (defclass uffi-array-type (cffi::foreign-typedef)
   ;; ELEMENT-TYPE should be /unparsed/, suitable for passing to mem-aref.
   ((element-type :initform (error "An element-type is required.")
-                 :accessor element-type :initarg :element-type))
+                 :accessor element-type :initarg :element-type)
+   (nelems :initform (error "nelems is required.")
+           :accessor nelems :initarg :nelems))
   (:documentation "UFFI's :array type."))
 
 (defmethod initialize-instance :after ((self uffi-array-type) &key)
   (setf (cffi::actual-type self) (cffi::find-type :pointer)))
 
-(cffi:define-type-spec-parser uffi-array (element-type)
-  (make-instance 'uffi-array-type :element-type element-type))
+(defmethod cffi:foreign-type-size ((type uffi-array-type))
+  (or (* (cffi:foreign-type-size (element-type type)) (nelems type))
+      (cffi:foreign-type-size :pointer)))
+
+(defmethod cffi::aggregatep ((type uffi-array-type))
+  t)
+
+(cffi:define-type-spec-parser uffi-array (element-type count)
+  (make-instance 'uffi-array-type :element-type element-type :nelems count))
 
 ;; UFFI's :(unsigned-)char
 (cffi:define-foreign-type uffi-char (base-type)
