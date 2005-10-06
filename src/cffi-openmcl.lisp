@@ -215,14 +215,12 @@ to open-code (SETF %MEM-REF) forms."
   (ecase type-keyword
     (:char            :signed-byte)
     (:unsigned-char   :unsigned-byte)
-    (:short           :signed-halfword)
-    (:unsigned-short  :unsigned-halfword)
-    (:int             :signed-fullword)
-    (:unsigned-int    :unsigned-fullword)
-    ;; 64-bit issues here? In a 64-bit OpenMCL should :LONG and
-    ;; :UNSIGNED-LONG be 64-bit?
-    (:long            :signed-fullword)
-    (:unsigned-long   :unsigned-fullword)
+    (:short           :signed-short)
+    (:unsigned-short  :unsigned-short)
+    (:int             :signed-int)
+    (:unsigned-int    :unsigned-int)
+    (:long            :signed-long)
+    (:unsigned-long   :unsigned-long)
     (:float           :single-float)
     (:double          :double-float)
     (:pointer         :address)
