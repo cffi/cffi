@@ -124,8 +124,10 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:unsigned-short (%get-unsigned-word ptr offset))
     (:int (%get-signed-long ptr offset))
     (:unsigned-int (%get-unsigned-long ptr offset))
-    (:long (%get-signed-long ptr offset))
-    (:unsigned-long (%get-unsigned-long ptr offset))
+    (:long #+ppc32-target (%get-signed-long ptr offset)
+           #+ppc64-target (ccl::%%get-signed-longlong ptr offset))
+    (:unsigned-long #+ppc32-target (%get-unsigned-long ptr offset)
+                    #+ppc64-target (ccl::%%get-unsigned-longlong ptr offset))
     (:float (%get-single-float ptr offset))
     (:double (%get-double-float ptr offset))
     (:pointer (%get-ptr ptr offset))))
@@ -142,8 +144,12 @@ WITH-POINTER-TO-VECTOR-DATA."
           (:unsigned-short `(%get-unsigned-word ,ptr ,offset))
           (:int `(%get-signed-long ,ptr ,offset))
           (:unsigned-int `(%get-unsigned-long ,ptr ,offset))
-          (:long `(%get-signed-long ,ptr ,offset))
-          (:unsigned-long `(%get-unsigned-long ,ptr ,offset))
+          (:long
+           #+ppc32-target `(%get-signed-long ,ptr ,offset)
+           #+ppc64-target `(ccl::%%get-signed-longlong  ,ptr ,offset))
+          (:unsigned-long
+           #+ppc32-target `(%get-unsigned-long ,ptr ,offset)
+           #+ppc64-target `(ccl::%%get-unsigned-longlong ,ptr ,offset))
           (:float `(%get-single-float ,ptr ,offset))
           (:double `(%get-double-float ,ptr ,offset))
           (:pointer `(%get-ptr ,ptr ,offset))))
@@ -183,8 +189,14 @@ to open-code (SETF %MEM-REF) forms."
     (:unsigned-short (setf (%get-unsigned-word ptr offset) value))
     (:int (setf (%get-signed-long ptr offset) value))
     (:unsigned-int (setf (%get-unsigned-long ptr offset) value))
-    (:long (setf (%get-signed-long ptr offset) value))
-    (:unsigned-long (setf (%get-unsigned-long ptr offset) value))
+    (:long (setf
+            #+ppc32-target (%get-signed-long ptr offset)
+            #+ppc64-target (ccl::%%get-signed-longlong ptr offset)
+            value))
+    (:unsigned-long (setf
+                     #+ppc32-target (%get-unsigned-long ptr offset)
+                     #+ppc64-target (ccl::%%get-unsigned-longlong ptr offset)
+                     value))
     (:float (setf (%get-single-float ptr offset) value))
     (:double (setf (%get-double-float ptr offset) value))
     (:pointer (setf (%get-ptr ptr offset) value))))
@@ -201,8 +213,14 @@ to open-code (SETF %MEM-REF) forms."
           (:unsigned-short `(setf (%get-unsigned-word ,ptr ,offset) ,value))
           (:int `(setf (%get-signed-long ,ptr ,offset) ,value))
           (:unsigned-int `(setf (%get-unsigned-long ,ptr ,offset) ,value))
-          (:long `(setf (%get-signed-long ,ptr ,offset) ,value))
-          (:unsigned-long `(setf (%get-unsigned-long ,ptr ,offset) ,value))
+          (:long
+           #+ppc32-target `(setf (%get-signed-long ,ptr ,offset) ,value)
+           #+ppc64-target `(setf (ccl::%%get-signed-longlong ,ptr ,offset)
+                            ,value))
+          (:unsigned-long
+           #+ppc32-target `(setf (%get-unsigned-long ,ptr ,offset) ,value)
+           #+ppc64-target `(setf (ccl::%%get-unsigned-longlong ,ptr ,offset)
+                            ,value))
           (:float `(setf (%get-single-float ,ptr ,offset) ,value))
           (:double `(setf (%get-double-float ,ptr ,offset) ,value))
           (:pointer `(setf (%get-ptr ,ptr ,offset) ,value))))
@@ -239,7 +257,11 @@ to open-code (SETF %MEM-REF) forms."
   (let ((natural-alignment (/ (ccl::foreign-type-alignment
                                (ccl::parse-foreign-type
                                 (convert-foreign-type type-keyword))) 8)))
-    (min 4 natural-alignment)))
+    #+(and darwinppc-target ppc32-target)
+    (min 4 natural-alignment)
+    ;; PPC64 Darwin uses "natural" alignment, as do 32/64-bit LinuxPPC.
+    #-(and darwinppc-target ppc32-target)
+    natural-alignment))
 
 (defun convert-foreign-funcall-types (args)
   "Convert foreign types for a call to FOREIGN-FUNCALL."
@@ -253,7 +275,7 @@ to open-code (SETF %MEM-REF) forms."
   #-darwinppc-target name)
 
 (defmacro %foreign-funcall (function-name &rest args)
-  "Perform a foreign function all, document it more later."
+  "Perform a foreign function call, document it more later."
   `(external-call
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
