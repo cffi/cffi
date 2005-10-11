@@ -47,6 +47,17 @@ SHLIB_EXT         := .dll
 endif
 endif
 
+ARCH = $(shell uname -m)
+
+ifeq ($(ARCH), x86_64)
+CFLAGS += -fPIC
+endif
+
+# Are all G5s ppc970s?
+ifeq ($(ARCH), ppc970)
+CFLAGS += -m64
+endif
+
 all: shlibs
 
 shlibs: libtest$(SHLIB_EXT)
