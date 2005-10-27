@@ -101,9 +101,11 @@
 
 (deftest foreign-globals.set.string
     (let ((old *var-string*))
-      (setq *var-string* "Ehxosxangxo")
+      (setq *var-string* "Ehxosxangxo") 
       (prog1
           *var-string*
+        ;; free the old string
+        (foreign-free (mem-ref (get-var-ptr '*var-string*) :pointer))
         (setq *var-string* old)))
   "Ehxosxangxo")
 
