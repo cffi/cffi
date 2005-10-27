@@ -28,10 +28,11 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp)
+  (:use #:common-lisp #:cffi-utils)
   (:export
    #:pointerp
-   #:foreign-alloc
+   #:pointer-eq
+   #:%foreign-alloc
    #:foreign-free
    #:with-foreign-ptr
    #:null-ptr
@@ -43,13 +44,15 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data))
+   #:with-pointer-to-vector-data
+   #:%defcallback
+   #:foreign-symbol-ptr))
 
 (in-package #:cffi-sys)
 
 ;;;# Allocation
 
-(defun foreign-alloc (size)
+(defun %foreign-alloc (size)
   "Allocate SIZE bytes of foreign-addressable memory."
   (si:allocate-foreign-data :void size))
 
@@ -65,7 +68,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
   `(let* ((,size-var ,size)
-          (,var (foreign-alloc ,size-var)))
+          (,var (%foreign-alloc ,size-var)))
      (unwind-protect
           (progn ,@body)
        (foreign-free ,var))))
@@ -82,18 +85,29 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun inc-ptr (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
-  ;; XXX this is bogus, don't know how to get SIZE
-  (si:foreign-data-pointer ptr offset 0 :void))
+  (ffi:make-pointer (+ (ffi:pointer-address ptr) offset) :void))
+
+(defun pointerp (ptr)
+  "Return true if PTR is a foreign pointer."
+  (typep ptr 'si:foreign-data))
+
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (= (ffi:pointer-address ptr1) (ffi:pointer-address ptr2)))
 
 ;;;# Dereferencing
 
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (si:foreign-data-ref-elt ptr offset (convert-foreign-type type)))
+  (let* ((type (convert-foreign-type type))
+	 (type-size (ffi:size-of-foreign-type type)))
+    (si:foreign-data-ref-elt (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
-  (si:foreign-data-set-elt ptr offset (convert-foreign-type type) value))
+  (let* ((type (convert-foreign-type type))
+	 (type-size (ffi:size-of-foreign-type type)))
+    (si:foreign-data-set-elt (si:foreign-data-recast ptr (+ offset type-size) :void) offset type value)))
 
 ;;;# Type Operations
 
@@ -137,6 +151,11 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     ,(produce-function-call name (length arg-values))
     :one-liner t :side-effects t))
 
+#+dffi
+(defun foreign-function-dynamic-form (name arg-types arg-values return-type)
+  "Generate a dynamic FFI form for a foreign function call."
+  `(si:call-cfun (si:find-foreign-symbol ,name :default :pointer-void 0) ,return-type (list ,@arg-types) (list ,@arg-values)))
+
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
   (let ((return-type :void))
@@ -150,10 +169,31 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Call a foreign function."
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
-    (foreign-function-inline-form name types values return-type)))
+    #-dffi (foreign-function-inline-form name types values return-type)
+    #+dffi (foreign-function-dynamic-form name types values return-type)))
 
 ;;;# Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
   (ffi:load-foreign-library name))
+
+;;;# Callbacks
+
+(defmacro %defcallback (name rettype arg-names arg-types &body body)
+  (with-unique-names (cb-sym)
+    `(progn
+       (ffi:defcallback (,cb-sym :cdecl)
+			,(convert-foreign-type rettype)
+			,(mapcar #'list arg-names (mapcar #'convert-foreign-type arg-types))
+			,@body)
+       (setf (get ',name 'callback-ptr)
+	     (ffi:callback ',cb-sym)))))
+
+;;;# Foreign Globals
+
+(defun foreign-symbol-ptr (name kind)
+  "Returns a pointer to a foreign symbol NAME. KIND is one of
+:CODE or :DATA, and is ignored on some platforms."
+  (declare (ignore kind))
+  (si:find-foreign-symbol name :default :pointer-void 0))

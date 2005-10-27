@@ -641,7 +641,10 @@ translators most specific first or most specific last, as appropriate."
         ,expander
         ,(unless (eq direction :to-c-dynamic)
            (let ((conv (generate-converter
-                        type-obj (compile nil expander) body direction type-arg
+                        type-obj
+                        #-ecl (compile nil expander)
+                        #+ecl (eval expander)
+                        body direction type-arg
                         value-arg var-arg body-arg)))
              ;(format t "Converter: ~A~%~%:" conv)
              conv))
@@ -793,10 +796,13 @@ we need to make the converter funcall the parent type's converter."
          ;; we create a new expander is because the normal expander will
          ;; try to access (actual-type TYPE) which doesn't exist for these
          ;; type-translator-holders. --luis
-         (converter (apply (compile nil `(lambda ,arg-list
-                                           (declare (ignorable ,type-arg))
-                                           ,@translator-body))
-                                    arg-list)))
+         (converter (apply #-ecl (compile nil `(lambda ,arg-list
+						 (declare (ignorable ,type-arg))
+						 ,@translator-body))
+			   #+ecl (eval `(lambda ,arg-list
+					  (declare (ignorable ,type-arg))
+					  ,@translator-body))
+			   arg-list)))
     `(lambda ,arg-list
        ,(ecase direction
           (:to-c

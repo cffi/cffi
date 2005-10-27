@@ -176,4 +176,3 @@
       (pass-int-ref (callback read-int-from-pointer))
       *int*)
   1984)
-  

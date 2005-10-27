@@ -40,3 +40,7 @@
                  :version :newest))
 
 (load-foreign-library *lib*)
+
+;;; FIXME: this shouldn't be a special case. --luis
+#+(and ecl win32)
+(load-foreign-library "msvcrt")

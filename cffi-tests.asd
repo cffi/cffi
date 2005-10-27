@@ -37,6 +37,9 @@
 (defmethod perform ((o load-op) (c c-test-lib))
   nil)
 
+(defmethod perform ((o load-source-op) (c c-test-lib))
+  nil)
+
 (defmethod perform ((o compile-op) (c c-test-lib))
   #-(or win32 mswindows)
   (unless (zerop (run-shell-command
