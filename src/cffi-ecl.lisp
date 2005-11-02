@@ -101,13 +101,16 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Dereference an object of TYPE at OFFSET bytes from PTR."
   (let* ((type (convert-foreign-type type))
 	 (type-size (ffi:size-of-foreign-type type)))
-    (si:foreign-data-ref-elt (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
+    (si:foreign-data-ref-elt
+     (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
   (let* ((type (convert-foreign-type type))
 	 (type-size (ffi:size-of-foreign-type type)))
-    (si:foreign-data-set-elt (si:foreign-data-recast ptr (+ offset type-size) :void) offset type value)))
+    (si:foreign-data-set-elt
+     (si:foreign-data-recast ptr (+ offset type-size) :void)
+     offset type value)))
 
 ;;;# Type Operations
 
@@ -154,7 +157,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 #+dffi
 (defun foreign-function-dynamic-form (name arg-types arg-values return-type)
   "Generate a dynamic FFI form for a foreign function call."
-  `(si:call-cfun (si:find-foreign-symbol ,name :default :pointer-void 0) ,return-type (list ,@arg-types) (list ,@arg-values)))
+  `(si:call-cfun (si:find-foreign-symbol ,name :default :pointer-void 0)
+                 ,return-type (list ,@arg-types) (list ,@arg-values)))
 
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
@@ -185,7 +189,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     `(progn
        (ffi:defcallback (,cb-sym :cdecl)
 			,(convert-foreign-type rettype)
-			,(mapcar #'list arg-names (mapcar #'convert-foreign-type arg-types))
+			,(mapcar #'list arg-names
+                                 (mapcar #'convert-foreign-type arg-types))
 			,@body)
        (setf (get ',name 'callback-ptr)
 	     (ffi:callback ',cb-sym)))))
