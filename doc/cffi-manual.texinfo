@@ -86,6 +86,7 @@ DEALINGS IN THE SOFTWARE.
 
 @menu
 * Introduction::                
+* Implementation Support and Known Issues::  
 * Foreign Types::               
 * Pointers::                    
 * Strings::                     
@@ -97,16 +98,9 @@ DEALINGS IN THE SOFTWARE.
 * Symbol Index::                
 
 @detailmenu
- --- The Detailed Node Listing ---
+ --- Dictionary ---
 
 Foreign Types
-
-* Built-In Types::              
-* Defining Typedefs::           
-* Foreign Type Translators::    
-* Foreign Structure Types::     
-* Operations on Types::         
-* Allocating Foreign Objects::  
 
 * defcstruct::                  Defines a C structure type.
 * defcunion::                   Defines a C union type.
@@ -126,10 +120,6 @@ Foreign Types
 * with-foreign-slots::          Access the slots of a foreign structure.
 
 Pointers
-
-* Basic Pointer Operations::    
-* Allocating Foreign Memory::   
-* Accessing Foreign Memory::    
 
 * foreign-free::                Deallocates memory.
 * foreign-alloc::               Allocates memory.
@@ -159,9 +149,6 @@ Variables
 
 Functions
 
-* Calling Foreign Functions::   
-* Defining Foreign Functions::  
-
 * defcfun::                     Defines a foreign function.
 * foreign-funcall::             Performs a call to a foreign function.
 
@@ -177,6 +164,12 @@ Callbacks
 
 @end detailmenu
 @end menu
+
+
+
+
+@c ===================================================================
+@c CHAPTER: Introduction
 
 @node Introduction
 @chapter Introduction
@@ -202,6 +195,145 @@ for performance, use a compiler-macro instead.
 
 
 
+
+@c ===================================================================
+@c CHAPTER: Implementation Support and Known Issues
+
+@node Implementation Support and Known Issues
+@chapter Implementation Support and Known Issues
+
+@strong{Please note that, at the moment, this manual reflects what's
+available in the cffi-luis branch, not the main cffi branch. --luis}
+
+CFFI supports various free and commercial Lisp implementations:
+Allegro CL, Corman CL, CLISP, CMUCL, ECL, Lispworks, OpenMCL and
+SBCL.
+
+There are also plans to support Digitool MCL, GCL and Scieneer CL.
+
+
+@section Allegro CL
+
+@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
+
+Both the 6.2 and 7.0 versions are supported. The 8.0 beta is also
+known to work. Earlier versions are untested and unsupported.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(All platforms and versions)} CFFI won't work correctly using
+modern mode.
+
+@item
+@emph{(v6.2, darwin/ppc)} Due to a bug in Allegro, 4 callback tests
+fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
+CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
+@end itemize
+
+
+@section Corman CL
+
+@strong{Tested platforms:} win32/x86.
+
+Versions prior to 2.51 are untested and unsupported. Also, you will
+need to avoid Corman's buggy @code{COMPILE-FILE} and fasl
+loader. Please follow @uref{http://www.weitz.de/corman-asdf/, these
+instructions} by Edi Weitz to setup ASDF for Corman CL in a way that
+works around these issues.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(win32/x86)} No @code{FOREIGN-FUNCALL}.
+
+@item
+@emph{(win32/x86)} 7 tests fail.
+@end itemize
+
+
+@section CLISP
+
+@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
+
+Version is 2.34 or newer is required on win32/x86. For other platforms
+version 2.35 or newer is required.
+
+
+@section CMUCL
+
+@strong{Tested platforms:} linux/x86, darwin/ppc.
+
+Versions prior to 19b are untested. For darwin/ppc, 19c is
+recommended.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(darwin/ppc)} As of the 2005-11 snapshot, 3 tests fail:
+@code{FUNCALL.VARARGS.DOUBLE, STRUCT.ALIGNMENT.3, STRUCT.ALIGNMENT.4}.
+@end itemize
+
+
+@section ECL
+
+@strong{Tested platforms:} @emph{needs testing...}
+
+As of November 2005, the CVS version of ECL is required. It is
+reported to pass all tests.
+
+
+@section Lispworks
+
+@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
+
+Versions prior to 4.4 are untested.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(All platforms)} No @code{FOREIGN-FUNCALL}.
+@end itemize
+
+
+@section OpenMCL
+
+@strong{Tested platforms:} darwin/ppc.
+
+OpenMCL 1.0 is recommended.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(ppc64)} There seem to be some bugs that affect CFFI.
+@end itemize
+
+
+@section SBCL
+
+@string{Tested platforms:} linux/x86, darwin/ppc.
+
+Version 0.9.6 or newer is recommended.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(non linux/86)} Callbacks are linux/x86 only.
+@end itemize
+
+
+
+
+@c
+@c TODO: add some sort of tutorial/quickstart chapter here. Mainly
+@c describe what can be done (and what needs to be done in general to
+@c access a foreign library), and what CFFI offers to that
+@c purpose. The the various following chapters should begin with
+@c similar tutorials specific to each topic, besides the reference
+@c documentation.
+@c
+@c Not to forget, a section on obtaining and installing CFFI.
+@c
 
 @c ===================================================================
 @c CHAPTER: Foreign Types
