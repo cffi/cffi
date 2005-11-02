@@ -50,6 +50,10 @@
 
 (in-package #:cffi-sys)
 
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-long-long *features*))
+
 ;;;# Allocation
 
 (defun %foreign-alloc (size)

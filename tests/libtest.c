@@ -72,6 +72,9 @@ DLLEXPORT double         var_double         = 42.0;
 DLLEXPORT void *         var_pointer        = NULL;
 DLLEXPORT char *         var_string         = "Hello, foreign world!";
 
+DLLEXPORT long long          var_long_long          = -9223372036854775807LL;
+DLLEXPORT unsigned long long var_unsigned_long_long = 18446744073709551615ULL;
+
 /*
  * Callbacks
  */
@@ -79,77 +82,90 @@ DLLEXPORT char *         var_string         = "Hello, foreign world!";
 DLLEXPORT
 int expect_char_sum(char (*f)(char, char))
 {
-    return f('a', 3) == 'd' ? 1 : 0;
+    return f('a', 3) == 'd';
 }
 
 DLLEXPORT
 int expect_unsigned_char_sum(unsigned char (*f)(unsigned char, unsigned char))
 {
-    return f(UCHAR_MAX-1, 1) == UCHAR_MAX ? 1 : 0;
+    return f(UCHAR_MAX-1, 1) == UCHAR_MAX;
 }
 
 DLLEXPORT
 int expect_short_sum(short (*f)(short a, short b))
 {
-    return f(SHRT_MIN+1, -1) == SHRT_MIN ? 1 : 0;
+    return f(SHRT_MIN+1, -1) == SHRT_MIN;
 }
 
 DLLEXPORT
 int expect_unsigned_short_sum(unsigned short (*f)(unsigned short,
                                                   unsigned short))
 {
-    return f(USHRT_MAX-1, 1) == USHRT_MAX ? 1 : 0;
+    return f(USHRT_MAX-1, 1) == USHRT_MAX;
 }
 
 DLLEXPORT
 int expect_int_sum(int (*f)(int, int))
 {
-    return f(INT_MIN+1, -1) == INT_MIN ? 1 : 0;
+    return f(INT_MIN+1, -1) == INT_MIN;
 }
 
 DLLEXPORT
 int expect_unsigned_int_sum(unsigned int (*f)(unsigned int, unsigned int))
 {
-    return f(UINT_MAX-1, 1) == UINT_MAX ? 1 : 0;
+    return f(UINT_MAX-1, 1) == UINT_MAX;
 }
 
 DLLEXPORT
 int expect_long_sum(long (*f)(long, long))
 {
-    return f(LONG_MIN+1, -1) == LONG_MIN ? 1 : 0;
+    return f(LONG_MIN+1, -1) == LONG_MIN;
 }
 
 DLLEXPORT
 int expect_unsigned_long_sum(unsigned long (*f)(unsigned long, unsigned long))
 {
-    return f(ULONG_MAX-1, 1) == ULONG_MAX ? 1 : 0;
+    return f(ULONG_MAX-1, 1) == ULONG_MAX;
+}
+
+DLLEXPORT
+int expect_long_long_sum(long long (*f)(long long, long long))
+{
+    return f(LLONG_MIN+1, -1) == LLONG_MIN;
+}
+
+DLLEXPORT
+int expect_unsigned_long_long_sum (unsigned long long
+                                   (*f)(unsigned long long, unsigned long long))
+{
+    return f(ULLONG_MAX-1, 1) == ULLONG_MAX;
 }
 
 DLLEXPORT
 int expect_float_sum(float (*f)(float, float))
 {
     /*printf("\n>>> FLOAT: %f <<<\n", f(20.0f, 22.0f));*/
-    return f(20.0f, 22.0f) == 42.0f ? 1 : 0;
+    return f(20.0f, 22.0f) == 42.0f;
 }
 
 DLLEXPORT
 int expect_double_sum(double (*f)(double, double))
 {
     /*printf("\n>>> DOUBLE: %f<<<\n", f(-20.0, -22.0));*/
-    return f(-20.0, -22.0) == -42.0 ? 1 : 0;
+    return f(-20.0, -22.0) == -42.0;
 }
 
 DLLEXPORT
 int expect_pointer_sum(void* (*f)(void*, int))
 {
-    return f(NULL, 0xDEAD) == (void *) 0xDEAD ? 1 : 0;
+    return f(NULL, 0xDEAD) == (void *) 0xDEAD;
 }
 
 DLLEXPORT
 int expect_strcat(char* (*f)(char*, char*))
 {
     char *ret = f("Hello, ", "C world!");
-    int res = strcmp(ret, "Hello, C world!") == 0 ? 1 : 0;
+    int res = strcmp(ret, "Hello, C world!") == 0;
     /* commented out as a quick fix on platforms that don't
        foreign allocate in C malloc space. */
     /*free(ret);*/ /* is this allowed? */
@@ -299,7 +315,7 @@ struct s_s_s_double {
 DLLEXPORT
 struct s_s_s_double the_s_s_s_double = { 6, { 4, { 1, 2.0, 3 }, 5 }, 7 };
 
-/* STRUCT.ALIGNMENT.5 */
+/* STRUCT.ALIGNMENT.x */
 
 /* commented this test out because this is not standard C
    and MSVC++ (or some versions of it at least) won't compile it. */
@@ -321,13 +337,13 @@ struct with_empty_struct the_with_empty_struct = { {}, 42 };
  */
 
 DLLEXPORT
-int noargs ()
+int noargs()
 {
     return 42;
 }
 
 DLLEXPORT
-void noop ()
+void noop()
 {
     return;
 }

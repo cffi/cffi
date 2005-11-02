@@ -49,6 +49,11 @@
     (foreign-funcall "labs" :long -131072 :long)
   131072)
 
+#-cffi/no-long-long
+(deftest funcall.long-long
+    (foreign-funcall "llabs" :long-long -9223372036854775807 :long-long)
+  9223372036854775807)
+
 (deftest funcall.float
     (foreign-funcall "my_sqrtf" :float 16.0 :float)
   4.0)

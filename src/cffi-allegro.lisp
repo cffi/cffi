@@ -52,6 +52,10 @@
 
 (in-package #:cffi-sys)
 
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-long-long *features*))
+
 ;;;# Basic Pointer Operations
 
 (defun pointerp (ptr)

@@ -40,6 +40,11 @@
 (defcvar "var_pointer"           :pointer)
 (defcvar "var_string"            :string)
 
+#-cffi/no-long-long
+(progn
+  (defcvar "var_long_long"          :long-long)
+  (defcvar "var_unsigned_long_long" :unsigned-long-long))
+
 (deftest foreign-globals.ref.char
     *char-var*
   -127)
@@ -87,6 +92,16 @@
 (deftest foreign-globals.ref.string
     *var-string*
   "Hello, foreign world!")
+
+#-cffi/no-long-long
+(progn
+  (deftest foreign-globals.ref.long-long
+      *var-long-long*
+    -9223372036854775807)
+
+  (deftest foreign-globals.ref.unsigned-long-long
+      *var-unsigned-long-long*
+    18446744073709551615))
 
 ;; The *.set.* tests restore the old values so that the *.ref.*
 ;; don't fail when re-run.

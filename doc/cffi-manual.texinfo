@@ -175,7 +175,8 @@ Callbacks
 @chapter Introduction
 
 @strong{Please note that, at the moment, this manual reflects what's
-available in the cffi-luis branch, not the main cffi branch. --luis}
+available in the cffi-luis branch, not the main cffi branch. Also,
+it is a work in progress. --luis}
 
 @section Motivation
 
@@ -229,6 +230,9 @@ modern mode.
 @emph{(v6.2, darwin/ppc)} Due to a bug in Allegro, 4 callback tests
 fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
 CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
+
+@item
+@emph{(all platforms)} Does not support (unsigned) long long.
 @end itemize
 
 
@@ -249,6 +253,9 @@ works around these issues.
 
 @item
 @emph{(win32/x86)} 7 tests fail.
+
+@item
+@emph{(win32/x86)} Does not support (unsigned) long long.
 @end itemize
 
 
@@ -258,6 +265,12 @@ works around these issues.
 
 Version is 2.34 or newer is required on win32/x86. For other platforms
 version 2.35 or newer is required.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(all platforms)} Does not support (unsigned) long long.
+@end itemize
 
 
 @section CMUCL
@@ -270,8 +283,12 @@ recommended.
 @subheading Known issues
 @itemize
 @item
-@emph{(darwin/ppc)} As of the 2005-11 snapshot, 3 tests fail:
+@emph{(darwin/ppc)} As of the 2005-11 snapshot, these tests fail:
 @code{FUNCALL.VARARGS.DOUBLE, STRUCT.ALIGNMENT.3, STRUCT.ALIGNMENT.4}.
+
+@item
+@emph{(darwin/ppc)} As of the 2005-11 snapshot fails:
+@code{CALLBACK.LONG-LONG} and @code{CALLBACK.UNSIGNED-LONG-LONG}.
 @end itemize
 
 
@@ -281,6 +298,12 @@ recommended.
 
 As of November 2005, the CVS version of ECL is required. It is
 reported to pass all tests.
+
+@subheading Known issues
+@itemize
+@item
+@emph{(all platforms)} Does not support (unsigned) long long.
+@end itemize
 
 
 @section Lispworks
@@ -292,7 +315,10 @@ Versions prior to 4.4 are untested.
 @subheading Known issues
 @itemize
 @item
-@emph{(All platforms)} No @code{FOREIGN-FUNCALL}.
+@emph{(all platforms)} No @code{FOREIGN-FUNCALL}.
+
+@item
+@emph{(all platforms)} Does not support (unsigned) long long.
 @end itemize
 
 
@@ -300,10 +326,13 @@ Versions prior to 4.4 are untested.
 
 @strong{Tested platforms:} darwin/ppc.
 
-OpenMCL 1.0 is recommended.
+OpenMCL 1.0 or newer is recommended.
 
 @subheading Known issues
 @itemize
+@item
+@emph{(darwin/ppc)} Fails the test CALLBACKS.LONG-LONG.
+
 @item
 @emph{(ppc64)} There seem to be some bugs that affect CFFI.
 @end itemize
@@ -311,7 +340,7 @@ OpenMCL 1.0 is recommended.
 
 @section SBCL
 
-@string{Tested platforms:} linux/x86, darwin/ppc.
+@strong{Tested platforms:} linux/x86, darwin/ppc.
 
 Version 0.9.6 or newer is recommended.
 
@@ -398,9 +427,9 @@ Dictionary
 These types correspond to the native C integer types according to the
 ABI of the system the Lisp implementation is compiled against.
 
-@emph{:long-long and :unsigned-long-long are not available yet and
-probably won't ever be supported in all implementations/platforms. The
-following types aren't avaiable yet either.}
+@code{:long-long} and @code{:unsigned-long-long} are not supported on
+all implementations. When not supported, the @code{:cffi/no-long-long}
+feature is pushed into @code{*features*}.
 
 @ForeignType{:int8}
 @ForeignType{:uint8}
@@ -414,6 +443,8 @@ following types aren't avaiable yet either.}
 Foreign integer types of specific sizes, corresponding to the C types
 defined in @code{stdint.h}.
 
+@emph{Note: these are not implemented yet. --luis}
+
 @ForeignType{:size}
 @ForeignType{:ssize}
 @ForeignType{:ptrdiff}
@@ -421,6 +452,8 @@ defined in @code{stdint.h}.
 
 Foreign integer types corresponding to the standard C types (without
 the @code{_t} suffix).
+
+@emph{Note: these are not implemented yet. --luis}
 
 @emph{I'm sure there are more of these that could be useful, let's
 add any types that can't be defined portably to this list as

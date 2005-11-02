@@ -40,6 +40,11 @@
 (defcfun "expect_pointer_sum"        :int (f :pointer))
 (defcfun "expect_strcat"             :int (f :pointer))
 
+#-cffi/no-long-long
+(progn
+  (defcfun "expect_long_long_sum"          :int (f :pointer))
+  (defcfun "expect_unsigned_long_long_sum" :int (f :pointer)))
+
 
 (defcallback sum-char :char ((a :char) (b :char))
   "Test if the named block is present and the docstring too."
@@ -73,6 +78,16 @@
 (defcallback sum-unsigned-long :unsigned-long
     ((a :unsigned-long) (b :unsigned-long))
   (+ a b))
+
+#-cffi/no-long-long
+(progn
+  (defcallback sum-long-long :long-long
+      ((a :long-long) (b :long-long))
+    (+ a b))
+  
+  (defcallback sum-unsigned-long-long :unsigned-long-long
+      ((a :unsigned-long-long) (b :unsigned-long-long))
+    (+ a b)))
 
 (defcallback sum-float :float ((a :float) (b :float))
   ;(format t "~%}}} a: ~A, b: ~A {{{~%" a b)
@@ -120,6 +135,16 @@
 (deftest callbacks.unsigned-long
     (expect-unsigned-long-sum (callback sum-unsigned-long))
   1)
+
+#-cffi/no-long-long
+(progn
+  (deftest callbacks.long-long
+      (expect-long-long-sum (callback sum-long-long))
+    1)
+  
+  (deftest callbacks.unsigned-long-long
+      (expect-unsigned-long-long-sum (callback sum-unsigned-long-long))
+    1))
 
 (deftest callbacks.float
     (expect-float-sum (callback sum-float))

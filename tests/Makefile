@@ -29,19 +29,19 @@ OSTYPE = $(shell uname)
 
 ifeq ($(OSTYPE), Darwin)
 CC                := gcc
-CFLAGS            := -lm -Wall -ansi -pedantic
+CFLAGS            := -lm -Wall -std=c99 -pedantic
 SHLIB_CFLAGS      := -bundle
 SHLIB_EXT         := .so
 else
 ifeq ($(OSTYPE), Linux)
 CC                := gcc
-CFLAGS            := -lm -Wall -ansi -pedantic
+CFLAGS            := -lm -Wall -std=c99 -pedantic
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .so
 else
 # Let's assume this is win32
 CC                := gcc
-CFLAGS            := -lm -Wall -ansi -pedantic
+CFLAGS            := -lm -Wall -std=c99 -pedantic
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .dll 
 endif

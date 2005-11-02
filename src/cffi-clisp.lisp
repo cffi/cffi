@@ -56,6 +56,12 @@
 
 (in-package #:cffi-sys)
 
+;;; FIXME: long-long could be supported anyway on 64-bit machines.
+
+;;;# Mis-*features*
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi/no-long-long *features*))
+
 ;;;# Built-In Foreign Types
 
 (defun convert-foreign-type (type)
@@ -184,7 +190,7 @@ over at the end of ARGS, it specifies the foreign return type of
 the function call."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
-    (let* ((ctype `(ffi:c-function (:arguments ,@types)
+    (let ((ctype `(ffi:c-function (:arguments ,@types)
                                    (:return-type ,rettype)
                                    (:language :stdc))))
       `(funcall

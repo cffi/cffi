@@ -42,6 +42,11 @@
 (define-built-in-foreign-type :pointer)
 (define-built-in-foreign-type :void)
 
+#-cffi/no-long-long
+(progn
+  (define-built-in-foreign-type :long-long)
+  (define-built-in-foreign-type :unsigned-long-long))
+
 ;;;# Dereferencing Foreign Pointers
 
 (defun mem-ref (ptr type &optional (offset 0))

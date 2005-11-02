@@ -56,6 +56,16 @@
   131072)
 
 
+#-cffi/no-long-long
+(progn
+  (defcfun "llabs" :long-long
+    (n :long-long))
+
+  (deftest defcfun.long-long
+      (llabs -9223372036854775807)
+    9223372036854775807))
+
+
 (defcfun "my_sqrtf" :float
   (n :float))
 
