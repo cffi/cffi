@@ -74,6 +74,7 @@
    #:with-foreign-string
    #:foreign-string-length              ; not implemented
    #:convert-from-foreign-usb8
+   #:foreign-library-types
    ))
 
 (in-package #:cffi-uffi-compat)
