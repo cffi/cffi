@@ -31,10 +31,14 @@
   (:nicknames #:uffi) ;; is this a good idea?
   (:use #:cl)
   (:export
-   #:def-type
-   #:def-foreign-type
+
+   ;; immediate types
    #:def-constant
+   #:def-foreign-type
+   #:def-type
    #:null-char-p
+   
+   ;; aggregate types
    #:def-enum
    #:def-struct
    #:get-slot-value
@@ -42,6 +46,8 @@
    #:def-array-pointer
    #:deref-array
    #:def-union
+
+   ;; objects
    #:allocate-foreign-object
    #:free-foreign-object
    #:with-foreign-object
@@ -54,27 +60,37 @@
    #:ensure-char-storable
    #:null-pointer-p
    #:make-null-pointer
+   #:make-pointer
+   #:pointer-address
    #:+null-cstring-pointer+
    #:char-array-to-pointer
    #:with-cast-pointer
    #:def-foreign-var
+   #:convert-from-foreign-usb8
+
+   ;; string functions
    #:convert-from-cstring
    #:convert-to-cstring
    #:free-cstring
    #:with-cstring
    #:with-cstrings
-   #:def-function
-   #:find-foreign-library
-   #:load-foreign-library
-   #:default-foreign-library-type
-   #:run-shell-command
    #:convert-from-foreign-string
    #:convert-to-foreign-string
    #:allocate-foreign-string
    #:with-foreign-string
    #:foreign-string-length              ; not implemented
-   #:convert-from-foreign-usb8
+   
+   ;; function call
+   #:def-function
+
+   ;; libraries
+   #:find-foreign-library
+   #:load-foreign-library
+   #:default-foreign-library-type
    #:foreign-library-types
+
+   ;; os
+   #:run-shell-command
    ))
 
 (in-package #:cffi-uffi-compat)
@@ -311,6 +327,11 @@ field-name"
   "Create a NULL pointer."
   (declare (ignore type))
   `(cffi:null-ptr))
+
+(defmacro make-pointer (address type)
+  "Create a pointer to ADDRESS."
+  (declare (ignore type))
+  `(cffi:inc-ptr (cffi:null-ptr) ,address))
 
 (defmacro null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
