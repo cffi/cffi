@@ -105,24 +105,34 @@
 
 ;; The *.set.* tests restore the old values so that the *.ref.*
 ;; don't fail when re-run.
+(defmacro with-old-value-restored ((place) &body body)
+  (let ((old (gensym)))
+    `(let ((,old ,place))
+       (prog1
+           (progn ,@body)
+         (setq ,place ,old)))))
 
 (deftest foreign-globals.set.int
-    (let ((old *var-int*))
+    (with-old-value-restored (*var-int*)
       (setq *var-int* 42)
-      (prog1
-          *var-int*
-        (setq *var-int* old)))
+      *var-int*)
   42)
 
 (deftest foreign-globals.set.string
-    (let ((old *var-string*))
-      (setq *var-string* "Ehxosxangxo") 
+    (with-old-value-restored (*var-string*)
+      (setq *var-string* "Ehxosxangxo")
       (prog1
           *var-string*
-        ;; free the old string
-        (foreign-free (mem-ref (get-var-ptr '*var-string*) :pointer))
-        (setq *var-string* old)))
+        ;; free the string we just allocated
+        (foreign-free (mem-ref (get-var-ptr '*var-string*) :pointer))))
   "Ehxosxangxo")
+
+#-cffi/no-long-long
+(deftest foreign-globals.set.long-long
+    (with-old-value-restored (*var-long-long*)
+      (setq *var-long-long* -9223000000000005808)
+      *var-long-long*)
+  -9223000000000005808)
 
 (deftest foreign-globals.get-var-ptr.1
     (pointerp (get-var-ptr '*char-var*))
