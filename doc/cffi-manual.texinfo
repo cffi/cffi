@@ -337,7 +337,8 @@ OpenMCL 1.0 or newer is recommended.
 @subheading Known issues
 @itemize
 @item
-@emph{(darwin/ppc and linux/ppc)} Fails the test CALLBACKS.LONG-LONG.
+@emph{(darwin/ppc and linux/ppc)} Fails the tests
+@code{CALLBACKS.LONG-LONG} and @code{FOREIGN-GLOBALS.SET.LONG-LONG}.
 
 @item
 @emph{(ppc64)} There seem to be some bugs that affect CFFI.
