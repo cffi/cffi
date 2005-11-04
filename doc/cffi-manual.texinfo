@@ -235,7 +235,7 @@ fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
 CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
 
 @item
-@emph{v8.0b, linux/ppc)} Fails FUNCALL.VARARGS.DOUBLE.
+@emph{(v8.0b, linux/ppc)} Fails FUNCALL.VARARGS.DOUBLE.
 @end itemize
 
 
@@ -346,7 +346,7 @@ OpenMCL 1.0 or newer is recommended.
 
 @section SBCL
 
-@strong{Tested platforms:} linux/x86, darwin/ppc.
+@strong{Tested platforms:} linux/x86, linux/ppc, darwin/ppc.
 
 Version 0.9.6 or newer is recommended.
 
@@ -354,6 +354,10 @@ Version 0.9.6 or newer is recommended.
 @itemize
 @item
 @emph{(non linux/86)} Callbacks are linux/x86 only.
+
+@item
+@emph{(linux/ppc)} Fails 3 tests: @code{FUNCALL.LONG-LONG,
+DEFCFUN.LONG-LONG} and @code{FUNCALL.VARARGS.DOUBLE}.
 @end itemize
 
 
