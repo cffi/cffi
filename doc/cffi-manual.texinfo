@@ -215,7 +215,7 @@ There are also plans to support Digitool MCL, GCL and Scieneer CL.
 
 @section Allegro CL
 
-@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
+@strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
 
 Both the 6.2 and 7.0 versions are supported. The 8.0 beta is also
 known to work. Earlier versions are untested and unsupported.
@@ -223,8 +223,11 @@ known to work. Earlier versions are untested and unsupported.
 @subheading Known issues
 @itemize
 @item
-@emph{(All platforms and versions)} CFFI won't work correctly using
+@emph{(all platforms)} CFFI won't work correctly using
 modern mode.
+
+@item
+@emph{(all platforms)} Does not support (unsigned) long long.
 
 @item
 @emph{(v6.2, darwin/ppc)} Due to a bug in Allegro, 4 callback tests
@@ -232,7 +235,7 @@ fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
 CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
 
 @item
-@emph{(all platforms)} Does not support (unsigned) long long.
+@emph{v8.0b, linux/ppc)} Fails FUNCALL.VARARGS.DOUBLE.
 @end itemize
 
 
@@ -261,7 +264,7 @@ works around these issues.
 
 @section CLISP
 
-@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
+@strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
 
 Version is 2.34 or newer is required on win32/x86. For other platforms
 version 2.35 or newer is required.
@@ -270,6 +273,9 @@ version 2.35 or newer is required.
 @itemize
 @item
 @emph{(all platforms)} Does not support (unsigned) long long.
+
+@item
+@emph{(linux/ppc)} Fails @code{FUNCALL.VARARGS.DOUBLE}.
 @end itemize
 
 
@@ -324,14 +330,14 @@ Versions prior to 4.4 are untested.
 
 @section OpenMCL
 
-@strong{Tested platforms:} darwin/ppc.
+@strong{Tested platforms:} darwin/ppc, linux/ppc.
 
 OpenMCL 1.0 or newer is recommended.
 
 @subheading Known issues
 @itemize
 @item
-@emph{(darwin/ppc)} Fails the test CALLBACKS.LONG-LONG.
+@emph{(darwin/ppc and linux/ppc)} Fails the test CALLBACKS.LONG-LONG.
 
 @item
 @emph{(ppc64)} There seem to be some bugs that affect CFFI.
