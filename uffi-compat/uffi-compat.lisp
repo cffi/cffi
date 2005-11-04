@@ -61,7 +61,6 @@
    #:null-pointer-p
    #:make-null-pointer
    #:make-pointer
-   #:pointer-address
    #:+null-cstring-pointer+
    #:char-array-to-pointer
    #:with-cast-pointer
