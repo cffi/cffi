@@ -51,6 +51,12 @@
  
 (in-package #:cffi-sys)
 
+;;;# Features
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  #+darwinppc-target (pushnew :darwin *features*)
+  #+ppc32-target     (pushnew :ppc32 *features*))
+
 ;;;# Allocation
 ;;;
 ;;; Functions and macros for allocating foreign memory on the stack
@@ -265,14 +271,9 @@ to open-code (SETF %MEM-REF) forms."
 ;; http://clozure.com/pipermail/openmcl-devel/2005-June/002777.html
 (defun %foreign-type-alignment (type-keyword)
   "Return the alignment in bytes of a foreign type."
-  (let ((natural-alignment (/ (ccl::foreign-type-alignment
-                               (ccl::parse-foreign-type
-                                (convert-foreign-type type-keyword))) 8)))
-    #+(and darwinppc-target ppc32-target)
-    (min 4 natural-alignment)
-    ;; PPC64 Darwin uses "natural" alignment, as do 32/64-bit LinuxPPC.
-    #-(and darwinppc-target ppc32-target)
-    natural-alignment))
+  (/ (ccl::foreign-type-alignment
+      (ccl::parse-foreign-type
+       (convert-foreign-type type-keyword))) 8))
 
 (defun convert-foreign-funcall-types (args)
   "Convert foreign types for a call to FOREIGN-FUNCALL."

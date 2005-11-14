@@ -56,6 +56,8 @@
   100 200)
 
 ;;;# Structure Alignment Tests
+;;;
+;;; See libtest.c and types.lisp for some comments about alignments.
 
 (defcstruct s-ch
   (a-char :char))
@@ -141,6 +143,73 @@
                 'last-char         last-char))))
   (a-char 1 a-double 2.0d0 another-char 3 yet-another-char 4 a-short 5
    another-short 6 last-char 7))
+
+
+(defcstruct s-double2
+  (a-double :double)
+  (a-short  :short))
+
+(defcstruct s-s-double2
+  (a-char        :char)
+  (a-s-double2   s-double2)
+  (another-short :short))
+
+(defcvar "the_s_s_double2" s-s-double2)
+
+(deftest struct.alignment.5
+    (with-foreign-slots
+        ((a-char a-s-double2 another-short) *the-s-s-double2* s-s-double2)
+      (with-foreign-slots ((a-double a-short) a-s-double2 s-double2)
+        (list 'a-double       a-double
+              'a-short        a-short
+              'a-char         a-char
+              'another-short  another-short)))
+  (a-double 1.0d0 a-short 2 a-char 3 another-short 4))
+
+
+#-cffi/no-long-long
+(progn
+  (defcstruct s-long-long
+    (a-long-long :long-long)
+    (a-short     :short))
+
+  (defcstruct s-s-long-long
+    (a-char        :char)
+    (a-s-long-long s-long-long)
+    (another-short :short))
+
+  (defcvar "the_s_s_long_long" s-s-long-long)
+
+  (deftest struct.alignment.6
+      (with-foreign-slots
+          ((a-char a-s-long-long another-short) *the-s-s-long-long* s-s-long-long)
+        (with-foreign-slots ((a-long-long a-short) a-s-long-long s-long-long)
+          (list 'a-long-long    a-long-long
+                'a-short        a-short
+                'a-char         a-char
+                'another-short  another-short)))
+    (a-long-long 1 a-short 2 a-char 3 another-short 4)))
+
+
+(defcstruct s-s-double3
+  (a-s-double2   s-double2)
+  (another-short :short))
+
+(defcstruct s-s-s-double3
+  (a-s-s-double3  s-s-double3)
+  (a-char         :char))
+
+(defcvar "the_s_s_s_double3" s-s-s-double3)
+
+(deftest struct.alignment.7
+    (with-foreign-slots ((a-s-s-double3 a-char) *the-s-s-s-double3* s-s-s-double3)
+      (with-foreign-slots ((a-s-double2 another-short) a-s-s-double3 s-s-double3)
+        (with-foreign-slots ((a-double a-short) a-s-double2 s-double2)
+          (list 'a-double      a-double
+                'a-short       a-short
+                'another-short another-short
+                'a-char        a-char))))
+  (a-double 1.0d0 a-short 2 another-short 3 a-char 4))
 
 
 (defcstruct empty-struct)

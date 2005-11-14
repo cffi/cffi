@@ -270,14 +270,6 @@ to open-code (SETF MEM-REF) forms."
       (make-instance 'simple-struct-slot :offset offset :type type
                      :name name)))
 
-(defun adjust-for-alignment (type offset)
-  "Return OFFSET aligned properly for TYPE."
-  (let* ((align (foreign-type-alignment type))
-         (rem (mod offset align)))
-    (if (zerop rem)
-        offset
-        (+ offset (- align rem)))))
-
 ;;; XXX: the struct alignment/size stuff here might be specific to the x86 ABI.
 ;;; XXX: figure out other ABI's
 ;;;
@@ -291,20 +283,54 @@ to open-code (SETF MEM-REF) forms."
 ;;;   3. "A structure's size is increased, if necessary, to make it a multiple
 ;;;       of the alignment. This may requiretail padding, depending on the last
 ;;;       member."
+;;;
+;;; Special case from darwin/ppc32's ABI:
+;;; http://developer.apple.com/documentation/DeveloperTools/Conceptual/LowLevelABI/index.html
+;;;
+;;;   1. "The embedding alignment of the first element in a data structure is
+;;;       equal to the element's natural alignment."
+;;;   2. "For subsequent elements that have a natural alignment greater than 4
+;;;       bytes, the embedding alignment is 4, unless the element is a vector."
+;;;       (note: this applies for structures too)
+
+;; FIXME: get a better name for this. --luis
+(defun get-alignment (type alignment-type firstp)
+  "Return alignment for TYPE according to ALIGNMENT-TYPE."
+  (declare (ignorable firstp))
+  (ecase alignment-type
+    (:normal #-(and darwin ppc32)
+             (foreign-type-alignment type)
+             #+(and darwin ppc32)
+             (if firstp
+                 (foreign-type-alignment type)
+                 (min 4 (foreign-type-alignment type))))))
+
+(defun adjust-for-alignment (type offset alignment-type firstp)
+  "Return OFFSET aligned properly for TYPE according to ALIGNMENT-TYPE."
+  (let* ((align (get-alignment type alignment-type firstp))
+         (rem (mod offset align)))
+    (if (zerop rem)
+        offset
+        (+ offset (- align rem)))))
+
 (defun notice-foreign-struct-definition (name slots)
   "Parse and install a foreign structure definition."
   (let ((struct (make-instance 'foreign-struct-type :name name))
         (offset 0)
-        (max-align 1))
+        (max-align 1)
+        (firstp t))
+    ;; determine offsets
     (dolist (slotdef slots)
       (destructuring-bind (slotname type &optional (count 1)) slotdef
-        (setf offset (adjust-for-alignment type offset))
+        (setf offset (adjust-for-alignment type offset :normal firstp))
         (let* ((slot (make-struct-slot slotname offset type count))
-               (align (foreign-type-alignment (slot-type slot))))
+               (align (get-alignment (slot-type slot) :normal firstp)))
           (setf (gethash slotname (slots struct)) slot)
           (when (> align max-align)
             (setq max-align align)))
-        (incf offset (* count (foreign-type-size type)))))
+        (incf offset (* count (foreign-type-size type))))
+      (setq firstp nil))
+    ;; calculate padding and alignment
     (setf (alignment struct) max-align)  ; See point 1 above.
     (let ((tail-padding (- max-align (rem offset max-align))))
       (unless (= tail-padding max-align) ; See point 3 above.

@@ -57,6 +57,11 @@
 
 (in-package #:cffi-sys)
 
+;;;# Features
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  #+(and ppc (not ppc64)) (pushnew :ppc32 *features*))
+
 ;;;# Basic Pointer Operations
 
 (defun pointerp (ptr)
@@ -267,6 +272,10 @@ to open-code (SETF %MEM-REF) forms."
 
 (defun %foreign-type-alignment (type-keyword)
   "Return the alignment in bytes of a foreign type."
+  #+(and darwin ppc (not ppc64))
+  (when (member type-keyword '(:double :long-long))
+    (return-from %foreign-type-alignment 8))
+  ;; No override necessary for other types...
   (/ (sb-alien-internals:alien-type-alignment
       (sb-alien-internals:parse-alien-type
        (convert-foreign-type type-keyword) nil)) 8))

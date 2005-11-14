@@ -50,9 +50,11 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-*features*
+;;;# Features and Mis-*features*
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*))
+  (pushnew :cffi/no-long-long *features*)
+  ;; Anything else other than powerpc7450?
+  #+powerpc7450 (pushnew :ppc32 *features*))
 
 ;;;# Allocation
 

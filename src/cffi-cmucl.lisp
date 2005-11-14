@@ -25,6 +25,11 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;;;# Features
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  #+(and ppc (not ppc64)) (pushnew :ppc32 *features*)) 
+
 ;;;# Administrivia
 
 (defpackage #:cffi-sys

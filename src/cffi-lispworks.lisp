@@ -51,10 +51,12 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-*features*
+;;;# Features and Mis-*features*
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :cffi/no-foreign-funcall *features*)
-  (pushnew :cffi/no-long-long *features*))
+  (pushnew :cffi/no-long-long *features*)
+  ;; XXX: probably catches ppc64 too which is wrong! --luis
+  #+(or powerpc harp::powerpc) (pushnew :ppc32 *features*))
 
 ;;;# Basic Pointer Operations
 (defun pointerp (ptr)
@@ -150,6 +152,10 @@ be stack allocated if supported by the implementation."
 
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign type."
+  #+(and darwin ppc32)
+  (when (eq type :double)
+    (return-from %foreign-type-alignment 8))
+  ;; Override not necessary for the remaining types...
   (fli:align-of (convert-foreign-type type)))
 
 ;;;# Calling Foreign Functions

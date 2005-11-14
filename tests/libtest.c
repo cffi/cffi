@@ -303,7 +303,9 @@ struct s_s_double {
 DLLEXPORT
 struct s_s_double the_s_s_double = { 4, { 1, 2.0, 3 }, 5 };
 
-/* STRUCT.ALIGNMENT.4 */
+/*
+ * STRUCT.ALIGNMENT.4
+ */
 struct s_s_s_double {
     short another_short;            /* 2 bytes */
                                     /* 2 bytes padding */
@@ -314,6 +316,83 @@ struct s_s_s_double {
 
 DLLEXPORT
 struct s_s_s_double the_s_s_s_double = { 6, { 4, { 1, 2.0, 3 }, 5 }, 7 };
+
+/*
+ * STRUCT.ALIGNMENT.5
+ */
+
+/* MacOSX ABI says: "The embedding alignment of the first element in a data
+   structure is equal to the element's natural alignment." and "For subsequent
+   elements that have a natural alignment greater than 4 bytes, the embedding
+   alignment is 4, unless the element is a vector." */
+
+/* note: these rules will apply to the structure itself. So, unless it is
+   the first element of another structure, its alignment will be 4. */
+
+/* the following offsets and sizes are specific to darwin/ppc32 */
+
+struct s_double2 {
+    double a_double;            /* 8 bytes (alignment 8) */
+    short a_short;              /* 2 bytes */
+                                /* 6 bytes padding */
+};                              /* total size: 16 */
+
+struct s_s_double2 {
+    char a_char;                  /* 1 byte */
+                                  /* 3 bytes padding */
+    struct s_double2 a_s_double2; /* 16 bytes, alignment 4 */
+    short another_short;          /* 2 bytes */
+                                  /* 2 bytes padding */
+};                                /* total size: 24 bytes */
+                                  /* aligment: 4 */
+
+DLLEXPORT
+struct s_s_double2 the_s_s_double2 = { 3, { 1.0, 2 }, 4 };
+
+/*
+ * STRUCT.ALIGNMENT.6
+ */
+
+/* Same as STRUCT.ALIGNMENT.5 but with long long. */
+
+struct s_long_long {
+    long long a_long_long;      /* 8 bytes (alignment 8) */
+    short a_short;              /* 2 bytes */
+                                /* 6 bytes padding */
+};                              /* total size: 16 */
+
+struct s_s_long_long {
+    char a_char;                      /* 1 byte */
+                                      /* 3 bytes padding */
+    struct s_long_long a_s_long_long; /* 16 bytes, alignment 4 */
+    short a_short;                    /* 2 bytes */
+                                      /* 2 bytes padding */
+};                                    /* total size: 24 bytes */
+                                      /* alignment: 4 */
+
+DLLEXPORT
+struct s_s_long_long the_s_s_long_long = { 3, { 1, 2 }, 4 };
+
+/*
+ * STRUCT.ALIGNMENT.7
+ */
+
+/* Another test for Darwin's PPC32 ABI. */
+
+struct s_s_double3 {
+    struct s_double2 a_s_double2; /* 16 bytes, alignment 8*/
+    short another_short;          /* 2 bytes */
+                                  /* 6 bytes padding */
+};                                /* total size: 24 */
+
+struct s_s_s_double3 {
+    struct s_s_double3 a_s_s_double3; /* 24 bytes */
+    char a_char;                      /* 1 byte */
+                                      /* 7 bytes padding */
+};                                    /* total size: 32 */
+
+DLLEXPORT
+struct s_s_s_double3 the_s_s_s_double3 = { { { 1.0, 2 }, 3 }, 4 };
 
 /* STRUCT.ALIGNMENT.x */
 

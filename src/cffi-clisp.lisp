@@ -56,11 +56,15 @@
 
 (in-package #:cffi-sys)
 
-;;; FIXME: long-long could be supported anyway on 64-bit machines.
+;;; FIXME: long-long could be supported anyway on 64-bit machines. --luis
 
-;;;# Mis-*features*
+;;;# Features and Mis-*features*
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*))
+  (pushnew :cffi/no-long-long *features*)
+  #+macos (pushnew :darwin *features*)
+  ;; XXX: this is probably also true for ppc64... --luis
+  (when (equalp (machine-type) "POWER MACINTOSH")
+    (pushnew :ppc32 *features*)))
 
 ;;;# Built-In Foreign Types
 
@@ -98,6 +102,10 @@
 ;; of foreign types part of the public interface in CLisp. :-)
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign TYPE."
+  #+(and darwin ppc32)
+  (when (eq type :double)
+    (return-from %foreign-type-alignment 8))
+  ;; Override not necessary for the remaining types...
   (nth-value 1 (ffi:sizeof (convert-foreign-type type))))
 
 ;;;# Basic Pointer Operations

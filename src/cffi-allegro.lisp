@@ -52,9 +52,12 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-*features*
+;;;# Features and Mis-*features*
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*))
+  (pushnew :cffi/no-long-long *features*)
+  #+macosx (pushnew :darwin *features*)
+  ;; This is probably incorrect?
+  #+powerpc (pushnew :ppc32 *features*))
 
 ;;;# Basic Pointer Operations
 
@@ -161,6 +164,11 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (ff:sizeof-fobject (convert-foreign-type type-keyword)))
 
 (defun %foreign-type-alignment (type-keyword)
+  "Returns the alignment in bytes of a foreign type."
+  #+(and powerpc macosx32)
+  (when (eq type-keyword :double)
+    (return-from %foreign-type-alignment 8))
+  ;; No override necessary for the remaining types....
   (ff::sized-ftype-prim-align
    (ff::iforeign-type-sftype
     (ff:get-foreign-type
