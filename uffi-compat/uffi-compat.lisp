@@ -77,6 +77,7 @@
    #:convert-to-foreign-string
    #:allocate-foreign-string
    #:with-foreign-string
+   #:with-foreign-strings
    #:foreign-string-length              ; not implemented
    
    ;; function call
@@ -580,6 +581,12 @@ output to *trace-output*.  Returns the shell's exit code."
              ,@body)
            (cffi:with-foreign-string (,foreign-string ,str)
              ,@body)))))
+
+(defmacro with-foreign-strings (bindings &body body)
+  `(with-foreign-string ,(car bindings)
+    ,@(if (cdr bindings)
+          `((with-foreign-strings ,(cdr bindings) ,@body))
+          body)))
 
 ;; This function returns a form? Where is this used in user-code?
 (defun foreign-string-length (foreign-string)
