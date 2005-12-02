@@ -58,6 +58,7 @@ If PTR is a null pointer, returns nil."
 (defun foreign-string-alloc (string)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
+  (check-type string string)
   (let* ((length (1+ (length string)))
          (ptr (foreign-alloc :char :count length)))
     (lisp-string-to-foreign string ptr length)
@@ -69,10 +70,10 @@ The string must be freed with FOREIGN-STRING-FREE."
 
 (defmacro with-foreign-string ((var lisp-string) &body body)
   "Bind VAR to a foreign string containing LISP-STRING in BODY."
-  (let ((str (gensym "STR"))
-        (length (gensym "LENGTH")))
+  (with-unique-names (str length)
     `(let* ((,str ,lisp-string)
-            (,length (1+ (length ,str))))
+            (,length (progn (check-type ,str string)
+                            (1+ (length ,str)))))
        (with-foreign-ptr (,var ,length)
          (lisp-string-to-foreign ,str ,var ,length)
          ,@body))))

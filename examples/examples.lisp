@@ -102,7 +102,7 @@
 
 ;; Nested structure example:
 (defcstruct nested-example
-  (name    :char 100)
+  (name    :char :count 100)
   (timeval timeval))
 
 (defun nested-example ()
@@ -114,7 +114,7 @@
 
 #-(and)
 (defcstruct nested-example2
-  (times timeval 20))
+  (times timeval :count 20))
 
 #-(and)
 (defun nested-example2 ()

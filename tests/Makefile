@@ -39,11 +39,18 @@ CFLAGS            := -lm -Wall -std=c99 -pedantic
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .so
 else
+ifeq ($(OSTYPE), SunOS)
+CC                := gcc
+CFLAGS            := -c -Wall -std=c99 -pedantic
+SHLIB_CFLAGS      := -shared
+SHLIB_EXT         := .so
+else
 # Let's assume this is win32
 CC                := gcc
 CFLAGS            := -lm -Wall -std=c99 -pedantic
 SHLIB_CFLAGS      := -shared
 SHLIB_EXT         := .dll 
+endif
 endif
 endif
 

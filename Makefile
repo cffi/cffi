@@ -25,6 +25,14 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
+# This way you can easily run the tests for different versions
+# of each lisp with, e.g. ALLEGRO=/path/to/some/lisp make test-allegro
+CMUCL=lisp
+OPENMCL=openmcl
+SBCL=sbcl
+CLISP=clisp
+ALLEGRO=acl
+
 shlibs:
 	@$(MAKE) -wC tests shlibs
 
@@ -34,20 +42,20 @@ clean:
 	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.ppcf" -o -name "*.nfasl" -o -name "*.fsl" \) -exec rm {} \;
 
 test-openmcl:
-	@-openmcl --load tests/run-tests.lisp
+	@-$(OPENMCL) --load tests/run-tests.lisp
 
 test-sbcl:
-	@-sbcl --noinform --load tests/run-tests.lisp
+	@-$(SBCL) --noinform --load tests/run-tests.lisp
 
 test-cmucl:
-	@-lisp -load tests/run-tests.lisp
+	@-$(CMUCL) -load tests/run-tests.lisp
 
 test-clisp:
-	@-clisp -q -x '(load "tests/run-tests.lisp")'
+	@-$(CLISP) -q -x '(load "tests/run-tests.lisp")'
 
 test-allegro:
-	@-acl -L tests/run-tests.lisp
-	
+	@-$(ALLEGRO) -L tests/run-tests.lisp
+
 test: test-openmcl test-sbcl test-cmucl test-clisp
 
 # vim: ft=make ts=3 noet

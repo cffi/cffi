@@ -51,7 +51,7 @@
 
 (defun mem-ref (ptr type &optional (offset 0))
   "Return the value of TYPE at OFFSET from PTR. If TYPE is aggregate,
-we don't return it's 'value' but a pointer to it, which is PTR itself."
+we don't return its 'value' but a pointer to it, which is PTR itself."
   (let ((parsed-type (parse-type type)))
     (if (aggregatep parsed-type)
         (inc-ptr ptr offset)
@@ -313,30 +313,34 @@ to open-code (SETF MEM-REF) forms."
         offset
         (+ offset (- align rem)))))
 
-(defun notice-foreign-struct-definition (name slots)
+(defun notice-foreign-struct-definition (name-and-options slots)
   "Parse and install a foreign structure definition."
-  (let ((struct (make-instance 'foreign-struct-type :name name))
-        (offset 0)
-        (max-align 1)
-        (firstp t))
-    ;; determine offsets
-    (dolist (slotdef slots)
-      (destructuring-bind (slotname type &optional (count 1)) slotdef
-        (setf offset (adjust-for-alignment type offset :normal firstp))
-        (let* ((slot (make-struct-slot slotname offset type count))
-               (align (get-alignment (slot-type slot) :normal firstp)))
-          (setf (gethash slotname (slots struct)) slot)
-          (when (> align max-align)
-            (setq max-align align)))
-        (incf offset (* count (foreign-type-size type))))
-      (setq firstp nil))
-    ;; calculate padding and alignment
-    (setf (alignment struct) max-align)  ; See point 1 above.
-    (let ((tail-padding (- max-align (rem offset max-align))))
-      (unless (= tail-padding max-align) ; See point 3 above.
-        (incf offset tail-padding)))
-    (setf (size struct) offset)
-    (notice-foreign-type struct)))
+  (destructuring-bind (name &key size #+nil alignment)
+      (mklist name-and-options)
+    (let ((struct (make-instance 'foreign-struct-type :name name))
+          (current-offset 0)
+          (max-align 1)
+          (firstp t))
+      ;; determine offsets
+      (dolist (slotdef slots)
+        (destructuring-bind (slotname type &key (count 1) offset) slotdef
+          (setq current-offset
+                (or offset
+                    (adjust-for-alignment type current-offset :normal firstp)))
+          (let* ((slot (make-struct-slot slotname current-offset type count))
+                 (align (get-alignment (slot-type slot) :normal firstp)))
+            (setf (gethash slotname (slots struct)) slot)
+            (when (> align max-align)
+              (setq max-align align)))
+          (incf current-offset (* count (foreign-type-size type))))
+        (setq firstp nil))
+      ;; calculate padding and alignment
+      (setf (alignment struct) max-align) ; See point 1 above.
+      (let ((tail-padding (- max-align (rem current-offset max-align))))
+        (unless (= tail-padding max-align) ; See point 3 above.
+          (incf current-offset tail-padding)))
+      (setf (size struct) (or size current-offset))
+      (notice-foreign-type struct))))
 
 (defmacro defcstruct (name &body fields)
   "Define the layout of a foreign structure."
