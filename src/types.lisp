@@ -282,7 +282,7 @@ to open-code (SETF MEM-REF) forms."
 ;;;       appropriate alignment. This may require internal padding, depending
 ;;;       on the previous member."
 ;;;   3. "A structure's size is increased, if necessary, to make it a multiple
-;;;       of the alignment. This may requiretail padding, depending on the last
+;;;       of the alignment. This may require tail padding, depending on the last
 ;;;       member."
 ;;;
 ;;; Special case from darwin/ppc32's ABI:

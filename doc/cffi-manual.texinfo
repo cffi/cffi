@@ -565,7 +565,7 @@ doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count offset) @}*
 
 @subheading Arguments and Values
 @table @emph
-@item name
+@item structure-name
 The name of new structure type.
 
 @item docstring
@@ -574,17 +574,23 @@ A documentation string, ignored.
 @item slot-name
 A symbol naming the slot.
 
+@item size
+Use this option to override the size (in bytes) of the struct.
+
 @item slot-type
 The type specifier for the slot.
 
 @item count
 Used to declare an array of size @emph{count} inside the
-structure. @emph{(will probably be removed once we have an array
-type?) --luis}
+structure.
+
+@item offset
+Overrides the slot's offset. The next slot's offset is calcultated
+based on this one.
 @end table
 
 @subheading Description
-A structure slot is either simple, or aggregate.
+A structure slot is either simple or aggregate.
 
 Simple structure slots contain a single instance of a type that
 canonicalizes to a built-in type, such as @code{:long} or
@@ -608,6 +614,25 @@ CFFI> (with-foreign-object (ptr point)
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
 (42 42)
+@end lisp
+
+@lisp
+;; Using the :size and :offset options to define a partial structure.
+;; (this is useful when you are interested in only a few slots
+;; of a big foreign structure)
+
+(defcstruct (foo :size 32)
+  "Some struct with 32 bytes."
+                        ; <16 bytes we don't care about>
+  (x :int :offset 16)   ; an int at offset 16
+  (y :int)              ; another int at offset 16+sizeof(int)
+                        ; <a couple more bytes we don't care about>
+  (z :char :offset 24)  ; a char at offset 24
+                        ; <7 more bytes ignored (since size is 32)>
+  )
+
+CFFI> (foreign-type-size 'foo)
+32
 @end lisp
 
 @subheading See Also
