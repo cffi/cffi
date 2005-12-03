@@ -270,10 +270,11 @@ to open-code (SETF MEM-REF) forms."
       (make-instance 'simple-struct-slot :offset offset :type type
                      :name name)))
 
-;;; XXX: the struct alignment/size stuff here might be specific to the x86 ABI.
-;;; XXX: figure out other ABI's
+;;; Regarding structure alignment, the following ABIs were checked:
+;;;   - System-V ABI: x86, x86-64, ppc, arm, mips and itanium. (more?)
+;;;   - Mac OS X ABI Function Call Guide: ppc32, ppc64 and x86.
 ;;;
-;;; Rules used here: (from the x86 gABI)
+;;; Rules used here:
 ;;;
 ;;;   1. "An entire structure or union object is aligned on the same boundary
 ;;;       as its most strictly aligned member."

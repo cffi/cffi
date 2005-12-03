@@ -502,44 +502,45 @@ Foo bar.
 
 @subheading Foreign Structure Example
 
-@lisp
-;; A hairy structure definition that illustrates some of the rules
-;; governing foreign structs.
-(defcstruct person
-  "A person in the employee database."
-  ;; the first argument after the name may be a docstring
-  :alignment :packed      ;; keyword options allowed before first slot
-  (id :int)
-  ;; these are defined as char[255]'s in the c code
-  (first-name  :char 255)
-  (last-name   :char 255)
-  ;; an embedded structure
-  (birthdate timeval)
-  ;; a pointer to another PERSON
-  (supervisor :pointer))
+@c commented this out since it was causing confusion --luis
 
-;;; If P is a pointer to a PERSON structure:
+@c @lisp
+@c ;; A hairy structure definition that illustrates some of the rules
+@c ;; governing foreign structs.
+@c (defcstruct (person :alignment :packed)
+@c   "A person in the employee database."
+@c   ;; the first argument after the name may be a docstring
+@c   (id :int)
+@c   ;; these are defined as char[255]'s in the c code
+@c   (first-name  :char :count 255)
+@c   (last-name   :char :count 255)
+@c   ;; an embedded structure
+@c   (birthdate timeval)
+@c   ;; a pointer to another PERSON
+@c   (supervisor :pointer))
 
-;; This returns p->first_name, a pointer.
-(foreign-slot-value p 'person 'first-name)
+@c ;;; If P is a pointer to a PERSON structure:
 
-;; This returns &p->birthdate, a pointer.
-(foreign-slot-value p 'person 'birthdate)
+@c ;; This returns p->first_name, a pointer.
+@c (foreign-slot-value p 'person 'first-name)
 
-;; NOTE: this is not implemented yet.
-;; This returns p->birthdate.tv_secs as a Lisp integer.
-(foreign-slot-value p 'person 'birthdate 'tv-secs)
+@c ;; This returns &p->birthdate, a pointer.
+@c (foreign-slot-value p 'person 'birthdate)
 
-;; The previous form is equivalent to (but may be faster than):
-(foreign-slot-value
- (foreign-slot-value p 'person 'birthdate) 'timeval 'tv-secs)
+@c ;; NOTE: this is not implemented yet.
+@c ;; This returns p->birthdate.tv_secs as a Lisp integer.
+@c (foreign-slot-value p 'person 'birthdate 'tv-secs)
 
-;; Attempting to set the slot value of an embedded structure or
-;; embedded array causes an error.  Eventually, there may be a
-;; type converter that can handle this situation for some types.
-;; This would be: p->birthdate = ... in C.
-(setf (foreign-slot-value p 'person 'timeval) ...) => error
-@end lisp
+@c ;; The previous form is equivalent to (but may be faster than):
+@c (foreign-slot-value
+@c  (foreign-slot-value p 'person 'birthdate) 'timeval 'tv-secs)
+
+@c ;; Attempting to set the slot value of an embedded structure or
+@c ;; embedded array causes an error.  Eventually, there may be a
+@c ;; type converter that can handle this situation for some types.
+@c ;; This would be: p->birthdate = ... in C.
+@c (setf (foreign-slot-value p 'person 'timeval) ...) => error
+@c @end lisp
 
 @node Operations on Types
 @section Operations on Types
@@ -556,9 +557,11 @@ Foo bar.
 @node defcstruct
 @heading defcstruct
 @subheading Syntax
-@Macro{defcstruct name &body doc-and-slots => name}
+@Macro{defcstruct name-and-options &body doc-and-slots => name}
 
-doc-and-slots ::= [docstring] @{ (slot-name slot-type [count]) @}*
+name-and-options ::= structure-name | (structure-name &key size)
+
+doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count offset) @}*
 
 @subheading Arguments and Values
 @table @emph
@@ -2410,7 +2413,8 @@ foreign functions.
 @item
 Lispworks and Corman Lisp do not support @code{foreign-funcall}. In
 these implementations, @code{:no-foreign-funcall} will be present in
-@code{*features*}.
+@code{*features*}. Note: in these Lisps you can still use
+@code{defcfun} interface.
 @end itemize
 
 @subheading Examples
@@ -2428,6 +2432,19 @@ CFFI> (foreign-funcall "strlen" :string "foo" :int)
 CFFI> (foreign-funcall "print_number" :int 123456)
 N: 123456
 NIL
+
+;; Or, equivalently:
+CFFI> (foreign-funcall "print_number" :int 123456 :void)
+N: 123456
+NIL
+@end lisp
+
+@lisp
+CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
+                       :string "So long and thanks for all the fish"
+                       :int 42 :int)
+So long and thanks for all the fish: 42.
+41
 @end lisp
 
 @subheading See Also
