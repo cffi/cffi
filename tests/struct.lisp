@@ -55,6 +55,24 @@
         (values tv-secs tv-usecs)))
   100 200)
 
+;;;# Structs with type translators
+
+(defcstruct struct-string
+  (s :string))
+
+(deftest struct.string.1
+    (with-foreign-object (ptr struct-string)
+      (with-foreign-slots ((s) ptr struct-string)
+        (setf s "So long and thanks for all the fish!")
+        s))
+  "So long and thanks for all the fish!")
+
+(deftest struct.string.2
+    (with-foreign-object (ptr struct-string)
+      (setf (foreign-slot-value ptr 'struct-string 's) "Cha")
+      (foreign-slot-value ptr 'struct-string 's))
+  "Cha")
+
 ;;;# Structure Alignment Tests
 ;;;
 ;;; See libtest.c and types.lisp for some comments about alignments.
