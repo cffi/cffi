@@ -651,7 +651,7 @@ CFFI> (foreign-type-size 'foo)
 @subheading Syntax
 @Macro{defcunion name &body doc-and-slots => name}
 
-doc-and-slots ::= [docstring] @{ (slot-name slot-type [count]) @}*
+doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count) @}*
 
 @subheading Arguments and Values
 @table @emph
@@ -669,8 +669,7 @@ The type specifier for the slot.
 
 @item count
 Used to declare an array of size @emph{count} inside the
-structure. @emph{(will probably be removed once we have an array
-type?) --luis}
+structure.
 @end table
 
 @subheading Description
@@ -682,7 +681,7 @@ for accessing a union's slots.
 @lisp
 (defcunion uint32-bytes
   (int-value :unsigned-int)
-  (bytes :unsigned-char 4))
+  (bytes :unsigned-char :count 4))
 @end lisp
 
 @subheading See Also

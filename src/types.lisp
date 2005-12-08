@@ -455,7 +455,7 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
         (max-size 0)
         (max-align 0))
     (dolist (slotdef slots)
-      (destructuring-bind (slotname type &optional (count 1)) slotdef
+      (destructuring-bind (slotname type &key (count 1)) slotdef
         (let* ((slot (make-struct-slot slotname 0 type count))
                (size (* count (foreign-type-size type)))
                (align (foreign-type-alignment (slot-type slot))))

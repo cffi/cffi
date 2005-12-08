@@ -29,7 +29,7 @@
 
 (defcunion uint32-bytes
   (int-value :unsigned-int)
-  (bytes :unsigned-char 4))
+  (bytes :unsigned-char :count 4))
 
 (defun int-to-bytes (n)
   "Convert N to a list of bytes using a union."
