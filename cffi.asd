@@ -54,10 +54,10 @@
      (:file "libraries")
      (:file "early-types")
      (:file "types")
+     (:file "late-types")
      (:file "enum")
      (:file "strings")
      (:file "functions")
-     (:file "foreign-vars")
-     (:file "objects")))))
+     (:file "foreign-vars")))))
 
 ;; vim: ft=lisp et

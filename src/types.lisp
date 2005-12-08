@@ -525,7 +525,6 @@ initialize the contents of the newly allocated memory."
      (initial-contents nil initial-contents-p) (count 1 count-p))
   )
 
-;; this will need renaming too
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
 The buffer has dynamic extent and may be stack allocated.  TYPE

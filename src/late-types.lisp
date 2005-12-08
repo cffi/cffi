@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; objects.lisp --- Foreign typed objects.
+;;; late-types.lisp --- Type definitions.
 ;;;
-;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -27,44 +27,6 @@
 
 (in-package #:cffi)
 
-#||
-(defstruct (foreign-object (:conc-name fobject-)
-                           (:print-object print-foreign-object))
-  pointer type (valid-p t))
-
-(defun print-foreign-object (fobject stream)
-  "Print a FOREIGN-OBJECT to STREAM unreadably."
-  (print-unreadable-object (fobject stream :type t :identity t)
-    (format stream "of type ~S" (name (fobject-type fobject)))))
-
-;; initial-element initial-contents
-(defun make-fobject (&key type address)
-  (let ((the-type (parse-type)))
-    (make-foreign-object
-     :pointer (or address (foreign-alloc (foreign-type-size the-type)))
-     :type the-type)))
-
-(defun fobject-free (fobject)
-  (if (fobject-valid-p fobject)
-      (progn (setf (fobject-valid-p fobject) nil)
-             (foreign-free (fobject-pointer fobject)))
-      (warn "Trying to free an invalid foreign object.")))
-
-(defun copy-fobject (fobject)
-  )
-
-(defun fobject-eq (fobject1 fobject2)
-  )
-
-(defun coerce-fobject (fobject new-type)
-  )
-
-(defmacro with-coerced-fobject ((var) fobject)
-  )
-
-(defun deref ()
-  )
-||#
 ;;;# Boolean Type
 
 (define-foreign-type :boolean (&optional (base-type :int))
