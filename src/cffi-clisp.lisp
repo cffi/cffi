@@ -3,6 +3,7 @@
 ;;; cffi-clisp.lisp --- CFFI-SYS implementation for CLISP.
 ;;;
 ;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;;           (C) 2005, Joerg Hoehle <hoehle@users.sourceforge.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -177,18 +178,12 @@ SIZE during BODY."
   "Dereference a pointer OFFSET bytes from PTR to an object of
 built-in foreign TYPE.  Returns the object as a foreign pointer
 or Lisp number."
-  (let ((type (convert-foreign-type type)))
-    (ffi:foreign-value
-     (ffi::%offset
-      (ffi:foreign-variable ptr type) offset type))))
+  (ffi:memory-as ptr (convert-foreign-type type) offset))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set a pointer OFFSET bytes from PTR to an object of built-in
 foreign TYPE to VALUE."
-  (let ((type (convert-foreign-type type)))
-    (setf (ffi:foreign-value
-            (ffi::%offset (ffi:foreign-variable ptr type) offset type))
-          value)))
+  (setf (ffi:memory-as ptr (convert-foreign-type type) offset) value))
 
 ;;;# Foreign Function Calling
 
