@@ -285,20 +285,10 @@ version 2.35 or newer is required.
 
 @strong{Tested platforms:} linux/x86, darwin/ppc.
 
-Versions prior to 19b are untested. For darwin/ppc, 19c is
-recommended.
+Versions prior to 19B are untested. For darwin/ppc, the 2005-12 (19C)
+snapshot or later is recommended.
 
-@subheading Known issues
-@itemize
-@item
-@emph{(darwin/ppc)} As of the 2005-11 snapshot, these tests fail:
-@code{FUNCALL.VARARGS.DOUBLE, STRUCT.ALIGNMENT.3, STRUCT.ALIGNMENT.4}.
-
-@item
-@emph{(darwin/ppc)} As of the 2005-11 snapshot fails:
-@code{CALLBACK.LONG-LONG} and @code{CALLBACK.UNSIGNED-LONG-LONG}.
-@end itemize
-
+@c @subheading Known issues
 
 @section ECL
 
