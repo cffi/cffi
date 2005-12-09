@@ -86,7 +86,7 @@
   42.0d0)
 
 (deftest foreign-globals.ref.pointer
-    (null-ptr-p *var-pointer*)
+    (null-pointer-p *var-pointer*)
   t)
 
 (deftest foreign-globals.ref.string
@@ -124,7 +124,7 @@
       (prog1
           *var-string*
         ;; free the string we just allocated
-        (foreign-free (mem-ref (get-var-ptr '*var-string*) :pointer))))
+        (foreign-free (mem-ref (get-var-pointer '*var-string*) :pointer))))
   "Ehxosxangxo")
 
 #-cffi/no-long-long
@@ -134,10 +134,10 @@
       *var-long-long*)
   -9223000000000005808)
 
-(deftest foreign-globals.get-var-ptr.1
-    (pointerp (get-var-ptr '*char-var*))
+(deftest foreign-globals.get-var-pointer.1
+    (pointerp (get-var-pointer '*char-var*))
   t)
 
-(deftest foreign-globals.get-var-ptr.2
-    (mem-ref (get-var-ptr '*char-var*) :char)
+(deftest foreign-globals.get-var-pointer.2
+    (mem-ref (get-var-pointer '*char-var*) :char)
   -127)

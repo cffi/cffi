@@ -66,7 +66,7 @@
           finally (return (values types ctypes fargs return-type)))))
 
 (defmacro foreign-funcall (name-or-pointer &rest args)
-  "Wrapper around %FOREIGN-FUNCALL(-PTR) that translates its arguments."
+  "Wrapper around %FOREIGN-FUNCALL(-POINTER) that translates its arguments."
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs))))
@@ -74,7 +74,7 @@
         ,syms ,fargs ,types ,rettype
         (,(if (stringp name-or-pointer)
               '%foreign-funcall
-              '%foreign-funcall-ptr)
+              '%foreign-funcall-pointer)
          ,name-or-pointer ,@(mapcan #'list ctypes syms)
          ,(canonicalize-foreign-type rettype))))))
 

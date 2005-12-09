@@ -32,12 +32,14 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
    #:%foreign-type-alignment
    #:%foreign-type-size
@@ -45,7 +47,7 @@
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -67,19 +69,27 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (fli:pointer-eq ptr1 ptr2))
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Return a null foreign pointer."
   fli:*null-pointer*)
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (fli:null-pointer-p ptr))
 
 ;; FLI:INCF-POINTER won't work on FLI pointers to :void so we
 ;; increment "manually."
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
   (fli:make-pointer :type :void :address (+ (fli:pointer-address ptr) offset)))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (fli:make-pointer :type :void :address address))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (fli:pointer-address ptr))
 
 ;;;# Allocation
 
@@ -91,7 +101,7 @@
   "Free a pointer PTR allocated by FOREIGN-ALLOC."
   (fli:free-foreign-object ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  Both the
 pointer in VAR and the memory it points to have dynamic extent and may
 be stack allocated if supported by the implementation."
@@ -135,13 +145,13 @@ be stack allocated if supported by the implementation."
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of type TYPE OFFSET bytes from PTR."
   (unless (zerop offset)
-    (setf ptr (inc-ptr ptr offset)))
+    (setf ptr (inc-pointer ptr offset)))
   (fli:dereference ptr :type (convert-foreign-type type)))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
-    (setf ptr (inc-ptr ptr offset)))
+    (setf ptr (inc-pointer ptr offset)))
   (setf (fli:dereference ptr :type (convert-foreign-type type)) value))
 
 ;;;# Foreign Type Operations
@@ -213,7 +223,7 @@ be stack allocated if supported by the implementation."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))

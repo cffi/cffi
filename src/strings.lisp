@@ -46,7 +46,7 @@ The foreign string will be null-terminated."
                                (null-terminated-p t))
   "Copy at most SIZE characters from PTR into a Lisp string.
 If PTR is a null pointer, returns nil."
-  (unless (null-ptr-p ptr)
+  (unless (null-pointer-p ptr)
     (with-output-to-string (s)
       (loop for i fixnum from 0 below size
             for code = (mem-ref ptr :unsigned-char i)
@@ -74,15 +74,15 @@ The string must be freed with FOREIGN-STRING-FREE."
     `(let* ((,str ,lisp-string)
             (,length (progn (check-type ,str string)
                             (1+ (length ,str)))))
-       (with-foreign-ptr (,var ,length)
+       (with-foreign-pointer (,var ,length)
          (lisp-string-to-foreign ,str ,var ,length)
          ,@body))))
 
-(defmacro with-foreign-ptr-as-string
+(defmacro with-foreign-pointer-as-string
     ((var size &optional size-var) &body body)
   "Like WITH-FOREIGN-PTR except VAR as a Lisp string is used as
 the return value of an implcit PROGN around BODY."
-  `(with-foreign-ptr (,var ,size ,size-var)
+  `(with-foreign-pointer (,var ,size ,size-var)
      (progn
        ,@body
        (foreign-string-to-lisp ,var))))

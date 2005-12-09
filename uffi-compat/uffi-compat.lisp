@@ -276,15 +276,7 @@ field-name"
 
 (defmacro pointer-address (ptr)
   "Return the address of a pointer."
-  #+sbcl `(sb-sys:sap-int ,ptr)
-  #+clisp `(ffi:foreign-address-unsigned ,ptr)
-  #+cmucl `(sys:sap-int ,ptr)
-  #+corman `(c-types:foreign-ptr-to-int ,ptr)
-  #+lispworks `(fli:pointer-address ,ptr)
-  #+openmcl `(ccl:%ptr-to-int ,ptr)
-  #+allegro ptr
-  #-(or sbcl allegro clisp cmucl corman lispworks openmcl allegro)
-  (error "POINTER-ADDRESS not implemented"))
+  `(cffi:pointer-address ,ptr))
 
 ;; Hmm, we need to translate chars, so translations are necessary here.
 (defun %deref-pointer (ptr type)
@@ -331,7 +323,7 @@ field-name"
 (defmacro make-pointer (address type)
   "Create a pointer to ADDRESS."
   (declare (ignore type))
-  `(cffi:inc-ptr (cffi:null-ptr) ,address))
+  `(cffi:make-pointer ,address))
 
 (defmacro null-pointer-p (ptr)
   "Return true if PTR is a null pointer."

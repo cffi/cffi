@@ -38,21 +38,23 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
-   #:%foreign-funcall-ptr
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -72,17 +74,25 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (sb-sys:sap= ptr1 ptr2))
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Construct and return a null pointer."
   (sb-sys:int-sap 0))
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (zerop (sb-sys:sap-int ptr)))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (sb-sys:sap+ ptr offset))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (sb-sys:int-sap address))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (sb-sys:sap-int ptr))
 
 ;;;# Allocation
 ;;;
@@ -99,7 +109,7 @@
   "Free a PTR allocated by FOREIGN-ALLOC."
   (free-alien (sap-alien ptr (* (unsigned 8)))))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -301,7 +311,7 @@ to open-code (SETF %MEM-REF) forms."
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-ptr (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr &rest args)
   "Funcall a pointer to a foreign function."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
@@ -340,7 +350,7 @@ to open-code (SETF %MEM-REF) forms."
 ;;; We return the address in the linkage-table (well, when there is one)
 ;;; in case someone uses this to save addresses somewhere and then dump
 ;;; an image. --luis
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (when (sb-sys:find-foreign-symbol-address name)

@@ -37,11 +37,13 @@
    #:mem-ref
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
-   #:with-foreign-ptr
-
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:with-foreign-pointer
+   #:make-pointer
+   #:pointer-address
+   
    ;; Shareable vectors.
    #:make-shareable-vector
    #:with-pointer-to-vector-data
@@ -52,7 +54,7 @@
    #:foreign-string-to-lisp
    #:lisp-string-to-foreign
    #:with-foreign-string
-   #:with-foreign-ptr-as-string
+   #:with-foreign-pointer-as-string
 
    ;; Foreign function operations.
    #:defcfun
@@ -74,7 +76,7 @@
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
-   #:foreign-slot-address
+   #:foreign-slot-pointer
    #:foreign-slot-value
    #:foreign-type-alignment
    #:foreign-type-size
@@ -83,6 +85,6 @@
 
    ;; Foreign globals.
    #:defcvar
-   #:get-var-ptr
-   #:foreign-symbol-ptr
+   #:get-var-pointer
+   #:foreign-symbol-pointer
    ))

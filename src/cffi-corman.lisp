@@ -32,12 +32,14 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
    #:%foreign-type-alignment
    #:%foreign-type-size
@@ -45,7 +47,7 @@
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -66,20 +68,28 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (cpointer= ptr1 ptr2))
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Return a null pointer."
   (create-foreign-ptr))
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (cpointer-null ptr))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (let ((new-ptr (create-foreign-ptr)))
     (setf (cpointer-value new-ptr)
           (+ (cpointer-value ptr) offset))
     new-ptr))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (int-to-foreign-ptr address))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (foreign-ptr-to-int ptr))
 
 ;;;# Allocation
 ;;;
@@ -96,7 +106,7 @@
   "Free a PTR allocated by FOREIGN-ALLOC."
   (free ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -149,7 +159,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
   (unless (eql offset 0)
-    (setq ptr (inc-ptr ptr offset)))
+    (setq ptr (inc-pointer ptr offset)))
   (ecase type
     (:char             (cref (:char *) ptr 0))
     (:unsigned-char    (cref (:unsigned-char *) ptr 0))
@@ -171,7 +181,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (eql offset 0)
-    (setq ptr (inc-ptr ptr offset)))
+    (setq ptr (inc-pointer ptr offset)))
   (ecase type
     (:char             (setf (cref (:char *) ptr 0) value))
     (:unsigned-char    (setf (cref (:unsigned-char *) ptr 0) value))
@@ -272,7 +282,7 @@ the DLL's name (a string), else returns NIL."
   :entry-name "GetProcAddress"
   :linkage-type :pascal)
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))

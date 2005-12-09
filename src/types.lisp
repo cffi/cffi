@@ -54,14 +54,14 @@
 we don't return its 'value' but a pointer to it, which is PTR itself."
   (let ((parsed-type (parse-type type)))
     (if (aggregatep parsed-type)
-        (inc-ptr ptr offset)
+        (inc-pointer ptr offset)
         (%mem-ref ptr (canonicalize parsed-type) offset))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
   (if (constantp type)
       (if (aggregatep (parse-type (eval type)))
-          `(inc-ptr ,ptr ,offset)
+          `(inc-pointer ,ptr ,offset)
           `(%mem-ref ,ptr ,(canonicalize-foreign-type (eval type)) ,offset))
       form))
 
@@ -164,11 +164,11 @@ to open-code (SETF MEM-REF) forms."
 
 ;;;## Foreign Structure Slots
 
-(defgeneric foreign-struct-slot-address (ptr slot)
+(defgeneric foreign-struct-slot-pointer (ptr slot)
   (:documentation
    "Get the address of SLOT relative to PTR."))
 
-(defgeneric foreign-struct-slot-address-form (ptr slot)
+(defgeneric foreign-struct-slot-pointer-form (ptr slot)
   (:documentation
    "Return a form to get the address of SLOT in PTR."))
 
@@ -194,16 +194,16 @@ to open-code (SETF MEM-REF) forms."
    (type   :initarg :type   :accessor slot-type))
   (:documentation "Base class for simple and aggregate slots."))
 
-(defmethod foreign-struct-slot-address (ptr (slot foreign-struct-slot))
+(defmethod foreign-struct-slot-pointer (ptr (slot foreign-struct-slot))
   "Return the address of SLOT relative to PTR."
-  (inc-ptr ptr (slot-offset slot)))
+  (inc-pointer ptr (slot-offset slot)))
 
-(defmethod foreign-struct-slot-address-form (ptr (slot foreign-struct-slot))
+(defmethod foreign-struct-slot-pointer-form (ptr (slot foreign-struct-slot))
   "Return a form to get the address of SLOT relative to PTR."
   (let ((offset (slot-offset slot)))
     (if (zerop offset)
         ptr
-        `(inc-ptr ,ptr ,offset))))
+        `(inc-pointer ,ptr ,offset))))
 
 ;;;### Simple Slots
 
@@ -245,11 +245,11 @@ to open-code (SETF MEM-REF) forms."
 ;;; slot values in nested structures though.
 (defmethod foreign-struct-slot-value (ptr (slot aggregate-struct-slot))
   "Return a pointer to SLOT relative to PTR."
-  (foreign-struct-slot-address ptr slot))
+  (foreign-struct-slot-pointer ptr slot))
 
 (defmethod foreign-struct-slot-value-form (ptr (slot aggregate-struct-slot))
   "Return a form to get the value of SLOT relative to PTR."
-  (foreign-struct-slot-address-form ptr slot))
+  (foreign-struct-slot-pointer-form ptr slot))
 
 ;;; This is definitely an error though.  Eventually, we could define a
 ;;; new type of type translator that can convert certain aggregate
@@ -367,9 +367,9 @@ to open-code (SETF MEM-REF) forms."
         (error "Undefined slot ~A in foreign type ~A." slot-name type))
       info)))
 
-(defun foreign-slot-address (ptr type slot-name)
+(defun foreign-slot-pointer (ptr type slot-name)
   "Return the address of SLOT-NAME in the structure at PTR."
-  (foreign-struct-slot-address ptr (get-slot-info type slot-name)))
+  (foreign-struct-slot-pointer ptr (get-slot-info type slot-name)))
 
 ;; This is the slow interface to getting the fields of foreign slots.
 ;; Eventually there will be a compiler macro that optimizes this when
@@ -510,10 +510,7 @@ initialize the contents of the newly allocated memory."
         (let ((type-obj (parse-type type)))
           (dotimes (i contents-length)
             (setf (mem-aref ptr type i)
-                  (translate-to-c (elt initial-contents i) type-obj))))
-        ;;(let ((remaining (- count contents-length)))
-        ;; <insert mem-fill here>
-        )
+                  (translate-to-c (elt initial-contents i) type-obj)))))
       ptr)))
 
 ;;; Stuff we could optimize here:
@@ -532,10 +529,17 @@ is evaluated at macroexpansion time but COUNT is evaluated at run
 time."
   ;; If COUNT is constant, multiply it by the size now.
   (if (constantp count)
-      `(with-foreign-ptr (,var ,(* count (foreign-type-size type)))
+      `(with-foreign-pointer (,var ,(* count (foreign-type-size type)))
          ,@body)
-      `(with-foreign-ptr (,var (* ,count ,(foreign-type-size type)))
+      `(with-foreign-pointer (,var (* ,count ,(foreign-type-size type)))
          ,@body)))
+
+(defmacro with-foreign-objects (bindings &rest body)
+  (if bindings
+      `(with-foreign-object ,(car bindings)
+         (with-foreign-objects ,(cdr bindings)
+           ,@body))
+      `(progn ,@body)))
 
 ;;;# Type Translators
 ;;;

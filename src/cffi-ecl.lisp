@@ -34,10 +34,12 @@
    #:pointer-eq
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:with-foreign-pointer
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%mem-ref
    #:%foreign-funcall
    #:%foreign-type-alignment
@@ -46,7 +48,7 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:%defcallback
-   #:foreign-symbol-ptr))
+   #:foreign-symbol-pointer))
 
 (in-package #:cffi-sys)
 
@@ -66,7 +68,7 @@
   "Free a pointer PTR allocated by FOREIGN-ALLOC."
   (si:free-foreign-data ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -81,15 +83,15 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Misc. Pointer Operations
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Construct and return a null pointer."
   (si:allocate-foreign-data :void 0))
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (si:null-pointer-p ptr))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
   (ffi:make-pointer (+ (ffi:pointer-address ptr) offset) :void))
 
@@ -100,6 +102,14 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
   (= (ffi:pointer-address ptr1) (ffi:pointer-address ptr2)))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (ffi:make-pointer address :void))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (ffi:pointer-address ptr))
 
 ;;;# Dereferencing
 
@@ -203,7 +213,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))

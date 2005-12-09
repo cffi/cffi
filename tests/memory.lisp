@@ -114,25 +114,25 @@
 ;; make sure the lisp doesn't convert NULL to NIL
 (deftest deref.pointer.null
     (with-foreign-object (p :pointer)
-      (setf (mem-ref p :pointer) (null-ptr))
-      (null-ptr-p (mem-ref p :pointer)))
+      (setf (mem-ref p :pointer) (null-pointer))
+      (null-pointer-p (mem-ref p :pointer)))
   t)
 
 ;; regression test. lisp-string-to-foreign should handle empty strings
 
 (deftest lisp-string-to-foreign.empty
-    (with-foreign-ptr (str 2)
+    (with-foreign-pointer (str 2)
       (setf (mem-ref str :unsigned-char) 42)
       (lisp-string-to-foreign "" str 1)
       (mem-ref str :unsigned-char))
   0)
 
-;; regression test. with-foreign-ptr shouldn't evaluate
+;; regression test. with-foreign-pointer shouldn't evaluate
 ;; the size argument twice.
 
-(deftest with-foreign-ptr.evalx2
+(deftest with-foreign-pointer.evalx2
     (let ((count 0))
-      (with-foreign-ptr (x (incf count) size-var)
+      (with-foreign-pointer (x (incf count) size-var)
         (values count size-var)))
   1 1)
 
@@ -140,7 +140,7 @@
 
 (deftest mem-aref.eval-type-x2
     (let ((count 0))
-      (with-foreign-ptr (p 1)
+      (with-foreign-pointer (p 1)
         (setf (mem-aref p (progn (incf count) :char) 0) 127))
       count)
   1)
@@ -188,4 +188,15 @@
       (loop for i below 3
             collect (foreign-slot-value (mem-aref arr 'some-struct i)
                                         'some-struct 'x)))
-  (112 112 112)) 
+  (112 112 112))
+
+;; pointer operations
+
+(deftest pointer.1
+    (pointer-address (make-pointer 42))
+  42)
+
+;; I suppose this test is not very good. --luis
+(deftest pointer.2
+    (pointer-address (null-pointer))
+  0)

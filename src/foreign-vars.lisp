@@ -49,17 +49,17 @@
            (subseq sn 1 (1- (length sn)))
            sn)))))
 
-(defun get-var-ptr (symbol)
+(defun get-var-pointer (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
-  (foreign-symbol-ptr (get symbol 'foreign-var-name) :data))
+  (foreign-symbol-pointer (get symbol 'foreign-var-name) :data))
 
 ;;; a) Should this be exported?
 ;;; b) should we define a more specific condition?
 ;;; --luis
-(defun foreign-symbol-ptr-or-lose (foreign-name)
+(defun foreign-symbol-pointer-or-lose (foreign-name)
   "Like foreign-symbol-ptr but throws an error instead of
 returning nil when foreign-name is not found."
-  (or (foreign-symbol-ptr foreign-name :data)
+  (or (foreign-symbol-pointer foreign-name :data)
       (error "Trying access undefined foreign variable ~S." foreign-name)))
   
 (defmacro defcvar (name type &key read-only)
@@ -77,9 +77,9 @@ returning nil when foreign-name is not found."
        (defun ,fn ()
          ,(if (aggregatep ptype)
               ;; no dereference for aggregate types.
-              `(foreign-symbol-ptr-or-lose ,foreign-name) 
+              `(foreign-symbol-pointer-or-lose ,foreign-name) 
               `(with-object-translated
-                   (var (mem-ref (foreign-symbol-ptr-or-lose ,foreign-name)
+                   (var (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
                                  ',type)
                         ,type :from-c)
                  var)))
@@ -91,7 +91,7 @@ returning nil when foreign-name is not found."
                                lisp-name))
               `(with-object-translated
                    (c-value value ,type :to-c)
-                 (setf (mem-ref (foreign-symbol-ptr-or-lose ,foreign-name)
+                 (setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
                                 ',type)
                        c-value)
                  value)))

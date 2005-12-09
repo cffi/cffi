@@ -98,7 +98,7 @@
   (+ a b))
 
 (defcallback sum-pointer :pointer ((ptr :pointer) (offset :int))
-  (inc-ptr ptr offset))
+  (inc-pointer ptr offset))
 
 (defcallback lisp-strcat :string ((a :string) (b :string))
   (concatenate 'string a b))

@@ -37,21 +37,23 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
-   #:%foreign-funcall-ptr
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -68,22 +70,32 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (sys:sap= ptr1 ptr2))
 
-(declaim (inline null-ptr))
-(defun null-ptr ()
+(declaim (inline null-pointer))
+(defun null-pointer ()
   "Construct and return a null pointer."
   (sys:int-sap 0))
 
-(declaim (inline null-ptr-p))
-(defun null-ptr-p (ptr)
+(declaim (inline null-pointer-p))
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (zerop (sys:sap-int ptr)))
 
-(declaim (inline inc-ptr))
-(defun inc-ptr (ptr offset)
+(declaim (inline inc-pointer))
+(defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (sys:sap+ ptr offset))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(declaim (inline make-pointer)) 
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (sys:int-sap address))
+
+(declaim (inline pointer-address))
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (sys:sap-int ptr))
+
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -303,7 +315,7 @@ to open-code (SETF %MEM-REF) forms."
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-ptr (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr &rest args)
   "Funcall a pointer to a foreign function."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
@@ -332,7 +344,7 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (prog1 (ignore-errors (sys:foreign-symbol-address name :flavor kind))))

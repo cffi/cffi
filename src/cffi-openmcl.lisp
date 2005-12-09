@@ -30,23 +30,25 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:ccl #:cffi-utils)
   (:export
-   #:pointerp
+   #:pointerp  ; ccl:pointerp
    #:pointer-eq
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:with-foreign-pointer
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%mem-ref
    #:%foreign-funcall
-   #:%foreign-funcall-ptr
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:%defcallback))
  
 (in-package #:cffi-sys)
@@ -64,10 +66,6 @@
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common
 ;;; usage when the memory has dynamic extent.
 
-(defun pointer-eq (ptr1 ptr2)
-  "Return true if PTR1 and PTR2 point to the same address."
-  (%ptr-eql ptr1 ptr2))
-
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
   (ccl::malloc size))
@@ -77,7 +75,7 @@
   ;; TODO: Should we make this a dead macptr?
   (ccl::free ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -90,17 +88,29 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Misc. Pointer Operations
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Construct and return a null pointer."
-  (%null-ptr))
+  (ccl:%null-ptr))
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
-  (%null-ptr-p ptr))
+  (ccl:%null-ptr-p ptr))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
   (ccl:%inc-ptr ptr offset))
+
+(defun pointer-eq (ptr1 ptr2)
+  "Return true if PTR1 and PTR2 point to the same address."
+  (ccl:%ptr-eql ptr1 ptr2))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (ccl:%int-to-ptr address))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (ccl:%ptr-to-int ptr))
 
 ;;;# Shareable Vectors
 ;;;
@@ -292,7 +302,7 @@ to open-code (SETF %MEM-REF) forms."
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
 
-(defmacro %foreign-funcall-ptr (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr &rest args)
   `(ff-call ,ptr ,@(convert-foreign-funcall-types args)))
 
 ;;;# Callbacks
@@ -315,7 +325,7 @@ to open-code (SETF %MEM-REF) forms."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))

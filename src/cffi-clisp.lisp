@@ -39,19 +39,21 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
-   #:%foreign-funcall-ptr
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:%defcallback))
 
 (in-package #:cffi-sys)
@@ -119,18 +121,26 @@
   (eql (ffi:foreign-address-unsigned ptr1)
        (ffi:foreign-address-unsigned ptr2)))
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Return a null foreign pointer."
   (ffi:unsigned-foreign-address 0))
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null foreign pointer."
   (or (null ptr) (zerop (ffi:foreign-address-unsigned ptr))))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (ffi:unsigned-foreign-address
    (+ offset (if (null ptr) 0 (ffi:foreign-address-unsigned ptr)))))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (ffi:unsigned-foreign-address address))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (ffi:foreign-address-unsigned ptr))
 
 ;;;# Foreign Memory Allocation
 
@@ -145,7 +155,7 @@ is signalled if the memory cannot be allocated."
 are undefined if PTR is used after being freed."
   (ffi:foreign-free ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to a pointer to SIZE bytes of foreign-addressable
 memory during BODY.  Both PTR and the memory block pointed to
 have dynamic extent and may be stack allocated if supported by
@@ -208,7 +218,7 @@ the function call."
           nil (ffi:parse-c-type ',ctype)))
         ,@fargs))))
 
-(defmacro %foreign-funcall-ptr (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr &rest args)
   "Similar to %foreign-funcall but takes a pointer instead of a string."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
@@ -244,7 +254,7 @@ the function call."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (ecase kind

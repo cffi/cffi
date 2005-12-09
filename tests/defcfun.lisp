@@ -99,7 +99,7 @@
   (src :string))
 
 (deftest defcfun.string.2
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (strcpy s "Hello")
       (strcat s ", world!"))

@@ -109,10 +109,10 @@ Foreign Types
 * define-type-translator::      Defines a type translation.
 * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
-* explain-slot-address::        <unimplemented>
+* explain-foreign-slot-value::  <unimplemented>
 * foreign-enum-keyword::        Finds a keyword in an enum type.
 * foreign-enum-value::          Finds a value in an enum type.
-* foreign-slot-address::        Returns a pointer to a slot in a foreign struct.
+* foreign-slot-pointer::        Returns a pointer to a slot in a foreign struct.
 * foreign-slot-value::          Returns the value of a slot in a foreign struct.
 * foreign-type-alignment::      Returns the alignment of a foreign type.
 * foreign-type-size::           Returns the size of a foreign type.
@@ -123,15 +123,17 @@ Pointers
 
 * foreign-free::                Deallocates memory.
 * foreign-alloc::               Allocates memory.
-* foreign-symbol-ptr::          Returns a pointer to a foreign symbol.
+* foreign-symbol-pointer::      Returns a pointer to a foreign symbol.
+* inc-pointer::                 Increments the address held by a pointer.
+* make-pointer::                Returns a pointer to a given address.
 * mem-aref::                    Accesses the value of an index in an array.
 * mem-ref::                     Dereferences a pointer.
+* null-pointer::                Returns a NULL pointer.
+* null-pointer-p::              Tests a pointer for NULL value.
 * pointerp::                    Tests whether an object is a pointer or not.
+* pointer-address::             Returns the address pointed to by a pointer.
 * pointer-eq::                  Tests if two pointers point to the same address.
-* null-ptr::                    Returns a NULL pointer.
-* null-ptr-p::                  Tests a pointer for NULL value.
-* inc-ptr::                     Increments the address held by a pointer.
-* with-foreign-ptr::            Allocates memory with dynamic extent.
+* with-foreign-pointer::        Allocates memory with dynamic extent.
 
 Strings
 
@@ -140,12 +142,12 @@ Strings
 * foreign-string-to-lisp::      Converts a foreign string to a Lisp string.
 * lisp-string-to-foreign::      Copies a Lisp string into a foreign string.
 * with-foreign-string::         Allocates a foreign string with dynamic extent.
-* with-foreign-ptr-as-string::  Similar to CL's with-output-to-string.
+* with-foreign-pointer-as-string::  Similar to CL's with-output-to-string.
 
 Variables
 
 * defcvar::                     Defines a C global variable.
-* get-var-ptr::                 Returns a pointer to a defined global variable.
+* get-var-pointer::             Returns a pointer to a defined global variable.
 
 Functions
 
@@ -402,10 +404,10 @@ Dictionary
 * define-type-translator::      
 * define-type-spec-parser::     
 * define-foreign-type::         
-* explain-slot-address::        
+* explain-foreign-slot-value::        
 * foreign-enum-keyword::        
 * foreign-enum-value::          
-* foreign-slot-address::        
+* foreign-slot-pointer::        
 * foreign-slot-value::          
 * foreign-type-alignment::      
 * foreign-type-size::           
@@ -636,7 +638,7 @@ CFFI> (foreign-type-size 'foo)
 @end lisp
 
 @subheading See Also
-@ref{foreign-slot-address} @*
+@ref{foreign-slot-pointer} @*
 @ref{foreign-slot-value} @*
 @ref{with-foreign-slots}
 
@@ -685,7 +687,7 @@ for accessing a union's slots.
 @end lisp
 
 @subheading See Also
-@ref{foreign-slot-address} @*
+@ref{foreign-slot-pointer} @*
 @ref{foreign-slot-value}
 
 
@@ -965,8 +967,8 @@ yet.
 @c ===================================================================
 @c EXPLAIN-FOREIGN-SLOT-VALUE
 
-@node explain-slot-address
-@heading explain-slot-address
+@node explain-foreign-slot-value
+@heading explain-foreign-slot-value
 @subheading Syntax
 @Macro{explain-foreign-slot-value ptr type &rest slot-names}
 
@@ -984,8 +986,8 @@ yet.
 
 @subheading Description
 This macro translates the slot access that would occur by calling
-@code{FOREIGN-SLOT-VALUE} with the same arguments into an equivalent
-expression in C and prints it to @code{*STANDARD-OUTPUT*}.
+@code{foreign-slot-value} with the same arguments into an equivalent
+expression in C and prints it to @code{*standard-output*}.
 
 @emph{Note: this is not implemented yet.}
 
@@ -1089,12 +1091,12 @@ CFFI> (foreign-enum-keyword 'boolean :yes)
 
 
 @c ===================================================================
-@c FOREIGN-SLOT-ADDRESS
+@c FOREIGN-SLOT-POINTER
 
-@node foreign-slot-address
-@heading foreign-slot-address
+@node foreign-slot-pointer
+@heading foreign-slot-pointer
 @subheading Syntax
-@Function{foreign-slot-address ptr type &rest slot-names => pointer}
+@Function{foreign-slot-pointer ptr type &rest slot-names => pointer}
 
 @subheading Arguments and Values
 @table @emph
@@ -1128,7 +1130,7 @@ For aggregate slots, this is the same value returned by
   (y :int))
 
 CFFI> (with-foreign-object (ptr point)
-        (foreign-slot-address ptr 'point 'x))
+        (foreign-slot-pointer ptr 'point 'x))
 #<FOREIGN-ADDRESS #xBFFF6E60>
 ;; Note: the exact pointer representation varies from lisp to lisp.
 @end lisp
@@ -1196,7 +1198,7 @@ CFFI> (with-foreign-object (ptr point)
 
 @subheading See Also
 @ref{defcstruct} @*
-@ref{foreign-slot-address} @*
+@ref{foreign-slot-pointer} @*
 @ref{with-foreign-slots}
 
 
@@ -1356,7 +1358,7 @@ each var in @emph{vars} to reference foreign slots in @emph{ptr} of
 
 CFFI> (with-foreign-object (time :int)
         (setf (mem-ref time :int)
-              (foreign-funcall "time" :pointer (null-ptr) :int))
+              (foreign-funcall "time" :pointer (null-pointer) :int))
         (foreign-funcall "gmtime" :pointer time tm))
 #<A Mac Pointer #x102A30>
 CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
@@ -1391,15 +1393,17 @@ Dictionary
 
 * foreign-free::                
 * foreign-alloc::               
-* foreign-symbol-ptr::          
+* foreign-symbol-pointer::      
+* inc-pointer::                 
+* make-pointer::                
 * mem-aref::                    
 * mem-ref::                     
+* null-pointer::                
+* null-pointer-p::              
 * pointerp::                    
+* pointer-address::             
 * pointer-eq::                  
-* null-ptr::                    
-* null-ptr-p::                  
-* inc-ptr::                     
-* with-foreign-ptr::            
+* with-foreign-pointer::        
 @end menu
 
 @node Basic Pointer Operations
@@ -1443,7 +1447,7 @@ NIL
 
 @subheading See Also
 @ref{foreign-alloc} @*
-@ref{with-foreign-ptr}
+@ref{with-foreign-pointer}
 
 
 
@@ -1526,18 +1530,18 @@ CFFI> (foreign-alloc :string :initial-element "foo")
 
 @subheading See Also
 @ref{foreign-free} @*
-@ref{with-foreign-ptr}
+@ref{with-foreign-pointer}
 
 
 
 
 @c ===================================================================
-@c FOREIGN-SYMBOL-PTR
+@c FOREIGN-SYMBOL-POINTER
 
-@node foreign-symbol-ptr
-@heading foreign-symbol-ptr
+@node foreign-symbol-pointer
+@heading foreign-symbol-pointer
 @subheading Syntax
-@Function{foreign-symbol-ptr foreign-name kind => ptr}
+@Function{foreign-symbol-pointer foreign-name kind => ptr}
 
 @subheading Arguments and Values
 @table @emph
@@ -1552,15 +1556,15 @@ A foreign pointer, or @code{nil}.
 @end table
 
 @subheading Description
-The @code{foreign-symbol-ptr} will return a foreign pointer
-corresponding to the foreign symbol denoted by the string
+The function @code{foreign-symbol-pointer} will return a foreign
+pointer corresponding to the foreign symbol denoted by the string
 @emph{foreign-name}. The @emph{kind} argument specifies whether
 @emph{foreign-name} is a function or a variable and should be
 respectively @code{:code} or @code{:data}. If a foreign symbol named
 @emph{foreign-name} doesn't exist, @code{nil} is returned.
 
 ABI name manglings will be performed on @emph{foreign-name} by
-@code{foreign-symbol-ptr} if necessary. (eg: adding a leading
+@code{foreign-symbol-pointer} if necessary. (eg: adding a leading
 underscore on darwin/ppc)
 
 @strong{Warning:} the consequences of misspecifying the @emph{kind}
@@ -1569,18 +1573,106 @@ silently ignore this, while others might return erroneous values.
 
 @subheading Examples
 @lisp
-CFFI> (foreign-symbol-ptr "errno" :data)
+CFFI> (foreign-symbol-pointer "errno" :data)
 #<A Mac Pointer #xA0008130>
-CFFI> (foreign-symbol-ptr "strerror" :code)
+CFFI> (foreign-symbol-pointer "strerror" :code)
 #<A Mac Pointer #x9002D0F8>
 CFFI> (foreign-funcall * :int (mem-ref ** :int) :string)
 "No such file or directory"
 
-CFFI> (foreign-symbol-ptr "unexistant symbol" :data)
+CFFI> (foreign-symbol-pointer "unexistant symbol" :data)
 NIL
 @end lisp
 
-@c @subheading See Also
+@subheading See Also
+@ref{defcvar}
+
+
+
+
+@c ===================================================================
+@c INC-POINTER
+
+@node inc-pointer
+@heading inc-pointer
+@subheading Syntax
+@Function{inc-pointer ptr offset => new-pointer}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr, new-pointer
+A foreign pointer.
+
+@item offset
+An integer.
+@end table
+
+@subheading Description
+The function @code{inc-pointer} will return a @emph{new-pointer} pointing
+@emph{offset} bytes past @emph{ptr}.
+
+@subheading Examples
+@lisp
+CFFI> (foreign-string-alloc "Common Lisp")
+#<A Mac Pointer #x102EA0>
+CFFI> (inc-pointer * 7)
+#<A Mac Pointer #x102EA7>
+CFFI> (foreign-string-to-lisp *)
+"Lisp"
+@end lisp
+
+@subheading See Also
+@ref{make-pointer} @*
+@ref{pointerp} @*
+@ref{null-pointer} @*
+@ref{null-pointer-p}
+
+
+
+
+@c ===================================================================
+@c MAKE-POINTER
+
+@node make-pointer
+@heading make-pointer
+@subheading Syntax
+@Function{make-pointer address => ptr}
+
+@subheading Arguments and Values
+@table @emph
+@item address
+An integer.
+
+@item ptr
+A foreign pointer.
+@end table
+
+@subheading Description
+The function @code{make-pointer} will return a foreign pointer
+pointing to @emph{address}.
+
+@subheading Examples
+@lisp
+CFFI> (make-pointer 42)
+#<FOREIGN-ADDRESS #x0000002A>
+CFFI> (pointerp *)
+T
+CFFI> (pointer-adress **)
+42
+CFFI> (inc-pointer *** -42)
+#<FOREIGN-ADDRESS #x00000000>
+CFFI> (null-pointer-p *)
+T
+@end lisp
+
+@subheading See Also
+@ref{inc-pointer} @*
+@ref{null-pointer} @*
+@ref{null-pointer-p} @*
+@ref{pointerp} @*
+@ref{pointer-address} @*
+@ref{pointer-eq} @*
+@ref{mem-ref}
 
 
 
@@ -1636,6 +1728,7 @@ CFFI> (with-foreign-object (array :int 10)
         (loop for i below 10 collect (mem-aref array :int i)))
 (22 7 22 52 69 1 46 93 90 65)
 @end lisp
+
 @subheading See Also
 @ref{mem-ref}
 
@@ -1691,6 +1784,81 @@ CFFI> (mem-ref ptr-to-int :int)
 
 
 @c ===================================================================
+@c NULL-POINTER
+
+@node null-pointer
+@heading null-pointer
+@subheading Syntax
+@Function{null-pointer => pointer}
+
+@subheading Arguments and Values
+@table @emph
+@item pointer
+A @code{NULL} pointer.
+@end table
+
+@subheading Description
+The function @code{null-pointer} returns a null pointer.
+
+@subheading Examples
+@lisp
+CFFI> (null-pointer)
+#<A Null Mac Pointer>
+CFFI> (pointerp *)
+T
+@end lisp
+
+@subheading See Also
+@ref{null-pointer-p} @*
+@ref{make-pointer}
+
+
+
+
+@c ===================================================================
+@c NULL-POINTER-P
+
+@node null-pointer-p
+@heading null-pointer-p
+@subheading Syntax
+@Function{null-pointer-p ptr => boolean}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A foreign pointer that may be a null pointer.
+
+@item boolean
+@code{T} or @code{NIL}.
+@end table
+
+@subheading Description
+The function @code{null-pointer-p} returns true if @emph{ptr} is a null
+pointer and false otherwise.
+
+@subheading Examples
+@lisp
+CFFI> (null-pointer-p (null-pointer))
+T
+
+(defun contains-str-p (big little)
+  (not (null-pointer-p
+        (foreign-funcall "strstr" :string big :string little :pointer))))
+
+CFFI> (contains-str-p "Popcorns" "corn")
+T
+CFFI> (contains-str-p "Popcorns" "salt")
+NIL
+@end lisp
+
+@subheading See Also
+@ref{null-pointer} @*
+@ref{pointerp}
+
+
+
+
+@c ===================================================================
 @c POINTERP
 
 @node pointerp
@@ -1726,7 +1894,48 @@ NIL
 @end lisp
 
 @subheading See Also
-@ref{null-ptr-p}
+@ref{make-pointer}
+@ref{null-pointer-p}
+
+
+
+@c ===================================================================
+@c POINTER-ADDRESS
+
+@node pointer-address
+@heading pointer-address
+@subheading Syntax
+@Function{pointer-address ptr => address}
+
+@subheading Arguments and Values
+@table @emph
+@item ptr
+A foreign pointer.
+
+@item address
+An integer.
+@end table
+
+@subheading Description
+The function @code{pointer-address} will return the @emph{address} of
+a foreign pointer @emph{ptr}.
+
+@subheading Examples
+@lisp
+CFFI> (pointer-address (null-pointer))
+0
+CFFI> (pointer-address (make-pointer 123))
+123
+@end lisp
+
+@subheading See Also
+@ref{make-pointer} @*
+@ref{inc-pointer} @*
+@ref{null-pointer} @*
+@ref{null-pointer-p} @*
+@ref{pointerp} @*
+@ref{pointer-eq} @*
+@ref{mem-ref}
 
 
 
@@ -1765,137 +1974,25 @@ portability, you should use @code{POINTER-EQ}.
 This is an example using SBCL, see the implementation-specific notes
 above.
 @lisp
-CFFI> (eql (null-ptr) (null-ptr))
+CFFI> (eql (null-pointer) (null-pointer))
 NIL
-CFFI> (pointer-eq (null-ptr) (null-ptr))
+CFFI> (pointer-eq (null-pointer) (null-pointer))
 T
 @end lisp
 
 @subheading See Also
-@ref{inc-ptr}
+@ref{inc-pointer}
 
 
 
 
 @c ===================================================================
-@c NULL-PTR
+@c WITH-FOREIGN-POINTER
 
-@node null-ptr
-@heading null-ptr
+@node with-foreign-pointer
+@heading with-foreign-pointer
 @subheading Syntax
-@Function{null-ptr => pointer}
-
-@subheading Arguments and Values
-@table @emph
-@item pointer
-A @code{NULL} pointer.
-@end table
-
-@subheading Description
-The function @code{null-ptr} returns a null pointer.
-
-@subheading Examples
-@lisp
-CFFI> (null-ptr)
-#<A Null Mac Pointer>
-CFFI> (pointerp *)
-T
-@end lisp
-
-@subheading See Also
-@ref{null-ptr-p}
-
-
-
-
-@c ===================================================================
-@c NULL-PTR-P
-
-@node null-ptr-p
-@heading null-ptr-p
-@subheading Syntax
-@Function{null-ptr-p ptr => boolean}
-
-@subheading Arguments and Values
-@table @emph
-@item ptr
-A foreign pointer that may be a null pointer.
-
-@item boolean
-@code{T} or @code{NIL}.
-@end table
-
-@subheading Description
-The function @code{null-ptr-p} returns true if @emph{ptr} is a null
-pointer and false otherwise.
-
-@subheading Examples
-@lisp
-CFFI> (null-ptr-p (null-ptr))
-T
-
-(defun contains-str-p (big little)
-  (not (null-ptr-p
-        (foreign-funcall "strstr" :string big :string little :pointer))))
-
-CFFI> (contains-str-p "Popcorns" "corn")
-T
-CFFI> (contains-str-p "Popcorns" "salt")
-NIL
-@end lisp
-
-@subheading See Also
-@ref{null-ptr}
-
-
-
-
-@c ===================================================================
-@c INC-PTR
-
-@node inc-ptr
-@heading inc-ptr
-@subheading Syntax
-@Function{inc-ptr ptr offset => new-pointer}
-
-@subheading Arguments and Values
-@table @emph
-@item ptr, new-pointer
-A foreign pointer.
-
-@item offset
-An integer.
-@end table
-
-@subheading Description
-The function @code{inc-ptr} will return a @emph{new-pointer} pointing
-@emph{offset} bytes past @emph{ptr}.
-
-@subheading Examples
-@lisp
-CFFI> (foreign-string-alloc "Common Lisp")
-#<A Mac Pointer #x102EA0>
-CFFI> (inc-ptr * 7)
-#<A Mac Pointer #x102EA7>
-CFFI> (foreign-string-to-lisp *)
-"Lisp"
-@end lisp
-
-@subheading See Also
-@ref{pointerp} @*
-@ref{null-ptr} @*
-@ref{null-ptr-p}
-
-
-
-
-@c ===================================================================
-@c WITH-FOREIGN-PTR
-
-@node with-foreign-ptr
-@heading with-foreign-ptr
-@subheading Syntax
-@Macro{with-foreign-ptr (var size &optional size-var) &body body}
+@Macro{with-foreign-pointer (var size &optional size-var) &body body}
 
 @subheading Arguments and Values
 @table @emph
@@ -1910,7 +2007,7 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-ptr} macro, binds @emph{var} to @emph{size}
+The @code{with-foreign-pointer} macro, binds @emph{var} to @emph{size}
 bytes of foreign memory during @emph{body}. The pointer in @emph{var}
 is invalid beyond the dynamic extend of @emph{body} and may be
 stack-allocated if supported by the implementation.
@@ -1920,7 +2017,7 @@ If @emph{size-var} is supplied, it will be bound to @emph{size} during
 
 @subheading Examples
 @lisp
-CFFI> (with-foreign-ptr (string 4 size)
+CFFI> (with-foreign-pointer (string 4 size)
         (setf (mem-ref string :char (1- size)) 0)
         (lisp-string-to-foreign "Popcorns" string size)
         (loop for i from 0 below size
@@ -1949,7 +2046,7 @@ Dictionary
 * foreign-string-to-lisp::      
 * lisp-string-to-foreign::      
 * with-foreign-string::         
-* with-foreign-ptr-as-string::  
+* with-foreign-pointer-as-string::  
 @end menu
 
 
@@ -2095,7 +2192,7 @@ foreign string will be null-terminated.
 
 @subheading Examples
 @lisp
-CFFI> (with-foreign-ptr-as-string (str 255)
+CFFI> (with-foreign-pointer-as-string (str 255)
         (lisp-string-to-foreign "Hello, foreign world!" str 6))
 "Hello"
 @end lisp
@@ -2103,7 +2200,7 @@ CFFI> (with-foreign-ptr-as-string (str 255)
 @subheading See Also
 @ref{foreign-string-alloc} @*
 @ref{foreign-string-to-lisp} @*
-@ref{with-foreign-ptr-as-string}
+@ref{with-foreign-pointer-as-string}
 
 
 
@@ -2141,18 +2238,18 @@ CFFI> (with-foreign-string (foo "12345")
 
 @subheading See Also
 @ref{foreign-string-alloc} @*
-@ref{with-foreign-ptr-as-string}
+@ref{with-foreign-pointer-as-string}
 
 
 
 
 @c ===================================================================
-@c WITH-FOREIGN-PTR-AS-STRING
+@c WITH-FOREIGN-POINTER-AS-STRING
 
-@node with-foreign-ptr-as-string
-@heading with-foreign-ptr-as-string
+@node with-foreign-pointer-as-string
+@heading with-foreign-pointer-as-string
 @subheading Syntax
-@Macro{with-foreign-ptr-as-string (var size &optional size-var) &body body}
+@Macro{with-foreign-pointer-as-string (var size &optional size-var) &body body}
 
 @subheading Arguments and Values
 @table @emph
@@ -2167,13 +2264,13 @@ List of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-ptr-as-string} macro is similar to
-@code{with-foreign-ptr} except that @emph{var}, as a Lisp string, is
+The @code{with-foreign-pointer-as-string} macro is similar to
+@code{with-foreign-pointer} except that @emph{var}, as a Lisp string, is
 used as the returned value of an implicit @code{progn} around @emph{body}.
 
 @subheading Examples
 @lisp
-CFFI> (with-foreign-ptr-as-string (str 6 str-size)
+CFFI> (with-foreign-pointer-as-string (str 6 str-size)
         (lisp-string-to-foreign "Hello, foreign world!" str str-size))
 "Hello"
 @end lisp
@@ -2195,7 +2292,7 @@ CFFI> (with-foreign-ptr-as-string (str 6 str-size)
 Dictionary
 
 * defcvar::                     
-* get-var-ptr::                 
+* get-var-pointer::                 
 @end menu
 
 
@@ -2266,18 +2363,18 @@ CFFI> (setf +error-number+ 12)
 C standard library.}
 
 @subheading See Also
-@ref{get-var-ptr}
+@ref{get-var-pointer}
 
 
 
 
 @c ===================================================================
-@c GET-VAR-PTR
+@c GET-VAR-POINTER
 
-@node get-var-ptr
-@heading get-var-ptr
+@node get-var-pointer
+@heading get-var-pointer
 @subheading Syntax
-@Function{get-var-ptr symbol => pointer}
+@Function{get-var-pointer symbol => pointer}
 
 @subheading Arguments and Values
 @table @emph
@@ -2289,7 +2386,7 @@ A foreign pointer.
 @end table
 
 @subheading Description
-The function @code{get-var-ptr} will return a @emph{pointer} to the
+The function @code{get-var-pointer} will return a @emph{pointer} to the
 foreign global variable @emph{symbol} previously defined with
 @code{defcvar}.
 
@@ -2299,7 +2396,7 @@ CFFI> (defcvar "errno" :int :read-only t)
 *ERRNO*
 CFFI> *errno*
 25
-CFFI> (get-var-ptr '*errno*)
+CFFI> (get-var-pointer '*errno*)
 #<A Mac Pointer #xA0008130>
 CFFI> (mem-ref * :int)
 25
@@ -2566,7 +2663,7 @@ CFFI> (defcallback sum :int ((a :int) (b :int))
 SUM
 CFFI> (callback sum)
 #<A Mac Pointer #x102350>
-CFFI> (setf (callback sum) (null-ptr))
+CFFI> (setf (callback sum) (null-pointer))
 #<A Null Mac Pointer>
 CFFI> (callback sum)
 #<A Null Mac Pointer>
@@ -2678,7 +2775,7 @@ CFFI> (defcallback sum :int ((a :int) (b :int))
 SUM
 CFFI> (get-callback 'sum)
 #<A Mac Pointer #x102350>
-CFFI> (setf (get-callback 'sum) (null-ptr))
+CFFI> (setf (get-callback 'sum) (null-pointer))
 #<A Null Mac Pointer>
 CFFI> (get-callback 'sum)
 #<A Null Mac Pointer>

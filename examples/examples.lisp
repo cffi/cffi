@@ -49,7 +49,7 @@
 ;; Now we define a Lispy interface to %GETHOSTNAME.
 (defun gethostname ()
   "Return the hostname using the 'gethostname' call."
-  (with-foreign-ptr-as-string (buf 255 buf-size)
+  (with-foreign-pointer-as-string (buf 255 buf-size)
     (%gethostname buf buf-size)))
 
 ;; This definition uses the STRING type translator to automatically
@@ -76,13 +76,13 @@
   "Return the time in seconds and microseconds."
   (with-foreign-object (tv timeval)
     (with-foreign-slots ((tv-sec tv-usec) tv timeval)
-      (%gettimeofday tv (null-ptr))
+      (%gettimeofday tv (null-pointer))
       (values tv-sec tv-usec))))
 
 ;; Calling a varargs function.
 (defun sprintf-test ()
   "Test calling a varargs function."
-  (with-foreign-ptr-as-string (buf 255 buf-size)
+  (with-foreign-pointer-as-string (buf 255 buf-size)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
      :string "%d %f #x%x!" :int 666 

@@ -32,21 +32,23 @@
   (:export
    #:pointerp
    #:pointer-eq
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
    #:%foreign-alloc
    #:foreign-free
-   #:with-foreign-ptr
+   #:with-foreign-pointer
    #:%foreign-funcall
-   #:%foreign-funcall-ptr
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-symbol-ptr
+   #:foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback))
 
@@ -69,17 +71,25 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (eql ptr1 ptr2))
 
-(defun null-ptr ()
+(defun null-pointer ()
   "Return a null pointer."
   0)
 
-(defun null-ptr-p (ptr)
+(defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (zerop ptr))
 
-(defun inc-ptr (ptr offset)
+(defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (+ ptr offset))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  address)
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  ptr)
 
 ;;;# Allocation
 ;;;
@@ -96,7 +106,7 @@
   "Free a PTR allocated by FOREIGN-ALLOC."
   (ff:free-fobject ptr))
 
-(defmacro with-foreign-ptr ((var size &optional size-var) &body body)
+(defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
 pointer in VAR is invalid beyond the dynamic extent of BODY, and
 may be stack-allocated if supported by the implementation.  If
@@ -148,13 +158,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
-    (setf ptr (inc-ptr ptr offset)))
+    (setf ptr (inc-pointer ptr offset)))
   (ff:fslot-value-typed (convert-foreign-type type) :c ptr))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
-    (setf ptr (inc-ptr ptr offset)))
+    (setf ptr (inc-pointer ptr offset)))
   (setf (ff:fslot-value-typed (convert-foreign-type type) :c ptr) value))
 
 ;;;# Calling Foreign Functions
@@ -261,7 +271,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
      `(,ff-name ,@args))))
 
 ;;; See doc/allegro-internals.txt for a clue about entry-vec.
-(defmacro %foreign-funcall-ptr (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr &rest args)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (entry-vec)
@@ -310,7 +320,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx (concatenate 'string "_" name)
   #-macosx name)
 
-(defun foreign-symbol-ptr (name kind)
+(defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME. KIND is one of
 :CODE or :DATA, and is ignored on some platforms."
   (declare (ignore kind))

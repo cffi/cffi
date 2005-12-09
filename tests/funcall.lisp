@@ -67,14 +67,14 @@
   5)
 
 (deftest funcall.string.2
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "strcpy" :pointer s :string "Hello" :pointer)
       (foreign-funcall "strcat" :pointer s :string ", world!" :pointer))
   "Hello, world!")
 
 (deftest funcall.string.3
-    (with-foreign-ptr (ptr 100)
+    (with-foreign-pointer (ptr 100)
       (lisp-string-to-foreign "Hello, " ptr 8)
       (foreign-funcall "strcat" :pointer ptr :string "world!" :string))
   "Hello, world!")
@@ -84,19 +84,19 @@
 ;; The CHAR argument must be passed as :INT because chars are promoted
 ;; to ints when passed as variable arguments.
 (deftest funcall.varargs.char
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%c" :int 65 :void))
   "A")
 
 (deftest funcall.varargs.int
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%d" :int 1000 :void))
   "1000")
 
 (deftest funcall.varargs.long
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%ld" :long 131072 :void))
   "131072")
@@ -105,14 +105,14 @@
 ;; when passed as variable arguments.  Currently this fails in SBCL
 ;; and CMU CL on Darwin/ppc.
 (deftest funcall.varargs.double
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%.2f"
                        :double (coerce pi 'double-float) :void))
   "3.14")
 
 (deftest funcall.varargs.string
-    (with-foreign-ptr-as-string (s 100)
+    (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%s, %s!"
                        :string "Hello" :string "world" :void))
