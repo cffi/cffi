@@ -319,7 +319,7 @@ field-name"
 (defmacro make-null-pointer (type)
   "Create a NULL pointer."
   (declare (ignore type))
-  `(cffi:null-ptr))
+  `(cffi:null-pointer))
 
 (defmacro make-pointer (address type)
   "Create a pointer to ADDRESS."
@@ -328,9 +328,9 @@ field-name"
 
 (defmacro null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
-  `(cffi:null-ptr-p ,ptr))
+  `(cffi:null-pointer-p ,ptr))
 
-(defparameter +null-cstring-pointer+ (cffi:null-ptr)
+(defparameter +null-cstring-pointer+ (cffi:null-pointer)
   "A constant NULL string pointer.")
 
 (defmacro char-array-to-pointer (obj)
@@ -364,7 +364,7 @@ field-name"
   (let ((str (gensym)))
     `(let ((,str ,obj))
        (if (null ,str)
-           (cffi:null-ptr)
+           (cffi:null-pointer)
            (cffi:foreign-string-alloc ,str)))))
 
 (defmacro free-cstring (ptr)
@@ -376,7 +376,7 @@ field-name"
   (let ((str (gensym)))
     `(let ((,str ,lisp-string))
        (if (null ,str)
-           (let ((,foreign-string (cffi:null-ptr)))
+           (let ((,foreign-string (cffi:null-pointer)))
              ,@body)
            (cffi:with-foreign-string (,foreign-string ,str)
              ,@body)))))
@@ -573,7 +573,7 @@ output to *trace-output*.  Returns the shell's exit code."
   (let ((str (gensym)))
     `(let ((,str ,obj))
        (if (null ,str)
-           (cffi:null-ptr)
+           (cffi:null-pointer)
            (cffi:foreign-string-alloc ,str)))))
 
 (defmacro allocate-foreign-string (size &key unsigned)
@@ -585,7 +585,7 @@ output to *trace-output*.  Returns the shell's exit code."
   (let ((str (gensym)))
     `(let ((,str ,lisp-string))
        (if (null ,str)
-           (let ((,foreign-string (cffi:null-ptr)))
+           (let ((,foreign-string (cffi:null-pointer)))
              ,@body)
            (cffi:with-foreign-string (,foreign-string ,str)
              ,@body)))))
