@@ -695,7 +695,9 @@ obtained using define-foreign-type."
            ,@body)
          ,(when translate-method      ; no method for to-c-dynamic
             `(defmethod ,translate-method (,value-arg ,type-spec)
-               ,(apply (eval `(lambda args ,@body)) args)))))))
+               ,(apply (eval `(lambda ,(mapcar (lambda (x) (car (mklist x)))
+                                               args)
+                                ,@body)) args)))))))
 
 ;;;## Anonymous Type Translators
 ;;;
