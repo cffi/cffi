@@ -90,6 +90,7 @@
    #:foreign-library-types
 
    ;; os
+   #:getenv
    #:run-shell-command
    ))
 
@@ -492,6 +493,21 @@ library type if type is not specified."
           
           (push filename *loaded-libraries*)
           t))))
+
+;; Taken from UFFI's src/os.lisp
+(defun getenv (var)
+  "Return the value of the environment variable."
+  #+allegro (sys::getenv (string var))
+  #+clisp (sys::getenv (string var))
+  #+cmu (cdr (assoc (string var) ext:*environment-list* :test #'equalp
+                    :key #'string))
+  #+gcl (si:getenv (string var))
+  #+lispworks (lw:environment-variable (string var))
+  #+lucid (lcl:environment-variable (string var))
+  #+mcl (ccl::getenv var)
+  #+sbcl (sb-ext:posix-getenv var)
+  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl)
+  (error 'not-implemented :proc (list 'getenv var)))
 
 ;; Taken from UFFI's src/os.lisp
 ;; modified from function ASDF -- Copyright Dan Barlow and Contributors
