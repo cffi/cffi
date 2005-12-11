@@ -63,12 +63,3 @@
     (and (eq :false (return-enum2 :false))
          (eq :true (return-enum2 :true)))
   t)
-
-(defcfun ("return_enum" return-enum3)
-    (:enum :false :true)
-  (x (:enum :falso :verdadeiro)))
-
-(deftest enum.4
-    (and (eq :false (return-enum3 :falso))
-         (eq :true (return-enum3 :verdadeiro)))
-  t)

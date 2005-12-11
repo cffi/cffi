@@ -118,36 +118,13 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 ;;;# Foreign Types
 
-;;; Ever since I changed translators to get the type as an argument,
-;;; naming anonymous types is not really important. TODO: decide if
-;;; this is still desirable nevertheless. --luis
-
-(defvar *anon-count* 0
-  "Counter for anonymous types.")
-
 (defclass foreign-type ()
   ((name
     ;; Name of this foreign type, a symbol.
-    ;:initform (error "A type name is required.")
+    :initform (gensym "ANONYMOUS-CFFI-TYPE")
     :initarg :name
-    :accessor name)
-   ;; The following slots form the basis for the type
-   ;; translator mechanism. (implemented in types.lisp)
-   (to-c-converter   :initform nil)
-   (to-c-expander    :initform nil)
-   (from-c-converter :initform nil)
-   (from-c-expander  :initform nil)
-   (to-c-dynamic-expander :initform nil))
+    :accessor name))
   (:documentation "Contains information about a basic foreign type."))
-
-(defmethod initialize-instance :after ((self foreign-type) &key)
-  "Give a unique name to FOREIGN-TYPE in case none was specified."
-  (unless (slot-boundp self 'name)
-    (setf (name self)
-          (intern (format nil "~A-~A-~D"
-                          (symbol-name '#:anon)
-                          (class-name (class-of self))
-                          (post-incf *anon-count*))))))
 
 (defmethod print-object ((type foreign-type) stream)
   "Print a FOREIGN-TYPE instance to STREAM unreadably."
@@ -193,29 +170,37 @@ Signals an error if the type cannot be resolved."
                      :type-keyword ,keyword))))
 
 ;;;# Foreign Typedefs
+;;;
+;;; We have two classes: foreign-type-alias and foreign-typedef.
+;;; The former is a direct super-class of the latter. The only
+;;; difference between the two is that foreign-typedef has different
+;;; behaviour wrt type translations. (see types.lisp)
 
-(defclass foreign-typedef (foreign-type)
+(defclass foreign-type-alias (foreign-type)
   ((actual-type
     ;; The FOREIGN-TYPE instance this type is an alias for.
     :initarg :actual-type
     :accessor actual-type))
   (:documentation "A type that aliases another type."))
 
-(defmethod canonicalize ((type foreign-typedef))
+(defmethod canonicalize ((type foreign-type-alias))
   "Return the built-in type keyword for TYPE."
   (canonicalize (actual-type type)))
 
-(defmethod aggregatep ((type foreign-typedef))
+(defmethod aggregatep ((type foreign-type-alias))
   "Return true if TYPE's actual type is aggregate."
   (aggregatep (actual-type type)))
 
-(defmethod foreign-type-alignment ((type foreign-typedef))
+(defmethod foreign-type-alignment ((type foreign-type-alias))
   "Return the alignment of a foreign typedef."
   (foreign-type-alignment (actual-type type)))
 
-(defmethod foreign-type-size ((type foreign-typedef))
+(defmethod foreign-type-size ((type foreign-type-alias))
   "Return the size in bytes of a foreign typedef."
   (foreign-type-size (actual-type type)))
+
+(defclass foreign-typedef (foreign-type-alias)
+  ())
 
 ;;;# Structure Type
 

@@ -141,17 +141,17 @@
 (defmethod cffi::aggregatep ((type uffi-array-type))
   t)
 
-(cffi:define-type-spec-parser uffi-array (element-type count)
+(cffi::define-type-spec-parser uffi-array (element-type count)
   (make-instance 'uffi-array-type :element-type element-type :nelems count))
 
 ;; UFFI's :(unsigned-)char
 (cffi:define-foreign-type uffi-char (base-type)
   base-type)
 
-(cffi:define-type-translator uffi-char :to-c (type value)
+(cffi:define-type-translator uffi-char :to-c (value)
   `(char-code ,value))
 
-(cffi:define-type-translator uffi-char :from-c (type value)
+(cffi:define-type-translator uffi-char :from-c (value)
   `(code-char ,value))
 
 (defmacro def-type (name type)

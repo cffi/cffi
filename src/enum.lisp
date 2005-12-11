@@ -37,7 +37,7 @@
 ;;; constant for the type by a type translator when passed as
 ;;; arguments or a return value to a foreign function.
 
-(defclass foreign-enum (foreign-typedef)
+(defclass foreign-enum (foreign-type-alias)
   ((keyword-values
     :initform (make-hash-table :test 'eq)
     :reader keyword-values)
@@ -48,11 +48,8 @@
 
 (defun make-foreign-enum (type-name base-type values)
   "Makes a new instance of the foreign-enum class."
-  (let ((type (if (eq type-name :enum)
-                  (make-instance 'foreign-enum
-                                 :actual-type (parse-type base-type))
-                  (make-instance 'foreign-enum :name type-name
-                                 :actual-type (parse-type base-type))))
+  (let ((type (make-instance 'foreign-enum :name type-name
+                             :actual-type (parse-type base-type)))
         (default-value 0))
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value))
@@ -70,9 +67,32 @@
         (setq default-value (1+ value))))
     type))
 
+(defmacro defcenum (name &body enum-list)
+  "Define an foreign enumerated type."
+  (discard-docstring enum-list)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (notice-foreign-type (make-foreign-enum ',name :int ',enum-list))))
+
+(defmethod to-c-form ((type foreign-enum) value-form)
+  (once-only (value-form)
+    `(if (keywordp ,value-form)
+         (%foreign-enum-value (find-type-or-lose ',(name type)) ,value-form)
+         ,value-form)))
+
+(defmethod translate-to-c (value (type foreign-enum))
+  (if (keywordp value)
+      (%foreign-enum-value type value)
+      value))
+
+(defmethod from-c-form ((type foreign-enum) value-form)
+  `(%foreign-enum-keyword (find-type-or-lose ',(name type)) ,value-form))
+
+(defmethod translate-from-c (value (type foreign-enum))
+  (%foreign-enum-keyword type value))
+
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
-;;; until someone has a serious performance need to do so though.
+;;; until someone has a serious performance need to do so though. --jamesjb
 (defun %foreign-enum-value (type keyword)
   (check-type keyword keyword)
   (or (gethash keyword (keyword-values type))
@@ -80,6 +100,7 @@
                keyword type)))
 
 (defun foreign-enum-value (type keyword)
+  "Convert a KEYWORD into an integer according to the enum TYPE."
   (let ((type-obj (parse-type type)))
     (if (not (typep type-obj 'foreign-enum))
       (error "~S is not a foreign enum type." type)
@@ -92,53 +113,8 @@
              value type)))
 
 (defun foreign-enum-keyword (type value)
+  "Convert an integer VALUE into a keyword according to the enum TYPE."
   (let ((type-obj (parse-type type)))
     (if (not (typep type-obj 'foreign-enum))
         (error "~S is not a foreign enum type." type)
         (%foreign-enum-keyword type-obj value))))
-
-(defmacro defcenum (name &body enum-list)
-  "Define an foreign enumerated type."
-  (discard-docstring enum-list)
-  `(progn
-     (eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-type
-        (make-foreign-enum ',name :int ',enum-list)))
-     ;; to-c translator
-     (define-type-translator ,name :to-c (type value)
-       `(if (keywordp ,value)
-            (%foreign-enum-value ,type ,value)
-            ,value))
-     ;; from-c translator
-     (define-type-translator ,name :from-c (type value)
-       `(%foreign-enum-keyword ,type ,value))
-     ',name))
-
-;;;# Anonymous ENUM type.
-
-(define-type-spec-parser :enum (&rest values)
-  "Parser for anonymous enum types."
-  (let ((type-obj (make-foreign-enum :enum :int values)))
-    (notice-foreign-type type-obj)
-    ;; to-c translator
-    (install-type-translator
-     type-obj
-     (lambda (type-obj type value)
-       (declare (ignore type-obj))
-       `(if (keywordp ,value)
-            (%foreign-enum-value ,type ,value)
-            ,value))
-     (lambda (type value)
-       (if (keywordp value)
-           (%foreign-enum-value type value)
-           value))
-     :to-c)
-    ;; from-c translator
-    (install-type-translator
-     type-obj
-     (lambda (type-obj type value)
-       (declare (ignore type-obj))
-       `(%foreign-enum-keyword ,type ,value))
-     (lambda (type value) (%foreign-enum-keyword type value))
-     :from-c)
-    type-obj))

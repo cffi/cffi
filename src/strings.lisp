@@ -91,16 +91,16 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string :pointer)
 
-(define-type-translator :string :to-c-dynamic (type value var body)
+(define-type-translator :string :to-c-dynamic (value var body)
   "Convert a lisp string to a foreign string with dynamic extent."
   `(with-foreign-string (,var ,value)
      ,@body))
 
-(define-type-translator :string :to-c (type value)
+(define-type-translator :string :to-c (value)
   "Convert a lisp string to a foreign string."
   `(foreign-string-alloc ,value))
 
-(define-type-translator :string :from-c (type value)
+(define-type-translator :string :from-c (value)
   "Convert a foreign string to a lisp string."
   `(foreign-string-to-lisp ,value))
 
@@ -121,16 +121,16 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string+ptr :pointer)
 
-(define-type-translator :string+ptr :to-c-dynamic (type value var body)
+(define-type-translator :string+ptr :to-c-dynamic (value var body)
   "Type translator for string input arguments."
   `(with-foreign-string (,var ,value)
      ,@body))
 
-(define-type-translator :string+ptr :to-c (type value)
+(define-type-translator :string+ptr :to-c (value)
   "Type translator for string arguments."
   `(foreign-string-alloc ,value))
 
-(define-type-translator :string+ptr :from-c (type value)
+(define-type-translator :string+ptr :from-c (value)
   "Return both the string and the pointer in list."
   (once-only (value)
     `(list (foreign-string-to-lisp ,value) ,value)))

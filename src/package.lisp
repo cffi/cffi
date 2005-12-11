@@ -71,8 +71,8 @@
    #:defcunion
    #:defctype
    #:defcenum
+   ;#:define-type-spec-parser
    #:define-type-translator
-   #:define-type-spec-parser
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
@@ -81,6 +81,7 @@
    #:foreign-type-alignment
    #:foreign-type-size
    #:with-foreign-object
+   #:with-foreign-objects
    #:with-foreign-slots
 
    ;; Foreign globals.

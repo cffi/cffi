@@ -107,7 +107,7 @@ Foreign Types
 * defctype::                    Defines a foreign typedef.
 * defcenum::                    Defines a C enumeration.
 * define-type-translator::      Defines a type translation.
-* define-type-spec-parser::     <should be exported?>
+@c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
 * explain-foreign-slot-value::  <unimplemented>
 * foreign-enum-keyword::        Finds a keyword in an enum type.
@@ -392,7 +392,7 @@ Dictionary
 * defctype::                    
 * defcenum::                    
 * define-type-translator::      
-* define-type-spec-parser::     
+@c * define-type-spec-parser::     
 * define-foreign-type::         
 * explain-foreign-slot-value::        
 * foreign-enum-keyword::        
@@ -796,7 +796,7 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @subheading Syntax
 @Macro{define-type-translator type direction arguments &body body}
 
-arguments ::= (type-arg value-arg &optional var-arg body-arg)
+arguments ::= (value-arg &optional var-arg body-arg)
 
 @subheading Arguments and Values
 @table @emph
@@ -823,16 +823,16 @@ The body of this type translator.
 @end table
 
 @subheading Description
-@emph{This interface is not very stable yet. --luis}
+@emph{TODO. For now check the examples.}
 
 @subheading Examples
 Here is how CFFI's @code{:boolean} type translator is defined:
 @lisp
-(define-type-translator :boolean :from-c (type value) 
+(define-type-translator :boolean :from-c (value) 
   "Type translator to convert t/nil to a C boolean."
   `(if ,value 1 0))
 
-(define-type-translator :boolean :to-c (type value)
+(define-type-translator :boolean :to-c (value)
   "Type translator to convert C booleans to t/nil."
   `(not (zerop ,value)))
 @end lisp
@@ -840,16 +840,16 @@ Here is how CFFI's @code{:boolean} type translator is defined:
 And the @code{:string} type:
 
 @lisp
-(define-type-translator :string :to-c-dynamic (type value var body)
+(define-type-translator :string :to-c-dynamic (value var body)
   "Convert a lisp string to a foreign string with dynamic extent."
   `(with-foreign-string (,var ,value)
      ,@@body))
 
-(define-type-translator :string :to-c (type value)
+(define-type-translator :string :to-c (value)
   "Convert a lisp string to a foreign string."
   `(foreign-string-alloc ,value))
 
-(define-type-translator :string :from-c (type value)
+(define-type-translator :string :from-c (value)
   "Convert a foreign string to a lisp string."
   `(foreign-string-to-lisp ,value))
 @end lisp
@@ -860,28 +860,28 @@ And the @code{:string} type:
 
 
 
-@c ===================================================================
-@c DEFINE-TYPE-SPEC-PARSER
+@c @c ===================================================================
+@c @c DEFINE-TYPE-SPEC-PARSER
 
-@node define-type-spec-parser
-@heading define-type-spec-parser
-@subheading Syntax
+@c @node define-type-spec-parser
+@c @heading define-type-spec-parser
+@c @subheading Syntax
 
-@subheading Arguments and Values
-@table @emph
-@item ...
-asd
+@c @subheading Arguments and Values
+@c @table @emph
+@c @item ...
+@c asd
 
-@item ...
-asd
-@end table
+@c @item ...
+@c asd
+@c @end table
 
-@subheading Description
-@emph{Note: It doesn't make much sense for this macro to be exported
-yet. --luis}
+@c @subheading Description
+@c @emph{Note: It doesn't make much sense for this macro to be exported
+@c yet. --luis}
 
-@subheading Examples
-@subheading See Also
+@c @subheading Examples
+@c @subheading See Also
 
 
 
