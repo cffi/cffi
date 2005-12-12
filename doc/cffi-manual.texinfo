@@ -116,7 +116,7 @@ Foreign Types
 * foreign-slot-value::          Returns the value of a slot in a foreign struct.
 * foreign-type-alignment::      Returns the alignment of a foreign type.
 * foreign-type-size::           Returns the size of a foreign type.
-* with-foreign-object::         <to be renamed>
+* with-foreign-object::         Allocates a foreign object with dynamic extent.
 * with-foreign-slots::          Access the slots of a foreign structure.
 
 Pointers
@@ -598,7 +598,7 @@ of objects.
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr point)
+CFFI> (with-foreign-object (ptr 'point)
         ;; Initialize the slots
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
@@ -1119,7 +1119,7 @@ For aggregate slots, this is the same value returned by
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr point)
+CFFI> (with-foreign-object (ptr 'point)
         (foreign-slot-pointer ptr 'point 'x))
 #<FOREIGN-ADDRESS #xBFFF6E60>
 ;; Note: the exact pointer representation varies from lisp to lisp.
@@ -1176,7 +1176,7 @@ There are compiler macros for @code{foreign-slot-value} and its
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr point)
+CFFI> (with-foreign-object (ptr 'point)
         ;; Initialize the slots
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
@@ -1286,19 +1286,41 @@ CFFI> (foreign-type-size 'foo)
 @node with-foreign-object
 @heading with-foreign-object
 @subheading Syntax
+@Macro{with-foreign-object (var type &optional count) &body body}
+
+@Macro{with-foreign-objects (bindings) &body body}
+
+bindings = @{(var type &optional count)@}*
 
 @subheading Arguments and Values
 @table @emph
-@item ...
-asd
+@item var
+A symbol.
 
-@item ...
-asd
+@item type
+A foreign type, evaluated.
+
+@item count
+An integer.
 @end table
 
 @subheading Description
+The macros @code{with-foreign-object} and @code{with-foreign-objects}
+bind @emph{var} to a pointer to @emph{count} newly allocated objects
+of type @emph{type} during @emph{body}. The buffer has dynamic extent
+and may be stack allocated if supported by the host Lisp.
+
 @subheading Examples
+@lisp
+CFFI> (with-foreign-object (array :int 10)
+        (loop for i below 10
+              do (setf (mem-aref array :int i) (random 100)))
+        (loop for i below 10 collect (mem-aref array :int i)))
+(22 7 22 52 69 1 46 93 90 65)
+@end lisp
+
 @subheading See Also
+@ref{foreign-alloc}
 
 
 

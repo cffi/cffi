@@ -33,7 +33,7 @@
 
 (defun int-to-bytes (n)
   "Convert N to a list of bytes using a union."
-  (with-foreign-object (obj uint32-bytes)
+  (with-foreign-object (obj 'uint32-bytes)
     (setf (foreign-slot-value obj 'uint32-bytes 'int-value) n)
     (loop for i from 0 below 4
           collect (mem-aref

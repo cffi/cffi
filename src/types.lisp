@@ -634,14 +634,12 @@ initialize the contents of the newly allocated memory."
 
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
-The buffer has dynamic extent and may be stack allocated.  TYPE
-is evaluated at macroexpansion time but COUNT is evaluated at run
-time."
-  ;; If COUNT is constant, multiply it by the size now.
-  (if (constantp count)
-      `(with-foreign-pointer (,var ,(* count (foreign-type-size type)))
+The buffer has dynamic extent and may be stack allocated."
+  ;; If COUNT and TYPE constant, multiply it by the size now.
+  (if (and (constantp type) (constantp count))
+      `(with-foreign-pointer (,var ,(* count (foreign-type-size (eval type))))
          ,@body)
-      `(with-foreign-pointer (,var (* ,count ,(foreign-type-size type)))
+      `(with-foreign-pointer (,var (* ,count (foreign-type-size ,type)))
          ,@body)))
 
 (defmacro with-foreign-objects (bindings &rest body)
@@ -695,9 +693,7 @@ obtained using define-foreign-type."
            ,@body)
          ,(when translate-method      ; no method for to-c-dynamic
             `(defmethod ,translate-method (,value-arg ,type-spec)
-               ,(apply (eval `(lambda ,(mapcar (lambda (x) (car (mklist x)))
-                                               args)
-                                ,@body)) args)))))))
+               ,(apply (eval `(lambda ,args ,@body)) args)))))))
 
 ;;;## Anonymous Type Translators
 ;;;

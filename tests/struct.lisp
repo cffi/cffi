@@ -41,7 +41,7 @@
   0)
 
 (deftest struct.2
-    (with-foreign-object (tv timeval)
+    (with-foreign-object (tv 'timeval)
       (setf (foreign-slot-value tv 'timeval 'tv-secs) 0)
       (setf (foreign-slot-value tv 'timeval 'tv-usecs) 1)
       (values (foreign-slot-value tv 'timeval 'tv-secs)
@@ -49,7 +49,7 @@
   0 1)
 
 (deftest struct.3
-    (with-foreign-object (tv timeval)
+    (with-foreign-object (tv 'timeval)
       (with-foreign-slots ((tv-secs tv-usecs) tv timeval)
         (setf tv-secs 100 tv-usecs 200)
         (values tv-secs tv-usecs)))
@@ -61,14 +61,14 @@
   (s :string))
 
 (deftest struct.string.1
-    (with-foreign-object (ptr struct-string)
+    (with-foreign-object (ptr 'struct-string)
       (with-foreign-slots ((s) ptr struct-string)
         (setf s "So long and thanks for all the fish!")
         s))
   "So long and thanks for all the fish!")
 
 (deftest struct.string.2
-    (with-foreign-object (ptr struct-string)
+    (with-foreign-object (ptr 'struct-string)
       (setf (foreign-slot-value ptr 'struct-string 's) "Cha")
       (foreign-slot-value ptr 'struct-string 's))
   "Cha")
@@ -258,7 +258,7 @@
   (an-s1 s1))
 
 (deftest struct.nested-setf
-    (with-foreign-object (an-s2 s2) 
+    (with-foreign-object (an-s2 's2) 
       (setf (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
                                 's1 'an-int)
             1984)

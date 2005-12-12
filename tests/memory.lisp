@@ -175,12 +175,12 @@
 (defcstruct some-struct (x :int))
 
 (deftest deref.aggregate
-    (with-foreign-object (s some-struct)
+    (with-foreign-object (s 'some-struct)
       (pointer-eq s (mem-ref s 'some-struct)))
   t)
 
 (deftest deref.array-of-aggregates
-    (with-foreign-object (arr some-struct 3)
+    (with-foreign-object (arr 'some-struct 3)
       (loop for i below 3
             do (setf (foreign-slot-value (mem-aref arr 'some-struct i)
                                          'some-struct 'x)

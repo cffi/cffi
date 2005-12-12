@@ -136,14 +136,14 @@
   (setf (cffi::actual-type self) (cffi::find-type :pointer)))
 
 (defmethod cffi:foreign-type-size ((type uffi-array-type))
-  (or (* (cffi:foreign-type-size (element-type type)) (nelems type))
-      (cffi:foreign-type-size :pointer)))
+  (* (cffi:foreign-type-size (element-type type)) (nelems type)))
 
 (defmethod cffi::aggregatep ((type uffi-array-type))
   t)
 
 (cffi::define-type-spec-parser uffi-array (element-type count)
-  (make-instance 'uffi-array-type :element-type element-type :nelems count))
+  (make-instance 'uffi-array-type :element-type element-type
+                 :nelems (or count 1)))
 
 ;; UFFI's :(unsigned-)char
 (cffi:define-foreign-type uffi-char (base-type)
@@ -174,7 +174,6 @@
 (defmacro null-char-p (val)
   "Return true if character is null."
   `(zerop (char-code ,val)))
-  ;`(zerop ,val))
 
 (defmacro def-enum (enum-name args &key (separator-string "#"))
   "Creates a constants for a C type enum list, symbols are
@@ -222,13 +221,12 @@ field-name"
   "Access a slot value from a structure."
   `(%foreign-slot-value ,obj ,type ,field))
 
-;; I'm not sure why this was unimplemented before, I'm probably missing
-;; something. --luis
+;; UFFI uses a different function when accessing a slot whose
+;; type is a pointer. We don't need that in CFFI so we use
+;; foreign-slot-value too.
 (defmacro get-slot-pointer (obj type field)
   "Access a pointer slot value from a structure."
   `(cffi:foreign-slot-value ,obj ,type ,field))
-;  (declare (ignore obj type field))
-;  (error "GET-SLOT-POINTER not implemented yet."))
 
 (defmacro def-array-pointer (name type)
   "Define a foreign array type."
@@ -260,7 +258,7 @@ field-name"
 
 (defmacro with-foreign-object ((var type) &body body)
   "Wrap the allocation of a foreign object around BODY."
-  `(cffi:with-foreign-object (,var ,(convert-uffi-type (eval type)))
+  `(cffi:with-foreign-object (,var (convert-uffi-type ,type))
      ,@body))
 
 ;; Taken from UFFI's src/objects.lisp
@@ -273,7 +271,7 @@ field-name"
 
 (defmacro size-of-foreign-type (type)
   "Return the size in bytes of a foreign type."
-  `(cffi:foreign-type-size ,type))
+  `(cffi:foreign-type-size (convert-uffi-type ,type)))
 
 (defmacro pointer-address (ptr)
   "Return the address of a pointer."
@@ -408,7 +406,8 @@ field-name"
   #-(or win32 mswindows macos macosx darwin ccl-5.0) "so")
 
 (defun foreign-library-types ()
-  "Returns list of string naming possible library types for platform, sorted by preference"
+  "Returns list of string naming possible library types for platform,
+sorted by preference"
   #+(or win32 mswindows) '("dll" "lib")
   #+(or macos macosx darwin ccl-5.0) '("dylib" "bundle")
   #-(or win32 mswindows macos macosx darwin ccl-5.0) '("so" "a" "o"))
@@ -471,7 +470,7 @@ library type if type is not specified."
 
     (if (and (not force-load)
 	     (find filename *loaded-libraries* :test #'string-equal))
-	t ;; return T, but don't reload library
+        t ;; return T, but don't reload library
         (progn
           #+cmu
           (let ((type (pathname-type (parse-namestring filename))))

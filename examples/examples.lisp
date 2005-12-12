@@ -74,7 +74,7 @@
 ;; fields of the TIMEVAL as multiple values.
 (defun gettimeofday ()
   "Return the time in seconds and microseconds."
-  (with-foreign-object (tv timeval)
+  (with-foreign-object (tv 'timeval)
     (with-foreign-slots ((tv-sec tv-usec) tv timeval)
       (%gettimeofday tv (null-pointer))
       (values tv-sec tv-usec))))
@@ -107,7 +107,7 @@
 
 (defun nested-example ()
   "Example using nested structures."
-  (with-foreign-object (n nested-example)
+  (with-foreign-object (n 'nested-example)
     (foreign-slot-value n 'nested-example 'timeval)
     ;; This signals an error!
     (setf (foreign-slot-value n 'nested-example 'timeval) nil)))
@@ -118,7 +118,7 @@
 
 #-(and)
 (defun nested-example2 ()
-  (with-foreign-object (n nested-example2)
+  (with-foreign-object (n 'nested-example2)
     ;; Set the fields of each of timeval in N to zero.
     (dotimes (i 20)
       ;; n->times[i].tv_sec = 0; n->times[i].tv_usec = 0;
