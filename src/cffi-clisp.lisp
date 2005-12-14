@@ -260,15 +260,13 @@ the function call."
   (ecase kind
     (:data
      (prog1 (ignore-errors
-              (ffi:c-var-address
-               (ffi:foreign-value
-                (ffi::foreign-library-variable
-                 name (ffi::foreign-library :default) nil nil))))))
+              (ffi:foreign-address
+               (ffi::foreign-library-variable
+                name (ffi::foreign-library :default) nil nil)))))
     (:code
      (prog1 (ignore-errors
-              (ffi:c-var-address
-               (ffi:foreign-value
-                (ffi::foreign-library-function
-                 name (ffi::foreign-library :default)
-                 nil (ffi:parse-c-type '(ffi:c-function
-                                         (:language :stdc)))))))))))
+              (ffi:foreign-address
+               (ffi::foreign-library-function
+                name (ffi::foreign-library :default)
+                nil (ffi:parse-c-type '(ffi:c-function
+                                        (:language :stdc))))))))))
