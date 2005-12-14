@@ -116,6 +116,8 @@
     (t
      (if (listp uffi-type)
          (case (car uffi-type)
+           ;; this is imho gross but it is what uffi does
+           (quote (convert-uffi-type (second uffi-type)))
            (* :pointer)
            (:array `(uffi-array ,(convert-uffi-type (second uffi-type))
                                 ,(third uffi-type)))
