@@ -495,11 +495,11 @@ to open-code (SETF MEM-REF) forms."
   "Optimizer for FOREIGN-SLOT-VALUE when TYPE is constant."
   (declare (ignore ptr type slot-name))
   form
-  #+nil (if (and (constantp type) (constantp slot-name))
-            (destructuring-bind (&key offset type)
-                (get-slot-info (eval type) (eval slot-name))
-              `(mem-ref ,ptr ',type ,offset))
-            form))
+  #+nil;; TODO: foreign-struct-slot-value-form is missing translate-from-c
+  (if (and (constantp type) (constantp slot-name))
+    (foreign-struct-slot-value-form ptr
+       (get-slot-info (eval type) (eval slot-name)))
+    form))
 
 (define-setf-expander foreign-slot-value (ptr type slot-name &environment env)
   "SETF expander for FOREIGN-SLOT-VALUE."
@@ -538,12 +538,11 @@ to open-code (SETF MEM-REF) forms."
   "Optimizer when TYPE and SLOT-NAME are constant."
   (declare (ignore value ptr type slot-name))
   form
-  #+nil
+  #+nil;; TODO: foreign-struct-slot-set-form is missing translate-from-c
   (if (and (constantp type) (constantp slot-name))
-      (destructuring-bind (&key offset type)
-          (get-slot-info (eval type) (eval slot-name))
-        `(setf (mem-ref ,ptr ,type ,offset) ,value))
-      form))
+    (foreign-struct-slot-set-form ptr
+       (get-slot-info (eval type) (eval slot-name)))
+    form))
 
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
