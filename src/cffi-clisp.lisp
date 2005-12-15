@@ -230,17 +230,18 @@ the function call."
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
   (with-unique-names (cb-var)
     `(ffi:with-c-var
-         (,cb-var '(ffi:c-ptr
-                    (ffi:c-function
-                     (:arguments
-                      ,@(mapcar (lambda (sym type)
-                                  (list sym (convert-foreign-type type)))
-                                arg-names arg-types))
-                     (:return-type ,(convert-foreign-type rettype))
-                     (:language :stdc)))
+         (,cb-var '(ffi:c-function
+                    (:arguments
+                     ,@(mapcar (lambda (sym type)
+                                 (list sym (convert-foreign-type type)))
+                               arg-names arg-types))
+                    (:return-type ,(convert-foreign-type rettype))
+                    (:language :stdc))
                   (lambda ,arg-names ,@body))
+       ;; The created callback function is not stack-allocated.
+       ;; It is valid until (ffi:foreign-free (callback name)).
        (setf (get ',name 'callback-ptr)
-             (ffi:c-var-address (ffi:foreign-value ,cb-var))))))
+             (ffi:foreign-address ,cb-var)))))
 
 ;;;# Loading and Closing Foreign Libraries
 
