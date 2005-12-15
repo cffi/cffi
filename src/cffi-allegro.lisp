@@ -45,6 +45,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:%mem-ref
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
@@ -303,7 +304,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
        (setf (get ',name 'callback-ptr)
              (ff:register-foreign-callable ',cb-sym :reuse t)))))
 
-;;;# Loading Foreign Libraries
+;;;# Loading and Closing Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
@@ -312,6 +313,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (load name))
   #-macosx
   (load name))
+
+(defun %close-foreign-library (name)
+  "Close the foreign library NAME."
+  (ff:unload-foreign-library name))
 
 ;;;# Foreign Globals
 

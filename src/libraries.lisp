@@ -34,9 +34,17 @@
 ;;; some user feedback about implementing a search strategy this will
 ;;; get fancier.
 
+;; All %load/close-foreign-library are required to handle are strings.
+(defun ensure-string (x)
+  (etypecase x
+    (pathname (namestring x))
+    (string x)))
+
 (defun load-foreign-library (name)
   "Load a foreign library NAME."
-  (%load-foreign-library
-   (etypecase name
-     (pathname (namestring name))
-     (string name))))
+  (%load-foreign-library (ensure-string name)))
+
+(defun close-foreign-library (name)
+  "Closes a foreign library NAME."
+  (%close-foreign-library (ensure-string name)))
+   

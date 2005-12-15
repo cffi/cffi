@@ -60,7 +60,8 @@
    #:defcfun
    #:foreign-funcall
    #:load-foreign-library
-
+   ;#:close-foreign-library
+   
    ;; Callbacks.
    #:callback
    #:get-callback

@@ -52,6 +52,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:%mem-ref
    #:foreign-symbol-pointer
    #:%defcallback))
@@ -246,11 +247,15 @@ the function call."
        (setf (get ',name 'callback-ptr)
              (ffi:c-var-address (ffi:foreign-value ,cb-var))))))
 
-;;;# Loading Foreign Libraries
+;;;# Loading and Closing Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
   (ffi::foreign-library name))
+
+(defun %close-foreign-library (name)
+  "Close a foreign library NAME."
+  (ffi:close-foreign-library name))
 
 ;;;# Foreign Globals
 

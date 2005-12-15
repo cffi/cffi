@@ -46,6 +46,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
@@ -322,6 +323,10 @@ to open-code (SETF %MEM-REF) forms."
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (open-shared-library name))
+
+(defun %close-foreign-library (name)
+  "Close the foreign library NAME."
+  (close-shared-library name)) ; :completely t ?
 
 ;;;# Foreign Globals
 

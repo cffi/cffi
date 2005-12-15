@@ -221,6 +221,10 @@ be stack allocated if supported by the implementation."
   "Load the foreign library NAME."
   (fli:register-module name))
 
+(defun %close-foreign-library (name)
+  "Close the foreign library NAME."
+  (fli:disconnect-module name :remove t))
+
 ;;;# Foreign Globals
 
 (defun foreign-symbol-pointer (name kind)

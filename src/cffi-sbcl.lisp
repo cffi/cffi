@@ -51,6 +51,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
@@ -339,11 +340,18 @@ to open-code (SETF %MEM-REF) forms."
                  arg-names arg-types)
       ,body-form)))
 
-;;;# Loading Foreign Libraries
+;;;# Loading and Closing Foreign Libraries
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (load-shared-object name))
+
+(defun %close-foreign-library (name)
+  "Closes the foreign library NAME."
+  (sb-alien::dlclose-or-lose
+   (find name sb-alien::*shared-objects*
+         :key #'sb-alien::shared-object-file
+         :test #'string-equal)))
 
 ;;;# Foreign Globals
 

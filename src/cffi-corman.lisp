@@ -269,6 +269,10 @@ the DLL's name (a string), else returns NIL."
   "Load the foreign library NAME."
   (ct::get-dll-record name))
 
+(defun %close-foreign-library (name)
+  "Close the foreign library NAME."
+  (error "Not implemented."))
+
 ;;;# Foreign Globals
 
 ;; FFI to GetProcAddress from the Win32 API.
