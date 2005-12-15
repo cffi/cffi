@@ -116,14 +116,14 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
   (let* ((type (convert-foreign-type type))
-	 (type-size (ffi:size-of-foreign-type type)))
+         (type-size (ffi:size-of-foreign-type type)))
     (si:foreign-data-ref-elt
      (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
 
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
   (let* ((type (convert-foreign-type type))
-	 (type-size (ffi:size-of-foreign-type type)))
+         (type-size (ffi:size-of-foreign-type type)))
     (si:foreign-data-set-elt
      (si:foreign-data-recast ptr (+ offset type-size) :void)
      offset type value)))
@@ -160,8 +160,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun produce-function-call (c-name nargs)
   (format nil "~a(~a)" c-name
-	  (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
-		  0 (max 0 (1- (* nargs 3))))))
+          (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
+                  0 (max 0 (1- (* nargs 3))))))
 
 (defun foreign-function-inline-form (name arg-types arg-values return-type)
   "Generate a C-INLINE form for a foreign function call."
@@ -204,12 +204,12 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (with-unique-names (cb-sym)
     `(progn
        (ffi:defcallback (,cb-sym :cdecl)
-			,(convert-foreign-type rettype)
-			,(mapcar #'list arg-names
-                                 (mapcar #'convert-foreign-type arg-types))
-			,@body)
+           ,(convert-foreign-type rettype)
+           ,(mapcar #'list arg-names
+                    (mapcar #'convert-foreign-type arg-types))
+         ,@body)
        (setf (get ',name 'callback-ptr)
-	     (ffi:callback ',cb-sym)))))
+             (ffi:callback ',cb-sym)))))
 
 ;;;# Foreign Globals
 
