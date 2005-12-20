@@ -44,6 +44,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:%mem-ref
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
