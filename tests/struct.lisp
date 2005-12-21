@@ -55,6 +55,17 @@
         (values tv-secs tv-usecs)))
   100 200)
 
+;; regression test: accessing a struct through a typedef
+
+(defctype xpto timeval)
+
+(deftest struct.4
+    (with-foreign-object (tv 'xpto)
+      (setf (foreign-slot-value tv 'xpto 'tv-usecs) 1)
+      (values (foreign-slot-value tv 'xpto 'tv-usecs)
+              (foreign-slot-value tv 'timeval 'tv-usecs)))
+  1 1)
+
 ;;;# Structs with type translators
 
 (defcstruct struct-string

@@ -467,15 +467,18 @@ to open-code (SETF MEM-REF) forms."
 
 ;;;## Accessing Foreign Structure Slots
 
+(defun follow-typedefs (type)
+  (if (eq (type-of type) 'foreign-typedef)
+      (follow-typedefs (actual-type type))
+      type))
+
 (defun get-slot-info (type slot-name)
   "Return the slot info for SLOT-NAME or raise an error."
-  (let ((struct (parse-type type)))
-    (unless struct
-      (error "Undefined foreign type ~A." type))
-    (let ((info (gethash slot-name (slots struct))))
-      (unless info
-        (error "Undefined slot ~A in foreign type ~A." slot-name type))
-      info)))
+  (let* ((struct (follow-typedefs (parse-type type)))
+         (info (gethash slot-name (slots struct))))
+    (unless info
+      (error "Undefined slot ~A in foreign type ~A." slot-name type))
+    info))
 
 (defun foreign-slot-pointer (ptr type slot-name)
   "Return the address of SLOT-NAME in the structure at PTR."
