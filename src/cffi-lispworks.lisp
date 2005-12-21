@@ -70,9 +70,11 @@
   "Return true if PTR1 and PTR2 point to the same address."
   (fli:pointer-eq ptr1 ptr2))
 
+;; We use FLI:MAKE-POINTER here instead of FLI:*NULL-POINTER* since old
+;; versions of Lispworks don't seem to have it.
 (defun null-pointer ()
   "Return a null foreign pointer."
-  fli:*null-pointer*)
+  (fli:make-pointer :address 0 :type :void))
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
