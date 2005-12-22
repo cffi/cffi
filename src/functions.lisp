@@ -109,6 +109,7 @@
 
 (defmacro defcfun (name return-type &body args)
   "Defines a Lisp function that calls a foreign function."
+  (discard-docstring args)
   (let ((lisp-name (lisp-function-name name))
         (foreign-name (foreign-function-name name))
         (arg-names (mapcar #'car args))
