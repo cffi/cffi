@@ -341,8 +341,9 @@ to open-code (SETF MEM-REF) forms."
 
 (defmethod foreign-struct-slot-set-form (value ptr (slot simple-struct-slot))
   "Return a form to set the value of a simple structure slot."
-  ;; TODO: add translation
-  `(setf (mem-ref ,ptr ,(slot-type slot) ,(slot-offset slot)) ,value))
+  (let ((type (slot-type slot)))
+    `(setf (mem-ref ,ptr ,type ,(slot-offset slot))
+           ,(to-c-form type value))))
 
 ;;;### Aggregate Slots
 
@@ -534,13 +535,10 @@ to open-code (SETF MEM-REF) forms."
 (define-compiler-macro foreign-slot-set
     (&whole form value ptr type slot-name)
   "Optimizer when TYPE and SLOT-NAME are constant."
-  (declare (ignore value ptr type slot-name))
-  form
-  #+nil;; TODO: foreign-struct-slot-set-form is missing translate-from-c
   (if (and (constantp type) (constantp slot-name))
-      (foreign-struct-slot-set-form
-       ptr (get-slot-info (eval type) (eval slot-name)))
-      form))
+    (foreign-struct-slot-set-form ptr
+       (get-slot-info (eval type) (eval slot-name)))
+    form))
 
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
