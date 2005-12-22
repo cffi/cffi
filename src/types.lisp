@@ -329,8 +329,9 @@ to open-code (SETF MEM-REF) forms."
 
 (defmethod foreign-struct-slot-value-form (ptr (slot simple-struct-slot))
   "Return a form to get the value of a slot from PTR."
-  ;; TODO: add translation
-  `(mem-ref ,ptr ,(slot-type slot) ,(slot-offset slot)))
+  (let ((type (slot-type slot)))
+    (from-c-form type
+     `(mem-ref ,ptr ,type ,(slot-offset slot)))))
 
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
   "Set the value of a simple SLOT to VALUE in PTR."
@@ -493,9 +494,6 @@ to open-code (SETF MEM-REF) forms."
 
 (define-compiler-macro foreign-slot-value (&whole form ptr type slot-name)
   "Optimizer for FOREIGN-SLOT-VALUE when TYPE is constant."
-  (declare (ignore ptr type slot-name))
-  form
-  #+nil;; TODO: foreign-struct-slot-value-form is missing translate-from-c
   (if (and (constantp type) (constantp slot-name))
       (foreign-struct-slot-value-form
        ptr (get-slot-info (eval type) (eval slot-name)))
