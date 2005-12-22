@@ -180,6 +180,12 @@ built-in foreign TYPE.  Returns the object as a foreign pointer
 or Lisp number."
   (ffi:memory-as ptr (convert-foreign-type type) offset))
 
+(define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
+  "Compiler macro to open-code when TYPE is constant."
+  (if (constantp type)
+      `(ffi:memory-as ,ptr ',(convert-foreign-type (eval type)) ,offset)
+      form))
+
 (defun (setf %mem-ref) (value ptr type &optional (offset 0))
   "Set a pointer OFFSET bytes from PTR to an object of built-in
 foreign TYPE to VALUE."
