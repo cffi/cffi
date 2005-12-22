@@ -497,9 +497,9 @@ to open-code (SETF MEM-REF) forms."
   form
   #+nil;; TODO: foreign-struct-slot-value-form is missing translate-from-c
   (if (and (constantp type) (constantp slot-name))
-    (foreign-struct-slot-value-form ptr
-       (get-slot-info (eval type) (eval slot-name)))
-    form))
+      (foreign-struct-slot-value-form
+       ptr (get-slot-info (eval type) (eval slot-name)))
+      form))
 
 (define-setf-expander foreign-slot-value (ptr type slot-name &environment env)
   "SETF expander for FOREIGN-SLOT-VALUE."
@@ -540,9 +540,9 @@ to open-code (SETF MEM-REF) forms."
   form
   #+nil;; TODO: foreign-struct-slot-set-form is missing translate-from-c
   (if (and (constantp type) (constantp slot-name))
-    (foreign-struct-slot-set-form ptr
-       (get-slot-info (eval type) (eval slot-name)))
-    form))
+      (foreign-struct-slot-set-form
+       ptr (get-slot-info (eval type) (eval slot-name)))
+      form))
 
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
