@@ -195,11 +195,9 @@ foreign TYPE to VALUE."
 (define-compiler-macro %mem-set
     (&whole form value ptr type &optional (offset 0))
   (if (constantp type)
-      ;; TODO: respect left to right evaluation rule
-      ;; Alternatively: use ffi::write-memory-as which has exactly
-      ;; the fitting order (should CLISP export it?)
-      `(setf (ffi:memory-as ,ptr ',(convert-foreign-type (eval type)) ,offset)
-             ,value)
+      ;; (setf (ffi:memory-as) value) is exported, but not so nice
+      ;; w.r.t. the left to right evaluation rule
+      `(ffi::write-memory-as ,value ,ptr ',(convert-foreign-type (eval type)) ,offset)
       form))
 
 ;;;# Foreign Function Calling
