@@ -55,6 +55,7 @@
    #:%load-foreign-library
    #:%close-foreign-library
    #:%mem-ref
+   #:%mem-set
    #:foreign-symbol-pointer
    #:%defcallback))
 
@@ -186,7 +187,7 @@ or Lisp number."
       `(ffi:memory-as ,ptr ',(convert-foreign-type (eval type)) ,offset)
       form))
 
-(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+(defun %mem-set (value ptr type &optional (offset 0))
   "Set a pointer OFFSET bytes from PTR to an object of built-in
 foreign TYPE to VALUE."
   (setf (ffi:memory-as ptr (convert-foreign-type type) offset) value))

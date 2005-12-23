@@ -41,6 +41,7 @@
    #:make-pointer
    #:pointer-address
    #:%mem-ref
+   #:%mem-set
    #:%foreign-funcall
    #:%foreign-type-alignment
    #:%foreign-type-size
@@ -120,7 +121,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (si:foreign-data-ref-elt
      (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
 
-(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+(defun %mem-set (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
   (let* ((type (convert-foreign-type type))
          (type-size (ffi:size-of-foreign-type type)))

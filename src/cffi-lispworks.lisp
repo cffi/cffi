@@ -46,6 +46,7 @@
    #:%load-foreign-library
    #:%close-foreign-library
    #:%mem-ref
+   #:%mem-set
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
@@ -151,7 +152,7 @@ be stack allocated if supported by the implementation."
     (setf ptr (inc-pointer ptr offset)))
   (fli:dereference ptr :type (convert-foreign-type type)))
 
-(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+(defun %mem-set (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
     (setf ptr (inc-pointer ptr offset)))

@@ -177,7 +177,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
 
 (defun mem-set (value ptr type &optional (offset 0))
   "Set the value of TYPE at OFFSET from PTR to VALUE."
-  (setf (%mem-ref ptr (canonicalize-foreign-type type) offset) value))
+  (%mem-set value ptr (canonicalize-foreign-type type) offset))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for MEM-REF that doesn't rebind TYPE.
@@ -210,8 +210,7 @@ to open-code (SETF MEM-REF) forms."
     (&whole form value ptr type &optional (offset 0))
   "Compiler macro to open-code (SETF MEM-REF) when type is constant."
   (if (constantp type)
-      `(setf (%mem-ref ,ptr ,(canonicalize-foreign-type (eval type))
-                       ,offset) ,value)
+      `(%mem-set ,value ,ptr ,(canonicalize-foreign-type (eval type)) ,offset)
       form))
 
 ;;;# Dereferencing Foreign Arrays

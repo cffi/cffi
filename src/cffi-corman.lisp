@@ -45,6 +45,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%mem-ref
+   #:%mem-set
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
    #:foreign-symbol-pointer
@@ -178,7 +179,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;      `(cref (,(convert-foreign-type type) *) ,ptr ,offset)
 ;      form))
 
-(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+(defun %mem-set (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (eql offset 0)
     (setq ptr (inc-pointer ptr offset)))

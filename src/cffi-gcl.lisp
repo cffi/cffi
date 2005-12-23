@@ -52,6 +52,7 @@
    #:null-ptr-p
    #:inc-ptr
    #:%mem-ref
+   #:%mem-set
    #:%foreign-funcall
    #:%foreign-type-alignment
    #:%foreign-type-size
@@ -181,7 +182,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:double          (ref-double ptr))
     (:pointer         (ref-ptr ptr))))
 
-(defun (setf %mem-ref) (value ptr type &optional (offset 0))
+(defun %mem-set (value ptr type &optional (offset 0))
   (unless (zerop offset)
     (incf ptr offset))
   (ecase type

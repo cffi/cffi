@@ -39,8 +39,8 @@ The foreign string will be null-terminated."
   (decf size)
   (loop with i = 0 for char across string
         while (< i size)
-        do (setf (%mem-ref ptr :unsigned-char (post-incf i)) (char-code char))
-        finally (setf (%mem-ref ptr :unsigned-char i) 0)))
+        do (%mem-set (char-code char) ptr :unsigned-char (post-incf i))
+        finally (%mem-set 0 ptr :unsigned-char i)))
 
 (defun foreign-string-to-lisp (ptr &optional (size most-positive-fixnum)
                                (null-terminated-p t))
