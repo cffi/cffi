@@ -56,7 +56,7 @@
     `(cond
       ((null ,value) (null-pointer))
       ((null-pointer-p ,value) ,value)
-      (t (error "~A is not a null pointer." ,value))))))
+      (t (error "~A is not a null pointer." ,value)))))
 
 ;;; The SYSCALL-RESULT type is an integer type used for the return
 ;;; value of C functions that return -1 and set errno on errors.
@@ -70,7 +70,7 @@
   (once-only (value)
     `(if (minusp ,value)
       (error "System call failed with return value ~D." ,value)
-      ,value))))
+      ,value)))
 
 ;;; Define the Lisp function %GETTIMEOFDAY to call the C function
 ;;; 'gettimeofday', passing a pointer to the TIMEVAL structure to fill
