@@ -632,12 +632,13 @@ initialize the contents of the newly allocated memory."
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
 The buffer has dynamic extent and may be stack allocated."
-  ;; If COUNT and TYPE constant, multiply it by the size now.
-  (if (and (constantp type) (constantp count))
-      `(with-foreign-pointer (,var ,(* count (foreign-type-size (eval type))))
-         ,@body)
-      `(with-foreign-pointer (,var (* ,count (foreign-type-size ,type)))
-         ,@body)))
+  `(with-foreign-pointer
+       (,var ,(if (constantp type)
+                  (if (constantp count)
+                      (* (eval count) (foreign-type-size (eval type)))
+                      `(* ,count ,(foreign-type-size (eval type))))
+                  `(* ,count (foreign-type-size ,type))))
+     ,@body))
 
 (defmacro with-foreign-objects (bindings &rest body)
   (if bindings
