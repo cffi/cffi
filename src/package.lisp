@@ -91,7 +91,6 @@
    #:with-foreign-slots
 
    ;; Extensible foreign type operations.
-   #:foreign-typedef
    #:translate-to-foreign
    #:translate-from-foreign
    #:free-translated-object

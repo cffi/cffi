@@ -91,18 +91,18 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string :pointer)
 
-(defmethod translate-to-foreign ((s string) (class foreign-typedef)
-                                 (name (eql :string)))
+(defmethod translate-to-foreign ((s string) type (name (eql :string)))
+  (declare (ignore type name))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj (class foreign-typedef)
-                                 (name (eql :string)))
+(defmethod translate-to-foreign (obj type (name (eql :string)))
+  (declare (ignore type name))
   (if (pointerp obj)
       (values obj nil)
       (error "~A is not a Lisp string or pointer." obj)))
 
-(defmethod translate-from-foreign (ptr (class foreign-typedef)
-                                   (name (eql :string)))
+(defmethod translate-from-foreign (ptr type (name (eql :string)))
+  (declare (ignore type name))
   (foreign-string-to-lisp ptr))
 
 (defmethod free-translated-object (ptr (class foreign-typedef)

@@ -86,17 +86,20 @@
 ;;; the C object to pass to the foreign function.  The second value
 ;;; will be passed to FREE-TRANSLATED-OBJECT and defaults to NIL.
 ;;; This is used for communication between the two functions.
-(defgeneric translate-to-foreign (value type-class type-name))
+(defgeneric translate-to-foreign (value type-class type-name)
+  (:argument-precedence-order type-name type-class value))
 
 ;;; Convert the C object VALUE having the foreign type described by
 ;;; TYPE-CLASS and TYPE-NAME to a Lisp object and return it.
-(defgeneric translate-from-foreign (value type-class type-name))
+(defgeneric translate-from-foreign (value type-class type-name)
+  (:argument-precedence-order type-name type-class value))
 
 ;;; Free a C object VALUE having the foreign type described by
 ;;; TYPE-CLASS and TYPE-NAME, allocated by TRANSLATE-TO-FOREIGN.
 ;;; ALLOC-PARAM contains the second value returned by
 ;;; TRANSLATE-TO-FOREIGN (or nil if no value was supplied).
-(defgeneric free-translated-object (value type-class type-name alloc-param))
+(defgeneric free-translated-object (value type-class type-name alloc-param)
+  (:argument-precedence-order type-name type-class value alloc-param))
 
 ;;;## Default Translations
 ;;;
@@ -728,10 +731,8 @@ obtained using define-foreign-type."
       :long
       :unsigned-long) base-type)))
 
-(defmethod translate-to-foreign (value (type foreign-typedef)
-                                 (name (eql :boolean)))
+(defmethod translate-to-foreign (value type (name (eql :boolean)))
   (if value 1 0))
 
-(defmethod translate-from-foreign (value (type foreign-typedef)
-                                   (name (eql :boolean)))
+(defmethod translate-from-foreign (value type (name (eql :boolean)))
   (not (zerop value)))
