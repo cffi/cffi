@@ -95,6 +95,8 @@
 
 #-cffi/no-long-long
 (progn
+  #+openmcl (push 'foreign-globals.set.long-long rt::*expected-failures*)
+
   (deftest foreign-globals.ref.long-long
       *var-long-long*
     -9223372036854775807)

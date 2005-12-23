@@ -138,6 +138,8 @@
 
 #-cffi/no-long-long
 (progn
+  #+openmcl (push 'callbacks.long-long rt::*expected-failures*)
+
   (deftest callbacks.long-long
       (expect-long-long-sum (callback sum-long-long))
     1)
