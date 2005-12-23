@@ -160,7 +160,7 @@
 ;;;# Dereferencing Foreign Pointers
 
 (defun mem-ref (ptr type &optional (offset 0))
-  "Return the value of TYPE at OFFSET from PTR. If TYPE is aggregate,
+  "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
 we don't return its 'value' but a pointer to it, which is PTR itself."
   (let ((parsed-type (parse-type type)))
     (if (aggregatep parsed-type)
@@ -176,7 +176,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
       form))
 
 (defun mem-set (value ptr type &optional (offset 0))
-  "Set the value of TYPE at OFFSET from PTR to VALUE."
+  "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
   (%mem-set value ptr (canonicalize-foreign-type type) offset))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)

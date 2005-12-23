@@ -1,5 +1,5 @@
 \input texinfo   @c -*-texinfo-*-
-@c %**start of header£
+@c %**start of header
 @setfilename cffi-sys.info
 @settitle CFFI-SYS Interface Specification
 

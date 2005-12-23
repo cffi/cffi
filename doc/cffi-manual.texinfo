@@ -1764,7 +1764,7 @@ A pointer.
 A foreign type.
 
 @item offset
-An integer.
+An integer (in byte units).
 
 @item object
 The value @emph{ptr} points to.
