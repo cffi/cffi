@@ -250,6 +250,9 @@ the function call."
        ;;  because that would invoke free() on the opaque c-pointer!
        ;; Maybe cffi should make an exception and use the
        ;;  foreign-function object, not its address?
+       (let ((cb-fun (get ',name 'clisp-callback-function)))
+         (when cb-fun (ffi:foreign-free cb-fun)))
+       (setf (get ',name 'clisp-callback-function) ,cb-var)
        (setf (get ',name 'callback-ptr)
              (ffi:foreign-address ,cb-var)))))
 
