@@ -163,81 +163,49 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Dereferencing
 
-(defun %mem-ref (ptr type &optional (offset 0))
-  "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (ecase type
-    (:char (sys:signed-sap-ref-8 ptr offset))
-    (:unsigned-char (sys:sap-ref-8 ptr offset))
-    (:short (sys:signed-sap-ref-16 ptr offset))
-    (:unsigned-short (sys:sap-ref-16 ptr offset))
-    (:int (sys:signed-sap-ref-32 ptr offset))
-    (:unsigned-int (sys:sap-ref-32 ptr offset))
-    (:long (sys:signed-sap-ref-32 ptr offset))
-    (:unsigned-long (sys:sap-ref-32 ptr offset))
-    (:long-long (sys:signed-sap-ref-64 ptr offset))
-    (:unsigned-long-long (sys:sap-ref-64 ptr offset))
-    (:float (sys:sap-ref-single ptr offset))
-    (:double (sys:sap-ref-double ptr offset))
-    (:pointer (sys:sap-ref-sap ptr offset))))
+;;; Define the %MEM-REF and %MEM-SET functions, as well as compiler
+;;; macros that optimize the case where the type keyword is constant
+;;; at compile-time.
+(defmacro define-mem-accessors (&body pairs)
+  `(progn
+    (defun %mem-ref (ptr type &optional (offset 0))
+      (ecase type
+        ,@(loop for (keyword accessor) in pairs
+                collect `(,keyword (,accessor ptr offset)))))
+    (defun %mem-set (value ptr type &optional (offset 0))
+      (ecase type
+        ,@(loop for (keyword accessor) in pairs
+                collect `(,keyword (setf (,accessor ptr offset) value)))))
+    (define-compiler-macro %mem-ref
+        (&whole form ptr type &optional (offset 0))
+      (if (constantp type)
+          (ecase (eval type)
+            ,@(loop for (keyword accessor) in pairs
+                    collect `(,keyword `(,',accessor ,ptr ,offset))))
+          form))
+    (define-compiler-macro %mem-set
+        (&whole form value ptr type &optional (offset 0))
+      (if (constantp type)
+          (ecase (eval type)
+            ,@(loop for (keyword accessor) in pairs
+                    collect `(,keyword `(setf (,',accessor ,ptr ,offset)
+                                         ,value))))
+          form))))
 
-(define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
-  "Compiler macro to open-code when TYPE is constant."
-  (if (constantp type)
-      (progn
-        #-(and) (format t "~&;; Open-coding %MEM-REF form: ~S~%" form)
-        (ecase (eval type)
-          (:char `(sys:signed-sap-ref-8 ,ptr ,offset))
-          (:unsigned-char `(sys:sap-ref-8 ,ptr ,offset))
-          (:short `(sys:signed-sap-ref-16 ,ptr ,offset))
-          (:unsigned-short `(sys:sap-ref-16 ,ptr ,offset))
-          (:int `(sys:signed-sap-ref-32 ,ptr ,offset))
-          (:unsigned-int `(sys:sap-ref-32 ,ptr ,offset))
-          (:long `(sys:signed-sap-ref-32 ,ptr ,offset))
-          (:unsigned-long `(sys:sap-ref-32 ,ptr ,offset))
-          (:long-long `(sys:signed-sap-ref-64 ,ptr ,offset))
-          (:unsigned-long-long `(sys:sap-ref-64 ,ptr ,offset))
-          (:float `(sys:sap-ref-single ,ptr ,offset))
-          (:double `(sys:sap-ref-double ,ptr ,offset))
-          (:pointer `(sys:sap-ref-sap ,ptr ,offset))))
-      form))
-
-(defun %mem-set (value ptr type &optional (offset 0))
-  "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (ecase type
-    (:char (setf (sys:signed-sap-ref-8 ptr offset) value))
-    (:unsigned-char (setf (sys:sap-ref-8 ptr offset) value))
-    (:short (setf (sys:signed-sap-ref-16 ptr offset) value))
-    (:unsigned-short (setf (sys:sap-ref-16 ptr offset) value))
-    (:int (setf (sys:signed-sap-ref-32 ptr offset) value))
-    (:unsigned-int (setf (sys:sap-ref-32 ptr offset) value))
-    (:long (setf (sys:signed-sap-ref-32 ptr offset) value))
-    (:unsigned-long (setf (sys:sap-ref-32 ptr offset) value))
-    (:long-long (setf (sys:signed-sap-ref-64 ptr offset) value))
-    (:unsigned-long-long (setf (sys:sap-ref-64 ptr offset) value))
-    (:float (setf (sys:sap-ref-single ptr offset) value))
-    (:double (setf (sys:sap-ref-double ptr offset) value))
-    (:pointer (setf (sys:sap-ref-sap ptr offset) value))))
-
-(define-compiler-macro %mem-set (&whole form value ptr type &optional (offset 0))
-  "Compiler macro to open-code when TYPE is constant."
-  (if (constantp type)
-      (progn
-        #-(and) (format t "~&;; Open-coding (SETF %MEM-REF) form: ~S~%" form)
-        (ecase (eval type)
-          (:char `(setf (sys:signed-sap-ref-8 ,ptr ,offset) ,value))
-          (:unsigned-char `(setf (sys:sap-ref-8 ,ptr ,offset) ,value))
-          (:short `(setf (sys:signed-sap-ref-16 ,ptr ,offset) ,value))
-          (:unsigned-short `(setf (sys:sap-ref-16 ,ptr ,offset) ,value))
-          (:int `(setf (sys:signed-sap-ref-32 ,ptr ,offset) ,value))
-          (:unsigned-int `(setf (sys:sap-ref-32 ,ptr ,offset) ,value))
-          (:long `(setf (sys:signed-sap-ref-32 ,ptr ,offset) ,value))
-          (:unsigned-long `(setf (sys:sap-ref-32 ,ptr ,offset) ,value))
-          (:long-long `(setf (sys:signed-sap-ref-64 ,ptr ,offset) ,value))
-          (:unsigned-long-long `(setf (sys:sap-ref-64 ,ptr ,offset) ,value))
-          (:float `(setf (sys:sap-ref-single ,ptr ,offset) ,value))
-          (:double `(setf (sys:sap-ref-double ,ptr ,offset) ,value))
-          (:pointer `(setf (sys:sap-ref-sap ,ptr ,offset) ,value))))
-      form))
+(define-mem-accessors
+  (:char sys:signed-sap-ref-8)
+  (:unsigned-char sys:sap-ref-8)
+  (:short sys:signed-sap-ref-16)
+  (:unsigned-short sys:sap-ref-16)
+  (:int sys:signed-sap-ref-32)
+  (:unsigned-int sys:sap-ref-32)
+  (:long sys:signed-sap-ref-32)
+  (:unsigned-long sys:sap-ref-32)
+  (:long-long sys:signed-sap-ref-64)
+  (:unsigned-long-long sys:sap-ref-64)
+  (:float sys:sap-ref-single)
+  (:double sys:sap-ref-double)
+  (:pointer sys:sap-ref-sap))
 
 ;;;# Calling Foreign Functions
 

@@ -132,101 +132,51 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Dereferencing
 
-;; This shouldn't cons when the result is an immediate.
-(defun %mem-ref (ptr type &optional (offset 0))
-  "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (ecase type
-    (:char (%get-signed-byte ptr offset))
-    (:unsigned-char (%get-unsigned-byte ptr offset))
-    (:short (%get-signed-word ptr offset))
-    (:unsigned-short (%get-unsigned-word ptr offset))
-    (:int (%get-signed-long ptr offset))
-    (:unsigned-int (%get-unsigned-long ptr offset))
-    (:long #+ppc32-target (%get-signed-long ptr offset)
-           #+ppc64-target (ccl::%%get-signed-longlong ptr offset))
-    (:unsigned-long #+ppc32-target (%get-unsigned-long ptr offset)
-                    #+ppc64-target (ccl::%%get-unsigned-longlong ptr offset))
-    (:long-long (ccl::%get-signed-long-long ptr offset))
-    (:unsigned-long-long (ccl::%get-unsigned-long-long ptr offset))
-    (:float (%get-single-float ptr offset))
-    (:double (%get-double-float ptr offset))
-    (:pointer (%get-ptr ptr offset))))
+;;; Define the %MEM-REF and %MEM-SET functions, as well as compiler
+;;; macros that optimize the case where the type keyword is constant
+;;; at compile-time.
+(defmacro define-mem-accessors (&body pairs)
+  `(progn
+    (defun %mem-ref (ptr type &optional (offset 0))
+      (ecase type
+        ,@(loop for (keyword accessor) in pairs
+                collect `(,keyword (,accessor ptr offset)))))
+    (defun %mem-set (value ptr type &optional (offset 0))
+      (ecase type
+        ,@(loop for (keyword accessor) in pairs
+                collect `(,keyword (setf (,accessor ptr offset) value)))))
+    (define-compiler-macro %mem-ref
+        (&whole form ptr type &optional (offset 0))
+      (if (constantp type)
+          (ecase (eval type)
+            ,@(loop for (keyword accessor) in pairs
+                    collect `(,keyword `(,',accessor ,ptr ,offset))))
+          form))
+    (define-compiler-macro %mem-set
+        (&whole form value ptr type &optional (offset 0))
+      (if (constantp type)
+          (ecase (eval type)
+            ,@(loop for (keyword accessor) in pairs
+                    collect `(,keyword `(setf (,',accessor ,ptr ,offset)
+                                         ,value))))
+          form))))
 
-(define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
-  "Compiler macro to open-code when TYPE is constant."
-  (if (constantp type)
-      (progn
-        #-(and) (format t "~&;; Open-coding %MEM-REF form: ~S~%" form)
-        (ecase (eval type)
-          (:char `(%get-signed-byte ,ptr ,offset))
-          (:unsigned-char `(%get-unsigned-byte ,ptr ,offset))
-          (:short `(%get-signed-word ,ptr ,offset))
-          (:unsigned-short `(%get-unsigned-word ,ptr ,offset))
-          (:int `(%get-signed-long ,ptr ,offset))
-          (:unsigned-int `(%get-unsigned-long ,ptr ,offset))
-          (:long
-           #+ppc32-target `(%get-signed-long ,ptr ,offset)
-           #+ppc64-target `(ccl::%%get-signed-longlong  ,ptr ,offset))
-          (:unsigned-long
-           #+ppc32-target `(%get-unsigned-long ,ptr ,offset)
-           #+ppc64-target `(ccl::%%get-unsigned-longlong ,ptr ,offset))
-          (:long-long `(ccl::%get-signed-long-long ,ptr ,offset))
-          (:unsigned-long-long `(ccl::%get-unsigned-long-long ,ptr ,offset))
-          (:float `(%get-single-float ,ptr ,offset))
-          (:double `(%get-double-float ,ptr ,offset))
-          (:pointer `(%get-ptr ,ptr ,offset))))
-      form))
-
-(defun %mem-set (value ptr type &optional (offset 0))
-  "Set an object of TYPE at OFFSET bytes from PTR."
-  (ecase type
-    (:char (setf (%get-signed-byte ptr offset) value))
-    (:unsigned-char (setf (%get-unsigned-byte ptr offset) value))
-    (:short (setf (%get-signed-word ptr offset) value))
-    (:unsigned-short (setf (%get-unsigned-word ptr offset) value))
-    (:int (setf (%get-signed-long ptr offset) value))
-    (:unsigned-int (setf (%get-unsigned-long ptr offset) value))
-    (:long (setf
-            #+ppc32-target (%get-signed-long ptr offset)
-            #+ppc64-target (ccl::%%get-signed-longlong ptr offset)
-            value))
-    (:unsigned-long (setf
-                     #+ppc32-target (%get-unsigned-long ptr offset)
-                     #+ppc64-target (ccl::%%get-unsigned-longlong ptr offset)
-                     value))
-    (:long-long (setf (ccl::%get-signed-long-long ptr offset) value))
-    (:unsigned-long-long (setf (ccl::%get-unsigned-long-long ptr offset) value))
-    (:float (setf (%get-single-float ptr offset) value))
-    (:double (setf (%get-double-float ptr offset) value))
-    (:pointer (setf (%get-ptr ptr offset) value))))
-
-(define-compiler-macro %mem-set (&whole form value ptr type &optional (offset 0))
-  "Compiler macro to open-code when TYPE is constant."
-  (if (constantp type)
-      (progn
-        #-(and) (format t "~&;; Open-coding (SETF %MEM-REF) form: ~S~%" form)
-        (ecase (eval type)
-          (:char `(setf (%get-signed-byte ,ptr ,offset) ,value))
-          (:unsigned-char `(setf (%get-unsigned-byte ,ptr ,offset) ,value))
-          (:short `(setf (%get-signed-word ,ptr ,offset) ,value))
-          (:unsigned-short `(setf (%get-unsigned-word ,ptr ,offset) ,value))
-          (:int `(setf (%get-signed-long ,ptr ,offset) ,value))
-          (:unsigned-int `(setf (%get-unsigned-long ,ptr ,offset) ,value))
-          (:long
-           #+ppc32-target `(setf (%get-signed-long ,ptr ,offset) ,value)
-           #+ppc64-target `(setf (ccl::%%get-signed-longlong ,ptr ,offset)
-                            ,value))
-          (:unsigned-long
-           #+ppc32-target `(setf (%get-unsigned-long ,ptr ,offset) ,value)
-           #+ppc64-target `(setf (ccl::%%get-unsigned-longlong ,ptr ,offset)
-                            ,value))
-          (:long-long `(setf (ccl::%get-signed-long-long ,ptr ,offset) ,value))
-          (:unsigned-long-long
-           `(setf (ccl::%get-unsigned-long-long ,ptr ,offset) ,value))
-          (:float `(setf (%get-single-float ,ptr ,offset) ,value))
-          (:double `(setf (%get-double-float ,ptr ,offset) ,value))
-          (:pointer `(setf (%get-ptr ,ptr ,offset) ,value))))
-      form))
+(define-mem-accessors
+  (:char %get-signed-byte)
+  (:unsigned-char %get-unsigned-byte)
+  (:short %get-signed-word)
+  (:unsigned-short %get-unsigned-word)
+  (:int %get-signed-long)
+  (:unsigned-int %get-unsigned-long)
+  #+ppc32-target (:long %get-signed-long)
+  #+ppc64-target (:long ccl::%%get-signed-longlong)
+  #+ppc32-target (:unsigned-long %get-unsigned-long)
+  #+ppc64-target (:unsigned-long ccl::%%get-unsigned-longlong)
+  (:long-long ccl::%get-signed-long-long)
+  (:unsigned-long-long ccl::%get-unsigned-long-long)
+  (:float %get-single-float)
+  (:double %get-double-float)
+  (:pointer %get-ptr))
 
 ;;;# Calling Foreign Functions
 
