@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi-examples.asd --- ASDF system definition for CFFI examples.
+;;; gethostname.lisp --- A simple CFFI example.
 ;;;
 ;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
 ;;;
@@ -25,17 +25,27 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(defpackage #:cffi-examples-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-examples-system)
+;;;# CFFI Example: gethostname binding
+;;;
+;;; This is a very simple CFFI example that illustrates calling a C
+;;; function that fills in a user-supplied string buffer.
 
-(defsystem cffi-examples
-  :description "CFFI Examples"
-  :author "James Bielman  <jamesjb@jamesjb.com>"
-  :components 
-  ((:module examples
-    :components
-    ((:file "examples")
-     (:file "gethostname")
-     (:file "gettimeofday"))))
-  :depends-on (cffi))
+(defpackage #:cffi-example-gethostname
+  (:use #:common-lisp #:cffi)
+  (:export #:gethostname))
+
+(in-package #:cffi-example-gethostname)
+
+;;; Define the Lisp function %GETHOSTNAME to call the C 'gethostname'
+;;; function, which will fill BUF with up to BUFSIZE characters of the
+;;; system's hostname.
+(defcfun ("gethostname" %gethostname) :int
+  (buf :pointer)
+  (bufsize :int))
+
+;;; Define a Lispy interface to 'gethostname'.  The utility macro
+;;; WITH-FOREIGN-POINTER-AS-STRING is used to allocate a temporary
+;;; buffer and return it as a Lisp string.
+(defun gethostname ()
+  (with-foreign-pointer-as-string (buf 255 bufsize)
+    (%gethostname buf bufsize)))
