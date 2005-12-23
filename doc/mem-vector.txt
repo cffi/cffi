@@ -24,7 +24,7 @@ pointer).
 Returns the number of objects copied.
 
 ;; Equivalent to (but possibly more efficient than):
-(loop for i below count
+(loop for i below (min count (length vector))
       for off from offset by (%foreign-type-size type)
       do (setf (aref vector i) (%mem-ref ptr type off))
       finally (return i))
@@ -41,9 +41,10 @@ Returns the number of characters copied into STRING.
 ;; Equivalent to (but possibly more efficient than):
 (loop for i below (length string)
       for off from offset
-      do (setf (char string i) (%mem-ref ptr :char off))
+      for char = (%mem-ref ptr :char off)
+      until (zerop char)
+      do (setf (char string i) char)
       finally (return i))
-
 
 Function: mem-write-vector vector ptr type &optional
                            (count (length vector)) (offset 0)
