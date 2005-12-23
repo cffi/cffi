@@ -686,7 +686,7 @@ obtained using define-foreign-type."
         (:to-c-dynamic (values 'to-c-dynamic-form nil)))
     (let ((type-spec `(,(gensym "TYPE") (eql ',type)))
           (args (delete nil (list value-arg var-arg body-arg))))
-      `(progn
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
          (defmethod ,form-method (,type-spec ,@args)
            ,@body)
          ,(when translate-method      ; no method for to-c-dynamic
