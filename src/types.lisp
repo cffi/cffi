@@ -49,113 +49,124 @@
 
 ;;;# Type Translators
 ;;;
-;;; Type translators are functions that come in two flavours:
-;;;   - to-c-form, from-c-form and to-c-dynamic-form, generate code to
-;;;     automatically convert foreign values to Lisp objects (and vice-versa),
-;;;     eg, when calling foreign functions.
-;;;   - translate-to-c and translate-from-c are the runtime versions of the
-;;;     expanders and will take a value at runtime and perform the appropriate
-;;;     translation/conversion.
+;;; Type translation is now done with generic functions at runtime.
+;;;
+;;; These generic functions can be specialized on either the foreign
+;;; type class, or the class _and_ the foreign type name.  This is
+;;; useful because we have two different types of translators:
+;;;
+;;; a. We want to translate _all_ values of a subclass of FOREIGN-TYPE
+;;;    the same way, such as FOREIGN-ENUM.
+;;;
+;;; b. We want to translate a _specific instance_ of a subclass of
+;;;    FOREIGN-TYPE in its own way, such as the FOREIGN-TYPEDEF instance
+;;;    for the :STRING type.
+;;;
+;;; Note that, due to the order in which applicable methods are
+;;; computed, if you are EQL-specializing the type _name_, you will
+;;; also need to be sure to specialize the type _class_, otherwise you
+;;; may be suprised by the method that ends up being invoked!
+;;;
+;;; In macros that look up type specifiers at macroexpansion-time, we
+;;; avoid calling type translators for built-in types.  This
+;;; optimization could be made better by wrapping the method
+;;; definitions for translators to set some kind of flag in the
+;;; FOREIGN-TYPE instance that specifies whether a translator is
+;;; defined or not, letting us avoid translation for simple typedefs.
+;;;
+;;; Whether this is worth optimizing just to avoid one GF call is up
+;;; for debate.
+;;;
+;;; TODO: Define a higher-level interface on these methods?  We can't
+;;; really be compatible with the old DEFINE-TYPE-TRANSLATOR because
+;;; we aren't returning list structure anymore.
 
-(defgeneric to-c-form (type value-form)
-  (:documentation
-   "Returns a form suitable for translating a VALUE-FORM of type TYPE to C."))
+;;; Convert the Lisp object VALUE to a C object having the foreign
+;;; type described by TYPE-CLASS and TYPE-NAME.  The primary value is
+;;; the C object to pass to the foreign function.  The second value
+;;; will be passed to FREE-TRANSLATED-OBJECT and defaults to NIL.
+;;; This is used for communication between the two functions.
+(defgeneric translate-to-foreign (value type-class type-name))
 
-(defgeneric from-c-form (type value-form)
-  (:documentation
-   "Returns a form suitable for translating a VALUE-FORM of type TYPE from C."))
+;;; Convert the C object VALUE having the foreign type described by
+;;; TYPE-CLASS and TYPE-NAME to a Lisp object and return it.
+(defgeneric translate-from-foreign (value type-class type-name))
 
-(defgeneric to-c-dynamic-form (type value-form var-form body)
-  (:documentation
-   "Returns a form suitable for translating a VALUE-FORM of type TYPE to C
-    within the extent of BODY with VALUE-FORM bound bound to VAR-FORM."))
+;;; Free a C object VALUE having the foreign type described by
+;;; TYPE-CLASS and TYPE-NAME, allocated by TRANSLATE-TO-FOREIGN.
+;;; ALLOC-PARAM contains the second value returned by
+;;; TRANSLATE-TO-FOREIGN (or nil if no value was supplied).
+(defgeneric free-translated-object (value type-class type-name alloc-param))
 
-(defgeneric translate-to-c (value type)
-  (:documentation
-   "Translates the VALUE of type TYPE from Lisp to C. TYPE should
-    already be parsed, ie, it should be an instance of FOREIGN-TYPE."))
+;;;## Default Translations
+;;;
+;;; Default implementations of translation methods that do nothing.
+;;;
+;;; The results are undefined if these methods are redefined.
 
-(defgeneric translate-from-c (value type)
-  (:documentation
-   "Translates the VALUE of type TYPE to from C to Lisp. TYPE should
-    already be parsed, ie, it should be an instance of FOREIGN-TYPE."))
-
-(defmethod to-c-form (type value-form)
-  "Fallback method, no translations for TYPE."
-  (declare (ignore type))
-  value-form)
-
-(defmethod from-c-form (type value-form)
-  "Fallback method, no translations for TYPE."
-  (declare (ignore type))
-  value-form)
-
-(defmethod to-c-dynamic-form (type value-form var-form body)
-  "Fallback method, no translations for TYPE. Try :to-c translation."
-  `(let ((,var-form ,(to-c-form type value-form)))
-     ,@body))
-
-(defmethod translate-to-c (value type)
-  "Fallback method, no translation for TYPE."
-  (declare (ignore type))
+(defmethod translate-to-foreign (value class name)
+  (declare (ignore class name))
   value)
 
-(defmethod translate-from-c (value type)
-  "Fallback method, no translation for TYPE."
-  (declare (ignore type))
+(defmethod translate-from-foreign (value class name)
+  (declare (ignore class name))
   value)
 
-;;;## Translations for typedefs
+(defmethod free-translated-object (value class name param)
+  (declare (ignore value class name param)))
+
+;;;## Translations for Built-In Types
+;;;
+;;; By definition, there is nothing to do here, so translators for the
+;;; built-in types simply return the value untouched.  This case is
+;;; going to be worth optimizing when the type is known at
+;;; compile-time to avoid the useless generic function dispatch.
+;;;
+;;; The user may not define new methods on built-in foreign types, as
+;;; the optimizer will ignore them.
+
+;;;## Translations for Typedefs
 ;;;
 ;;; We follow the chain of typedefs and apply all translations in a
-;;; useful order. The actually translations are in the methods that
+;;; useful order. The actual translations are in the methods that
 ;;; specialize on the first arg (type (eql <name-of-typedef>)).
 
-(defmethod to-c-form ((type foreign-typedef) value-form)
-  "Apply all to-c translators of a typedef most-specific first."
-  (to-c-form (actual-type type) (to-c-form (name type) value-form)))
+(defmethod translate-to-foreign (value (class foreign-typedef) name)
+  (declare (ignore name))
+  (let ((actual-type (actual-type class)))
+    (translate-to-foreign value actual-type (name actual-type))))
 
-(defmethod translate-to-c (value (type foreign-typedef))
-  "Runtime version of the equivalent to-c-form."
-  (translate-to-c (translate-to-c value (name type)) (actual-type type)))
+(defmethod translate-from-foreign (value (class foreign-typedef) name)
+  (declare (ignore name))
+  (let ((actual-type (actual-type class)))
+    (translate-from-foreign value actual-type (name actual-type))))
 
-(defmethod from-c-form ((type foreign-typedef) value-form)
-  "Apply all from-c translator of a typedef most-specific last."
-  (from-c-form (name type) (from-c-form (actual-type type) value-form)))
+(defmethod free-translated-object (value (class foreign-typedef) name param)
+  (declare (ignore name))
+  (let ((actual-type (actual-type class)))
+    (free-translated-object value actual-type (name actual-type) param)))
 
-(defmethod translate-from-c (value (type foreign-typedef))
-  "Runtime version of the equivalent from-c-form."
-  (translate-from-c (translate-from-c value (actual-type type)) (name type)))
+;;;## Macroexpansion Time Translation
+;;;
+;;; In this new implementation of type translation,
+;;; WITH-OBJECT-TRANSLATED should only be used when VAR should be
+;;; translated and bound to VALUE, and has dynamic extent during BODY.
+;;; There is no need to use this macro when converting values from C
+;;; objects---just call TRANSLATE-FROM-FOREIGN directly.
+;;;
+;;; If TYPE-SPEC refers to a built-in type, it will not be translated.
 
-(defmethod to-c-dynamic-form ((type foreign-typedef) value-form var-form body)
-  "Apply all to-c-dynamic translations of a typedef most-specific first."
-  (to-c-dynamic-form (name type) value-form var-form
-                     (list (to-c-dynamic-form (actual-type type)
-                                              var-form var-form body))))
-
-;;;## Macro-expansion-time translation
-
-(defmacro with-object-translated ((var value type-spec direction) &body body)
-  "Bind VAR to VALUE translated according to TYPE-SPEC and DIRECTION in BODY."
-  (let ((type (parse-type type-spec)))
-    (if (eq direction :to-c-dynamic)
-        (to-c-dynamic-form type value var body)
-        `(let ((,var ,(funcall (case direction
-                                 (:to-c #'to-c-form)
-                                 (:from-c #'from-c-form))
-                               type value)))
-           ,@body))))
-
-;;; TODO: figure out something like this in order to use the same
-;;; interface. We'd have to accept both parsed and unparsed types,
-;;; and in case of a constant unparsed type (a symbol), we could
-;;; expand directly. But then the runtime version would need to
-;;; check for unparsed types. Good, bad? --luis
-;; (define-compiler-macro translate-from-c (&whole form value type)
-;;   (if (constantp type) ;<-- this wouldn't happen?
-;;       (let ((evaled-type (eval type)))
-;;         (from-c-form evaled-type evaled-type value))
-;;       form))
+(defmacro with-object-translated ((var value type-spec) &body body)
+  (let ((type (parse-type type-spec))
+        (param (gensym "PARAM-")))
+    (if (typep type 'foreign-built-in-type)
+        `(let ((,var ,value))
+          ,@body)
+        `(multiple-value-bind (,var ,param)
+          (translate-to-foreign ,value ,type ',(name type))
+          (unwind-protect
+               (progn ,@body)
+            (free-translated-object ,var ,type ',(name type) ,param))))))
 
 ;;;# Dereferencing Foreign Pointers
 
@@ -328,26 +339,28 @@ to open-code (SETF MEM-REF) forms."
 
 (defmethod foreign-struct-slot-value (ptr (slot simple-struct-slot))
   "Return the value of a simple SLOT from a struct at PTR."
-  (let ((type (slot-type slot)))
-    (translate-from-c (mem-ref ptr type (slot-offset slot))
-                      (parse-type type))))
+  (let* ((type (slot-type slot))
+         (parsed-type (parse-type type)))
+    (translate-from-foreign (mem-ref ptr type (slot-offset slot))
+                            parsed-type (name parsed-type))))
 
 (defmethod foreign-struct-slot-value-form (ptr (slot simple-struct-slot))
   "Return a form to get the value of a slot from PTR."
   (let ((type (slot-type slot)))
     (from-c-form type
-     `(mem-ref ,ptr ',type ,(slot-offset slot)))))
+     `(mem-ref ,ptr ,type ,(slot-offset slot)))))
 
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
   "Set the value of a simple SLOT to VALUE in PTR."
-  (let ((type (slot-type slot)))
+  (let* ((type (slot-type slot))
+         (parsed-type (parse-type type)))
     (setf (mem-ref ptr type (slot-offset slot))
-          (translate-to-c value (parse-type type)))))
+          (translate-to-foreign value parsed-type (name parsed-type)))))
 
 (defmethod foreign-struct-slot-set-form (value ptr (slot simple-struct-slot))
   "Return a form to set the value of a simple structure slot."
   (let ((type (slot-type slot)))
-    `(setf (mem-ref ,ptr ',type ,(slot-offset slot))
+    `(setf (mem-ref ,ptr ,type ,(slot-offset slot))
            ,(to-c-form type value))))
 
 ;;;### Aggregate Slots
@@ -599,11 +612,13 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 (defun foreign-alloc (type &key (initial-element nil initial-element-p)
                       (initial-contents nil initial-contents-p)
                       (count 1 count-p))
-  "Allocate enough memory to hold COUNT objects of type TYPE. If INITIAL-ELEMENT
-is supplied, each element of the newly allocated memory is initialized with its
-value. If INITIAL-CONTENTS is supplied, each of its elements will be used to
-initialize the contents of the newly allocated memory."
-  (let (contents-length)
+  "Allocate enough memory to hold COUNT objects of type TYPE. If
+INITIAL-ELEMENT is supplied, each element of the newly allocated
+memory is initialized with its value. If INITIAL-CONTENTS is supplied,
+each of its elements will be used to initialize the contents of the
+newly allocated memory."
+  (let ((parsed-type (parse-type type))
+        (contents-length nil))
     ;; Some error checking, etc...
     (when (and initial-element-p initial-contents-p)
       (error "Cannot specify both :INITIAL-ELEMENT and :INITIAL-CONTENTS"))
@@ -615,14 +630,15 @@ initialize the contents of the newly allocated memory."
     ;; Everything looks good.
     (let ((ptr (%foreign-alloc (* (foreign-type-size type) count))))
       (when initial-element-p
-        (let ((value (translate-to-c initial-element (parse-type type))))
+        (let ((value (translate-to-foreign
+                      initial-element parsed-type (name parsed-type))))
           (dotimes (i count)
             (setf (mem-aref ptr type i) value))))
       (when initial-contents-p
-        (let ((type-obj (parse-type type)))
-          (dotimes (i contents-length)
-            (setf (mem-aref ptr type i)
-                  (translate-to-c (elt initial-contents i) type-obj)))))
+        (dotimes (i contents-length)
+          (setf (mem-aref ptr type i)
+                (translate-to-foreign
+                 (elt initial-contents i) parsed-type (name parsed-type)))))
       ptr)))
 
 ;;; Stuff we could optimize here:
@@ -672,35 +688,12 @@ obtained using define-foreign-type."
       (make-instance 'foreign-typedef :name ',name
                      :actual-type (parse-type ',base-type)))))
 
-;; Maybe we should actually keep the docstring? For instance, put in one
-;; the methods this macro expands to. --luis
-(defmacro define-type-translator
-    (type direction (value-arg &optional var-arg body-arg) &body body)
-  "Defines a type translator. See the CFFI User Manual for details."
-  (cond ((and (eq direction :to-c-dynamic) (not (and var-arg body-arg)))
-         (error "Both VAR-ARG and BODY-ARG must be specified when defining ~
-                 a :TO-C-DYNAMIC translator."))
-        ((and (not (eq direction :to-c-dynamic)) (or var-arg body-arg))
-         (error "Neither VAR-ARG or BODY-ARG should be specified when defining ~
-                 a :TO-C or :FROM-C translator.")))
-  (discard-docstring body)
-  (multiple-value-bind (form-method translate-method)
-      (ecase direction
-        (:to-c (values 'to-c-form 'translate-to-c))
-        (:from-c (values 'from-c-form 'translate-from-c))
-        (:to-c-dynamic (values 'to-c-dynamic-form nil)))
-    (let ((type-spec `(,(gensym "TYPE") (eql ',type)))
-          (args (delete nil (list value-arg var-arg body-arg))))
-      `(eval-when (:compile-toplevel :load-toplevel :execute)
-         (defmethod ,form-method (,type-spec ,@args)
-           ,@body)
-         ,(when translate-method      ; no method for to-c-dynamic
-            `(defmethod ,translate-method (,value-arg ,type-spec)
-               ,(apply (eval `(lambda ,args ,@body)) args)))))))
-
 ;;;## Anonymous Type Translators
 ;;;
 ;;; (:wrapper :to-c some-function :from-c another-function)
+;;;
+;;; TODO: We will need to add a FREE function to this as well I think.
+;;; --james
 
 (defclass foreign-type-wrapper (foreign-typedef)
   ((to-c   :initarg :to-c)
@@ -713,30 +706,15 @@ obtained using define-foreign-type."
                  :to-c (or to-c 'identity)
                  :from-c (or from-c 'identity)))
 
-(defmethod to-c-form ((type foreign-type-wrapper) value-form)
-  "Calls the TO-C slot and applies the parent translator."
-  (to-c-form (actual-type type)
-             `(funcall ',(slot-value type 'to-c) ,value-form)))
+(defmethod translate-to-foreign (value (type foreign-type-wrapper) name)
+  (let ((actual-type (actual-type type)))
+    (translate-to-foreign (funcall (slot-value type 'to-c) value)
+                          actual-type (name actual-type))))
 
-(defmethod translate-to-c (value (type foreign-type-wrapper))
-  "Calls the TO-C slot and applies the parent translator."
-  (translate-to-c (funcall (slot-value type 'to-c) value) (actual-type type)))
-
-(defmethod from-c-form ((type foreign-type-wrapper) value-form)
-  "Calls the FROM-C slot and applies the parent translator."
-  `(funcall ',(slot-value type 'from-c)
-            ,(from-c-form (actual-type type) value-form)))
-
-(defmethod translate-from-c (value (type foreign-type-wrapper))
-  "Calls the FROM-C slot and applies the parent translator."
-  (funcall (slot-value type 'from-c)
-           (translate-from-c value (actual-type type))))
-
-;; Must define a TO-C-DYNAMIC translator, otherwise the default one
-;; defined on FOREIGN-TYPEDEF will kick in and TO-C won't get called.
-(defmethod to-c-dynamic-form ((type foreign-type-wrapper) value var body)
-  `(let ((,var ,(to-c-form type value)))
-     ,@body))
+(defmethod translate-from-foreign (value (type foreign-type-wrapper) name)
+  (let ((actual-type (actual-type type)))
+    (funcall (slot-value type 'from-c)
+             (translate-from-foreign value actual-type (name actual-type)))))
 
 ;;;# Other types
 
@@ -750,8 +728,10 @@ obtained using define-foreign-type."
       :long
       :unsigned-long) base-type)))
 
-(define-type-translator :boolean :from-c (value)
-  `(not (zerop ,value)))
+(defmethod translate-to-foreign (value (type foreign-typedef)
+                                 (name (eql :boolean)))
+  (if value 1 0))
 
-(define-type-translator :boolean :to-c (value)
-  `(if ,value 1 0))
+(defmethod translate-from-foreign (value (type foreign-typedef)
+                                   (name (eql :boolean)))
+  (not (zerop value)))

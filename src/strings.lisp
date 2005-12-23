@@ -91,18 +91,24 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string :pointer)
 
-(define-type-translator :string :to-c-dynamic (value var body)
-  "Convert a lisp string to a foreign string with dynamic extent."
-  `(with-foreign-string (,var ,value)
-     ,@body))
+(defmethod translate-to-foreign ((s string) (class foreign-typedef)
+                                 (name (eql :string)))
+  (values (foreign-string-alloc s) t))
 
-(define-type-translator :string :to-c (value)
-  "Convert a lisp string to a foreign string."
-  `(foreign-string-alloc ,value))
+(defmethod translate-to-foreign (obj (class foreign-typedef)
+                                 (name (eql :string)))
+  (if (pointerp obj)
+      (values obj nil)
+      (error "~A is not a Lisp string or pointer." obj)))
 
-(define-type-translator :string :from-c (value)
-  "Convert a foreign string to a lisp string."
-  `(foreign-string-to-lisp ,value))
+(defmethod translate-from-foreign (ptr (class foreign-typedef)
+                                   (name (eql :string)))
+  (foreign-string-to-lisp ptr))
+
+(defmethod free-translated-object (ptr (class foreign-typedef)
+                                   (name (eql :string)) free-p)
+  (when free-p
+    (foreign-string-free ptr)))
 
 ;;; It'd be pretty nice if returning multiple values from translators
 ;;; worked as expected:
@@ -121,16 +127,21 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string+ptr :pointer)
 
-(define-type-translator :string+ptr :to-c-dynamic (value var body)
-  "Type translator for string input arguments."
-  `(with-foreign-string (,var ,value)
-     ,@body))
+(defmethod translate-to-foreign ((s string) (class foreign-typedef)
+                                 (name (eql :string+ptr)))
+  (values (foreign-string-alloc s) t))
 
-(define-type-translator :string+ptr :to-c (value)
-  "Type translator for string arguments."
-  `(foreign-string-alloc ,value))
+(defmethod translate-to-foreign (obj (class foreign-typedef)
+                                 (name (eql :string+ptr)))
+  (if (pointerp obj)
+      (values obj nil)
+      (error "~A is not a Lisp string or pointer." obj)))
 
-(define-type-translator :string+ptr :from-c (value)
-  "Return both the string and the pointer in list."
-  (once-only (value)
-    `(list (foreign-string-to-lisp ,value) ,value)))
+(defmethod translate-from-foreign (value (class foreign-typedef)
+                                   (name (eql :string+ptr)))
+  (list (foreign-string-to-lisp value) value))
+
+(defmethod free-translated-object (value (class foreign-typedef)
+                                   (name (eql :string+ptr)) free-p)
+  (when free-p
+    (foreign-string-free value)))

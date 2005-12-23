@@ -76,7 +76,7 @@
    #:defctype
    #:defcenum
    ;#:define-type-spec-parser
-   #:define-type-translator
+   ;#:define-type-translator
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
@@ -89,6 +89,12 @@
    #:with-foreign-object
    #:with-foreign-objects
    #:with-foreign-slots
+
+   ;; Extensible foreign type operations.
+   #:foreign-typedef
+   #:translate-to-foreign
+   #:translate-from-foreign
+   #:free-translated-object
 
    ;; Foreign globals.
    #:defcvar

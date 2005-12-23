@@ -78,23 +78,18 @@ returning nil when foreign-name is not found."
        (defun ,fn ()
          ,(if (aggregatep ptype)
               ;; no dereference for aggregate types.
-              `(foreign-symbol-pointer-or-lose ,foreign-name) 
-              `(with-object-translated
-                   (var (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
-                                 ',type)
-                        ,type :from-c)
-                 var)))
+              `(foreign-symbol-pointer-or-lose ,foreign-name)
+              `(translate-from-foreign
+                (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)
+                ,ptype ,(name ptype))))
        ;; Setter
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
          ,(if read-only
               `(error ,(format nil "Trying to modify read-only foreign var: ~A."
                                lisp-name))
-              `(with-object-translated
-                   (c-value value ,type :to-c)
-                 (setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
-                                ',type)
-                       c-value)
-                 value)))
+              `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
+                      ',type)
+                (translate-to-foreign value ,ptype ,(name ptype)))))
        ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))

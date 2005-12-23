@@ -73,21 +73,14 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-type (make-foreign-enum ',name :int ',enum-list))))
 
-(defmethod to-c-form ((type foreign-enum) value-form)
-  (once-only (value-form)
-    `(if (keywordp ,value-form)
-         (%foreign-enum-value (find-type-or-lose ',(name type)) ,value-form)
-         ,value-form)))
-
-(defmethod translate-to-c (value (type foreign-enum))
+(defmethod translate-to-foreign (value (type foreign-enum) name)
+  (declare (ignore name))
   (if (keywordp value)
       (%foreign-enum-value type value)
       value))
 
-(defmethod from-c-form ((type foreign-enum) value-form)
-  `(%foreign-enum-keyword (find-type-or-lose ',(name type)) ,value-form))
-
-(defmethod translate-from-c (value (type foreign-enum))
+(defmethod translate-from-foreign (value (type foreign-enum) name)
+  (declare (ignore name))
   (%foreign-enum-keyword type value))
 
 ;;; These [four] functions could be good canditates for compiler macros

@@ -45,13 +45,13 @@
     ;; All arguments have been translated, translate
     ;; the return value and perform the call.
     ((null args)
-     (let ((sym (gensym)))
-       `(with-object-translated (,sym ,call ,rettype :from-c)
-          ,sym)))
+     (let ((parsed-type (parse-type rettype)))
+       (if (typep parsed-type 'foreign-built-in-type)
+           `(values ,call)
+           `(translate-from-foreign ,call ,parsed-type ',(name parsed-type)))))
     ;; More than one argument is available---translate the first
     ;; argument/type pair and recurse.
-    (t `(with-object-translated (,(car syms) ,(car args) ,(car types)
-                                  :to-c-dynamic)
+    (t `(with-object-translated (,(car syms) ,(car args) ,(car types))
           (translate-objects
            ,(rest syms) ,(rest args) ,(rest types) ,rettype ,call)))))
 
@@ -131,12 +131,14 @@
   "Helper macro for DEFCALLBACK."
   (cond
     ((null args)
-     (let ((sym (gensym)))
-       `(with-object-translated (,sym ,call ,rettype :to-c)
-          ,sym)))
-    (t `(with-object-translated (,(car args) ,(car args) ,(car types) :from-c)
-          (inverse-translate-objects
-           ,(rest args) ,(rest types) ,rettype ,call)))))
+     (let ((parsed-type (parse-type rettype)))
+       `(translate-to-foreign ,call ,parsed-type ,(name parsed-type))))
+    (t
+     (let ((type (parse-type (car types))))
+       `(let ((,(car args) (translate-from-foreign
+                            ,(car args) ,type ,(name type))))
+         (inverse-translate-objects ,(rest args) ,(rest types)
+          ,rettype ,call))))))
 
 (defmacro defcallback (name return-type args &body body)
   (discard-docstring body)

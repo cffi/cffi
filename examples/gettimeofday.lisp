@@ -51,12 +51,12 @@
 
 ;;; This type translator is used to ensure that a NULL-POINTER has a
 ;;; null value.  It also converts NIL to a null pointer.
-(define-type-translator null-pointer :to-c (value)
-  (once-only (value)
-    `(cond
-      ((null ,value) (null-pointer))
-      ((null-pointer-p ,value) ,value)
-      (t (error "~A is not a null pointer." ,value)))))
+(defmethod translate-to-foreign (value (class foreign-typedef)
+                                 (name (eql 'null-pointer)))
+  (cond
+    ((null value) (null-pointer))
+    ((null-pointer-p value) value)
+    (t (error "~A is not a null pointer." value))))
 
 ;;; The SYSCALL-RESULT type is an integer type used for the return
 ;;; value of C functions that return -1 and set errno on errors.
@@ -66,11 +66,11 @@
 
 ;;; Type translator to check a SYSCALL-RESULT and signal a Lisp error
 ;;; if the value is negative.
-(define-type-translator syscall-result :from-c (value)
-  (once-only (value)
-    `(if (minusp ,value)
-      (error "System call failed with return value ~D." ,value)
-      ,value)))
+(defmethod translate-from-foreign (value (class foreign-typedef)
+                                   (name (eql 'syscall-result)))
+  (if (minusp value)
+      (error "System call failed with return value ~D." value)
+      value))
 
 ;;; Define the Lisp function %GETTIMEOFDAY to call the C function
 ;;; 'gettimeofday', passing a pointer to the TIMEVAL structure to fill

@@ -129,6 +129,11 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (name type))))
 
+(defmethod make-load-form ((type foreign-type) &optional env)
+  "Return the form used to dump types to a FASL file."
+  (declare (ignore env))
+  `(find-type-or-lose ',(name type)))
+
 (defun canonicalize-foreign-type (type)
   "Convert TYPE to a built-in type by following aliases.
 Signals an error if the type cannot be resolved."
