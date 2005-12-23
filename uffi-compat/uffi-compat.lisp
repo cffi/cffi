@@ -236,9 +236,12 @@ field-name"
 
 (defmacro deref-array (array type position)
   "Dereference an array."
-  `(cffi:mem-aref ,array (element-type
-                          (cffi::parse-type
-                           (convert-uffi-type ,type)))
+  `(cffi:mem-aref ,array
+                  ,(if (constantp type)
+                       `',(element-type (cffi::parse-type
+                                         (convert-uffi-type (eval type))))
+                       `(element-type (cffi::parse-type
+                                       (convert-uffi-type ,type)))) 
                   ,position))
 
 ;; UFFI's documentation on DEF-UNION is a bit scarce, I'm not sure
