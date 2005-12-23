@@ -710,11 +710,13 @@ obtained using define-foreign-type."
                  :from-c (or from-c 'identity)))
 
 (defmethod translate-to-foreign (value (type foreign-type-wrapper) name)
+  (declare (ignore name))
   (let ((actual-type (actual-type type)))
     (translate-to-foreign (funcall (slot-value type 'to-c) value)
                           actual-type (name actual-type))))
 
 (defmethod translate-from-foreign (value (type foreign-type-wrapper) name)
+  (declare (ignore name))
   (let ((actual-type (actual-type type)))
     (funcall (slot-value type 'from-c)
              (translate-from-foreign value actual-type (name actual-type)))))
@@ -732,7 +734,9 @@ obtained using define-foreign-type."
       :unsigned-long) base-type)))
 
 (defmethod translate-to-foreign (value type (name (eql :boolean)))
+  (declare (ignore type name))
   (if value 1 0))
 
 (defmethod translate-from-foreign (value type (name (eql :boolean)))
+  (declare (ignore type name))
   (not (zerop value)))
