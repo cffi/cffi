@@ -497,7 +497,7 @@ to open-code (SETF MEM-REF) forms."
   "Optimizer for FOREIGN-SLOT-VALUE when TYPE is constant."
   (if (and (constantp type) (constantp slot-name))
       (foreign-struct-slot-value-form
-       value ptr (get-slot-info (eval type) (eval slot-name)))
+       ptr (get-slot-info (eval type) (eval slot-name)))
       form))
 
 (define-setf-expander foreign-slot-value (ptr type slot-name &environment env)
