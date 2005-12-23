@@ -136,6 +136,14 @@
         (values count size-var)))
   1 1)
 
+(deftest mem-ref.left-to-right
+    (let ((i 0))
+      (with-foreign-object (p :char 3)
+        (setf (mem-ref p :char 0) 66 (mem-ref p :char 1) 92)
+        (setf (mem-ref p :char (incf i)) (incf i))
+        (values (mem-ref p :char 0) (mem-ref p :char 1) i)))
+  66 2 2)
+
 ;; regression test. mem-aref's setf expansion evaluated its type argument twice.
 
 (deftest mem-aref.eval-type-x2
@@ -144,6 +152,16 @@
         (setf (mem-aref p (progn (incf count) :char) 0) 127))
       count)
   1)
+
+(deftest mem-aref.left-to-right
+    (let ((count -1))
+      (with-foreign-pointer (p 2)
+        (values
+         (setf (mem-aref p (progn (incf count) :char) (incf count)) (incf count))
+         (setq count -1)
+         (mem-aref (progn (incf count) p) :char (incf count))
+         count)))
+  2 -1 2 1)
 
 ;; regression tests. nested mem-ref's and mem-aref's had bogus getters
 
