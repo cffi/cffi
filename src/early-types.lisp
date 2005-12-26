@@ -92,9 +92,7 @@
       (let* ((type-spec (mklist type-spec-or-name))
              (parser (find-type-parser (car type-spec))))
         (if parser
-            (let ((new-type (apply parser (cdr type-spec))))
-              (notice-foreign-type new-type)
-              new-type)
+            (apply parser (cdr type-spec))
             (error "Unknown CFFI type: ~S." type-spec-or-name)))))
 
 ;;;# Generic Functions on Types
