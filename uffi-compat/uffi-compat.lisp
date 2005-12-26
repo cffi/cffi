@@ -255,7 +255,10 @@ field-name"
 
 (defmacro allocate-foreign-object (type &optional (size 1))
   "Allocate one or more instance of a foreign type."
-  `(cffi:foreign-alloc (convert-uffi-type ,type) :count ,size))
+  `(cffi:foreign-alloc ,(if (constantp type)
+                            `',(convert-uffi-type (eval type))
+                            `(convert-uffi-type ,type))
+                       :count ,size))
 
 (defmacro free-foreign-object (ptr)
   "Free a foreign object allocated by ALLOCATE-FOREIGN-OBJECT."
