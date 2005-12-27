@@ -330,7 +330,7 @@ to open-code (SETF MEM-REF) forms."
   "Return a form to get the value of a slot from PTR."
   (let ((type (slot-type slot)))
     (from-c-form type
-     `(mem-ref ,ptr ,type ,(slot-offset slot)))))
+     `(mem-ref ,ptr ',type ,(slot-offset slot)))))
 
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
   "Set the value of a simple SLOT to VALUE in PTR."
@@ -341,7 +341,7 @@ to open-code (SETF MEM-REF) forms."
 (defmethod foreign-struct-slot-set-form (value ptr (slot simple-struct-slot))
   "Return a form to set the value of a simple structure slot."
   (let ((type (slot-type slot)))
-    `(setf (mem-ref ,ptr ,type ,(slot-offset slot))
+    `(setf (mem-ref ,ptr ',type ,(slot-offset slot))
            ,(to-c-form type value))))
 
 ;;;### Aggregate Slots

@@ -66,6 +66,19 @@
               (foreign-slot-value tv 'timeval 'tv-usecs)))
   1 1)
 
+;; regression test: compiler macro not quoting the type in the
+;; resulting mem-ref form. The compiler macro on foreign-slot-value
+;; is not guaranteed to be expanded though.
+
+(defctype my-int :int)
+(defcstruct s5 (a my-int))
+
+(deftest struct.5
+    (with-foreign-object (s 's5)
+      (setf (foreign-slot-value s 's5 'a) 42)
+      (foreign-slot-value s 's5 'a))
+  42)
+
 ;;;# Structs with type translators
 
 (defcstruct struct-string
