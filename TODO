@@ -62,7 +62,10 @@ This is a collection of TODO items and ideas in no particular order.
 -> Implement an array type? Useful when we're working with ranks >= 2?
 -> Implement bitfields. To read: get the word, LDB it. To write: get the
    word, PDB it, put the word.
--> External encodings for the :STRING type.
+-> External encodings for the :STRING type. See:
+   <http://article.gmane.org/gmane.lisp.cffi.devel/292>
+-> Improve the type translator interface. See:
+   <http://article.gmane.org/gmane.lisp.cffi.devel/313>
 
 ### Underspecified Semantics
 
