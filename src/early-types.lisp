@@ -136,8 +136,6 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defmethod make-load-form ((type foreign-type) &optional env)
   "Return the form used to dump types to a FASL file."
   (declare (ignore env))
-  ;; This is not at all correct---we need to save the unparsed type
-  ;; here, not just its name.
   `(parse-type ',(unparse-type type)))
 
 (defun canonicalize-foreign-type (type)
