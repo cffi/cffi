@@ -1,0 +1,101 @@
+-*- Text -*-
+
+This is a collection of TODO items and ideas in no particular order.
+
+### Testing
+
+-> Test uffi-compat with more UFFI libraries.
+-> Write more FOREIGN-GLOBALS.SET.* tests.
+-> Write tests for DEFCFUN, FOREIGN-FUNCALL and DEFCALLBACK that
+   exercise all possible combinations of argument types, preferably
+   in an automated fashion (for inspiration, see
+   <http://article.gmane.org/gmane.lisp.steel-bank.devel/6130>). This
+   would have found ABI bugs in CMUCL/SBCL not long ago and might help
+   find more.
+-> Write benchmarks comparing CFFI vs. native FFIs and also demonstrating
+   performance of each platform.
+-> Write more STRUCT.ALIGNMENT.* tests (namely involving the :LONG-LONG
+   and :UNSIGNED-LONG-LONG types) and test them in more ABIs.
+-> Run tests both interpreted (where it makes sense) and compiled.
+-> Run tests with the different kinds of shared libraries available on
+   MacOS X.
+
+### Ports
+
+-> Finish GCL port.
+-> Fix the ECL port.
+-> Fix bugs in the Corman port.
+-> Port to MCL.
+-> Port to SCL. Note: Its maintainer has offered to do a port. It might
+   be a good idea to wait until CFFI-SYS is stable, though.
+
+### Features
+
+-> Implement FOREIGN-SLOT-NAMES.
+-> Make LOAD-FOREIGN-LIBRARY smarter. Eg: avoid the need to specify the
+   full path to the library.
+-> Implement CFFI-SYS:%CLOSE-FOREIGN-LIBRARY for all supported Lisps and
+   implement a higher-level CFFI:CLOSE-FOREIGN-LIBRARY in accordance
+   to whatever interface we come up with load-foreign-library.
+-> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
+   DEFCUN/FOREIGN-FUNCALL.
+-> [Idea] add shortcurts (aliases) for types. Examples: :UINT, :LLONG,
+   :ULLONG, etc...
+-> Figure out how to portably define types like: time_t, size_t, uint32,
+   wchar_t, etc... Likely to involve something like SB-GROVEL and possibly
+   avoiding this step on known platforms?
+-> [Lost Idea] Something involving finalizers?
+-> Implement the proposed interfaces (see doc/).
+-> Add the ability to specify the calling convention to the interface.
+-> Implement CFFI-SYS:ERRNO-VALUE (name?).
+-> Extend FOREIGN-SLOT-VALUE and make it accept multiple "indices" for
+   directly accessing structs inside structs, arrays inside structs, etc...
+-> Implement :in/:out/:in-out for DEFCFUN (and FOREIGN-FUNCALL?).
+-> Add support for multiple memory allocation schemes (like CLISP), namely
+   support for allocating with malloc() (so that it can be freed on the C
+   side)>
+-> Extend DEFCVAR's symbol macro in order to handle memory (de)allocation
+   automatically (see CLISP).
+-> Implement byte swapping routines (see /usr/include/linux/byteorder)
+-> [Lost Idea] Implement UB8-REF?
+-> [Lost Idea] Something about MEM-READ-C-STRING returning multiple value?
+-> Implement an array type? Useful when we're working with ranks >= 2?
+-> Implement bitfields. To read: get the word, LDB it. To write: get the
+   word, PDB it, put the word.
+-> External encodings for the :STRING type.
+
+### Underspecified Semantics
+
+-> (setf (mem-ref ptr <aggregate-type> offset) <value>)
+-> Review the interface for coherence across Lisps with regard to
+   behaviour in "exceptional" situations. Eg: threads, dumping cores,
+   accessing foreign symbols that don't exist, etc...
+-> On Lispworks a Lisp float is a double and therefore won't necessarily
+   fit in a C float. Figure out a way to handle this.
+-> Allegro: callbacks' return values.
+-> Lack of uniformity with regard to pointers. Allegro: 0 -> NULL.
+   CLISP/Lispworks: NIL -> NULL.
+
+### Possible Optimizations
+
+-> More compiler macros on some of the CFFI-SYS implementations.
+-> Optimize UFFI-COMPAT when the vector stuff is implemented.
+-> Being able to declare that some C int will always fit in a Lisp
+   fixnum.
+
+### Known Issues
+
+-> Fix CFFI/CFFI-SYS in order to work in Allegro's modern (case-sensitive)
+   mode.
+
+### Documentation
+
+-> Fill the missing sections in the CFFI User Manual.
+-> Write a tutorial section. (In progress, see: "bits from a new tutorial"
+   <http://article.gmane.org/gmane.lisp.cffi.devel/273>)
+-> Update the CFFI-SYS Specification.
+-> Generally improve the reference docs and examples.
+
+### Other
+
+-> Type-checking pointer interface.
