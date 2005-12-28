@@ -114,6 +114,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (:documentation
    "Return the size in bytes of a foreign type."))
 
+(defgeneric unparse (type-name type-class)
+  (:documentation
+   "Unparse FOREIGN-TYPE to a type specification (symbol or list)."))
+
 ;;;# Foreign Types
 
 (defclass foreign-type ()
@@ -132,12 +136,22 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defmethod make-load-form ((type foreign-type) &optional env)
   "Return the form used to dump types to a FASL file."
   (declare (ignore env))
-  `(find-type-or-lose ',(name type)))
+  ;; This is not at all correct---we need to save the unparsed type
+  ;; here, not just its name.
+  `(parse-type ',(unparse-type type)))
 
 (defun canonicalize-foreign-type (type)
   "Convert TYPE to a built-in type by following aliases.
 Signals an error if the type cannot be resolved."
   (canonicalize (parse-type type)))
+
+(defmethod unparse (name (type foreign-type))
+  "Default method to unparse TYPE to its name."
+  (name type))
+
+(defun unparse-type (type)
+  "Unparse a foreign type to a symbol or list type spec."
+  (unparse (name type) type))
 
 ;;;# Built-In Foreign Types
 

@@ -73,13 +73,13 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-type (make-foreign-enum ',name :int ',enum-list))))
 
-(defmethod translate-to-foreign (value (type foreign-enum) name)
+(defmethod translate-to-foreign (value name (type foreign-enum))
   (declare (ignore name))
   (if (keywordp value)
       (%foreign-enum-value type value)
       value))
 
-(defmethod translate-from-foreign (value (type foreign-enum) name)
+(defmethod translate-from-foreign (value name (type foreign-enum))
   (declare (ignore name))
   (%foreign-enum-keyword type value))
 

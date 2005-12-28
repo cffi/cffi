@@ -81,7 +81,7 @@ returning nil when foreign-name is not found."
               `(foreign-symbol-pointer-or-lose ,foreign-name)
               `(translate-from-foreign
                 (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)
-                ,ptype ,(name ptype))))
+                ,(name ptype) ,ptype)))
        ;; Setter
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
@@ -90,6 +90,6 @@ returning nil when foreign-name is not found."
                                lisp-name))
               `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
                       ',type)
-                (translate-to-foreign value ,ptype ,(name ptype)))))
+                (translate-to-foreign value ,(name ptype) ,ptype))))
        ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))

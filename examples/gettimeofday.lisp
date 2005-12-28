@@ -51,8 +51,8 @@
 
 ;;; This type translator is used to ensure that a NULL-POINTER has a
 ;;; null value.  It also converts NIL to a null pointer.
-(defmethod translate-to-foreign (value type (name (eql 'null-pointer)))
-  (declare (ignore type name))
+(defmethod translate-to-foreign (value (name (eql 'null-pointer)) type)
+  (declare (ignore type))
   (cond
     ((null value) (null-pointer))
     ((null-pointer-p value) value)
@@ -66,8 +66,8 @@
 
 ;;; Type translator to check a SYSCALL-RESULT and signal a Lisp error
 ;;; if the value is negative.
-(defmethod translate-from-foreign (value type (name (eql 'syscall-result)))
-  (declare (ignore type name))
+(defmethod translate-from-foreign (value (name (eql 'syscall-result)) type)
+  (declare (ignore type))
   (if (minusp value)
       (error "System call failed with return value ~D." value)
       value))

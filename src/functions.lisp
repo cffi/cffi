@@ -48,7 +48,7 @@
      (let ((parsed-type (parse-type rettype)))
        (if (typep parsed-type 'foreign-built-in-type)
            `(values ,call)
-           `(translate-from-foreign ,call ,parsed-type ',(name parsed-type)))))
+           `(translate-from-foreign ,call ',(name parsed-type) ,parsed-type))))
     ;; More than one argument is available---translate the first
     ;; argument/type pair and recurse.
     (t `(with-object-translated (,(car syms) ,(car args) ,(car types))
@@ -132,11 +132,11 @@
   (cond
     ((null args)
      (let ((parsed-type (parse-type rettype)))
-       `(translate-to-foreign ,call ,parsed-type ,(name parsed-type))))
+       `(translate-to-foreign ,call ,(name parsed-type) ,parsed-type)))
     (t
      (let ((type (parse-type (car types))))
        `(let ((,(car args) (translate-from-foreign
-                            ,(car args) ,type ,(name type))))
+                            ,(car args) ,(name type) ,type)))
          (inverse-translate-objects ,(rest args) ,(rest types)
           ,rettype ,call))))))
 

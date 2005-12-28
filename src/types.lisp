@@ -86,20 +86,28 @@
 ;;; the C object to pass to the foreign function.  The second value
 ;;; will be passed to FREE-TRANSLATED-OBJECT and defaults to NIL.
 ;;; This is used for communication between the two functions.
-(defgeneric translate-to-foreign (value type-class type-name)
-  (:argument-precedence-order type-name type-class value))
+(defgeneric translate-to-foreign (value type-name type-class))
+
+;;; Call the next translator when converting a Lisp object to a
+;;; foreign object.
+(defgeneric next-translate-to-foreign (value type-name type-class))
 
 ;;; Convert the C object VALUE having the foreign type described by
 ;;; TYPE-CLASS and TYPE-NAME to a Lisp object and return it.
-(defgeneric translate-from-foreign (value type-class type-name)
-  (:argument-precedence-order type-name type-class value))
+(defgeneric translate-from-foreign (value type-name type-class))
+
+;;; Call the next translator when converting a foreign object to a
+;;; Lisp object.
+(defgeneric next-translate-from-foreign (value type-name type-class))
 
 ;;; Free a C object VALUE having the foreign type described by
 ;;; TYPE-CLASS and TYPE-NAME, allocated by TRANSLATE-TO-FOREIGN.
 ;;; ALLOC-PARAM contains the second value returned by
 ;;; TRANSLATE-TO-FOREIGN (or nil if no value was supplied).
-(defgeneric free-translated-object (value type-class type-name alloc-param)
-  (:argument-precedence-order type-name type-class value alloc-param))
+(defgeneric free-translated-object (value name class param))
+
+;;; Call the next translator to free a foreign object.
+(defgeneric next-free-translated-object (value name class param))
 
 ;;;## Default Translations
 ;;;
@@ -107,16 +115,27 @@
 ;;;
 ;;; The results are undefined if these methods are redefined.
 
-(defmethod translate-to-foreign (value class name)
-  (declare (ignore class name))
+(defmethod translate-to-foreign (value name class)
+  (declare (ignore name class))
   value)
 
-(defmethod translate-from-foreign (value class name)
-  (declare (ignore class name))
+(defmethod next-translate-to-foreign (value name class)
+  (declare (ignore name class))
   value)
 
-(defmethod free-translated-object (value class name param)
-  (declare (ignore value class name param)))
+(defmethod translate-from-foreign (value name class)
+  (declare (ignore name class))
+  value)
+
+(defmethod next-translate-from-foreign (value name class)
+  (declare (ignore name class))
+  value)
+
+(defmethod free-translated-object (value name class param)
+  (declare (ignore value name class param)))
+
+(defmethod next-free-translated-object (value name class param)
+  (declare (ignore value name class param)))
 
 ;;;## Translations for Built-In Types
 ;;;
@@ -134,20 +153,33 @@
 ;;; useful order. The actual translations are in the methods that
 ;;; specialize on the first arg (type (eql <name-of-typedef>)).
 
-(defmethod translate-to-foreign (value (class foreign-typedef) name)
+(defmethod translate-to-foreign (value name (class foreign-typedef))
   (declare (ignore name))
   (let ((actual-type (actual-type class)))
-    (translate-to-foreign value actual-type (name actual-type))))
+    (translate-to-foreign value (name actual-type) actual-type)))
 
-(defmethod translate-from-foreign (value (class foreign-typedef) name)
+(defmethod next-translate-to-foreign (value name (class foreign-typedef))
   (declare (ignore name))
-  (let ((actual-type (actual-type class)))
-    (translate-from-foreign value actual-type (name actual-type))))
+  (translate-to-foreign value nil class))
 
-(defmethod free-translated-object (value (class foreign-typedef) name param)
+(defmethod translate-from-foreign (value name (class foreign-typedef))
   (declare (ignore name))
   (let ((actual-type (actual-type class)))
-    (free-translated-object value actual-type (name actual-type) param)))
+    (translate-from-foreign value (name actual-type) actual-type)))
+
+(defmethod next-translate-from-foreign (value name (class foreign-typedef))
+  (declare (ignore name))
+  (translate-from-foreign value nil class))
+
+(defmethod free-translated-object (value name (class foreign-typedef) param)
+  (declare (ignore name))
+  (let ((actual-type (actual-type class)))
+    (free-translated-object value (name actual-type) actual-type param)))
+
+(defmethod next-free-translated-object (value name (class foreign-typedef) 
+                                              param)
+  (declare (ignore name))
+  (free-translated-object value nil class param))
 
 ;;;## Macroexpansion Time Translation
 ;;;
@@ -166,10 +198,10 @@
         `(let ((,var ,value))
           ,@body)
         `(multiple-value-bind (,var ,param)
-          (translate-to-foreign ,value ,type ',(name type))
+          (translate-to-foreign ,value ',(name type) ,type)
           (unwind-protect
                (progn ,@body)
-            (free-translated-object ,var ,type ',(name type) ,param))))))
+            (free-translated-object ,var ',(name type) ,type ,param))))))
 
 ;;;# Dereferencing Foreign Pointers
 
@@ -345,26 +377,35 @@ to open-code (SETF MEM-REF) forms."
   (let* ((type (slot-type slot))
          (parsed-type (parse-type type)))
     (translate-from-foreign (mem-ref ptr type (slot-offset slot))
-                            parsed-type (name parsed-type))))
+                            (name parsed-type) parsed-type)))
 
 (defmethod foreign-struct-slot-value-form (ptr (slot simple-struct-slot))
   "Return a form to get the value of a slot from PTR."
-  (let ((type (slot-type slot)))
-    (from-c-form type
-     `(mem-ref ,ptr ,type ,(slot-offset slot)))))
+  (let* ((type (slot-type slot))
+         (parsed-type (parse-type type)))
+    ;; If PARSED-TYPE is a built-in type, don't bother translating.
+    (if (typep parsed-type 'foreign-built-in-type)
+        `(mem-ref ,ptr ',type ,(slot-offset slot))
+        `(translate-from-foreign (mem-ref ,ptr ',type ,(slot-offset slot))
+                                 ',(name parsed-type) ,parsed-type))))
 
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
   "Set the value of a simple SLOT to VALUE in PTR."
   (let* ((type (slot-type slot))
          (parsed-type (parse-type type)))
     (setf (mem-ref ptr type (slot-offset slot))
-          (translate-to-foreign value parsed-type (name parsed-type)))))
+          (translate-to-foreign value (name parsed-type) parsed-type))))
 
 (defmethod foreign-struct-slot-set-form (value ptr (slot simple-struct-slot))
   "Return a form to set the value of a simple structure slot."
-  (let ((type (slot-type slot)))
-    `(setf (mem-ref ,ptr ,type ,(slot-offset slot))
-           ,(to-c-form type value))))
+  (let* ((type (slot-type slot))
+         (parsed-type (parse-type type)))
+    ;; If PARSED-TYPE is a built-in type, don't bother translating.
+    (if (typep parsed-type 'foreign-built-in-type)
+        `(setf (mem-ref ,ptr ',type ,(slot-offset slot)) ,value)
+        `(setf (mem-ref ,ptr ',type ,(slot-offset slot))
+               (translate-to-foreign ,value ',(name parsed-type)
+                                     ,parsed-type)))))
 
 ;;;### Aggregate Slots
 
@@ -634,14 +675,14 @@ newly allocated memory."
     (let ((ptr (%foreign-alloc (* (foreign-type-size type) count))))
       (when initial-element-p
         (let ((value (translate-to-foreign
-                      initial-element parsed-type (name parsed-type))))
+                      initial-element (name parsed-type) parsed-type)))
           (dotimes (i count)
             (setf (mem-aref ptr type i) value))))
       (when initial-contents-p
         (dotimes (i contents-length)
           (setf (mem-aref ptr type i)
                 (translate-to-foreign
-                 (elt initial-contents i) parsed-type (name parsed-type)))))
+                 (elt initial-contents i) (name parsed-type) parsed-type))))
       ptr)))
 
 ;;; Stuff we could optimize here:
@@ -709,17 +750,22 @@ obtained using define-foreign-type."
                  :to-c (or to-c 'identity)
                  :from-c (or from-c 'identity)))
 
-(defmethod translate-to-foreign (value (type foreign-type-wrapper) name)
+(defmethod unparse (name (type foreign-type-wrapper))
+  `(:wrapper ,(name (actual-type type))
+             :to-c ,(slot-value type 'to-c)
+             :from-c ,(slot-value type 'from-c)))
+
+(defmethod translate-to-foreign (value name (type foreign-type-wrapper))
   (declare (ignore name))
   (let ((actual-type (actual-type type)))
     (translate-to-foreign (funcall (slot-value type 'to-c) value)
-                          actual-type (name actual-type))))
+                          (name actual-type) actual-type)))
 
-(defmethod translate-from-foreign (value (type foreign-type-wrapper) name)
+(defmethod translate-from-foreign (value name (type foreign-type-wrapper))
   (declare (ignore name))
   (let ((actual-type (actual-type type)))
     (funcall (slot-value type 'from-c)
-             (translate-from-foreign value actual-type (name actual-type)))))
+             (translate-from-foreign value (name actual-type) actual-type))))
 
 ;;;# Other types
 
@@ -733,10 +779,14 @@ obtained using define-foreign-type."
       :long
       :unsigned-long) base-type)))
 
-(defmethod translate-to-foreign (value type (name (eql :boolean)))
+(defmethod unparse ((name (eql :boolean)) type)
+  "Unparser for the :BOOLEAN type."
+  `(:boolean ,(name (actual-type type))))
+
+(defmethod translate-to-foreign (value (name (eql :boolean)) type)
   (declare (ignore type name))
   (if value 1 0))
 
-(defmethod translate-from-foreign (value type (name (eql :boolean)))
+(defmethod translate-from-foreign (value (name (eql :boolean)) type)
   (declare (ignore type name))
   (not (zerop value)))

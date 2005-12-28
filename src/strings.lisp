@@ -91,22 +91,22 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string :pointer)
 
-(defmethod translate-to-foreign ((s string) type (name (eql :string)))
+(defmethod translate-to-foreign ((s string) (name (eql :string)) type)
   (declare (ignore type name))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj type (name (eql :string)))
+(defmethod translate-to-foreign (obj (name (eql :string)) type)
   (declare (ignore type name))
   (if (pointerp obj)
       (values obj nil)
       (error "~A is not a Lisp string or pointer." obj)))
 
-(defmethod translate-from-foreign (ptr type (name (eql :string)))
+(defmethod translate-from-foreign (ptr (name (eql :string)) type)
   (declare (ignore type name))
   (foreign-string-to-lisp ptr))
 
-(defmethod free-translated-object (ptr (class foreign-typedef)
-                                   (name (eql :string)) free-p)
+(defmethod free-translated-object (ptr (name (eql :string)) type free-p)
+  (declare (ignore type))
   (when free-p
     (foreign-string-free ptr)))
 
@@ -127,21 +127,22 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string+ptr :pointer)
 
-(defmethod translate-to-foreign ((s string) (class foreign-typedef)
-                                 (name (eql :string+ptr)))
+(defmethod translate-to-foreign ((s string) (name (eql :string+ptr)) type)
+  (declare (ignore type))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj (class foreign-typedef)
-                                 (name (eql :string+ptr)))
+(defmethod translate-to-foreign (obj (name (eql :string+ptr)) type)
+  (declare (ignore type))
   (if (pointerp obj)
       (values obj nil)
       (error "~A is not a Lisp string or pointer." obj)))
 
-(defmethod translate-from-foreign (value (class foreign-typedef)
-                                   (name (eql :string+ptr)))
+(defmethod translate-from-foreign (value (name (eql :string+ptr)) type)
+  (declare (ignore type))
   (list (foreign-string-to-lisp value) value))
 
-(defmethod free-translated-object (value (class foreign-typedef)
-                                   (name (eql :string+ptr)) free-p)
+(defmethod free-translated-object (value (name (eql :string+ptr)) type free-p)
+  (declare (ignore type))
   (when free-p
     (foreign-string-free value)))
+
