@@ -315,7 +315,7 @@ to open-code (SETF MEM-REF) forms."
         `(inc-pointer ,ptr ,offset))))
 
 (defun foreign-slot-names (type)
-  "Returns a list of TYPE's slot-names in no particular order."
+  "Returns a list of TYPE's slot names in no particular order."
   (loop for value being the hash-values
         in (slots (follow-typedefs (parse-type type)))
         collect (slot-name value)))

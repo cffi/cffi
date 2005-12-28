@@ -112,6 +112,8 @@ Foreign Types
 * explain-foreign-slot-value::  <unimplemented>
 * foreign-enum-keyword::        Finds a keyword in an enum type.
 * foreign-enum-value::          Finds a value in an enum type.
+* foreign-slot-names::          Returns a list of slot names in a foreign struct.
+* foreign-slot-offset::         Returns the offset of a slot in a foreign struct.
 * foreign-slot-pointer::        Returns a pointer to a slot in a foreign struct.
 * foreign-slot-value::          Returns the value of a slot in a foreign struct.
 * foreign-type-alignment::      Returns the alignment of a foreign type.
@@ -397,6 +399,8 @@ Dictionary
 * explain-foreign-slot-value::        
 * foreign-enum-keyword::        
 * foreign-enum-value::          
+* foreign-slot-names::          
+* foreign-slot-offset::         
 * foreign-slot-pointer::        
 * foreign-slot-value::          
 * foreign-type-alignment::      
@@ -1075,7 +1079,92 @@ CFFI> (foreign-enum-keyword 'boolean :yes)
 
 @subheading See Also
 @ref{defcenum} @*
-@ref{foreign-enum-value}
+@ref{foreign-enum-keyword}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-SLOT-NAMES
+
+@node foreign-slot-names
+@heading foreign-slot-names
+@subheading Syntax
+@Function{foreign-slot-names type => names}
+
+@subheading Arguments and Values
+@table @emph
+@item type
+A foreign struct type.
+
+@item names
+A list.
+@end table
+
+@subheading Description
+The function @code{foreign-slot-names} returns a list of symbols that denote
+the foreign slots of a struct type. This list has no particular order.
+
+@subheading Examples
+@lisp
+(defcstruct timeval
+  (tv-secs :long)
+  (tv-usecs :long))
+
+CFFI> (foreign-slot-names 'timeval)
+(TV-SECS TV-USECS)
+@end lisp
+
+@subheading See Also
+@ref{defcstruct} @*
+@ref{foreign-slot-offset} @*
+@ref{foreign-slot-value} @*
+@ref{foreign-slot-pointer}
+
+
+
+
+@c ===================================================================
+@c FOREIGN-SLOT-OFFSET
+
+@node foreign-slot-offset
+@heading foreign-slot-offset
+@subheading Syntax
+@Function{foreign-slot-offset type slot-name => offset}
+
+@subheading Arguments and Values
+@table @emph
+@item type
+A foreign struct type.
+
+@item slot-name
+A symbol.
+
+@item offset
+An integer.
+@end table
+
+@subheading Description
+The function @code{foreign-slot-offset} returns the @emph{offset} in
+bytes of a slot in a foreign struct type.
+
+@subheading Examples
+@lisp
+(defcstruct timeval
+  (tv-secs :long)
+  (tv-usecs :long))
+
+CFFI> (foreign-slot-offset 'timeval 'tv-secs)
+0
+CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
+4
+@end lisp
+
+@subheading See Also
+@ref{defcstruct} @*
+@ref{foreign-slot-names} @*
+@ref{foreign-slot-pointer} @*
+@ref{foreign-slot-value}
 
 
 
@@ -1127,7 +1216,9 @@ CFFI> (with-foreign-object (ptr 'point)
 
 @subheading See Also
 @ref{defcstruct} @*
-@ref{foreign-slot-value}
+@ref{foreign-slot-value} @*
+@ref{foreign-slot-names} @*
+@ref{foreign-slot-offset}
 
 
 
@@ -1188,6 +1279,8 @@ CFFI> (with-foreign-object (ptr 'point)
 
 @subheading See Also
 @ref{defcstruct} @*
+@ref{foreign-slot-names} @*
+@ref{foreign-slot-offset} @*
 @ref{foreign-slot-pointer} @*
 @ref{with-foreign-slots}
 

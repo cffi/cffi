@@ -49,6 +49,7 @@ This is a collection of TODO items and ideas in no particular order.
 -> Implement CFFI-SYS:ERRNO-VALUE (name?).
 -> Extend FOREIGN-SLOT-VALUE and make it accept multiple "indices" for
    directly accessing structs inside structs, arrays inside structs, etc...
+-> Implement EXPLAIN-FOREIGN-SLOT-VALUE.
 -> Implement :in/:out/:in-out for DEFCFUN (and FOREIGN-FUNCALL?).
 -> Add support for multiple memory allocation schemes (like CLISP), namely
    support for allocating with malloc() (so that it can be freed on the C
@@ -92,7 +93,6 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Documentation
 
--> Document FOREIGN-SLOT-NAMES and FOREIGN-SLOT-OFFSET.
 -> Fill the missing sections in the CFFI User Manual.
 -> Write a tutorial section. (In progress, see: "bits from a new tutorial"
    <http://article.gmane.org/gmane.lisp.cffi.devel/273>)
