@@ -200,6 +200,14 @@ Signals an error if the type cannot be resolved."
 (defclass foreign-typedef (foreign-type-alias)
   ())
 
+;;; This should probably be an argument to parse-type.
+;;; So we'd have: (parse-type foo :follow-typedefs t)
+;;; instead of (follow-typedefs (parse-type foo)) ? --luis
+(defun follow-typedefs (type)
+  (if (eq (type-of type) 'foreign-typedef)
+      (follow-typedefs (actual-type type))
+      type))
+
 ;;;# Structure Type
 
 (defclass foreign-struct-type (foreign-type)

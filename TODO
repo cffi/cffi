@@ -31,7 +31,6 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Features
 
--> Implement FOREIGN-SLOT-NAMES.
 -> Make LOAD-FOREIGN-LIBRARY smarter. Eg: avoid the need to specify the
    full path to the library.
 -> Implement CFFI-SYS:%CLOSE-FOREIGN-LIBRARY for all supported Lisps and
@@ -93,6 +92,7 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Documentation
 
+-> Document FOREIGN-SLOT-NAMES and FOREIGN-SLOT-OFFSET.
 -> Fill the missing sections in the CFFI User Manual.
 -> Write a tutorial section. (In progress, see: "bits from a new tutorial"
    <http://article.gmane.org/gmane.lisp.cffi.devel/273>)

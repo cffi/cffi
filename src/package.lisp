@@ -82,6 +82,8 @@
    #:foreign-enum-value
    #:foreign-slot-pointer
    #:foreign-slot-value
+   #:foreign-slot-offset
+   #:foreign-slot-names
    #:foreign-type-alignment
    #:foreign-type-size
    #:with-foreign-object

@@ -66,6 +66,10 @@
               (foreign-slot-value tv 'timeval 'tv-usecs)))
   1 1)
 
+(deftest struct.names
+    (foreign-slot-names 'xpto)
+  (tv-secs tv-usecs))
+
 ;; regression test: compiler macro not quoting the type in the
 ;; resulting mem-ref form. The compiler macro on foreign-slot-value
 ;; is not guaranteed to be expanded though.

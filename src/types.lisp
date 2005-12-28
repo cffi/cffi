@@ -314,6 +314,12 @@ to open-code (SETF MEM-REF) forms."
         ptr
         `(inc-pointer ,ptr ,offset))))
 
+(defun foreign-slot-names (type)
+  "Returns a list of TYPE's slot-names in no particular order."
+  (loop for value being the hash-values
+        in (slots (follow-typedefs (parse-type type)))
+        collect (slot-name value)))
+
 ;;;### Simple Slots
 
 (defclass simple-struct-slot (foreign-struct-slot)
@@ -468,11 +474,6 @@ to open-code (SETF MEM-REF) forms."
 
 ;;;## Accessing Foreign Structure Slots
 
-(defun follow-typedefs (type)
-  (if (eq (type-of type) 'foreign-typedef)
-      (follow-typedefs (actual-type type))
-      type))
-
 (defun get-slot-info (type slot-name)
   "Return the slot info for SLOT-NAME or raise an error."
   (let* ((struct (follow-typedefs (parse-type type)))
@@ -484,6 +485,10 @@ to open-code (SETF MEM-REF) forms."
 (defun foreign-slot-pointer (ptr type slot-name)
   "Return the address of SLOT-NAME in the structure at PTR."
   (foreign-struct-slot-pointer ptr (get-slot-info type slot-name)))
+
+(defun foreign-slot-offset (type slot-name)
+  "Return the offset of SLOT in a struct TYPE."
+  (slot-offset (get-slot-info type slot-name)))
 
 ;; This is the slow interface to getting the fields of foreign slots.
 ;; Eventually there will be a compiler macro that optimizes this when
