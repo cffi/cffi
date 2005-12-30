@@ -53,6 +53,9 @@ test-cmucl:
 test-clisp:
 	@-$(CLISP) -q -x '(load "tests/run-tests.lisp")'
 
+test-clisp-modern:
+	@-$(CLISP) -modern -q -x '(load "tests/run-tests.lisp")'
+
 test-allegro:
 	@-$(ALLEGRO) -L tests/run-tests.lisp
 

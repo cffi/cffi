@@ -87,7 +87,7 @@
   "Return the Lisp function name for foreign function NAME."
   (etypecase name
     (list (second name))
-    (string (intern (string-upcase (substitute #\- #\_ name))))
+    (string (read-from-string (substitute #\- #\_ name)))
     (symbol name)))
 
 (defun foreign-function-name (name)

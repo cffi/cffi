@@ -88,9 +88,6 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Known Issues
 
--> Fix CFFI/CFFI-SYS in order to work in Allegro's modern (case-sensitive)
-   mode.
-
 ### Documentation
 
 -> Fill the missing sections in the CFFI User Manual.

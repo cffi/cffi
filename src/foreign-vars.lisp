@@ -35,7 +35,8 @@
     (list (second name))
     (string (intern
              (format nil "*~A*"
-                     (string-upcase (substitute #\- #\_ name)))))))
+                     (symbol-name
+                       (read-from-string (substitute #\- #\_ name))))))))
 
 (defun foreign-var-name (name)
   "Return the foreign var name of NAME."
@@ -66,7 +67,7 @@ returning nil when foreign-name is not found."
   "Define a foreign global variable."
   (let* ((lisp-name (lisp-var-name name))
          (foreign-name (foreign-var-name name))
-         (fn (symbolicate "%VAR-ACCESSOR-" lisp-name))
+         (fn (symbolicate '#:%var-accessor- lisp-name))
          (ptype (parse-type type)))
     (when (aggregatep ptype) ; we can't really setf an aggregate type
       (setq read-only t))    ; at least not yet...
