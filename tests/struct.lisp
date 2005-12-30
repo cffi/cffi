@@ -67,7 +67,8 @@
   1 1)
 
 (deftest struct.names
-    (foreign-slot-names 'xpto)
+    (sort (foreign-slot-names 'xpto) #'<
+          :key (lambda (x) (foreign-slot-offset 'xpto x)))
   (tv-secs tv-usecs))
 
 ;; regression test: compiler macro not quoting the type in the

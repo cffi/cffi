@@ -253,15 +253,12 @@ the function call."
                     (:return-type ,(convert-foreign-type rettype))
                     (:language :stdc))
                   (lambda ,arg-names ,@body))
-       ;; The created callback function is not stack-allocated.
-       ;; It is valid until  (ffi:foreign-free #<FOREIGN-FUNCTION>),
-       ;;  but you can't use (ffi:foreign-free (callback name)),
-       ;;  because that would invoke free() on the opaque c-pointer!
-       ;; Maybe cffi should make an exception and use the
-       ;;  foreign-function object, not its address?
+       ;; Save the FFI:FOREIGN-FUNCTION object and free a previous
+       ;; one with the same name, if it exists.
        (let ((cb-fun (get ',name 'clisp-callback-function)))
          (when cb-fun (ffi:foreign-free cb-fun)))
        (setf (get ',name 'clisp-callback-function) ,cb-var)
+       ;; Save a pointer to the FFI:FOREIGN-FUNCTION.
        (setf (get ',name 'callback-ptr)
              (ffi:foreign-address ,cb-var)))))
 
