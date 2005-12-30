@@ -1544,7 +1544,7 @@ pointer twice are undefined.
 
 @subheading Examples
 @lisp
-CFFI> (foreign-alloc 32)
+CFFI> (foreign-alloc :int)
 #<A Mac Pointer #x1022E0>
 CFFI> (foreign-free *)
 NIL
