@@ -1364,7 +1364,7 @@ CFFI> (foreign-type-size :double)
 CFFI> (foreign-type-size :char)
 1
 CFFI> (foreign-type-size 'foo)
-12
+16
 @end lisp
 
 @subheading See Also
@@ -1604,30 +1604,30 @@ exclusive.
 @subheading Examples
 @lisp
 CFFI> (foreign-alloc :char)
-#<A Mac Pointer #x1022E0>     ; A pointer to 1 byte of memory.
+#<A Mac Pointer #x102D80>     ; A pointer to 1 byte of memory.
 
 CFFI> (foreign-alloc :char :count 20)
-#<A Mac Pointer #x1022E0>     ; A pointer to 20 bytes of memory.
+#<A Mac Pointer #x1024A0>     ; A pointer to 20 bytes of memory.
 
 CFFI> (foreign-alloc :int :initial-element 12)
-#<A Mac Pointer #x1022E0>
+#<A Mac Pointer #x1028B0>
 CFFI> (mem-ref * :int)
 12
 
 CFFI> (foreign-alloc :int :initial-contents '(1 2 3))
-#<A Mac Pointer #x1022E0>
+#<A Mac Pointer #x102950>
 CFFI> (loop for i from 0 below 3
-            collect (mem-ref * :int i))
+            collect (mem-aref * :int i))
 (1 2 3)
 
 CFFI> (foreign-alloc :int :initial-contents #(1 2 3))
-#<A Mac Pointer #x1022E0>
+#<A Mac Pointer #x102960>
 CFFI> (loop for i from 0 below 3
-            collect (mem-ref * :int i))
+            collect (mem-aref * :int i))
 (1 2 3)
 
 CFFI> (foreign-alloc :string :initial-element "foo")
-#<A Mac Pointer #x1022E0>
+#<A Mac Pointer #x102C40>
 ;; This will actually allocate a char** pointer that points
 ;; to newly allocated memory by the :string type translator
 ;; for the "foo" string.
@@ -1762,7 +1762,7 @@ CFFI> (make-pointer 42)
 #<FOREIGN-ADDRESS #x0000002A>
 CFFI> (pointerp *)
 T
-CFFI> (pointer-adress **)
+CFFI> (pointer-address **)
 42
 CFFI> (inc-pointer *** -42)
 #<FOREIGN-ADDRESS #x00000000>
