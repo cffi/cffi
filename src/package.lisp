@@ -76,7 +76,6 @@
    #:defctype
    #:defcenum
    ;#:define-type-spec-parser
-   ;#:define-type-translator
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
