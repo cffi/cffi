@@ -703,6 +703,7 @@ obtained using define-foreign-type."
                  :from-c (or from-c 'identity)))
 
 (defmethod unparse (name (type foreign-type-wrapper))
+  (declare (ignore name))
   `(:wrapper ,(name (actual-type type))
              :to-c ,(slot-value type 'to-c)
              :from-c ,(slot-value type 'from-c)))
