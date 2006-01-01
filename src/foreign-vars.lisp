@@ -79,9 +79,9 @@ returning nil when foreign-name is not found."
          ,(if (aggregatep ptype)
               ;; no dereference for aggregate types.
               `(foreign-symbol-pointer-or-lose ,foreign-name)
-              `(translate-from-foreign
+              `(translate-type-from-foreign
                 (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)
-                ,(name ptype) ,ptype)))
+                ,ptype)))
        ;; Setter
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
@@ -90,6 +90,6 @@ returning nil when foreign-name is not found."
                                lisp-name))
               `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
                       ',type)
-                (translate-to-foreign value ,(name ptype) ,ptype))))
+                (translate-type-to-foreign value ,ptype))))
        ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))

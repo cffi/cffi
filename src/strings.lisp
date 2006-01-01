@@ -91,22 +91,18 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string :pointer)
 
-(defmethod translate-to-foreign ((s string) (name (eql :string)) type)
-  (declare (ignore type name))
+(defmethod translate-to-foreign ((s string) (name (eql :string)))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj (name (eql :string)) type)
-  (declare (ignore type name))
+(defmethod translate-to-foreign (obj (name (eql :string)))
   (if (pointerp obj)
       (values obj nil)
       (error "~A is not a Lisp string or pointer." obj)))
 
-(defmethod translate-from-foreign (ptr (name (eql :string)) type)
-  (declare (ignore type name))
+(defmethod translate-from-foreign (ptr (name (eql :string)))
   (foreign-string-to-lisp ptr))
 
-(defmethod free-translated-object (ptr (name (eql :string)) type free-p)
-  (declare (ignore type))
+(defmethod free-translated-object (ptr (name (eql :string)) free-p)
   (when free-p
     (foreign-string-free ptr)))
 
@@ -127,22 +123,18 @@ the return value of an implcit PROGN around BODY."
 
 (defctype :string+ptr :pointer)
 
-(defmethod translate-to-foreign ((s string) (name (eql :string+ptr)) type)
-  (declare (ignore type))
+(defmethod translate-to-foreign ((s string) (name (eql :string+ptr)))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj (name (eql :string+ptr)) type)
-  (declare (ignore type))
+(defmethod translate-to-foreign (obj (name (eql :string+ptr)))
   (if (pointerp obj)
       (values obj nil)
       (error "~A is not a Lisp string or pointer." obj)))
 
-(defmethod translate-from-foreign (value (name (eql :string+ptr)) type)
-  (declare (ignore type))
+(defmethod translate-from-foreign (value (name (eql :string+ptr)))
   (list (foreign-string-to-lisp value) value))
 
-(defmethod free-translated-object (value (name (eql :string+ptr)) type free-p)
-  (declare (ignore type))
+(defmethod free-translated-object (value (name (eql :string+ptr)) free-p)
   (when free-p
     (foreign-string-free value)))
 

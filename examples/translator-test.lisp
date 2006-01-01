@@ -38,13 +38,13 @@
 
 (defctype verbose-pointer :pointer)
 
-(defmethod translate-to-foreign (value (name (eql 'verbose-pointer)) type)
+(defmethod translate-to-foreign (value (name (eql 'verbose-pointer)))
   (format *debug-io* "~&;; to foreign: VERBOSE-POINTER: ~S~%" value)
-  (next-translate-to-foreign value name type))
+  value)
 
-(defmethod translate-from-foreign (value (name (eql 'verbose-pointer)) type)
+(defmethod translate-from-foreign (value (name (eql 'verbose-pointer)))
   (format *debug-io* "~&;; from foreign: VERBOSE-POINTER: ~S~%" value)
-  (next-translate-from-foreign value name type))
+  value)
 
 ;;;# Verbose String Translator
 ;;;
@@ -58,12 +58,12 @@
 
 (defctype verbose-string verbose-pointer)
 
-(defmethod translate-to-foreign ((s string) (name (eql 'verbose-string)) type)
+(defmethod translate-to-foreign ((s string) (name (eql 'verbose-string)))
   (let ((value (foreign-string-alloc s)))
     (format *debug-io* "~&;; to foreign: VERBOSE-STRING: ~S -> ~S~%" s value)
-    (values (next-translate-to-foreign value name type) t)))
+    (values value t)))
 
-(defmethod translate-to-foreign (value (name (eql 'verbose-string)) type)
+(defmethod translate-to-foreign (value (name (eql 'verbose-string)))
   (if (pointerp value)
       (progn
         (format *debug-io* "~&;; to foreign: VERBOSE-STRING: ~S -> ~:*~S~%" value)
@@ -71,14 +71,12 @@
       (error "Cannot convert ~S to a foreign string: it is not a Lisp ~
               string or pointer." value)))
 
-(defmethod translate-from-foreign (ptr (name (eql 'verbose-string)) type)
-  (let ((value (foreign-string-to-lisp
-                (next-translate-from-foreign ptr name type))))
+(defmethod translate-from-foreign (ptr (name (eql 'verbose-string)))
+  (let ((value (foreign-string-to-lisp ptr)))
     (format *debug-io* "~&;; from foreign: VERBOSE-STRING: ~S -> ~S~%" ptr value)
     value))
 
-(defmethod free-translated-object (ptr (name (eql 'verbose-string)) type free-p)
-  (declare (ignore type name))
+(defmethod free-translated-object (ptr (name (eql 'verbose-string)) free-p)
   (when free-p
     (foreign-string-free ptr)))
 

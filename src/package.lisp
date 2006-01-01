@@ -94,9 +94,6 @@
    #:translate-to-foreign
    #:translate-from-foreign
    #:free-translated-object
-   #:next-translate-to-foreign
-   #:next-translate-from-foreign
-   #:next-free-translated-object
 
    ;; Foreign globals.
    #:defcvar
