@@ -51,7 +51,15 @@
 ;;;
 ;;; Type translation is now done with generic functions at runtime.
 ;;;
-;;; TODO: Describe how the new system works.
+;;; The main internal interface to type translation is through the
+;;; generic functions TRANSLATE-TYPE-{TO,FROM}-FOREIGN and
+;;; FREE-TYPE-TRANSLATED-OBJECT.  These should be specialized for
+;;; subclasses of FOREIGN-TYPE requiring translation.
+;;;
+;;; User-defined type translators are defined by specializing
+;;; additional methods that are called by the internal methods
+;;; specialized on FOREIGN-TYPEDEF.  These methods dispatch on the
+;;; name of the type.
 
 ;;; Translate VALUE to a foreign object of the type represented by
 ;;; TYPE, which will be a subclass of FOREIGN-TYPE.  Returns the
