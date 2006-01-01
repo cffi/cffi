@@ -108,11 +108,17 @@
   (:method (value name param)
     (declare (ignore value name param))))
 
-;;; Default translator to foreign for typedefs.
+
+;;; Default translator to foreign for typedefs.  We build a list out
+;;; of the second value returned from each translator so we can pass
+;;; each parameter to the appropriate free method when freeing the
+;;; object.
 (defmethod translate-type-to-foreign (value (type foreign-typedef))
-  (translate-type-to-foreign
-   (translate-to-foreign value (name type))
-   (actual-type type)))
+  (multiple-value-bind (value param)
+      (translate-to-foreign value (name type))
+    (multiple-value-bind (new-value new-param)
+        (translate-type-to-foreign value (actual-type type))
+      (values new-value (cons param new-param)))))
 
 ;;; Default translator from foreign for typedefs.
 (defmethod translate-type-from-foreign (value (type foreign-typedef))
@@ -120,10 +126,12 @@
    (translate-type-from-foreign value (actual-type type))
    (name type)))
 
-;;; Default method for freeing translated foreign typedefs.
+;;; Default method for freeing translated foreign typedefs.  PARAM
+;;; will actually be a list of parameters to pass to each translator
+;;; method as returned by TRANSLATE-TYPE-TO-FOREIGN.
 (defmethod free-type-translated-object (value (type foreign-typedef) param)
-  (free-translated-object value (name type) param)
-  (free-type-translated-object value (actual-type type) param))
+  (free-translated-object value (name type) (car param))
+  (free-type-translated-object value (actual-type type) (cdr param)))
 
 ;;;## Macroexpansion Time Translation
 ;;;

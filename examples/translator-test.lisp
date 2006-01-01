@@ -82,3 +82,27 @@
 
 (defun test-verbose-string ()
   (foreign-funcall "getenv" verbose-string "SHELL" verbose-string))
+
+;;;# Testing Chained Parameters
+
+(defctype inner-type :int)
+(defctype middle-type inner-type)
+(defctype outer-type middle-type)
+
+(defmethod translate-to-foreign (value (name (eql 'inner-type)))
+  (values value 1))
+
+(defmethod translate-to-foreign (value (name (eql 'middle-type)))
+  (values value 2))
+
+(defmethod translate-to-foreign (value (name (eql 'outer-type)))
+  (values value 3))
+
+(defmethod free-translated-object (value (name (eql 'inner-type)) param)
+  (format t "~&;; free inner-type ~A~%" param))
+
+(defmethod free-translated-object (value (name (eql 'middle-type)) param)
+  (format t "~&;; free middle-type ~A~%" param))
+
+(defmethod free-translated-object (value (name (eql 'outer-type)) param)
+  (format t "~&;; free outer-type ~A~%" param))
