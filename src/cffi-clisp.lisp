@@ -256,7 +256,8 @@ the function call."
        ;; Save the FFI:FOREIGN-FUNCTION object and free a previous
        ;; one with the same name, if it exists.
        (let ((cb-fun (get ',name 'clisp-callback-function)))
-         (when cb-fun (ffi:foreign-free cb-fun)))
+         (when (and cb-fun (ffi:validp cb-fun))
+           (ffi:foreign-free cb-fun)))
        (setf (get ',name 'clisp-callback-function) ,cb-var)
        ;; Save a pointer to the FFI:FOREIGN-FUNCTION.
        (setf (get ',name 'callback-ptr)
