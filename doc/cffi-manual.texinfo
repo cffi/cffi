@@ -26,6 +26,11 @@
 @end deffn
 @end macro
 
+@macro GenericFunction {args}
+@deffn {Generic Function} \args\
+@end deffn
+@end macro
+
 @macro ForeignType {args}
 @deftp {Foreign Type} \args\
 @end deftp
@@ -106,7 +111,7 @@ Foreign Types
 * defcunion::                   Defines a C union type.
 * defctype::                    Defines a foreign typedef.
 * defcenum::                    Defines a C enumeration.
-* define-type-translator::      Defines a type translation.
+@c * define-type-translator::      Defines a type translation.
 @c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
 * explain-foreign-slot-value::  <unimplemented>
@@ -118,6 +123,9 @@ Foreign Types
 * foreign-slot-value::          Returns the value of a slot in a foreign struct.
 * foreign-type-alignment::      Returns the alignment of a foreign type.
 * foreign-type-size::           Returns the size of a foreign type.
+* free-translated-object::      Free a type translated foreign object.
+* translate-from-foreign::      Translate a foreign object to a Lisp object.
+* translate-to-foreign::        Translate a Lisp object to a foreign object.
 * with-foreign-object::         Allocates a foreign object with dynamic extent.
 * with-foreign-slots::          Access the slots of a foreign structure.
 
@@ -393,7 +401,7 @@ Dictionary
 * defcunion::                   
 * defctype::                    
 * defcenum::                    
-* define-type-translator::      
+@c * define-type-translator::      
 @c * define-type-spec-parser::     
 * define-foreign-type::         
 * explain-foreign-slot-value::        
@@ -405,6 +413,9 @@ Dictionary
 * foreign-slot-value::          
 * foreign-type-alignment::      
 * foreign-type-size::           
+* free-translated-object::
+* translate-from-foreign::
+* translate-to-foreign::
 * with-foreign-object::         
 * with-foreign-slots::          
 @end menu
@@ -491,7 +502,60 @@ No type at all. Only valid as the return type of a function.
 @node Foreign Type Translators
 @section Foreign Type Translators
 
-Foo bar.
+Type translators are used to automatically convert Lisp values to or
+from foreign values.  For example, using type translators, one can
+define a boolean type which converts a Lisp generalized boolean (nil
+vs non-nil) to a C boolean (zero vs non-zero).
+
+The first step to defining an automatically translated type is to
+define a typedef that will be used to refer to the foreign type.  Here
+is how a simpler version of the built-in @code{:boolean} type could be
+defined:
+
+@lisp
+;;; Define MY-BOOLEAN as an alias for the built-in type :INT.
+(defctype my-boolean :int)
+@end lisp
+
+With this type definition, one can declare arguments to foreign
+functions as having the type MY-BOOLEAN, and they will be passed as
+integers.  No conversion is taking place---if NIL is passed as a
+MY-BOOLEAN, a type error will be signalled.
+
+To inform CFFI of how to automatically convert Lisp values to
+MY-BOOLEAN values, specialize the generic function
+@code{translate-to-foreign} on the MY-BOOLEAN type:
+
+@lisp
+;;; Define a method that converts Lisp booleans to C booleans.
+(defmethod translate-to-foreign (value (type (eql 'my-boolean)))
+  (if value 1 0))
+@end lisp
+
+Now, when an object is passed as a MY-BOOLEAN to a foreign function,
+this method will be invoked to convert the Lisp value to an integer.
+To perform the inverse operation, which is needed for functions that
+return a MY-BOOLEAN, specialize the @code{translate-from-foreign}
+generic function:
+
+@lisp
+;;; Define a method that converts C booleans to Lisp booleans.
+(defmethod translate-from-foreign (value (type (eql 'my-boolean)))
+  (not (zerop value)))
+@end lisp
+
+When a @code{translate-to-foreign} method requires allocation of
+foreign memory, the @code{free-translated-object} method can be
+specialized to free the memory once the foreign object is no longer
+needed.  This is called automatically by CFFI when passing objects to
+foreign functions.
+
+A type translator does not necessarily need to convert the value.  For
+example, one could define a typedef for @code{:pointer} that ensures,
+in the @code{translate-to-foreign} method, that the value is non-NULL,
+signalling an error if a null pointer is passed.  This may help
+prevent pointer errors when calling foreign functions that cannot
+handle null pointers.
 
 @node Foreign Structure Types
 @section Foreign Structure Types
@@ -724,7 +788,7 @@ The new type inherits @emph{base-type}'s translators.
 
 @subheading See Also
 @ref{define-foreign-type} @*
-@ref{define-type-translator}
+@c @ref{define-type-translator}
 
 
 
@@ -795,72 +859,72 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @c ===================================================================
 @c DEFINE-TYPE-TRANSLATOR
 
-@node define-type-translator
-@heading define-type-translator
-@subheading Syntax
-@Macro{define-type-translator type direction arguments &body body}
+@c @node define-type-translator
+@c @heading define-type-translator
+@c @subheading Syntax
+@c @Macro{define-type-translator type direction arguments &body body}
 
-arguments ::= (value-arg &optional var-arg body-arg)
+@c arguments ::= (value-arg &optional var-arg body-arg)
 
-@subheading Arguments and Values
-@table @emph
-@item type
-A symbol naming a previously user-defined foreign type.
+@c @subheading Arguments and Values
+@c @table @emph
+@c @item type
+@c A symbol naming a previously user-defined foreign type.
 
-@item direction
-One of @code{:to-c}, @code{:from-c} or @code{:to-c-dynamic}
+@c @item direction
+@c One of @code{:to-c}, @code{:from-c} or @code{:to-c-dynamic}
 
-@item type-arg
-...
+@c @item type-arg
+@c ...
 
-@item value-arg
-...
+@c @item value-arg
+@c ...
 
-@item var-arg
-...
+@c @item var-arg
+@c ...
 
-@item body-arg
-...
+@c @item body-arg
+@c ...
 
-@item body
-The body of this type translator.
-@end table
+@c @item body
+@c The body of this type translator.
+@c @end table
 
-@subheading Description
-@emph{TODO. For now check the examples.}
+@c @subheading Description
+@c @emph{TODO. For now check the examples.}
 
-@subheading Examples
-Here is how CFFI's @code{:boolean} type translator is defined:
-@lisp
-(define-type-translator :boolean :from-c (value) 
-  "Type translator to convert t/nil to a C boolean."
-  `(if ,value 1 0))
+@c @subheading Examples
+@c Here is how CFFI's @code{:boolean} type translator is defined:
+@c @lisp
+@c (define-type-translator :boolean :from-c (value) 
+@c   "Type translator to convert t/nil to a C boolean."
+@c   `(if ,value 1 0))
 
-(define-type-translator :boolean :to-c (value)
-  "Type translator to convert C booleans to t/nil."
-  `(not (zerop ,value)))
-@end lisp
+@c (define-type-translator :boolean :to-c (value)
+@c   "Type translator to convert C booleans to t/nil."
+@c   `(not (zerop ,value)))
+@c @end lisp
 
-And the @code{:string} type:
+@c And the @code{:string} type:
 
-@lisp
-(define-type-translator :string :to-c-dynamic (value var body)
-  "Convert a lisp string to a foreign string with dynamic extent."
-  `(with-foreign-string (,var ,value)
-     ,@@body))
+@c @lisp
+@c (define-type-translator :string :to-c-dynamic (value var body)
+@c   "Convert a lisp string to a foreign string with dynamic extent."
+@c   `(with-foreign-string (,var ,value)
+@c      ,@@body))
 
-(define-type-translator :string :to-c (value)
-  "Convert a lisp string to a foreign string."
-  `(foreign-string-alloc ,value))
+@c (define-type-translator :string :to-c (value)
+@c   "Convert a lisp string to a foreign string."
+@c   `(foreign-string-alloc ,value))
 
-(define-type-translator :string :from-c (value)
-  "Convert a foreign string to a lisp string."
-  `(foreign-string-to-lisp ,value))
-@end lisp
+@c (define-type-translator :string :from-c (value)
+@c   "Convert a foreign string to a lisp string."
+@c   `(foreign-string-to-lisp ,value))
+@c @end lisp
 
-@subheading See Also
-@ref{defctype} @*
-@ref{define-foreign-type}
+@c @subheading See Also
+@c @ref{defctype} @*
+@c @ref{define-foreign-type}
 
 
 
@@ -914,9 +978,10 @@ One or more forms that provide a definition of the new foreign type.
 The macro @code{define-foreign-type} defines a new parameterized type
 called @emph{type-name}. Given the arguments specified in
 @emph{lambda-list}, executing @emph{body} should return a type
-specifier which will determine the behaviour of @emph{type-name}.
-The behaviour of parameterized types can be further customized using
-@code{define-type-translator}.
+specifier which will determine the behaviour of @emph{type-name}.  The
+behaviour of parameterized types can be further customized by
+specializing @code{translate-to-foreign},
+@code{translate-from-foreign}, and @code{free-translated-object}.
 
 Unlike @code{defctype}, which is used to define simple C-like
 typedefs, @code{define-foreign-type} provides a mechanism for type
@@ -953,7 +1018,7 @@ yet.
 
 @subheading See Also
 @ref{defctype} @*
-@ref{define-type-translator}
+@c @ref{define-type-translator}
 
 
 
@@ -1370,8 +1435,134 @@ CFFI> (foreign-type-size 'foo)
 @subheading See Also
 @ref{foreign-type-alignment}
 
+@c ===================================================================
+@c FREE-TRANSLATED-OBJECT
 
+@node free-translated-object
+@heading free-translated-object
+@subheading Syntax
+@GenericFunction{free-translated-object value type-name param}
 
+@subheading Arguments and Values
+@table @emph
+@item pointer
+The foreign value returned by @code{translate-to-foreign}.
+
+@item type-name
+A symbol naming a foreign type defined by @code{defctype}.
+
+@item param
+The second value, if any, returned by @code{translate-to-foreign}.
+@end table
+
+@subheading Description
+This generic function may be specialized by user code to perform
+automatic deallocation of foreign objects as they are passed to C
+functions.
+
+Any methods defined on this generic function must EQL-specialize the
+@emph{type-name} parameter on a symbol defined as a foreign type by
+the @code{defctype} macro.
+
+@subheading See Also
+@ref{Foreign Type Translators} @*
+@ref{translate-to-foreign}
+
+@c ===================================================================
+@c TRANSLATE-FROM-FOREIGN
+
+@node translate-from-foreign
+@heading translate-from-foreign
+@subheading Syntax
+@GenericFunction{translate-from-foreign foreign-value type-name
+                                        => lisp-value}
+
+@subheading Arguments and Values
+@table @emph
+@item foreign-value
+The foreign value to convert to a Lisp object.
+
+@item type-name
+A symbol naming a foreign type defined by @code{defctype}.
+
+@item lisp-value
+The lisp value to pass in place of @code{foreign-value} to Lisp code.
+@end table
+
+@subheading Description
+This generic function is invoked by CFFI to convert a foreign value to
+a Lisp value, such as when returning from a foreign function, passing
+arguments to a callback function, or accessing a foreign variable.
+
+To extend the CFFI type system by performing custom translations, this
+method may be specialized by EQL-specializing @code{type-name} on a
+symbol naming a foreign type defined with @code{defctype}.  This
+method should return the appropriate Lisp value to use in place of the
+foreign value.
+
+The results are undefined if the @code{type-name} parameter is
+specialized in any way except an EQL specializer on a foreign type
+defined with @code{defctype}.  Specifically, translations may not be
+defined for built-in types.
+
+@subheading See Also
+@ref{Foreign Type Translators} @*
+@ref{translate-to-foreign} @*
+@ref{free-translated-object}
+
+@c ===================================================================
+@c TRANSLATE-TO-FOREIGN
+
+@node translate-to-foreign
+@heading translate-to-foreign
+@subheading Syntax
+@GenericFunction{translate-to-foreign lisp-value type-name 
+                                      => foreign-value, alloc-param}
+
+@subheading Arguments and Values
+@table @emph
+@item lisp-value
+The lisp value to convert to foreign representation.
+
+@item type-name
+A symbol naming a foreign type defined by @code{defctype}.
+
+@item foreign-value
+The foreign value to pass in place of @code{lisp-value} to foreign code.
+
+@item alloc-param
+If present, this value will be passed to
+@code{free-translated-object}.
+@end table
+
+@subheading Description
+This generic function is invoked by CFFI to convert a Lisp value to a
+foreign value, such as when passing arguments to a foreign function,
+returning a value from a callback, or setting a foreign variable.
+
+To extend the CFFI type system by performing custom translations, this
+method may be specialized by EQL-specializing @code{type-name} on a
+symbol naming a foreign type defined with @code{defctype}.  This
+method should return the appropriate foreign value to use in place of
+the Lisp value.
+
+In cases where CFFI can determine the lifetime of the foreign object
+returned by this method, it will invoke @code{free-translated-object}
+on the foreign object at the appropriate time.  If
+@code{translate-to-foreign} returns a second value, it will be passed
+as the @code{param} argument to @code{free-translated-object}.  This
+can be used to establish communication between the allocation and
+deallocation methods.
+
+The results are undefined if the @code{type-name} parameter is
+specialized in any way except an EQL specializer on a foreign type
+defined with @code{defctype}.  Specifically, translations may not be
+defined for built-in types.
+
+@subheading See Also
+@ref{Foreign Type Translators} @*
+@ref{translate-from-foreign} @*
+@ref{free-translated-object}
 
 @c ===================================================================
 @c WITH-FOREIGN-OBJECT
