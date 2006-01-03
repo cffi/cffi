@@ -243,25 +243,24 @@ the function call."
 ;;;# Callbacks
 
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  (with-unique-names (cb-var)
-    `(ffi:with-c-var
-         (,cb-var '(ffi:c-function
-                    (:arguments
-                     ,@(mapcar (lambda (sym type)
-                                 (list sym (convert-foreign-type type)))
-                               arg-names arg-types))
-                    (:return-type ,(convert-foreign-type rettype))
-                    (:language :stdc))
-                  (lambda ,arg-names ,@body))
-       ;; Save the FFI:FOREIGN-FUNCTION object and free a previous
-       ;; one with the same name, if it exists.
-       (let ((cb-fun (get ',name 'clisp-callback-function)))
-         (when (and cb-fun (ffi:validp cb-fun))
-           (ffi:foreign-free cb-fun)))
-       (setf (get ',name 'clisp-callback-function) ,cb-var)
-       ;; Save a pointer to the FFI:FOREIGN-FUNCTION.
-       (setf (get ',name 'callback-ptr)
-             (ffi:foreign-address ,cb-var)))))
+  `((lambda (cb-fun)
+      (let ((cb-fun (get ',name 'clisp-callback-function)))
+        (when (and cb-fun (ffi:validp cb-fun))
+          (ffi:foreign-free cb-fun)))
+      (setf (get ',name 'callback-ptr)
+            (ffi:foreign-address
+             ;; Save a pointer to the FFI:FOREIGN-FUNCTION.
+             (setf (get ',name 'clisp-callback-function) cb-fun))))
+    (ffi:with-c-var
+        (cb-var '(ffi:c-function
+                   (:arguments
+                    ,@(mapcar (lambda (sym type)
+                                (list sym (convert-foreign-type type)))
+                              arg-names arg-types))
+                   (:return-type ,(convert-foreign-type rettype))
+                   (:language :stdc))
+         (lambda ,arg-names ,@body))
+      cb-var)))
 
 ;;;# Loading and Closing Foreign Libraries
 
