@@ -80,8 +80,8 @@ The string must be freed with FOREIGN-STRING-FREE."
 
 (defmacro with-foreign-pointer-as-string
     ((var size &optional size-var) &body body)
-  "Like WITH-FOREIGN-PTR except VAR as a Lisp string is used as
-the return value of an implcit PROGN around BODY."
+  "Like WITH-FOREIGN-POINTER except VAR as a Lisp string is used as
+the return value of an implicit PROGN around BODY."
   `(with-foreign-pointer (,var ,size ,size-var)
      (progn
        ,@body

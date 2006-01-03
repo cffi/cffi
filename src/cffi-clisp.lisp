@@ -165,7 +165,7 @@ have dynamic extent and may be stack allocated if supported by
 the implementation.  If SIZE-VAR is supplied, it will be bound to
 SIZE during BODY."
   (unless size-var
-    (setf size-var (gensym)))
+    (setf size-var (gensym "SIZE")))
   (let ((obj-var (gensym)))
     `(let ((,size-var ,size))
        (ffi:with-foreign-object

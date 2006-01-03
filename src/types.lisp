@@ -659,6 +659,7 @@ newly allocated memory."
 The buffer has dynamic extent and may be stack allocated."
   `(with-foreign-pointer
        (,var ,(if (constantp type)
+                  ;; with-foreign-pointer may benefit from constant folding:
                   (if (constantp count)
                       (* (eval count) (foreign-type-size (eval type)))
                       `(* ,count ,(foreign-type-size (eval type))))

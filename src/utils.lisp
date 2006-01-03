@@ -92,7 +92,7 @@
   in temporary variables that are then passed to BODY."
     (assert (every #'symbolp variables))
     (let ((temps nil))
-      (dotimes (i (length variables)) (push (gensym) temps))
+      (dotimes (i (length variables)) (push (gensym "ONCE") temps))
       `(if (every #'side-effect-free? (list .,variables))
 	(progn .,body)
 	(list 'let
