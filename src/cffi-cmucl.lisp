@@ -285,10 +285,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  (load-foreign name))
+  (sys::load-object-file name))
 
 ;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
-;; something like SBCL's dlclose-or-lose in foreign-load.lisp:66
+;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
 (defun %close-foreign-library (name)
   "Closes the foreign library NAME."
   (let ((lib (find name sys::*global-table* :key #'cdr :test #'string-equal)))

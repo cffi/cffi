@@ -309,11 +309,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  #+macosx ; At least ACL 6.2 sets this to '("dylib") only.. not good.
-  (let ((excl::*load-foreign-types* '("dylib" "so" "bundle")))
-    (load name))
-  #-macosx
-  (load name))
+  ;; What we really want here, perhaps, is for allegro accept
+  ;; whatever file type NAME has.
+  (let ((excl::*load-foreign-types* '("so" "bundle" "dylib" "dll" "lib")))
+    (load name :foreign t)))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
