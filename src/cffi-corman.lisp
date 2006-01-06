@@ -50,7 +50,8 @@
    ;#:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:defcfun-helper-forms
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -269,6 +270,12 @@ the DLL's name (a string), else returns NIL."
          ,body-form)
        (setf (get ',name 'callback-ptr)
              (get-callback-procinst ',cb-sym)))))
+
+;;; Just continue to use the plist for now even though this really
+;;; should use a *CALLBACKS* hash table and not define the callbacks
+;;; as gensyms.  Someone with access to Corman should update this.
+(defun %callback (name)
+  (get name 'callback-ptr))
 
 ;;;# Loading Foreign Libraries
 
