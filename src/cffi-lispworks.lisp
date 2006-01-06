@@ -51,7 +51,8 @@
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:defcfun-helper-forms
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -209,22 +210,43 @@ be stack allocated if supported by the implementation."
 
 ;;;# Callbacks
 
+(defvar *callbacks* (make-hash-table))
+
+;;; Create a package to contain the symbols for callback functions.  We
+;;; want to redefine callbacks with the same symbol so the internal data
+;;; structures are reused.
+(defpackage #:cffi-callbacks
+  (:use))
+
+;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
+;;; callback for NAME.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun intern-callback (name)
+    (intern (format nil "~A::~A" (package-name (symbol-package name))
+                    (symbol-name name))
+            '#:cffi-callbacks)))
+
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  (let ((cb-name (format nil "%callback/~A:~A"
-                         (package-name (symbol-package name))
-                         (symbol-name name))))
+  (let ((cb-name (intern-callback name)))
     `(progn
        (fli:define-foreign-callable
-           (,cb-name :encode :source
+           (,cb-name :encode :lisp
                      :result-type ,(convert-foreign-type rettype)
                      :calling-convention :cdecl
                      :language :ansi-c
                      :no-check nil)
-           ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
+           ,(mapcar (lambda (sym type)
+                      (list sym (convert-foreign-type type)))
                     arg-names arg-types)
          ,@body)
-       (setf (get ',name 'callback-ptr)
-             (fli:make-pointer :symbol-name ,cb-name :module :callbacks)))))
+       (setf (gethash ',name *callbacks*) ',cb-name))))
+
+(defun %callback (name)
+  (multiple-value-bind (symbol winp)
+      (gethash name *callbacks*)
+    (unless winp
+      (error "Undefined callback: ~S" name))
+    (fli:make-pointer :symbol-name symbol :module :callbacks)))
 
 ;;;# Loading Foreign Libraries
 
