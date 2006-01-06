@@ -52,7 +52,8 @@
    ;#:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:defcfun-helper-forms
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -297,20 +298,58 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Callbacks
 
-;; TODO: figure out if we want a coerce/check-type here for the return
-;; value since allegro's defun-foreign-callable doesn't specify a return
-;; type. Also, need to understand the second arg to r-f-c. --luis
+;;; The *CALLBACKS* hash table contains information about a callback
+;;; for the Allegro FFI.  The key is the name of the CFFI callback,
+;;; and the value is a cons, the car containing the symbol the
+;;; callback was defined on in the CFFI-CALLBACKS package, the cdr
+;;; being an Allegro FFI pointer (a fixnum) that can be passed to C
+;;; functions.
+;;;
+;;; These pointers must be restored when a saved Lisp image is loaded.
+;;; The RESTORE-CALLBACKS function is added to *RESTART-ACTIONS* to
+;;; re-register the callbacks during Lisp startup.
+(defvar *callbacks* (make-hash-table))
+
+;;; Register a callback in the *CALLBACKS* hash table.
+(defun register-callback (cffi-name callback-name)
+  (setf (gethash cffi-name *callbacks*)
+        (cons callback-name (ff:register-foreign-callable
+                             callback-name :reuse t))))
+
+;;; Restore the saved pointers in *CALLBACKS* when loading an image.
+(defun restore-callbacks ()
+  (maphash (lambda (key value)
+             (register-callback key (car value)))
+           *callbacks*))
+
+;;; Arrange for RESTORE-CALLBACKS to run when a saved image containing
+;;; CFFI is restarted.
+(eval-when (:load-toplevel :execute)
+  (pushnew 'restore-callbacks excl:*restart-actions*))
+  
+;;; Create a package to contain the symbols for callback functions.
+(defpackage #:cffi-callbacks
+  (:use))
+
+(defun intern-callback (name)
+  (intern (format nil "~A::~A" (package-name (symbol-package name))
+                  (symbol-name name))
+          '#:cffi-callbacks))
+
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  (declare (ignore rettype))
-  (with-unique-names (cb-sym)
+  (let ((cb-name (intern-callback name)))
     `(progn
-       (ff:defun-foreign-callable ,cb-sym
+       (ff:defun-foreign-callable ,cb-name
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
          (declare (:convention :c))
          ,@body)
-       (setf (get ',name 'callback-ptr)
-             (ff:register-foreign-callable ',cb-sym :reuse t)))))
+       (register-callback ',name ',cb-name))))
+
+;;; Return the saved Lisp callback pointer from *CALLBACKS* for the
+;;; CFFI callback named NAME.
+(defun %callback (name)
+  (cdr (gethash name *callbacks*)))
 
 ;;;# Loading and Closing Foreign Libraries
 

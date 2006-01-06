@@ -151,10 +151,11 @@
        ',name)))
 
 (defun get-callback (symbol)
-  (get symbol 'cffi-sys::callback-ptr))
+  (%callback symbol))
 
-(defun (setf get-callback) (value symbol)
-  (setf (get symbol 'cffi-sys::callback-ptr) value))
+;;; Is this really a good idea?  [2006-01-05 JJB]
+;; (defun (setf get-callback) (value symbol)
+;;   (setf (get symbol 'cffi-sys::callback-ptr) value))
 
 (defmacro callback (name)
-  `(get ',name 'cffi-sys::callback-ptr))
+  `(%callback ',name))

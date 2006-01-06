@@ -51,7 +51,8 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -268,8 +269,14 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Callbacks
 
+;;; The *CALLBACKS* hash table contains a direct mapping of CFFI
+;;; callback names to SYSTEM-AREA-POINTERs obtained by ALIEN-LAMBDA.
+;;; SBCL will maintain the addresses of the callbacks across saved
+;;; images, so it is safe to store the pointers directly.
+(defvar *callbacks* (make-hash-table))
+
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  `(setf (get ',name 'callback-ptr)
+  `(setf (gethash ',name *callbacks*)
          (alien-sap
           (sb-alien::alien-lambda ,(convert-foreign-type rettype)
               ,(mapcar (lambda (sym type)
@@ -277,14 +284,8 @@ WITH-POINTER-TO-VECTOR-DATA."
                        arg-names arg-types)
             ,@body))))
 
-#+nil
-(defmacro make-callback (name rettype arg-names arg-types body-form)
-  (declare (ignore name))
-  `(alien-sap
-    (sb-alien::alien-lambda ,(convert-foreign-type rettype)
-        ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
-                 arg-names arg-types)
-      ,body-form)))
+(defun %callback (name)
+  (gethash name *callbacks*))
 
 ;;;# Loading and Closing Foreign Libraries
 

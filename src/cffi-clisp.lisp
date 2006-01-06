@@ -50,7 +50,8 @@
    #:%mem-ref
    #:%mem-set
    #:foreign-symbol-pointer
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -235,25 +236,66 @@ the function call."
 
 ;;;# Callbacks
 
+;;; *CALLBACKS* contains the callbacks defined by the CFFI DEFCALLBACK
+;;; macro.  The symbol naming the callback is the key, and the value
+;;; is a list containing a Lisp function, the parsed CLISP FFI type of
+;;; the callback, and a saved pointer that should not persist across
+;;; saved images.
+(defvar *callbacks* (make-hash-table))
+
+;;; Return a CLISP FFI function type for a CFFI callback function
+;;; given a return type and list of argument names and types.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun callback-type (rettype arg-names arg-types)
+    (ffi:parse-c-type
+     `(ffi:c-function
+       (:arguments ,@(mapcar (lambda (sym type)
+                               (list sym (convert-foreign-type type)))
+                             arg-names arg-types))
+       (:return-type ,(convert-foreign-type rettype))
+       (:language :stdc)))))
+
+;;; Register a callback function.  FIXME: I don't really like using
+;;; the unexported function FFI::EXEC-ON-STACK here, but I don't see
+;;; another way to create a FFI:FOREIGN-VARIABLE from a parsed type at
+;;; run-time. [2005-01-05 JJB]
+(defun register-callback (name function parsed-type)
+  (setf (gethash name *callbacks*)
+        (list function parsed-type (ffi::exec-on-stack
+                                    (lambda (x)
+                                      (ffi:foreign-address
+                                       (ffi:foreign-value x)))
+                                    parsed-type function))))
+
+;;; Restore all saved callback pointers when restarting the Lisp
+;;; image.  This is pushed onto CUSTOM:*INIT-HOOKS*.
+(defun restore-callback-pointers ()
+  (maphash
+   (lambda (name list)
+     (register-callback name (first list) (second list)))
+   *callbacks*))
+
+;;; Add RESTORE-CALLBACK-POINTERS to the lists of functions to run
+;;; when an image is restarted.
+(eval-when (:load-toplevel :execute)
+  (pushnew 'restore-callback-pointers custom:*init-hooks*))
+
+;;; Define a callback function NAME to run BODY with arguments
+;;; ARG-NAMES translated according to ARG-TYPES and the return type
+;;; translated according to RETTYPE.  Obtain a pointer that can be
+;;; passed to C code for this callback by calling %CALLBACK.
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  `((lambda (cb-fun)
-      (let ((cb-fun (get ',name 'clisp-callback-function)))
-        (when (and cb-fun (ffi:validp cb-fun))
-          (ffi:foreign-free cb-fun)))
-      (setf (get ',name 'callback-ptr)
-            (ffi:foreign-address
-             ;; Save a pointer to the FFI:FOREIGN-FUNCTION.
-             (setf (get ',name 'clisp-callback-function) cb-fun))))
-    (ffi:with-c-var
-        (cb-var '(ffi:c-function
-                   (:arguments
-                    ,@(mapcar (lambda (sym type)
-                                (list sym (convert-foreign-type type)))
-                              arg-names arg-types))
-                   (:return-type ,(convert-foreign-type rettype))
-                   (:language :stdc))
-         (lambda ,arg-names ,@body))
-      cb-var)))
+  `(register-callback ',name (lambda ,arg-names ,@body)
+                      ,(callback-type rettype arg-names arg-types)))
+
+;;; Look up the name of a callback and return a pointer that can be
+;;; passed to a C function.  Signals an error if no callback is
+;;; defined called NAME.
+(defun %callback (name)
+  (multiple-value-bind (list winp) (gethash name *callbacks*)
+    (unless winp
+      (error "Undefined callback: ~S" name))
+    (third list)))
 
 ;;;# Loading and Closing Foreign Libraries
 

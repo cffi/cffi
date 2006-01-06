@@ -51,7 +51,8 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
  
 (in-package #:cffi-sys)
 
@@ -241,15 +242,38 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Callbacks
 
+;;; The *CALLBACKS* hash table maps CFFI callback names to OpenMCL "macptr"
+;;; entry points.  It is safe to store the pointers directly because
+;;; OpenMCL will update the address of these pointers when a saved image
+;;; is loaded (see CCL::RESTORE-PASCAL-FUNCTIONS).
+(defvar *callbacks* (make-hash-table))
+
+;;; Create a package to contain the symbols for callback functions.  We
+;;; want to redefine callbacks with the same symbol so the internal data
+;;; structures are reused.
+(defpackage #:cffi-callbacks
+  (:use))
+
+;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
+;;; callback for NAME.
+(defun intern-callback (name)
+  (intern (format nil "~A::~A" (package-name (symbol-package name))
+                  (symbol-name name))
+          '#:cffi-callbacks))
+
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  (with-unique-names (cb-sym)
+  (let ((cb-name (intern-callback name)))
     `(progn
-       (defcallback ,cb-sym (,@(mapcan (lambda (sym type)
-                                         (list (convert-foreign-type type) sym))
-                                       arg-names arg-types)
-                               ,(convert-foreign-type rettype))
-           ,@body)
-       (setf (get ',name 'callback-ptr) (symbol-value ',cb-sym)))))
+       (defcallback ,cb-name 
+           (,@(mapcan (lambda (sym type)
+                        (list (convert-foreign-type type) sym))
+                      arg-names arg-types)
+            ,(convert-foreign-type rettype))
+         ,@body)
+       (setf (gethash ',name *callbacks*) (symbol-value ',cb-name)))))
+
+(defun %callback (name)
+  (gethash name *callbacks*))
 
 ;;;# Loading Foreign Libraries
 
