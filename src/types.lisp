@@ -578,24 +578,26 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 
 ;;; See also the notes regarding ABI requirements in
 ;;; NOTICE-FOREIGN-STRUCT-DEFINITION
-(defun notice-foreign-union-definition (name slots)
+(defun notice-foreign-union-definition (name-and-options slots)
   "Parse and install a foreign union definition."
-  (let ((struct (make-instance 'foreign-struct-type :name name))
-        (max-size 0)
-        (max-align 0))
-    (dolist (slotdef slots)
-      (destructuring-bind (slotname type &key (count 1)) slotdef
-        (let* ((slot (make-struct-slot slotname 0 type count))
-               (size (* count (foreign-type-size type)))
-               (align (foreign-type-alignment (slot-type slot))))
-          (setf (gethash slotname (slots struct)) slot)
-          (when (> size max-size)
-            (setf max-size size))
-          (when (> align max-align)
-            (setf max-align align)))))
-    (setf (size struct) max-size)
-    (setf (alignment struct) max-align)
-    (notice-foreign-type struct)))
+  (destructuring-bind (name &key size)
+      (mklist name-and-options)
+    (let ((struct (make-instance 'foreign-struct-type :name name))
+          (max-size 0)
+          (max-align 0))
+      (dolist (slotdef slots)
+        (destructuring-bind (slotname type &key (count 1)) slotdef
+          (let* ((slot (make-struct-slot slotname 0 type count))
+                 (size (* count (foreign-type-size type)))
+                 (align (foreign-type-alignment (slot-type slot))))
+            (setf (gethash slotname (slots struct)) slot)
+            (when (> size max-size)
+              (setf max-size size))
+            (when (> align max-align)
+              (setf max-align align)))))
+      (setf (size struct) (or size max-size))
+      (setf (alignment struct) max-align)
+      (notice-foreign-type struct))))
 
 (defmacro defcunion (name &body fields)
   "Define the layout of a foreign union."
