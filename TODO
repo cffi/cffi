@@ -75,6 +75,7 @@ This is a collection of TODO items and ideas in no particular order.
    <http://article.gmane.org/gmane.lisp.cffi.devel/292>
 -> Improve the type translator interface. See:
    <http://article.gmane.org/gmane.lisp.cffi.devel/313>
+-> Allow specifying the size of partially defined unions, like structures.
 
 ### Underspecified Semantics
 
