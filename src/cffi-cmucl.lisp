@@ -51,7 +51,8 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
-   #:%defcallback))
+   #:%defcallback
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -278,16 +279,39 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Callbacks
 
+(defvar *callbacks* (make-hash-table))
+
+;;; Create a package to contain the symbols for callback functions.  We
+;;; want to redefine callbacks with the same symbol so the internal data
+;;; structures are reused.
+(defpackage #:cffi-callbacks
+  (:use))
+
+;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
+;;; callback for NAME.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun intern-callback (name)
+    (intern (format nil "~A::~A" (package-name (symbol-package name))
+                    (symbol-name name))
+            '#:cffi-callbacks)))
+
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
-  (with-unique-names (cb-sym)
+  (let ((cb-name (intern-callback name)))
     `(progn
-       (def-callback ,cb-sym
+       (def-callback ,cb-name
            (,(convert-foreign-type rettype)
              ,@(mapcar (lambda (sym type)
                          (list sym (convert-foreign-type type)))
                        arg-names arg-types))
          ,@body)
-       (setf (get ',name 'callback-ptr) (callback ,cb-sym)))))
+       (setf (gethash ',name *callbacks*) (callback ,cb-name)))))
+
+(defun %callback (name)
+  (multiple-value-bind (pointer winp)
+      (gethash name *callbacks*)
+    (unless winp
+      (error "Undefined callback: ~S" name))
+    pointer))
 
 ;;;# Loading and Closing Foreign Libraries
 
