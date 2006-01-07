@@ -98,6 +98,15 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Known Issues
 
+-> CLISP FASL portability is broken. Fix this by placing LOAD-TIME-VALUE
+   forms in the right places and moving other calculations to load-time.
+   (eg: calculating struct size/alignment.) Ideally we'd only move them
+   to load-time when we actually care about fasl portability.
+     (defmacro maybe-load-time-value (form)
+       (if <we care about fasl portability>
+           `(load-time-value ,form)
+           form))
+
 ### Documentation
 
 -> Fill the missing sections in the CFFI User Manual.
