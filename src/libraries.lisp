@@ -100,7 +100,9 @@
   "Hashtable of defined libraries.")
 
 (defun get-foreign-library (name)
-  (gethash name *foreign-libraries*))
+  "Look up a library by NAME, signalling an error if not found."
+  (or (gethash name *foreign-libraries*)
+      (error "Undefined foreign library: ~S" name)))
 
 (defun (setf get-foreign-library) (value name)
   (setf (gethash name *foreign-libraries*) value))
