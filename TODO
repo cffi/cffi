@@ -38,11 +38,8 @@ This is a collection of TODO items and ideas in no particular order.
 
 ### Features
 
--> Make LOAD-FOREIGN-LIBRARY smarter. Eg: avoid the need to specify the
-   full path to the library.
 -> Implement CFFI-SYS:%CLOSE-FOREIGN-LIBRARY for all supported Lisps and
-   implement a higher-level CFFI:CLOSE-FOREIGN-LIBRARY in accordance
-   to whatever interface we come up with load-foreign-library.
+   implement a higher-level CFFI:CLOSE-FOREIGN-LIBRARY.
 -> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
    DEFCUN/FOREIGN-FUNCALL.
 -> [Idea] add shortcurts (aliases) for types. Examples: :UINT, :LLONG,
