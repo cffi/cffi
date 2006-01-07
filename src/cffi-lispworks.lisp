@@ -230,7 +230,7 @@ be stack allocated if supported by the implementation."
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  (fli:register-module name))
+  (fli:register-module name :connection-style :immediate))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."

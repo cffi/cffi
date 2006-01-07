@@ -316,10 +316,14 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  ;; What we really want here, perhaps, is for allegro accept
-  ;; whatever file type NAME has.
-  (let ((excl::*load-foreign-types* '("so" "bundle" "dylib" "dll" "lib")))
-    (load name :foreign t)))
+  ;; ACL 8.0 honors the :FOREIGN option and always tries to foreign load
+  ;; the argument. However, previous versions do not and will only
+  ;; foreign load the argument if its type is a member of the
+  ;; EXCL::*LOAD-FOREIGN-TYPES* list. Therefore, we bind that special
+  ;; to a list containing whatever type NAME has.
+  (let ((excl::*load-foreign-types*
+         (list (pathname-type (parse-namestring name)))))
+    (ignore-errors (load name :foreign t))))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."

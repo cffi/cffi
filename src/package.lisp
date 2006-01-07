@@ -59,9 +59,16 @@
    ;; Foreign function operations.
    #:defcfun
    #:foreign-funcall
+
+   ;; Foreign library operations.
+   #:*foreign-library-directories*
+   #:*darwin-framework-directories*
+   #:define-foreign-library
    #:load-foreign-library
-   ;#:close-foreign-library
-   
+   #:load-foreign-library-error
+   #:use-foreign-library
+   ;#:close-foreign-library 
+
    ;; Callbacks.
    #:callback
    #:get-callback

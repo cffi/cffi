@@ -299,7 +299,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
 (defun %close-foreign-library (name)
   "Closes the foreign library NAME."
-  (let ((lib (find name sys::*global-table* :key #'cdr :test #'string-equal)))
+  (let ((lib (find name sys::*global-table* :key #'cdr :test #'string=)))
     (sys::dlclose (car lib))
     (setf (car lib) (sys:int-sap 0))))
 

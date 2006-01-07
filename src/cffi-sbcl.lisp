@@ -303,7 +303,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (sb-alien::dlclose-or-lose
    (find name sb-alien::*shared-objects*
          :key #'sb-alien::shared-object-file
-         :test #'string-equal)))
+         :test #'string=)))
 
 ;;;# Foreign Globals
 
