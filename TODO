@@ -2,12 +2,6 @@
 
 This is a collection of TODO items and ideas in no particular order.
 
-### Type Translator Branch
-
--> Add an UNPARSE-TYPE generic function for dumping types.
--> Fix the MAKE-LOAD-FORM for FOREIGN-TYPE instances to use PARSE-TYPE
-   on the result of calling UNPARSE-TYPE.
-
 ### Testing
 
 -> Test uffi-compat with more UFFI libraries.
@@ -66,9 +60,6 @@ This is a collection of TODO items and ideas in no particular order.
    word, PDB it, put the word.
 -> External encodings for the :STRING type. See:
    <http://article.gmane.org/gmane.lisp.cffi.devel/292>
--> Improve the type translator interface. See:
-   <http://article.gmane.org/gmane.lisp.cffi.devel/313>
--> Allow specifying the size of partially defined unions, like structures.
 
 ### Underspecified Semantics
 
