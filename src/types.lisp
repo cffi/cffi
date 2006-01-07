@@ -27,26 +27,6 @@
 
 (in-package #:cffi)
 
-;;;# Built-In Types
-
-(define-built-in-foreign-type :char)
-(define-built-in-foreign-type :unsigned-char)
-(define-built-in-foreign-type :short)
-(define-built-in-foreign-type :unsigned-short)
-(define-built-in-foreign-type :int)
-(define-built-in-foreign-type :unsigned-int)
-(define-built-in-foreign-type :long)
-(define-built-in-foreign-type :unsigned-long)
-(define-built-in-foreign-type :float)
-(define-built-in-foreign-type :double)
-(define-built-in-foreign-type :pointer)
-(define-built-in-foreign-type :void)
-
-#+cffi-features:long-long
-(progn
-  (define-built-in-foreign-type :long-long)
-  (define-built-in-foreign-type :unsigned-long-long))
-
 ;;;# Type Translators
 ;;;
 ;;; Type translation is now done with generic functions at runtime.
@@ -611,10 +591,6 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
   "Return the alignment in bytes of a foreign type."
   (foreign-type-alignment (parse-type type)))
 
-(defmethod foreign-type-size (type)
-  "Return the size in bytes of a foreign type."
-  (foreign-type-size (parse-type type)))
-
 (defun foreign-alloc (type &key (initial-element nil initial-element-p)
                       (initial-contents nil initial-contents-p)
                       (count 1 count-p))
@@ -750,3 +726,57 @@ obtained using define-foreign-type."
 
 (defmethod translate-from-foreign (value (name (eql :boolean)))
   (not (zerop value)))
+
+;;;# Built-In Types
+
+(define-built-in-foreign-type :char)
+(define-built-in-foreign-type :unsigned-char)
+(define-built-in-foreign-type :short)
+(define-built-in-foreign-type :unsigned-short)
+(define-built-in-foreign-type :int)
+(define-built-in-foreign-type :unsigned-int)
+(define-built-in-foreign-type :long)
+(define-built-in-foreign-type :unsigned-long)
+(define-built-in-foreign-type :float)
+(define-built-in-foreign-type :double)
+(define-built-in-foreign-type :pointer)
+(define-built-in-foreign-type :void)
+
+#+cffi-features:long-long
+(progn
+  (define-built-in-foreign-type :long-long)
+  (define-built-in-foreign-type :unsigned-long-long))
+
+;;; A couple of handy typedefs.
+
+(defctype :uchar  :unsigned-char)
+(defctype :ushort :unsigned-short)
+(defctype :uint   :unsigned-int)
+(defctype :ulong  :unsigned-long)
+
+#+cffi-features:long-long
+(progn
+  (defctype :llong  :long-long)
+  (defctype :ullong :unsigned-long-long))
+
+;;; We try to define the :[u]int{8,16,32,64} types by looking at
+;;; the sizes of the built-in integer types and defining typedefs.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (labels ((find-matching-size (size types)
+             (car (member size types :key #'foreign-type-size)))
+           (notice-foreign-typedef (type actual-type)
+             (notice-foreign-type
+              (make-instance 'foreign-typedef :name type
+                             :actual-type (find-type actual-type))))
+           (match-types (sized-types builtin-types)
+             (loop for (type . size) in sized-types do
+                   (let ((match (find-matching-size size builtin-types)))
+                     (when match
+                       (notice-foreign-typedef type match))))))
+    ;; signed
+    (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
+                 '(:char :short :int :long #+cffi-features:long-long :long-long))
+    ;; unsigned
+    (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
+                 '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
+                   #+cffi-features:long-long :unsigned-long-long))))

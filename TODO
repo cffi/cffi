@@ -42,13 +42,9 @@ This is a collection of TODO items and ideas in no particular order.
    implement a higher-level CFFI:CLOSE-FOREIGN-LIBRARY.
 -> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
    DEFCUN/FOREIGN-FUNCALL.
--> [Idea] add shortcurts (aliases) for types. Examples: :UINT, :LLONG,
-   :ULLONG, etc...
 -> Figure out how to portably define types like: time_t, size_t, wchar_t, 
    etc... Likely to involve something like SB-GROVEL and possibly avoiding
    this step on known platforms?
--> Define :[u]int{8,16,32,64} by checking the FOREIGN-TYPE-SIZE of built-in
-   integer types at load-time and defining typedefs as necessary.
 -> [Lost Idea] Something involving finalizers?
 -> Implement the proposed interfaces (see doc/).
 -> Add the ability to specify the calling convention to the interface.

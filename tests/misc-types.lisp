@@ -89,3 +89,11 @@
       (foreign-free ptr)
       string)
   "Strdup says: MORE CODE")
+
+(deftest misc-types.sized-ints
+    (mapcar #'foreign-type-size '(:int8 :uint8 :int16 :uint16 :int32 :uint32
+                                  #+cffi-features:long-long :int64
+                                  #+cffi-features:long-long :uint64))
+  (1 1 2 2 4 4
+   #+cffi-features:long-long 8
+   #+cffi-features:long-long 8))

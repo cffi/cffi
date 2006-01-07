@@ -151,6 +151,10 @@ Signals an error if the type cannot be resolved."
   "Unparse a foreign type to a symbol or list type spec."
   (unparse (name type) type))
 
+(defmethod foreign-type-size (type)
+  "Return the size in bytes of a foreign type."
+  (foreign-type-size (parse-type type)))
+
 ;;;# Built-In Foreign Types
 
 (defclass foreign-built-in-type (foreign-type)
