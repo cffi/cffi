@@ -25,11 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Features
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  #+(and ppc (not ppc64)) (pushnew :ppc32 *features*)) 
-
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
@@ -59,6 +54,20 @@
    #:%defcallback))
 
 (in-package #:cffi-sys)
+
+;;;# Features
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          cffi-features:long-long
+          ;; OS/CPU features.
+          #+darwin  cffi-features:darwin
+          #+unix    cffi-features:unix
+          #+x86     cffi-features:x86
+          #+(and ppc (not ppc64)) cffi-features:ppc32
+          )))
 
 ;;;# Basic Pointer Operations
 

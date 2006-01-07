@@ -55,12 +55,19 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features and Mis-*features*
+;;;# Features
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-foreign-funcall *features*)
-  (pushnew :cffi/no-long-long *features*)
-  ;; XXX: probably catches ppc64 too which is wrong! --luis
-  #+(or powerpc harp::powerpc) (pushnew :ppc32 *features*))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+
+          ;; OS/CPU features.
+          #+darwin  cffi-features:darwin
+          #+unix    cffi-features:unix
+          #+win32   cffi-features:windows
+          #+harp::pc386   cffi-features:x86
+          #+harp::powerpc cffi-features:ppc32
+          )))
 
 ;;;# Basic Pointer Operations
 (defun pointerp (ptr)

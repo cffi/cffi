@@ -54,10 +54,16 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-*features*
+;;;# Features
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-foreign-funcall *features*)
-  (pushnew :cffi/no-long-long *features))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          
+          ;; OS/CPU features.
+          cffi-features:windows
+          cffi-features:x86
+          )))
 
 ;;;# Basic Pointer Operations
 

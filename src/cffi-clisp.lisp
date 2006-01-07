@@ -63,13 +63,21 @@
 
 ;;; FIXME: long-long could be supported anyway on 64-bit machines. --luis
 
-;;;# Features and Mis-*features*
+;;;# Features
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*)
-  #+macos (pushnew :darwin *features*)
-  ;; XXX: this is probably also true for ppc64... --luis
-  (when (equalp (machine-type) "POWER MACINTOSH")
-    (pushnew :ppc32 *features*)))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          ;; OS/CPU features.
+          #+macos  cffi-features:darwin
+          #+unix   cffi-features:unix
+          #+win32  cffi-features:windows
+          #+pc386  cffi-features:x86
+          ))
+  (when (string-equal (machine-type) "POWER MACINTOSH")
+    ;; FIXME: probably catches PPC64 aswell
+    (pushnew 'cffi-features:ppc32 *features*)))
 
 ;;;# Built-In Foreign Types
 

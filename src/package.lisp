@@ -27,9 +27,6 @@
 
 (in-package #:cl-user)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi *features*))
-
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys #:cffi-utils)
   (:export

@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi.asd --- ASDF system definition for CFFI.
+;;; features.lisp --- CFFI-specific features.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2006, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,39 +25,25 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-#-(or openmcl sbcl cmu clisp lispworks ecl allegro cormanlisp)
-(error "Sorry, this Lisp is not yet supported.  Patches welcome!")
+(in-package #:cl-user)
 
-(defpackage #:cffi-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-system)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :cffi *features*))
 
-(defsystem cffi
-  :description "The Common Foreign Function Interface"
-  :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.1.0"
-  :licence "MIT"
-  :components 
-  ((:module src
-    :serial t
-    :components
-    ((:file "utils")
-     (:file "features")
-     #+openmcl    (:file "cffi-openmcl")
-     #+sbcl       (:file "cffi-sbcl")
-     #+cmu        (:file "cffi-cmucl")
-     #+clisp      (:file "cffi-clisp")
-     #+lispworks  (:file "cffi-lispworks")
-     #+ecl        (:file "cffi-ecl")
-     #+allegro    (:file "cffi-allegro")
-     #+cormanlisp (:file "cffi-corman")
-     (:file "package")
-     (:file "libraries")
-     (:file "early-types")
-     (:file "types")
-     (:file "enum")
-     (:file "strings")
-     (:file "functions")
-     (:file "foreign-vars")))))
+(defpackage #:cffi-features
+  (:export
+   ;; Features related to the CFFI-SYS backend.
+   #:long-long
+   #:foreign-funcall
 
-;; vim: ft=lisp et
+   ;; Features related to the operating system.
+   ;; Currently only these are pushed to *features*, more should be added.
+   #:darwin
+   #:unix
+   #:windows
+
+   ;; Features related to the processor.
+   ;; Currently only these are pushed to *features*, more should be added.
+   #:ppc32
+   #:x86
+   ))

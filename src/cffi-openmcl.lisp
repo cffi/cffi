@@ -58,8 +58,15 @@
 ;;;# Features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  #+darwinppc-target (pushnew :darwin *features*)
-  #+ppc32-target     (pushnew :ppc32 *features*))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          cffi-features:long-long
+          ;; OS/CPU features.
+          #+darwinppc-target  cffi-features:darwin
+          #+unix              cffi-features:unix
+          #+ppc32-target      cffi-features:ppc32
+          )))
 
 ;;;# Allocation
 ;;;

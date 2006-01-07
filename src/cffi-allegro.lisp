@@ -56,12 +56,19 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features and Mis-*features*
+;;;# Features
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*)
-  #+macosx (pushnew :darwin *features*)
-  ;; This is probably incorrect?
-  #+powerpc (pushnew :ppc32 *features*))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          ;; OS/CPU features.
+          #+macosx     cffi-features:darwin
+          #+unix       cffi-features:unix
+          #+mswindows  cffi-features:windows
+          #+powerpc    cffi-features:ppc32
+          #+x86        cffi-features:x86
+          )))
 
 ;;;# Basic Pointer Operations
 

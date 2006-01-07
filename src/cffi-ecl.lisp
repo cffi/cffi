@@ -53,11 +53,20 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features and Mis-*features*
+;;;# Features
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew :cffi/no-long-long *features*)
-  ;; Anything else other than powerpc7450?
-  #+powerpc7450 (pushnew :ppc32 *features*))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          ;; OS/CPU features.
+          #+darwin       cffi-features:darwin 
+          #+unix         cffi-features:unix
+          #+win32        cffi-features:windows
+          ;; XXX: figure out a way to get a X86 feature
+          ;;#+athlon       cffi-features:x86
+          #+powerpc7450  cffi-features:ppc32 
+          )))
 
 ;;;# Allocation
 

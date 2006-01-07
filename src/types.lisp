@@ -42,7 +42,7 @@
 (define-built-in-foreign-type :pointer)
 (define-built-in-foreign-type :void)
 
-#-cffi/no-long-long
+#+cffi-features:long-long
 (progn
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
@@ -439,9 +439,9 @@ to open-code (SETF MEM-REF) forms."
   "Return alignment for TYPE according to ALIGNMENT-TYPE."
   (declare (ignorable firstp))
   (ecase alignment-type
-    (:normal #-(and darwin ppc32)
+    (:normal #-(and cffi-features:darwin cffi-features:ppc32)
              (foreign-type-alignment type)
-             #+(and darwin ppc32)
+             #+(and cffi-features:darwin cffi-features:ppc32)
              (if firstp
                  (foreign-type-alignment type)
                  (min 4 (foreign-type-alignment type))))))

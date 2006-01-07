@@ -64,7 +64,17 @@
 ;;;# Features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  #+(and ppc (not ppc64)) (pushnew :ppc32 *features*))
+  (mapc (lambda (feature) (pushnew feature *features*))
+        '(;; Backend features.
+          cffi-features:foreign-funcall
+          cffi-features:long-long
+          ;; OS/CPU features.
+          #+darwin  cffi-features:darwin
+          #+unix    cffi-features:unix
+          #+win32   cffi-features:windows
+          #+x86     cffi-features:x86
+          #+(and ppc (not ppc64)) cffi-features:ppc32
+          )))
 
 ;;;# Basic Pointer Operations
 
