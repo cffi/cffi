@@ -226,4 +226,6 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
 
 (defun close-foreign-library (name)
   "Closes a foreign library NAME."
-  (%close-foreign-library (ensure-string name)))
+  (%close-foreign-library (etypecase name
+                            (pathname (namestring name))
+                            (string name))))
