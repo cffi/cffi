@@ -198,6 +198,21 @@ none of alternatives were successfully loaded."
      (cons :or library-list)
      "Unable to load any of the alternatives:~%   ~S" library-list)))
 
+(defparameter *cffi-feature-suffix-map*
+  '((cffi-features:unix . ".so")
+    (cffi-features:darwin . ".dylib")
+    (cffi-features:windows . ".dll"))
+  "Mapping of OS feature keywords to shared library suffixes.")
+
+(defun default-library-suffix ()
+  "Return a string to use as default library suffix based on the
+operating system.  This is used to implement the :DEFAULT option.
+This will need to be extended as we test on more OSes."
+  (dolist (feature *features*)
+    (let-when (suffix (cdr (assoc feature *cffi-feature-suffix-map*)))
+      (return-from default-library-suffix suffix)))
+  (error "Unable to determine the default library suffix on this OS."))
+
 (defun load-foreign-library (library)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
@@ -216,6 +231,11 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
     (cons
      (ecase (first library)
        (:framework (load-darwin-framework (second library)))
+       (:default
+        (unless (stringp (second library))
+          (error "Argument to :DEFAULT must be a string."))
+        (load-foreign-library
+         (concatenate 'string (second library) (default-library-suffix))))
        (:or (try-foreign-library-alternatives (rest library)))))))
 
 (defmacro use-foreign-library (name)
