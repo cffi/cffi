@@ -117,6 +117,8 @@ the USE-FOREIGN-LIBRARY macro."
 (defun cffi-feature-p (feature-expression)
   "Matches a FEATURE-EXPRESSION against the symbols in *FEATURES*
 that belong to the CFFI-FEATURES package only."
+  (when (eql feature-expression t)
+    (return-from cffi-feature-p t))
   (let ((features-package (find-package '#:cffi-features)))
     (flet ((cffi-feature-eq (name feature-symbol)
              (and (eq (symbol-package feature-symbol) features-package)
