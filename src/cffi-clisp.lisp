@@ -26,13 +26,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# A CLisp backend for CFFI.
-;;;
-;;; This is a preliminary port.  As of 7 June 2005 it looks like we'll
-;;; need some things that are only present in the CVS version of CLISP
-;;; (which doesn't compile for me at the moment).  Hopefully we will
-;;; be able to fully support CLISP after the next release.
-
 ;;;# Administrivia
 
 (defpackage #:cffi-sys

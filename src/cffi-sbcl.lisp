@@ -25,12 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;; Notes:
-;;;
-;;; * requires SBCL >= 0.9.3 because SB-SYS:FOREIGN-SYMBOL-ADDRESS was
-;;;   renamed to SB-SYS:FOREIGN-SYMBOL-SAP in SBCL 0.9.3 and prior versions
-;;;   had a buggy SB-SYS:FOREIGN-SYMBOL-ADDRESS anyway. --luis
-
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
