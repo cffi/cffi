@@ -151,11 +151,11 @@
 (cffi:define-foreign-type uffi-char (base-type)
   base-type)
 
-(cffi:define-type-translator uffi-char :to-c (value)
-  `(char-code ,value))
+(defmethod cffi:translate-to-foreign ((value character) (name (eql 'uffi-char)))
+  (char-code value))
 
-(cffi:define-type-translator uffi-char :from-c (value)
-  `(code-char ,value))
+(defmethod cffi:translate-from-foreign (obj (name (eql 'uffi-char)))
+  (code-char obj))
 
 (defmacro def-type (name type)
   "Define a Common Lisp type NAME for UFFI type TYPE."
@@ -287,11 +287,11 @@ field-name"
 
 ;; Hmm, we need to translate chars, so translations are necessary here.
 (defun %deref-pointer (ptr type)
-  (cffi::translate-from-c (cffi:mem-ref ptr type) (cffi::parse-type type)))
+  (cffi::translate-type-from-foreign (cffi:mem-ref ptr type) (cffi::parse-type type)))
 
 (defun (setf %deref-pointer) (value ptr type)
   (setf (cffi:mem-ref ptr type)
-        (cffi::translate-to-c value (cffi::parse-type type))))
+        (cffi::translate-type-to-foreign value (cffi::parse-type type))))
 
 (defmacro deref-pointer (ptr type)
   "Dereference a pointer."
