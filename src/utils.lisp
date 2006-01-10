@@ -60,9 +60,10 @@
 
 ;;; My own, hah!
 (defmacro discard-docstring (body-var)
-  "Discards the first element of the list in body-var if it's a string."
-  `(when (stringp (car ,body-var))
-     (setq ,body-var (cdr ,body-var))))
+  "Discards the first element of the list in body-var if it's a
+string and the only element."
+  `(when (and (stringp (car ,body-var)) (cdr ,body-var))
+     (pop ,body-var)))
 
 ;;; LET-IF (renamed to BIF) and LET-WHEN taken from KMRCL
 (defmacro let-when ((var test-form) &body body)

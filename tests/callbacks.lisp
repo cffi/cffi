@@ -103,7 +103,6 @@
 (defcallback lisp-strcat :string ((a :string) (b :string))
   (concatenate 'string a b))
 
-
 (deftest callbacks.char
     (expect-char-sum (get-callback 'sum-char))
   1)
@@ -163,6 +162,15 @@
 (deftest callbacks.string
     (expect-strcat (callback lisp-strcat))
   1)
+
+#+cffi-features:foreign-funcall
+(defcallback return-a-string-not-nil :string ()
+  "abc")
+
+#+cffi-features:foreign-funcall
+(deftest callbacks.string-not-docstring
+    (foreign-funcall (callback return-a-string-not-nil) :string)
+  "abc")
 
 ;;; This one tests mem-aref too.
 (defcfun "qsort" :void
