@@ -220,10 +220,11 @@ load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
   (etypecase library
     (symbol
-     (dolist (library-description (get-foreign-library library) t)
+     (dolist (library-description (get-foreign-library library))
        (when (cffi-feature-p (first library-description))
          (dolist (lib (rest library-description))
-           (load-foreign-library lib)))))
+           (load-foreign-library lib))
+         (return-from load-foreign-library t))))
     (string
      (load-foreign-library-name library))
     (pathname
