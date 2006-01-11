@@ -992,11 +992,15 @@ output to *verbose-out*.  Returns the shell's exit code."
                                        " "
                                        to-append)
                                    (string #\Newline))))
-              (if (string-starts-with "<pre class=\"lisp\">" line)
-                  (progn
+              (if (or (string-starts-with "<pre class=\"lisp\">" line)
+                      (string-starts-with "<pre class=\"smalllisp\">" line))
+                  ;; the laziness to refactor...
+                  (let ((len (if (string-starts-with "<pre class=\"lisp\">"line)
+                                 18
+                                 23)))
                     (setq inside-pre t)
                     (write-string "<pre class=\"lisp\">" output)
-                    (string-append piece-of-code (subseq line (+ 18 +indent+))
+                    (string-append piece-of-code (subseq line (+ len +indent+))
                                    (string #\Newline)))
                   (write-line line output))))))))
         
