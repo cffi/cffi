@@ -87,9 +87,12 @@
 ;;;   (:unix    (:alternatives "libGL.so" "libGL.so.1"
 ;;;                            #p"/myhome/mylibGL.so"))
 ;;;   (:windows "opengl32.dll")
-;;;   ;; and a hypothetical example of a particular platform
+;;;   ;; a hypothetical example of a particular platform
 ;;;   ;; where the OpenGL library is split in two.
-;;;   ((:and :some-system :some-cpu) "libGL-support.lib" "libGL-main.lib"))
+;;;   ((:and :some-system :some-cpu) "libGL-support.lib" "libGL-main.lib")
+;;;   ;; if no other clauses apply, this one will and a type will be
+;;;   ;; automagically appended to the name passed to :default
+;;;   (t (:default "libGL")))
 ;;;
 ;;; This information is stored in the *FOREIGN-LIBRARIES* hashtable
 ;;; and when the library is loaded through LOAD-FOREIGN-LIBRARY (usually

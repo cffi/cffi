@@ -4260,14 +4260,15 @@ CFFI> (with-foreign-object (array :int 10)
 
 
 @c ===================================================================
-@c CALLBACK
+@c GET-CALLBACK
 
 @node get-callback
 @heading get-callback
 @subheading Syntax
 @Accessor{get-callback symbol => pointer}
 
-(setf (@strong{get-callback} @emph{symbol) new-value})
+@c Probably not a good idea...
+@c (setf (@strong{get-callback} @emph{symbol) new-value})
 
 @subheading Arguments and Values
 @table @emph
@@ -4290,11 +4291,12 @@ CFFI> (defcallback sum :int ((a :int) (b :int))
 SUM
 CFFI> (get-callback 'sum)
 #<A Mac Pointer #x102350>
-CFFI> (setf (get-callback 'sum) (null-pointer))
-#<A Null Mac Pointer>
-CFFI> (get-callback 'sum)
-#<A Null Mac Pointer>
 @end lisp
+
+@c CFFI> (setf (get-callback 'sum) (null-pointer))
+@c #<A Null Mac Pointer>
+@c CFFI> (get-callback 'sum)
+@c #<A Null Mac Pointer>
 
 @subheading See Also
 @ref{callback} @*
