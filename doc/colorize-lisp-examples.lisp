@@ -154,16 +154,16 @@ span.paren6:hover { color : inherit; background-color : #FFBAFF; }
                                 t)
                             t)
                         nil)
-		    ,item
+          ,item
                     (progn
                       (and *reset-position*
                            (setf ,position-place *reset-position*))
                       nil)))))
-	      (scan-any (,items &key ,not-preceded-by)
-		(let ((,item (peek-any ,items :not-preceded-by ,not-preceded-by)))
-		  (and ,item (advance (length ,item)))))
-	      (peek (,item &key ,not-preceded-by)
-		(peek-any (list ,item) :not-preceded-by ,not-preceded-by))
+         (scan-any (,items &key ,not-preceded-by)
+      (let ((,item (peek-any ,items :not-preceded-by ,not-preceded-by)))
+        (and ,item (advance (length ,item)))))
+         (peek (,item &key ,not-preceded-by)
+      (peek-any (list ,item) :not-preceded-by ,not-preceded-by))
               (scan (,item &key ,not-preceded-by)
                (scan-any (list ,item) :not-preceded-by ,not-preceded-by)))
       (macrolet ((set-mode (,new-mode &key ,until (,advancing t))
@@ -862,22 +862,22 @@ span.paren6:hover { color : inherit; background-color : #FFBAFF; }
     ((:normal
       ((scan #\[)
        (set-mode :begin-message-send
-		 :until (advance 1)
-		 :advancing nil))
+       :until (advance 1)
+       :advancing nil))
       ((scan #\])
        (set-mode :end-message-send
-		 :until (advance 1)
-		 :advancing nil))
+       :until (advance 1)
+       :advancing nil))
       ((scan-any *c-begin-word*)
        (set-mode :word-ish
-		 :until (or
-			 (and (peek-any '(#\:))
-			      (setf terminate-next t))
-			 (and terminate-next (progn
-					       (setf terminate-next nil)
-					       (advance 1)))
-			 (scan-any *c-terminators*))
-		 :advancing nil)))
+       :until (or
+          (and (peek-any '(#\:))
+               (setf terminate-next t))
+          (and terminate-next (progn
+                      (setf terminate-next nil)
+                      (advance 1)))
+          (scan-any *c-terminators*))
+       :advancing nil)))
      (:word-ish
       #+nil
       ((scan #\:)
@@ -901,20 +901,20 @@ span.paren6:hover { color : inherit; background-color : #FFBAFF; }
     (lambda (type s)
       (declare (ignore type))
       (prog1
-	  (let ((result (if (find-package :cocoa-lookup)
-			    (funcall (symbol-function (intern "SYMBOL-LOOKUP" :cocoa-lookup))
-				     s))))
-	    (if result
-		(format nil "<a href=\"~A\" class=\"symbol\">~A</a>"
-			result s)
-		(if (member s *c-reserved-words* :test #'string=)
-		    (format nil "<span class=\"symbol\">~A</span>" s)
-		    (if in-message-send
-			(if is-keyword
-			    (format nil "<span class=\"keyword\">~A</span>" s)
-			    s)
-			s))))
-	(setf is-keyword (not is-keyword))))))))
+     (let ((result (if (find-package :cocoa-lookup)
+             (funcall (symbol-function (intern "SYMBOL-LOOKUP" :cocoa-lookup))
+                 s))))
+       (if result
+      (format nil "<a href=\"~A\" class=\"symbol\">~A</a>"
+         result s)
+      (if (member s *c-reserved-words* :test #'string=)
+          (format nil "<span class=\"symbol\">~A</span>" s)
+          (if in-message-send
+         (if is-keyword
+             (format nil "<span class=\"keyword\">~A</span>" s)
+             s)
+         s))))
+   (setf is-keyword (not is-keyword))))))))
 
 
 ;#!/usr/bin/clisp

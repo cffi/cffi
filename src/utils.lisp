@@ -95,14 +95,14 @@ string and the only element."
     (let ((temps nil))
       (dotimes (i (length variables)) (push (gensym "ONCE") temps))
       `(if (every #'side-effect-free? (list .,variables))
-	(progn .,body)
-	(list 'let
-	 ,`(list ,@(mapcar #'(lambda (tmp var)
-			       `(list ',tmp ,var))
-			   temps variables))
-	 (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
-		       variables temps)
-	   .,body)))))
+   (progn .,body)
+   (list 'let
+    ,`(list ,@(mapcar #'(lambda (tmp var)
+                `(list ',tmp ,var))
+            temps variables))
+    (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
+             variables temps)
+      .,body)))))
 
 ;;;; The following utils were taken from SBCL's
 ;;;; src/code/*-extensions.lisp

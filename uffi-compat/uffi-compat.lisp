@@ -440,25 +440,25 @@ library type if type is not specified."
   (dolist (drive-letter drive-letters)
     (dolist (name names)
       (dolist (dir directories)
-	(dolist (type types)
-	  (let ((path (make-pathname 
-		       #+lispworks :host
-		       #+lispworks (when drive-letter drive-letter)
-		       #-lispworks :device
-		       #-lispworks (when drive-letter drive-letter)
-		       :name name 
-		       :type type
-		       :directory 
-		       (etypecase dir
-			 (pathname
-			  (pathname-directory dir))
-			 (list
-			  dir)
-			 (string
-			  (pathname-directory 
-			   (parse-namestring dir)))))))
-	    (when (probe-file path)
-	      (return-from find-foreign-library path)))))))
+   (dolist (type types)
+     (let ((path (make-pathname 
+             #+lispworks :host
+             #+lispworks (when drive-letter drive-letter)
+             #-lispworks :device
+             #-lispworks (when drive-letter drive-letter)
+             :name name 
+             :type type
+             :directory 
+             (etypecase dir
+          (pathname
+           (pathname-directory dir))
+          (list
+           dir)
+          (string
+           (pathname-directory 
+            (parse-namestring dir)))))))
+       (when (probe-file path)
+         (return-from find-foreign-library path)))))))
   nil)
 
 (defun convert-supporting-libraries-to-string (libs)
@@ -474,10 +474,10 @@ library type if type is not specified."
   
   (when (and filename (probe-file filename))
     (if (pathnamep filename) ;; ensure filename is a string to check if
-	(setq filename (namestring filename))) ; already loaded
+   (setq filename (namestring filename))) ; already loaded
 
     (if (and (not force-load)
-	     (find filename *loaded-libraries* :test #'string-equal))
+        (find filename *loaded-libraries* :test #'string-equal))
         t ;; return T, but don't reload library
         (progn
           #+cmu
