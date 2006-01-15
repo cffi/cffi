@@ -174,7 +174,7 @@ be stack allocated if supported by the implementation."
 
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign type."
-  #+(and darwin ppc32)
+  #+(and darwin harp::powerpc)
   (when (eq type :double)
     (return-from %foreign-type-alignment 8))
   ;; Override not necessary for the remaining types...
