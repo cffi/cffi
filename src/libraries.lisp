@@ -184,22 +184,22 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
   "Tries to load NAME using %LOAD-FOREIGN-LIBRARY which should try and
 find it using the OS's usual methods. If that fails we try to find it
 ourselves."
-  (unless (or (ignore-errors (%load-foreign-library name))
-              (let ((file (find-file name *foreign-library-directories*)))
-                (when file
-                  (%load-foreign-library (namestring file)))))
-    (handle-load-foreign-library-error
-     name "Unable to load foreign library: ~A" name)))
+  (or (ignore-errors (%load-foreign-library name))
+      (let ((file (find-file name *foreign-library-directories*)))
+        (when file
+          (%load-foreign-library (namestring file))))
+      ;; couldn't load it directly or find it...
+      (handle-load-foreign-library-error
+       name "Unable to load foreign library: ~A" name)))
 
 (defun try-foreign-library-alternatives (library-list)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
-  (unless (some (lambda (lib)
-                  (ignore-errors (load-foreign-library lib)))
-                library-list)
-    (handle-load-foreign-library-error
-     (cons :or library-list)
-     "Unable to load any of the alternatives:~%   ~S" library-list)))
+  (or (some (lambda (lib) (ignore-errors (load-foreign-library lib)))
+            library-list)
+      (handle-load-foreign-library-error
+       (cons :or library-list)
+       "Unable to load any of the alternatives:~%   ~S" library-list)))
 
 (defparameter *cffi-feature-suffix-map*
   '((cffi-features:unix . ".so")
