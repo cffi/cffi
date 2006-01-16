@@ -42,5 +42,5 @@
 (load-foreign-library *lib*)
 
 ;;; FIXME: this shouldn't be a special case. --luis
-#+(and ecl win32)
+#+(and (or ecl sbcl) win32)
 (load-foreign-library "msvcrt")
