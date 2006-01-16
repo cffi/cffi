@@ -145,6 +145,7 @@ Signals an error if the type cannot be resolved."
 
 (defmethod unparse (name (type foreign-type))
   "Default method to unparse TYPE to its name."
+  (declare (ignore name))
   (name type))
 
 (defun unparse-type (type)
