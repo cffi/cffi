@@ -107,23 +107,41 @@
        '()
        `(%foreign-funcall ,name ,@(mapcan #'list types args) ,rettype)))))
 
-(defmacro defcfun (name return-type &body args)
-  "Defines a Lisp function that calls a foreign function."
-  (discard-docstring args)
-  (let ((lisp-name (lisp-function-name name))
-        (foreign-name (foreign-function-name name))
-        (arg-names (mapcar #'car args))
+(defun %defcfun (lisp-name foreign-name return-type args)
+  (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args))
         (syms (make-gensym-list (length args))))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
-         foreign-name lisp-name (canonicalize-foreign-type return-type)
-         syms (mapcar #'canonicalize-foreign-type arg-types))
+            foreign-name lisp-name (canonicalize-foreign-type return-type)
+            syms (mapcar #'canonicalize-foreign-type arg-types))
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
            (translate-objects
             ,syms ,arg-names ,arg-types ,return-type ,caller))))))
+
+(defun %defcfun-varargs (lisp-name foreign-name return-type args)
+  (with-unique-names (varargs)
+    (let ((arg-names (mapcar #'car args)))
+      `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
+         `(foreign-funcall ,',foreign-name
+                           ,@,`(list ,@(loop for (name type) in args
+                                             collect type collect name))
+                           ,@,varargs
+                           ,',return-type)))))
+
+;;; If we find a &REST token at the end of ARGS, it's a varargs function
+;;; therefore we define a lisp macro using %DEFCFUN-VARARGS instead of a
+;;; lisp macro with %DEFCFUN as we would otherwise do.
+(defmacro defcfun (name return-type &body args)
+  "Defines a Lisp function that calls a foreign function."
+  (discard-docstring args)
+  (let ((lisp-name (lisp-function-name name))
+        (foreign-name (foreign-function-name name)))
+    (if (eq (car (last args)) '&rest)   ; probably should use STRING=
+        (%defcfun-varargs lisp-name foreign-name return-type (butlast args))
+        (%defcfun lisp-name foreign-name return-type args))))
 
 ;;;# Defining Callbacks
 
@@ -152,10 +170,6 @@
 
 (defun get-callback (symbol)
   (%callback symbol))
-
-;;; Is this really a good idea?  [2006-01-05 JJB]
-;; (defun (setf get-callback) (value symbol)
-;;   (setf (get symbol 'cffi-sys::callback-ptr) value))
 
 (defmacro callback (name)
   `(%callback ',name))
