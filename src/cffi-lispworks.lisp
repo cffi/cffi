@@ -41,6 +41,7 @@
    #:foreign-free
    #:with-foreign-pointer
    #:%foreign-funcall
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -61,7 +62,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; Backend features.
-
+          cffi-features:foreign-funcall
           ;; OS/CPU features.
           #+darwin  cffi-features:darwin
           #+unix    cffi-features:unix
@@ -182,6 +183,11 @@ be stack allocated if supported by the implementation."
 
 ;;;# Calling Foreign Functions
 
+(defvar *foreign-funcallable-cache* (make-hash-table :test 'equal)
+  "Caches foreign funcallables created by %FOREIGN-FUNCALL or
+%FOREIGN-FUNCALL-POINTER.  We only need to have one per each
+signature.")
+
 (defun foreign-funcall-type-and-args (args)
   "Returns a list of types, list of args and return type."
   (let ((return-type :void))
@@ -191,9 +197,47 @@ be stack allocated if supported by the implementation."
        else do (setf return-type (convert-foreign-type type))
        finally (return (values types fargs return-type)))))
 
+(defun create-foreign-funcallable (types rettype)
+  "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
+  (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
+          types rettype)
+  ;; yes, ugly, this most likely wants to be a
+  ;; top-level form...
+  (let ((internal-name (gensym)))
+    (funcall
+     (compile nil
+              `(lambda ()
+                 (fli:define-foreign-funcallable ,internal-name
+                     ,(loop for type in types
+                            collect (list (gensym) type))
+                   :result-type ,rettype))))
+    internal-name))
+
+(defun get-foreign-funcallable (types rettype)
+  "Returns a foreign funcallable for the signature TYPES -> RETTYPE -
+either from the cache or newly created."
+  (let ((signature (cons rettype types)))
+    (or (gethash signature *foreign-funcallable-cache*)
+        ;; (SETF GETHASH) is supposed to be thread-safe
+        (setf (gethash signature *foreign-funcallable-cache*)
+                (create-foreign-funcallable types rettype)))))
+
+(defmacro %%foreign-funcall (foreign-function &rest args)
+  "Does the actual work for %FOREIGN-FUNCALL-POINTER and
+%FOREIGN-FUNCALL.  Checks if a foreign funcallable which fits ARGS
+already exists and creates and caches it if necessary.  Finally calls
+it."
+  (multiple-value-bind (types fargs rettype)
+      (foreign-funcall-type-and-args args)
+    `(,(get-foreign-funcallable types rettype) ,foreign-function ,@fargs)))
+
 (defmacro %foreign-funcall (name &rest args)
-  "Call a foreign function NAME passing arguments ARGS."
-  `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))
+  "Calls a foreign function named NAME passing arguments ARGS."
+  `(%%foreign-funcall (fli:make-pointer :symbol-name ,name) ,@args))
+
+(defmacro %foreign-funcall-pointer (ptr &rest args)
+  "Calls a foreign function pointed at by PTR passing arguments ARGS."
+  `(%%foreign-funcall ,ptr ,@args))
 
 (defun defcfun-helper-forms (name lisp-name rettype args types)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
