@@ -202,18 +202,18 @@ none of alternatives were successfully loaded."
        "Unable to load any of the alternatives:~%   ~S" library-list)))
 
 (defparameter *cffi-feature-suffix-map*
-  '((cffi-features:unix . ".so")
+  '((cffi-features:windows . ".dll")
     (cffi-features:darwin . ".dylib")
-    (cffi-features:windows . ".dll"))
+    (cffi-features:unix . ".so"))
   "Mapping of OS feature keywords to shared library suffixes.")
 
 (defun default-library-suffix ()
   "Return a string to use as default library suffix based on the
 operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
-  (dolist (feature *features*)
-    (let-when (suffix (cdr (assoc feature *cffi-feature-suffix-map*)))
-      (return-from default-library-suffix suffix)))
+  (loop for (feature . suffix) in *cffi-feature-suffix-map*
+        when (cffi-feature-p feature)
+        do (return-from default-library-suffix suffix))
   (error "Unable to determine the default library suffix on this OS."))
 
 (defun load-foreign-library (library)
