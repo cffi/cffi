@@ -41,9 +41,18 @@
     (foreign-funcall "toupper" :char (char-code #\a) :char)
   #.(char-code #\A))
 
-(deftest funcall.int
+(deftest funcall.int.1
     (foreign-funcall "abs" :int -100 :int)
   100)
+
+(defun funcall-abs (n)
+  (foreign-funcall "abs" :int n :int))
+
+;;; regression test: lispworks's %foreign-funcall based on creating
+;;; and chaching foreign-funcallables at macro-expansion time.
+(deftest funcall.int.2
+    (funcall-abs -42)
+  42)
 
 (deftest funcall.long
     (foreign-funcall "labs" :long -131072 :long)
