@@ -190,10 +190,12 @@ echo "Generating monolithic html... ($cmd)"
 rm -rf $PACKAGE.html  # in case a directory is left over
 eval $cmd
 sbcl --load colorize-lisp-examples.lisp $PACKAGE.html
-html_mono_size="`calcsize $PACKAGE.html`"
-gzip -f -9 -c $PACKAGE.html >$outdir/$PACKAGE.html.gz
+#fix libc xrefs
+sed -e 's!libc\.html!http://www.gnu.org/software/libc/manual/html_mono/libc.html!' $PACKAGE.html >$outdir/$PACKAGE.html
+rm $PACKAGE.html
+html_mono_size="`calcsize $outdir/$PACKAGE.html`"
+gzip -f -9 -c $outdir/$PACKAGE.html >$outdir/$PACKAGE.html.gz
 html_mono_gz_size="`calcsize $outdir/$PACKAGE.html.gz`"
-mv $PACKAGE.html $outdir/
 
 cmd="${MAKEINFO} --html -o $PACKAGE.html $html $srcfile"
 echo "Generating html by node... ($cmd)"
@@ -202,6 +204,11 @@ split_html_dir=$PACKAGE.html
 sbcl --load colorize-lisp-examples.lisp "${split_html_dir}/*.html"
 (
   cd ${split_html_dir} || exit 1
+  #fix libc xrefs
+  for broken_file in *.html; do
+      sed -e 's!\.\./libc!http://www.gnu.org/software/libc/manual/html_node!' "$broken_file" > "$broken_file".temp
+      mv -f "$broken_file".temp "$broken_file"
+  done
   tar -czf ../$outdir/${PACKAGE}.html_node.tar.gz -- *.html
 )
 html_node_tgz_size="`calcsize $outdir/${PACKAGE}.html_node.tar.gz`"
