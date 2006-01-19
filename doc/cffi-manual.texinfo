@@ -39,6 +39,12 @@
 @acronym{CFFI}
 @end macro
 
+@macro impnote {text}
+@quotation
+@strong{Implementor's note:} @emph{\text\}
+@end quotation
+@end macro
+
 @c ============================= Macros =============================
 
 
@@ -191,26 +197,44 @@ Callbacks
 @node Introduction
 @chapter Introduction
 
-@strong{Please note that, at the moment, this manual reflects what's
-available in the cffi-luis branch, not the main cffi branch. Also,
-it is a work in progress. --luis}
+@cffi{} is the Common Foreign Function Interface for @acronym{ANSI}
+Common Lisp systems.  By @dfn{foreign function} we mean a function
+written in another programming language and having different data and
+calling conventions than Common Lisp, namely, C.  @cffi{} allows you
+to call foreign functions and access foreign variables, all without
+leaving the Lisp image.
 
-If you have difficulty with anything @cffi{}-specific presented in the
-manual, please contact @email{cffi-devel@@common-lisp.net,the
-developers} with details.
+We consider this manual ever a work in progress.  If you have
+difficulty with anything @cffi{}-specific presented in the manual,
+please contact @email{cffi-devel@@common-lisp.net,the developers} with
+details.
 
 
-@section Motivation
+@heading Motivation
 
-@section Design Philosophy
+@xref{Tutorial-Comparison,, What makes Lisp different}, for
+an argument in favor of @acronym{FFI} in general.
+
+@cffi{}'s primary role in any image is to mediate between Lisp
+developers and the widely varying @acronym{FFI}s present in the
+various Lisp implementations it supports.  With @cffi{}, you can
+define foreign function interfaces while still maintaining portability
+between implementations.  It is not the first Common Lisp package with
+this objective; however, it is meant to be a more malleable framework
+than similar packages.
+
+
+@heading Design Philosophy
 
 @itemize
 @item
 Pointers do not carry around type information. Instead, type
 information is supplied when pointers are dereferenced.
+
 @item
 A type safe pointer interface can be developed on top of an
 untyped one.  It is difficult to do the opposite.
+
 @item
 Functions are better than macros.  When a macro could be used
 for performance, use a compiler-macro instead.
@@ -225,14 +249,12 @@ for performance, use a compiler-macro instead.
 @node Implementation Support and Known Issues
 @chapter Implementation Support and Known Issues
 
-@strong{Please note that, at the moment, this manual reflects what's
-available in the cffi-luis branch, not the main cffi branch. --luis}
+@cffi{} supports various free and commercial Lisp implementations:
+Allegro CL, Corman CL, @sc{clisp}, @acronym{CMUCL}, @acronym{ECL},
+LispWorks, Open@acronym{MCL} and @acronym{SBCL}.
 
-CFFI supports various free and commercial Lisp implementations:
-Allegro CL, Corman CL, CLISP, CMUCL, ECL, Lispworks, OpenMCL and
-SBCL.
-
-There are also plans to support Digitool MCL, GCL and Scieneer CL.
+There are also plans to support Digitool @acronym{MCL}, @acronym{GCL}
+and Scieneer CL.
 
 
 @section Allegro CL
@@ -245,7 +267,7 @@ known to work. Earlier versions are untested and unsupported.
 @subheading Known issues
 @itemize
 @item
-@emph{(all platforms)} CFFI won't work correctly using
+@emph{(all platforms)} @cffi{} won't work correctly using
 modern mode.
 
 @item
@@ -284,7 +306,7 @@ works around these issues.
 @end itemize
 
 
-@section CLISP
+@section @sc{clisp}
 
 @strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
 
@@ -340,11 +362,11 @@ Versions prior to 4.4 are untested.
 @end itemize
 
 
-@section OpenMCL
+@section Open@acronym{MCL}
 
 @strong{Tested platforms:} darwin/ppc, linux/ppc.
 
-OpenMCL 1.0 or newer is recommended.
+Open@acronym{MCL} 1.0 or newer is recommended.
 
 @subheading Known issues
 @itemize
@@ -353,7 +375,7 @@ OpenMCL 1.0 or newer is recommended.
 @code{CALLBACKS.LONG-LONG} and @code{FOREIGN-GLOBALS.SET.LONG-LONG}.
 
 @item
-@emph{(ppc64)} There seem to be some bugs that affect CFFI.
+@emph{(ppc64)} There seem to be some bugs that affect @cffi{}.
 @end itemize
 
 
@@ -376,12 +398,6 @@ DEFCFUN.LONG-LONG} and @code{FUNCALL.VARARGS.DOUBLE}.
 
 @c ===================================================================
 @c CHAPTER: An Introduction to Foreign Interfaces and CFFI
-
-@macro impnote {text}
-@quotation
-@strong{Implementor's note:} @emph{\text\}
-@end quotation
-@end macro
 
 @c This macro is merely a marker that I don't think I'll use after
 @c all.
@@ -1603,7 +1619,7 @@ free-translated-object, structs.}
 @chapter Foreign Types
 
 Foreign types describe how data is translated back and forth between C
-and Lisp. CFFI provides various built-in types and allows the user to
+and Lisp. @cffi{} provides various built-in types and allows the user to
 define new types.
 
 @menu
@@ -1635,7 +1651,6 @@ Dictionary
 * free-translated-object::
 * translate-from-foreign::
 * translate-to-foreign::
-* with-foreign-object::         
 * with-foreign-slots::          
 @end menu
 
@@ -1662,11 +1677,11 @@ Dictionary
 @ForeignType{:unsigned-long-long}
 
 These types correspond to the native C integer types according to the
-ABI of the system the Lisp implementation is compiled against.
+@acronym{ABI} of the Lisp implementation's host system.
 
 @code{:long-long} and @code{:unsigned-long-long} are not supported on
-all implementations. When not supported, the @code{:cffi/no-long-long}
-feature is pushed into @code{*features*}.
+all implementations. When supported, the symbol
+@code{cffi-features:no-long-long} is pushed into @code{*features*}.
 
 @ForeignType{:int8}
 @ForeignType{:uint8}
@@ -1680,7 +1695,7 @@ feature is pushed into @code{*features*}.
 Foreign integer types of specific sizes, corresponding to the C types
 defined in @code{stdint.h}.
 
-@emph{Note: these are not implemented yet. --luis}
+@impnote{These are not implemented yet. --luis}
 
 @ForeignType{:size}
 @ForeignType{:ssize}
@@ -1690,20 +1705,23 @@ defined in @code{stdint.h}.
 Foreign integer types corresponding to the standard C types (without
 the @code{_t} suffix).
 
-@emph{Note: these are not implemented yet. --luis}
+@impnote{These are not implemented yet. --luis}
 
-@emph{I'm sure there are more of these that could be useful, let's
+@impnote{I'm sure there are more of these that could be useful, let's
 add any types that can't be defined portably to this list as
 necessary. --james}
 
 @ForeignType{:float}
 @ForeignType{:double}
 
-The @code{:float} type represents a C @code{float} and a Lisp
-@code{single-float}. @code{:double} represents a C @code{double} and a
-Lisp @code{double-float}.
+On most systems, the @code{:float} type represents a C @code{float}
+and a Lisp @code{single-float}. @code{:double} represents a C
+@code{double} and a Lisp @code{double-float}.  It is not so useful to
+consider the relationship between Lisp types and C types as
+isomorphic, as simply to recognize the relationship, and relative
+precision, among each respective category.
 
-@emph{Note: this is not true for Lispworks (on linux/x86 and win32 at
+@impnote{This is not true for Lispworks (on linux/x86 and win32 at
 least). --luis}
 
 @ForeignType{:pointer}
@@ -1718,18 +1736,13 @@ No type at all. Only valid as the return type of a function.
 @node Defining Typedefs
 @section Defining Typedefs
 
-@node Foreign Type Translators
-@section Foreign Type Translators
+Typedefs are similar to @code{typedef}s in C, except they are more
+like ``type wrappers'' than aliases, for reasons that will become
+clear in the next section.
 
-Type translators are used to automatically convert Lisp values to or
-from foreign values.  For example, using type translators, one can
-define a boolean type which converts a Lisp generalized boolean (nil
-vs non-nil) to a C boolean (zero vs non-zero).
-
-The first step to defining an automatically translated type is to
-define a typedef that will be used to refer to the foreign type.  Here
-is how a simpler version of the built-in @code{:boolean} type could be
-defined:
+Defining a typedef is as simple as giving @code{defctype} a new name
+and the name of the type to be wrapped.  Here is how a simpler version
+of the built-in @code{:boolean} type could be defined:
 
 @lisp
 ;;; Define MY-BOOLEAN as an alias for the built-in type :INT.
@@ -1737,13 +1750,23 @@ defined:
 @end lisp
 
 With this type definition, one can declare arguments to foreign
-functions as having the type MY-BOOLEAN, and they will be passed as
-integers.  No conversion is taking place---if NIL is passed as a
-MY-BOOLEAN, a type error will be signalled.
+functions as having the type @code{my-boolean}, and they will be
+passed as integers.  No conversion is taking place---if @code{nil} is
+passed as a @code{my-boolean}, a type error will be signalled.
 
-To inform CFFI of how to automatically convert Lisp values to
-MY-BOOLEAN values, specialize the generic function
-@code{translate-to-foreign} on the MY-BOOLEAN type:
+@node Foreign Type Translators
+@section Foreign Type Translators
+
+Type translators are used to automatically convert Lisp values to or
+from foreign values.  For example, using type translators, one can
+define a boolean type which converts a Lisp generalized boolean
+(@code{nil} vs.@: non-@code{nil}) to a C boolean (zero vs.@:
+non-zero).
+
+We created the @code{my-boolean} type in the previous section.  To
+tell @cffi{} how to automatically convert Lisp values to
+@code{my-boolean} values, specialize the generic function
+@code{translate-to-foreign} on the @code{my-boolean} type:
 
 @lisp
 ;;; Define a method that converts Lisp booleans to C booleans.
@@ -1751,11 +1774,11 @@ MY-BOOLEAN values, specialize the generic function
   (if value 1 0))
 @end lisp
 
-Now, when an object is passed as a MY-BOOLEAN to a foreign function,
-this method will be invoked to convert the Lisp value to an integer.
-To perform the inverse operation, which is needed for functions that
-return a MY-BOOLEAN, specialize the @code{translate-from-foreign}
-generic function:
+Now, when an object is passed as a @code{my-boolean} to a foreign
+function, this method will be invoked to convert the Lisp value to an
+integer.  To perform the inverse operation, which is needed for
+functions that return a @code{my-boolean}, specialize the
+@code{translate-from-foreign} generic function:
 
 @lisp
 ;;; Define a method that converts C booleans to Lisp booleans.
@@ -1766,68 +1789,67 @@ generic function:
 When a @code{translate-to-foreign} method requires allocation of
 foreign memory, the @code{free-translated-object} method can be
 specialized to free the memory once the foreign object is no longer
-needed.  This is called automatically by CFFI when passing objects to
+needed.  This is called automatically by @cffi{} when passing objects to
 foreign functions.
 
 A type translator does not necessarily need to convert the value.  For
 example, one could define a typedef for @code{:pointer} that ensures,
-in the @code{translate-to-foreign} method, that the value is non-NULL,
-signalling an error if a null pointer is passed.  This may help
-prevent pointer errors when calling foreign functions that cannot
-handle null pointers.
+in the @code{translate-to-foreign} method, that the value is not a
+null pointer, signalling an error if a null pointer is passed.  This
+will prevent some pointer errors when calling foreign functions that
+cannot handle null pointers.
+
+@xref{Tutorial-Types,, Defining new types}, for a more involved
+tutorial example of type translators.
 
 @node Foreign Structure Types
 @section Foreign Structure Types
 
-@subheading Foreign Structure Example
+For more involved C types than simple aliases to built-in types, such
+as you can make with @code{defctype}, @cffi{} allows declaration of
+structures and unions with @code{defcstruct} and @code{defcunion}.
 
-@c commented this out since it was causing confusion --luis
+For example, consider this fictional C structure declaration holding
+some personal information:
 
-@c @lisp
-@c ;; A hairy structure definition that illustrates some of the rules
-@c ;; governing foreign structs.
-@c (defcstruct (person :alignment :packed)
-@c   "A person in the employee database."
-@c   ;; the first argument after the name may be a docstring
-@c   (id :int)
-@c   ;; these are defined as char[255]'s in the c code
-@c   (first-name  :char :count 255)
-@c   (last-name   :char :count 255)
-@c   ;; an embedded structure
-@c   (birthdate timeval)
-@c   ;; a pointer to another PERSON
-@c   (supervisor :pointer))
+@example
+struct person @{
+  int number;
+  char* reason;
+@};
+@end example
 
-@c ;;; If P is a pointer to a PERSON structure:
+@noindent
+The equivalent @code{defcstruct} form follows:
 
-@c ;; This returns p->first_name, a pointer.
-@c (foreign-slot-value p 'person 'first-name)
+@lisp
+(defcstruct person
+  (number :int)
+  (reason :string))
+@end lisp
 
-@c ;; This returns &p->birthdate, a pointer.
-@c (foreign-slot-value p 'person 'birthdate)
+@cffi{} knows how to align C @code{struct}s, and how to figure in
+padding between struct elements.
 
-@c ;; NOTE: this is not implemented yet.
-@c ;; This returns p->birthdate.tv_secs as a Lisp integer.
-@c (foreign-slot-value p 'person 'birthdate 'tv-secs)
-
-@c ;; The previous form is equivalent to (but may be faster than):
-@c (foreign-slot-value
-@c  (foreign-slot-value p 'person 'birthdate) 'timeval 'tv-secs)
-
-@c ;; Attempting to set the slot value of an embedded structure or
-@c ;; embedded array causes an error.  Eventually, there may be a
-@c ;; type converter that can handle this situation for some types.
-@c ;; This would be: p->birthdate = ... in C.
-@c (setf (foreign-slot-value p 'person 'timeval) ...) => error
-@c @end lisp
+Please note that this interface is only for those that must know about
+the values contained in a relevant struct.  If the library you are
+interfacing returns an opaque pointer that needs only be passed to
+other C library functions, by all means just use @code{:pointer} or a
+type-safe definition munged together with @code{defctype} and type
+translation.
 
 @node Operations on Types
 @section Operations on Types
 
+@impnote{Which ``operations'' are worth going over here? --stephen}
+
 @node Allocating Foreign Objects
 @section Allocating Foreign Objects
 
+@c I moved this because I moved with-foreign-object to the Pointers
+@c chapter, where foreign-alloc is.
 
+@xref{Allocating Foreign Memory}.
 
 
 @c ===================================================================
@@ -1884,16 +1906,18 @@ of objects.
   "Pointer structure."
   (x :int)
   (y :int))
+@end lisp
 
-CFFI> (with-foreign-object (ptr 'point)
-        ;; Initialize the slots
+@example
+@sc{cffi>} (with-foreign-object (ptr 'point)
+        ;; @r{Initialize the slots}
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; Return a list with the coordinates
+        ;; @r{Return a list with the coordinates}
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
-(42 42)
-@end lisp
+@result{} (42 42)
+@end example
 
 @lisp
 ;; Using the :size and :offset options to define a partial structure.
@@ -1909,10 +1933,12 @@ CFFI> (with-foreign-object (ptr 'point)
   (z :char :offset 24)  ; a char at offset 24
                         ; <7 more bytes ignored (since size is 32)>
   )
-
-CFFI> (foreign-type-size 'foo)
-32
 @end lisp
+
+@example
+@sc{cffi>} (foreign-type-size 'foo)
+@result{} 32
+@end example
 
 @subheading See Also
 @ref{foreign-slot-pointer} @*
@@ -2055,18 +2081,24 @@ of an @code{enum} type is expected.
 (defcenum boolean
   :no
   :yes)
+@end lisp
 
-CFFI> (foreign-enum-value 'boolean :no)
-0
+@example
+@sc{cffi>} (foreign-enum-value 'boolean :no)
+@result{} 0
+@end example
 
+@lisp
 (defcenum numbers
   (:one 1)
   :two
   (:four 4))
-
-CFFI> (foreign-enum-keyword 'numbers 2)
-:TWO
 @end lisp
+
+@example
+@sc{cffi>} (foreign-enum-keyword 'numbers 2)
+@result{} :TWO
+@end example
 
 @subheading See Also
 @ref{foreign-enum-value} @*
@@ -2208,7 +2240,8 @@ aliases to take arguments. The following examples illustrate this
 capability.
 
 @subheading Examples
-Taken from CFFI's @code{:boolean} type definition:
+Taken from @cffi{}'s @code{:boolean} type definition:
+
 @lisp
 (define-foreign-type :boolean (&optional (base-type :int))
   "Boolean type. Maps to an :int by default. Only accepts integer types."
@@ -2219,17 +2252,20 @@ Taken from CFFI's @code{:boolean} type definition:
       :unsigned-int
       :long
       :unsigned-long) base-type)))
-
-CFFI> (canonicalize-foreign-type :boolean)
-:INT
-CFFI> (canonicalize-foreign-type '(:boolean :long))
-:LONG
-CFFI> (canonicalize-foreign-type '(:boolean :float))
-; Error, signaled by ECASE.
 @end lisp
+
+@example
+@sc{cffi>} (canonicalize-foreign-type :boolean)
+@result{} :INT
+@sc{cffi>} (canonicalize-foreign-type '(:boolean :long))
+@result{} :LONG
+@sc{cffi>} (canonicalize-foreign-type '(:boolean :float))
+@error{} @r{signalled by ECASE.}
+@end example
 
 This next example is hypothetical as there is no @code{:array} type
 yet.
+
 @lisp
 (define-foreign-type int-array (&rest dimensions)
   `(:array :int ,@@dimensions))
@@ -2270,13 +2306,13 @@ expression in C and prints it to @code{*standard-output*}.
 @emph{Note: this is not implemented yet.}
 
 @subheading Examples
-@lisp
-CFFI> (explain-foreign-slot-value ptr 'timeval 'tv-secs)
-ptr->tv_secs
+@example
+@sc{cffi>} (explain-foreign-slot-value ptr 'timeval 'tv-secs)
+@result{} ptr->tv_secs
 
-CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
-emp->hire_date.tv_usecs
-@end lisp
+@sc{cffi>} (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
+@result{} emp->hire_date.tv_usecs
+@end example
 
 @c @subheading See Also
 
@@ -2314,10 +2350,13 @@ An error is signaled if @emph{type} doesn't contain such @emph{value}.
 (defcenum boolean
   :no
   :yes)
-
-CFFI> (foreign-enum-keyword 'boolean 1)
-:YES
 @end lisp
+
+@example
+@sc{cffi>} (foreign-enum-keyword 'boolean 1)
+@result{} :YES
+@end example
+
 @subheading See Also
 @ref{defcenum} @*
 @ref{foreign-enum-value}
@@ -2356,10 +2395,12 @@ An error is signaled if @emph{type} doesn't contain such @emph{keyword}.
 (defcenum boolean
   :no
   :yes)
-
-CFFI> (foreign-enum-keyword 'boolean :yes)
-1
 @end lisp
+
+@example
+@sc{cffi>} (foreign-enum-keyword 'boolean :yes)
+@result{} 1
+@end example
 
 @subheading See Also
 @ref{defcenum} @*
@@ -2394,10 +2435,12 @@ the foreign slots of a struct type. This list has no particular order.
 (defcstruct timeval
   (tv-secs :long)
   (tv-usecs :long))
-
-CFFI> (foreign-slot-names 'timeval)
-(TV-SECS TV-USECS)
 @end lisp
+
+@example
+@sc{cffi>} (foreign-slot-names 'timeval)
+@result{} (TV-SECS TV-USECS)
+@end example
 
 @subheading See Also
 @ref{defcstruct} @*
@@ -2437,12 +2480,14 @@ bytes of a slot in a foreign struct type.
 (defcstruct timeval
   (tv-secs :long)
   (tv-usecs :long))
-
-CFFI> (foreign-slot-offset 'timeval 'tv-secs)
-0
-CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
-4
 @end lisp
+
+@example
+@sc{cffi>} (foreign-slot-offset 'timeval 'tv-secs)
+@result{} 0
+@sc{cffi>} (foreign-slot-offset 'timeval 'tv-usecs)
+@result{} 4
+@end example
 
 @subheading See Also
 @ref{defcstruct} @*
@@ -2491,12 +2536,14 @@ For aggregate slots, this is the same value returned by
   "Pointer structure."
   (x :int)
   (y :int))
-
-CFFI> (with-foreign-object (ptr 'point)
-        (foreign-slot-pointer ptr 'point 'x))
-#<FOREIGN-ADDRESS #xBFFF6E60>
-;; Note: the exact pointer representation varies from lisp to lisp.
 @end lisp
+
+@example
+@sc{cffi>} (with-foreign-object (ptr 'point)
+        (foreign-slot-pointer ptr 'point 'x))
+@result{} #<FOREIGN-ADDRESS #xBFFF6E60>
+;; Note: the exact pointer representation varies from lisp to lisp.
+@end example
 
 @subheading See Also
 @ref{defcstruct} @*
@@ -2550,16 +2597,18 @@ There are compiler macros for @code{foreign-slot-value} and its
   "Pointer structure."
   (x :int)
   (y :int))
+@end lisp
 
-CFFI> (with-foreign-object (ptr 'point)
-        ;; Initialize the slots
+@example
+@sc{cffi>} (with-foreign-object (ptr 'point)
+        ;; @r{Initialize the slots}
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; Return a list with the coordinates
+        ;; @r{Return a list with the coordinates}
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
-(42 42)
-@end lisp
+@result{} (42 42)
+@end example
 
 @subheading See Also
 @ref{defcstruct} @*
@@ -2594,20 +2643,24 @@ The function @code{foreign-type-alignment} returns the
 @emph{alignment} of @emph{type} in bytes.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-type-alignment :char)
-1
-CFFI> (foreign-type-alignment :short)
-2
-CFFI> (foreign-type-alignment :int)
-4
+@example
+@sc{cffi>} (foreign-type-alignment :char)
+@result{} 1
+@sc{cffi>} (foreign-type-alignment :short)
+@result{} 2
+@sc{cffi>} (foreign-type-alignment :int)
+@result{} 4
+@end example
 
+@lisp
 (defcstruct foo
   (a :char))
-
-CFFI> (foreign-type-alignment 'foo)
-1
 @end lisp
+
+@example
+@sc{cffi>} (foreign-type-alignment 'foo)
+@result{} 1
+@end example
 
 @subheading See Also
 @ref{foreign-type-size}
@@ -2642,14 +2695,16 @@ The function @code{foreign-type-size} return the @emph{size} of
 (defcstruct foo
   (a :double)
   (c :char))
-
-CFFI> (foreign-type-size :double)
-8
-CFFI> (foreign-type-size :char)
-1
-CFFI> (foreign-type-size 'foo)
-16
 @end lisp
+
+@example
+@sc{cffi>} (foreign-type-size :double)
+@result{} 8
+@sc{cffi>} (foreign-type-size :char)
+@result{} 1
+@sc{cffi>} (foreign-type-size 'foo)
+@result{} 16
+@end example
 
 @subheading See Also
 @ref{foreign-type-alignment}
@@ -2709,11 +2764,11 @@ The lisp value to pass in place of @code{foreign-value} to Lisp code.
 @end table
 
 @subheading Description
-This generic function is invoked by CFFI to convert a foreign value to
+This generic function is invoked by @cffi{} to convert a foreign value to
 a Lisp value, such as when returning from a foreign function, passing
 arguments to a callback function, or accessing a foreign variable.
 
-To extend the CFFI type system by performing custom translations, this
+To extend the @cffi{} type system by performing custom translations, this
 method may be specialized by EQL-specializing @code{type-name} on a
 symbol naming a foreign type defined with @code{defctype}.  This
 method should return the appropriate Lisp value to use in place of the
@@ -2755,17 +2810,17 @@ If present, this value will be passed to
 @end table
 
 @subheading Description
-This generic function is invoked by CFFI to convert a Lisp value to a
+This generic function is invoked by @cffi{} to convert a Lisp value to a
 foreign value, such as when passing arguments to a foreign function,
 returning a value from a callback, or setting a foreign variable.
 
-To extend the CFFI type system by performing custom translations, this
+To extend the @cffi{} type system by performing custom translations, this
 method may be specialized by EQL-specializing @code{type-name} on a
 symbol naming a foreign type defined with @code{defctype}.  This
 method should return the appropriate foreign value to use in place of
 the Lisp value.
 
-In cases where CFFI can determine the lifetime of the foreign object
+In cases where @cffi{} can determine the lifetime of the foreign object
 returned by this method, it will invoke @code{free-translated-object}
 on the foreign object at the appropriate time.  If
 @code{translate-to-foreign} returns a second value, it will be passed
@@ -2782,50 +2837,6 @@ defined for built-in types.
 @ref{Foreign Type Translators} @*
 @ref{translate-from-foreign} @*
 @ref{free-translated-object}
-
-@c ===================================================================
-@c WITH-FOREIGN-OBJECT
-
-@node with-foreign-object
-@heading with-foreign-object
-@subheading Syntax
-@Macro{with-foreign-object (var type &optional count) &body body}
-
-@Macro{with-foreign-objects (bindings) &body body}
-
-bindings = @{(var type &optional count)@}*
-
-@subheading Arguments and Values
-@table @emph
-@item var
-A symbol.
-
-@item type
-A foreign type, evaluated.
-
-@item count
-An integer.
-@end table
-
-@subheading Description
-The macros @code{with-foreign-object} and @code{with-foreign-objects}
-bind @emph{var} to a pointer to @emph{count} newly allocated objects
-of type @emph{type} during @emph{body}. The buffer has dynamic extent
-and may be stack allocated if supported by the host Lisp.
-
-@subheading Examples
-@lisp
-CFFI> (with-foreign-object (array :int 10)
-        (loop for i below 10
-              do (setf (mem-aref array :int i) (random 100)))
-        (loop for i below 10 collect (mem-aref array :int i)))
-(22 7 22 52 69 1 46 93 90 65)
-@end lisp
-
-@subheading See Also
-@ref{foreign-alloc}
-
-
 
 
 @c ===================================================================
@@ -2870,16 +2881,18 @@ each var in @emph{vars} to reference foreign slots in @emph{ptr} of
   (isdst  :boolean)
   (zone   :string)
   (gmtoff :long))
+@end lisp
 
-CFFI> (with-foreign-object (time :int)
+@example
+@sc{cffi>} (with-foreign-object (time :int)
         (setf (mem-ref time :int)
               (foreign-funcall "time" :pointer (null-pointer) :int))
         (foreign-funcall "gmtime" :pointer time tm))
-#<A Mac Pointer #x102A30>
-CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
+@result{} #<A Mac Pointer #x102A30>
+@sc{cffi>} (with-foreign-slots ((sec min hour mday mon year) * tm)
         (format nil "~A:~A:~A, ~A/~A/~A" hour min sec (+ 1900 year) mon mday))
-"7:22:47, 2005/8/2"
-@end lisp
+@result{} "7:22:47, 2005/8/2"
+@end example
 
 @subheading See Also
 @ref{defcstruct} @*
@@ -2918,6 +2931,7 @@ Dictionary
 * pointerp::                    
 * pointer-address::             
 * pointer-eq::                  
+* with-foreign-object::         
 * with-foreign-pointer::        
 @end menu
 
@@ -2926,6 +2940,13 @@ Dictionary
 
 @node Allocating Foreign Memory
 @section Allocating Foreign Memory
+
+@cffi{} provides support for stack and heap C memory allocation.
+Stack allocation, done with @code{with-foreign-object}, is sometimes
+called ``dynamic'' allocation in Lisp, because memory allocated as
+such has dynamic extent, much as with @code{let} bindings of special
+variables.  Heap allocation is done with @code{foreign-alloc},
+creating objects that exist until freed with @code{foreign-free}.
 
 @node Accessing Foreign Memory
 @section Accessing Foreign Memory
@@ -2953,12 +2974,13 @@ allocated by @code{foreign-alloc}. The consequences of freeing a given
 pointer twice are undefined.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-alloc :int)
-#<A Mac Pointer #x1022E0>
-CFFI> (foreign-free *)
-NIL
-@end lisp
+
+@example
+@sc{cffi>} (foreign-alloc :int)
+@result{} #<A Mac Pointer #x1022E0>
+@sc{cffi>} (foreign-free *)
+@result{} NIL
+@end example
 
 @subheading See Also
 @ref{foreign-alloc} @*
@@ -3012,36 +3034,37 @@ memory.
 exclusive.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-alloc :char)
-#<A Mac Pointer #x102D80>     ; A pointer to 1 byte of memory.
+@example
+@sc{cffi>} (foreign-alloc :char)
+@result{} #<A Mac Pointer #x102D80>     ; @r{A pointer to 1 byte of memory.}
 
-CFFI> (foreign-alloc :char :count 20)
-#<A Mac Pointer #x1024A0>     ; A pointer to 20 bytes of memory.
+@sc{cffi>} (foreign-alloc :char :count 20)
+@result{} #<A Mac Pointer #x1024A0>     ; @r{A pointer to 20 bytes of memory.}
 
-CFFI> (foreign-alloc :int :initial-element 12)
-#<A Mac Pointer #x1028B0>
-CFFI> (mem-ref * :int)
-12
+@sc{cffi>} (foreign-alloc :int :initial-element 12)
+@result{} #<A Mac Pointer #x1028B0>
+@sc{cffi>} (mem-ref * :int)
+@result{} 12
 
-CFFI> (foreign-alloc :int :initial-contents '(1 2 3))
-#<A Mac Pointer #x102950>
-CFFI> (loop for i from 0 below 3
+@sc{cffi>} (foreign-alloc :int :initial-contents '(1 2 3))
+@result{} #<A Mac Pointer #x102950>
+@sc{cffi>} (loop for i from 0 below 3
             collect (mem-aref * :int i))
-(1 2 3)
+@result{} (1 2 3)
 
-CFFI> (foreign-alloc :int :initial-contents #(1 2 3))
-#<A Mac Pointer #x102960>
-CFFI> (loop for i from 0 below 3
+@sc{cffi>} (foreign-alloc :int :initial-contents #(1 2 3))
+@result{} #<A Mac Pointer #x102960>
+@sc{cffi>} (loop for i from 0 below 3
             collect (mem-aref * :int i))
-(1 2 3)
+@result{} (1 2 3)
 
-CFFI> (foreign-alloc :string :initial-element "foo")
-#<A Mac Pointer #x102C40>
-;; This will actually allocate a char** pointer that points
-;; to newly allocated memory by the :string type translator
-;; for the "foo" string.
-@end lisp
+@sc{cffi>} (foreign-alloc :string :initial-element "foo")
+@result{} #<A Mac Pointer #x102C40>
+@end example
+
+This will actually allocate a @code{char**} that points to newly
+allocated memory by the @code{:string} type translator for the string
+@code{"foo"}.
 
 @subheading See Also
 @ref{foreign-free} @*
@@ -3087,17 +3110,18 @@ argument are, unfortunately, unspecified. Some implementations will
 silently ignore this, while others might return erroneous values.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-symbol-pointer "errno" :data)
-#<A Mac Pointer #xA0008130>
-CFFI> (foreign-symbol-pointer "strerror" :code)
-#<A Mac Pointer #x9002D0F8>
-CFFI> (foreign-funcall * :int (mem-ref ** :int) :string)
-"No such file or directory"
 
-CFFI> (foreign-symbol-pointer "unexistant symbol" :data)
-NIL
-@end lisp
+@example
+@sc{cffi>} (foreign-symbol-pointer "errno" :data)
+@result{} #<A Mac Pointer #xA0008130>
+@sc{cffi>} (foreign-symbol-pointer "strerror" :code)
+@result{} #<A Mac Pointer #x9002D0F8>
+@sc{cffi>} (foreign-funcall * :int (mem-ref ** :int) :string)
+@result{} "No such file or directory"
+
+@sc{cffi>} (foreign-symbol-pointer "unexistant symbol" :data)
+@result{} NIL
+@end example
 
 @subheading See Also
 @ref{defcvar}
@@ -3127,14 +3151,15 @@ The function @code{inc-pointer} will return a @emph{new-pointer} pointing
 @emph{offset} bytes past @emph{ptr}.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-string-alloc "Common Lisp")
-#<A Mac Pointer #x102EA0>
-CFFI> (inc-pointer * 7)
-#<A Mac Pointer #x102EA7>
-CFFI> (foreign-string-to-lisp *)
-"Lisp"
-@end lisp
+
+@example
+@sc{cffi>} (foreign-string-alloc "Common Lisp")
+@result{} #<A Mac Pointer #x102EA0>
+@sc{cffi>} (inc-pointer * 7)
+@result{} #<A Mac Pointer #x102EA7>
+@sc{cffi>} (foreign-string-to-lisp *)
+@result{} "Lisp"
+@end example
 
 @subheading See Also
 @ref{make-pointer} @*
@@ -3167,18 +3192,19 @@ The function @code{make-pointer} will return a foreign pointer
 pointing to @emph{address}.
 
 @subheading Examples
-@lisp
-CFFI> (make-pointer 42)
-#<FOREIGN-ADDRESS #x0000002A>
-CFFI> (pointerp *)
-T
-CFFI> (pointer-address **)
-42
-CFFI> (inc-pointer *** -42)
-#<FOREIGN-ADDRESS #x00000000>
-CFFI> (null-pointer-p *)
-T
-@end lisp
+
+@example
+@sc{cffi>} (make-pointer 42)
+@result{} #<FOREIGN-ADDRESS #x0000002A>
+@sc{cffi>} (pointerp *)
+@result{} T
+@sc{cffi>} (pointer-address **)
+@result{} 42
+@sc{cffi>} (inc-pointer *** -42)
+@result{} #<FOREIGN-ADDRESS #x00000000>
+@sc{cffi>} (null-pointer-p *)
+@result{} T
+@end example
 
 @subheading See Also
 @ref{inc-pointer} @*
@@ -3230,19 +3256,20 @@ automatically calculate the offset from an @emph{index}.
 @end lisp
 
 @subheading Examples
-@lisp
-CFFI> (with-foreign-string (str "Hello, foreign world!")
-        (mem-aref str :char 6))
-32
-CFFI> (code-char *)
-#\Space
 
-CFFI> (with-foreign-object (array :int 10)
+@example
+@sc{cffi>} (with-foreign-string (str "Hello, foreign world!")
+        (mem-aref str :char 6))
+@result{} 32
+@sc{cffi>} (code-char *)
+@result{} #\Space
+
+@sc{cffi>} (with-foreign-object (array :int 10)
         (loop for i below 10
               do (setf (mem-aref array :int i) (random 100)))
         (loop for i below 10 collect (mem-aref array :int i)))
-(22 7 22 52 69 1 46 93 90 65)
-@end lisp
+@result{} (22 7 22 52 69 1 46 93 90 65)
+@end example
 
 @subheading See Also
 @ref{mem-ref}
@@ -3275,22 +3302,22 @@ The value @emph{ptr} points to.
 
 @subheading Description
 @subheading Examples
-@lisp
-CFFI> (with-foreign-string (ptr "Saluton")
+
+@example
+@sc{cffi>} (with-foreign-string (ptr "Saluton")
         (setf (mem-ref ptr :char 3) (char-code #\a))
         (loop for i from 0 below 8
               collect (code-char (mem-ref ptr :char i))))
-(#\S #\a #\l #\a #\t #\o #\n #\Null)
-
-CFFI> (setq ptr-to-int (foreign-alloc :int))
-#<A Mac Pointer #x1047D0>
-CFFI> (mem-ref ptr-to-int :int)
-1054619
-CFFI> (setf (mem-ref ptr-to-int :int) 1984)
-1984
-CFFI> (mem-ref ptr-to-int :int)
-1984
-@end lisp
+@result{} (#\S #\a #\l #\a #\t #\o #\n #\Null)
+@sc{cffi>} (setq ptr-to-int (foreign-alloc :int))
+@result{} #<A Mac Pointer #x1047D0>
+@sc{cffi>} (mem-ref ptr-to-int :int)
+@result{} 1054619
+@sc{cffi>} (setf (mem-ref ptr-to-int :int) 1984)
+@result{} 1984
+@sc{cffi>} (mem-ref ptr-to-int :int)
+@result{} 1984
+@end example
 
 @subheading See Also
 @ref{mem-aref}
@@ -3316,12 +3343,13 @@ A @code{NULL} pointer.
 The function @code{null-pointer} returns a null pointer.
 
 @subheading Examples
-@lisp
-CFFI> (null-pointer)
-#<A Null Mac Pointer>
-CFFI> (pointerp *)
-T
-@end lisp
+
+@example
+@sc{cffi>} (null-pointer)
+@result{} #<A Null Mac Pointer>
+@sc{cffi>} (pointerp *)
+@result{} T
+@end example
 
 @subheading See Also
 @ref{null-pointer-p} @*
@@ -3352,19 +3380,24 @@ The function @code{null-pointer-p} returns true if @emph{ptr} is a null
 pointer and false otherwise.
 
 @subheading Examples
-@lisp
-CFFI> (null-pointer-p (null-pointer))
-T
 
+@example
+@sc{cffi>} (null-pointer-p (null-pointer))
+@result{} T
+@end example
+
+@lisp
 (defun contains-str-p (big little)
   (not (null-pointer-p
         (foreign-funcall "strstr" :string big :string little :pointer))))
-
-CFFI> (contains-str-p "Popcorns" "corn")
-T
-CFFI> (contains-str-p "Popcorns" "salt")
-NIL
 @end lisp
+
+@example
+@sc{cffi>} (contains-str-p "Popcorns" "corn")
+@result{} T
+@sc{cffi>} (contains-str-p "Popcorns" "salt")
+@result{} NIL
+@end example
 
 @subheading See Also
 @ref{null-pointer} @*
@@ -3399,14 +3432,15 @@ In Allegro CL, foreign pointers are integers thus in this
 implementation @code{pointerp} will return true for any ordinary integer.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-alloc 32)
-#<A Mac Pointer #x102D20>
-CFFI> (pointerp *)
-T
-CFFI> (pointerp "this is not a pointer")
-NIL
-@end lisp
+
+@example
+@sc{cffi>} (foreign-alloc 32)
+@result{} #<A Mac Pointer #x102D20>
+@sc{cffi>} (pointerp *)
+@result{} T
+@sc{cffi>} (pointerp "this is not a pointer")
+@result{} NIL
+@end example
 
 @subheading See Also
 @ref{make-pointer}
@@ -3436,12 +3470,13 @@ The function @code{pointer-address} will return the @emph{address} of
 a foreign pointer @emph{ptr}.
 
 @subheading Examples
-@lisp
-CFFI> (pointer-address (null-pointer))
-0
-CFFI> (pointer-address (make-pointer 123))
-123
-@end lisp
+
+@example
+@sc{cffi>} (pointer-address (null-pointer))
+@result{} 0
+@sc{cffi>} (pointer-address (make-pointer 123))
+@result{} 123
+@end example
 
 @subheading See Also
 @ref{make-pointer} @*
@@ -3488,17 +3523,61 @@ portability, you should use @code{POINTER-EQ}.
 @subheading Examples
 This is an example using SBCL, see the implementation-specific notes
 above.
-@lisp
-CFFI> (eql (null-pointer) (null-pointer))
-NIL
-CFFI> (pointer-eq (null-pointer) (null-pointer))
-T
-@end lisp
+
+@example
+@sc{cffi>} (eql (null-pointer) (null-pointer))
+@result{} NIL
+@sc{cffi>} (pointer-eq (null-pointer) (null-pointer))
+@result{} T
+@end example
 
 @subheading See Also
 @ref{inc-pointer}
 
 
+@c ===================================================================
+@c WITH-FOREIGN-OBJECT
+
+@node with-foreign-object
+@heading with-foreign-object
+@subheading Syntax
+@Macro{with-foreign-object (var type &optional count) &body body}
+
+@Macro{with-foreign-objects (bindings) &body body}
+
+bindings = @{(var type &optional count)@}*
+
+@subheading Arguments and Values
+@table @emph
+@item var
+A symbol.
+
+@item type
+A foreign type, evaluated.
+
+@item count
+An integer.
+@end table
+
+@subheading Description
+The macros @code{with-foreign-object} and @code{with-foreign-objects}
+bind @emph{var} to a pointer to @emph{count} newly allocated objects
+of type @emph{type} during @emph{body}. The buffer has dynamic extent
+and may be stack allocated if supported by the host Lisp.
+
+@subheading Examples
+
+@example
+@sc{cffi>} (with-foreign-object (array :int 10)
+        (dotimes (i 10)
+          (setf (mem-aref array :int i) (random 100)))
+        (loop for i below 10
+              collect (mem-aref array :int i)))
+@result{} (22 7 22 52 69 1 46 93 90 65)
+@end lisp
+
+@subheading See Also
+@ref{foreign-alloc}
 
 
 @c ===================================================================
@@ -3531,14 +3610,15 @@ If @emph{size-var} is supplied, it will be bound to @emph{size} during
 @emph{body}.
 
 @subheading Examples
-@lisp
-CFFI> (with-foreign-pointer (string 4 size)
+
+@example
+@sc{cffi>} (with-foreign-pointer (string 4 size)
         (setf (mem-ref string :char (1- size)) 0)
         (lisp-string-to-foreign "Popcorns" string size)
         (loop for i from 0 below size
               collect (code-char (mem-ref string :char i))))
-(#\P #\o #\p #\Null)
-@end lisp
+@result{} (#\P #\o #\p #\Null)
+@end example
 
 @subheading See Also
 @ref{foreign-alloc} @*
@@ -3591,12 +3671,13 @@ containing a Lisp @emph{string}.
 This string must be freed with @code{foreign-string-free}.
 
 @subheading Examples
-@lisp
-CFFI> (setq str (foreign-string-alloc "Hello, foreign world!"))
-#<FOREIGN-ADDRESS #x00400560>
-CFFI> (foreign-funcall "strlen" :pointer str :int)
-21
-@end lisp
+
+@example
+@sc{cffi>} (setq str (foreign-string-alloc "Hello, foreign world!"))
+@result{} #<FOREIGN-ADDRESS #x00400560>
+@sc{cffi>} (foreign-funcall "strlen" :pointer str :int)
+@result{} 21
+@end example
 
 @subheading See Also
 @ref{foreign-string-free} @*
@@ -3667,12 +3748,13 @@ Note that the @code{:string} type will automatically convert between
 Lisp strings and foreign strings.
 
 @subheading Examples
-@lisp
-CFFI> (foreign-funcall "getenv" :string "HOME" :pointer)
-#<FOREIGN-ADDRESS #xBFFFFFD5>
-CFFI> (foreign-string-to-lisp *)
-"/Users/luis"
-@end lisp
+
+@example
+@sc{cffi>} (foreign-funcall "getenv" :string "HOME" :pointer)
+@result{} #<FOREIGN-ADDRESS #xBFFFFFD5>
+@sc{cffi>} (foreign-string-to-lisp *)
+@result{} "/Users/luis"
+@end example
 
 @subheading See Also
 @ref{foreign-string-to-lisp}
@@ -3706,11 +3788,12 @@ The @code{lisp-string-to-foreign} function copies at most
 foreign string will be null-terminated.
 
 @subheading Examples
-@lisp
-CFFI> (with-foreign-pointer-as-string (str 255)
+
+@example
+@sc{cffi>} (with-foreign-pointer-as-string (str 255)
         (lisp-string-to-foreign "Hello, foreign world!" str 6))
-"Hello"
-@end lisp
+@result{} "Hello"
+@end example
 
 @subheading See Also
 @ref{foreign-string-alloc} @*
@@ -3745,11 +3828,12 @@ The @code{with-foreign-string} macro will bind @emph{var} to a newly
 allocated foreign string containing @emph{lisp-string}.
 
 @subheading Examples
-@lisp
-CFFI> (with-foreign-string (foo "12345")
+
+@example
+@sc{cffi>} (with-foreign-string (foo "12345")
         (foreign-funcall "strlen" :pointer foo :int))
-5
-@end lisp
+@result{} 5
+@end example
 
 @subheading See Also
 @ref{foreign-string-alloc} @*
@@ -3784,11 +3868,12 @@ The @code{with-foreign-pointer-as-string} macro is similar to
 used as the returned value of an implicit @code{progn} around @emph{body}.
 
 @subheading Examples
-@lisp
-CFFI> (with-foreign-pointer-as-string (str 6 str-size)
+
+@example
+@sc{cffi>} (with-foreign-pointer-as-string (str 6 str-size)
         (lisp-string-to-foreign "Hello, foreign world!" str str-size))
-"Hello"
-@end lisp
+@result{} "Hello"
+@end example
 
 @subheading See Also
 @ref{foreign-string-alloc} @*
@@ -3854,25 +3939,26 @@ hyphens with underscores, and removing asterisks, if any.
 @end itemize
 
 @subheading Examples
-@lisp
-CFFI> (defcvar "errno" :int)
-*ERRNO*
-CFFI> (foreign-funcall "strerror" :int *errno* :string)
-"Inappropriate ioctl for device"
-CFFI> (setf *errno* 1)
-1
-CFFI> (foreign-funcall "strerror" :int *errno* :string)
-"Operation not permitted"
-@end lisp
+
+@example
+@sc{cffi>} (defcvar "errno" :int)
+@result{} *ERRNO*
+@sc{cffi>} (foreign-funcall "strerror" :int *errno* :string)
+@result{} "Inappropriate ioctl for device"
+@sc{cffi>} (setf *errno* 1)
+@result{} 1
+@sc{cffi>} (foreign-funcall "strerror" :int *errno* :string)
+@result{} "Operation not permitted"
+@end example
 
 Trying to modify a read-only foreign variable:
 
-@lisp
-CFFI> (defcvar ("errno" +error-number+) :int :read-only t)
-+ERROR-NUMBER+
-CFFI> (setf +error-number+ 12)
-; Error: Trying to modify read-only foreign var: +ERROR-NUMBER+.
-@end lisp
+@example
+@sc{cffi>} (defcvar ("errno" +error-number+) :int :read-only t)
+@result{} +ERROR-NUMBER+
+@sc{cffi>} (setf +error-number+ 12)
+@error{} @r{Trying to modify read-only foreign var: @code{+ERROR-NUMBER+}.}
+@end example
 
 @emph{Note that accessing @code{errno} this way won't work with every
 C standard library.}
@@ -3906,16 +3992,17 @@ foreign global variable @emph{symbol} previously defined with
 @code{defcvar}.
 
 @subheading Examples
-@lisp
-CFFI> (defcvar "errno" :int :read-only t)
-*ERRNO*
-CFFI> *errno*
-25
-CFFI> (get-var-pointer '*errno*)
-#<A Mac Pointer #xA0008130>
-CFFI> (mem-ref * :int)
-25
-@end lisp
+
+@example
+@sc{cffi>} (defcvar "errno" :int :read-only t)
+@result{} *ERRNO*
+@sc{cffi>} *errno*
+@result{} 25
+@sc{cffi>} (get-var-pointer '*errno*)
+@result{} #<A Mac Pointer #xA0008130>
+@sc{cffi>} (mem-ref * :int)
+@result{} 25
+@end example
 
 @subheading See Also
 @ref{defcvar}
@@ -3991,17 +4078,24 @@ hyphens with underscores.
 @end itemize
 
 @subheading Examples
+
 @lisp
 (defcfun "strlen" :int (n :string))
-
-CFFI> (strlen "123")
-3
-
-(defcfun ("abs" c-abs) :int (n :int))
-
-CFFI> (c-abs -42)
-42
 @end lisp
+
+@example
+@sc{cffi>} (strlen "123")
+@result{} 3
+@end example
+
+@lisp
+(defcfun ("abs" c-abs) :int (n :int))
+@end lisp
+
+@example
+@sc{cffi>} (c-abs -42)
+@result{} 42
+@end example
 
 @subheading See Also
 @ref{foreign-funcall}
@@ -4054,34 +4148,42 @@ these implementations, @code{:no-foreign-funcall} will be present in
 @end itemize
 
 @subheading Examples
-@lisp
-CFFI> (foreign-funcall "strlen" :string "foo" :int)
-3
-@end lisp
 
-@lisp
-;; void print_number(int n)
-;; @{
-;;     printf("N: %d\n", n);
-;; @}
+@example
+@sc{cffi>} (foreign-funcall "strlen" :string "foo" :int)
+@result{} 3
 
-CFFI> (foreign-funcall "print_number" :int 123456)
-N: 123456
-NIL
+Given the C code:
 
-;; Or, equivalently:
-CFFI> (foreign-funcall "print_number" :int 123456 :void)
-N: 123456
-NIL
-@end lisp
+@example
+void print_number(int n)
+@{
+    printf("N: %d\n", n);
+@}
+@end example
 
-@lisp
-CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
+@example
+@sc{cffi>} (foreign-funcall "print_number" :int 123456)
+@print{} N: 123456
+@result{} NIL
+@end example
+
+@noindent
+Or, equivalently:
+
+@example
+@sc{cffi>} (foreign-funcall "print_number" :int 123456 :void)
+@print{} N: 123456
+@result{} NIL
+@end example
+
+@example
+@sc{cffi>} (foreign-funcall "printf" :string (format nil "%s: %d.~%")
                        :string "So long and thanks for all the fish"
                        :int 42 :int)
-So long and thanks for all the fish: 42.
-41
-@end lisp
+@print{} So long and thanks for all the fish: 42.
+@result{} 41
+@end example
 
 @subheading See Also
 @ref{defcfun}
@@ -4172,17 +4274,18 @@ operator @code{function} and will return a pointer to the callback
 denoted by the symbol @emph{name}.
 
 @subheading Examples
-@lisp
-CFFI> (defcallback sum :int ((a :int) (b :int))
+
+@example
+@sc{cffi>} (defcallback sum :int ((a :int) (b :int))
         (+ a b))
-SUM
-CFFI> (callback sum)
-#<A Mac Pointer #x102350>
-CFFI> (setf (callback sum) (null-pointer))
-#<A Null Mac Pointer>
-CFFI> (callback sum)
-#<A Null Mac Pointer>
-@end lisp
+@result{} SUM
+@sc{cffi>} (callback sum)
+@result{} #<A Mac Pointer #x102350>
+@sc{cffi>} (setf (callback sum) (null-pointer))
+@result{} #<A Null Mac Pointer>
+@sc{cffi>} (callback sum)
+@result{} #<A Null Mac Pointer>
+@end example
 
 @subheading See Also
 @ref{get-callback} @*
@@ -4226,6 +4329,7 @@ This Lisp function can be accessed by the @code{callback} macro or the
 @code{get-callback} function.
 
 @subheading Examples
+
 @lisp
 (defcfun "qsort" :void
   (base :pointer)
@@ -4239,18 +4343,20 @@ This Lisp function can be accessed by the @code{callback} macro or the
     (cond ((> x y) 1)
           ((< x y) -1)
           (t 0))))
+@end lisp
 
-CFFI> (with-foreign-object (array :int 10)
-        ;; Initialize array.
+@example
+@sc{cffi>} (with-foreign-object (array :int 10)
+        ;; @r{Initialize array.}
         (loop for i from 0 and n in '(7 2 10 4 3 5 1 6 9 8)
               do (setf (mem-aref array :int i) n))
-        ;; Sort it.
+        ;; @r{Sort it.}
         (qsort array 10 (foreign-type-size :int) (callback <))
-        ;; Return it as a list.
+        ;; @r{Return it as a list.}
         (loop for i from 0 below 10
               collect (mem-aref array :int i)))
-(1 2 3 4 5 6 7 8 9 10)
-@end lisp
+@result{} (1 2 3 4 5 6 7 8 9 10)
+@end example
 
 @subheading See Also
 @ref{callback} @*
@@ -4285,18 +4391,14 @@ returns a pointer to the callback named by @emph{symbol} suitable, for
 example, to pass as arguments to foreign functions.
 
 @subheading Examples
-@lisp
-CFFI> (defcallback sum :int ((a :int) (b :int))
-        (+ a b))
-SUM
-CFFI> (get-callback 'sum)
-#<A Mac Pointer #x102350>
-@end lisp
 
-@c CFFI> (setf (get-callback 'sum) (null-pointer))
-@c #<A Null Mac Pointer>
-@c CFFI> (get-callback 'sum)
-@c #<A Null Mac Pointer>
+@example
+@sc{cffi>} (defcallback sum :int ((a :int) (b :int))
+        (+ a b))
+@result{} SUM
+@sc{cffi>} (get-callback 'sum)
+@result{} #<A Mac Pointer #x102350>
+@end example
 
 @subheading See Also
 @ref{callback} @*
