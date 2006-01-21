@@ -201,8 +201,7 @@ signature.")
   "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
   (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
           types rettype)
-  ;; yes, ugly, this most likely wants to be a
-  ;; top-level form...
+  ;; yes, ugly, this most likely wants to be a top-level form...
   (let ((internal-name (gensym)))
     (funcall
      (compile nil
@@ -220,16 +219,20 @@ either from the cache or newly created."
     (or (gethash signature *foreign-funcallable-cache*)
         ;; (SETF GETHASH) is supposed to be thread-safe
         (setf (gethash signature *foreign-funcallable-cache*)
-                (create-foreign-funcallable types rettype)))))
+              (create-foreign-funcallable types rettype)))))
 
 (defmacro %%foreign-funcall (foreign-function &rest args)
-  "Does the actual work for %FOREIGN-FUNCALL-POINTER and
-%FOREIGN-FUNCALL.  Checks if a foreign funcallable which fits ARGS
-already exists and creates and caches it if necessary.  Finally calls
-it."
+  "Does the actual work for %FOREIGN-FUNCALL-POINTER and %FOREIGN-FUNCALL.
+Checks if a foreign funcallable which fits ARGS already exists and creates
+and caches it if necessary.  Finally calls it."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(,(get-foreign-funcallable types rettype) ,foreign-function ,@fargs)))
+    ;; we create the foreign-funcallable at macroexpansion time,
+    ;; but the expansion might need to create it again (namely,
+    ;; when the code is loaded from a fasl file)
+    (get-foreign-funcallable types rettype)
+    `(funcall (get-foreign-funcallable ',types ',rettype)
+              ,foreign-function ,@fargs)))
 
 (defmacro %foreign-funcall (name &rest args)
   "Calls a foreign function named NAME passing arguments ARGS."
