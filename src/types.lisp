@@ -445,6 +445,8 @@ to open-code (SETF MEM-REF) forms."
       ;; determine offsets
       (dolist (slotdef slots)
         (destructuring-bind (slotname type &key (count 1) offset) slotdef
+          (when (eq (canonicalize-foreign-type type) :void)
+            (error "void type not allowed in structure definition: ~S" slotdef))
           (setq current-offset
                 (or offset
                     (adjust-for-alignment type current-offset :normal firstp)))
@@ -567,6 +569,8 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
           (max-align 0))
       (dolist (slotdef slots)
         (destructuring-bind (slotname type &key (count 1)) slotdef
+          (when (eq (canonicalize-foreign-type type) :void)
+            (error "void type not allowed in union definition: ~S" slotdef))
           (let* ((slot (make-struct-slot slotname 0 type count))
                  (size (* count (foreign-type-size type)))
                  (align (foreign-type-alignment (slot-type slot))))
