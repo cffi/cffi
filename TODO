@@ -72,6 +72,10 @@ This is a collection of TODO items and ideas in no particular order.
 -> Allegro: callbacks' return values.
 -> Lack of uniformity with regard to pointers. Allegro: 0 -> NULL.
    CLISP/Lispworks: NIL -> NULL.
+-> Some lisps will accept a lisp float being passed to :double
+   and a lisp double to :float. We should either coerce on lisps that
+   don't accept this or check-type on lisps that do. Probably the former
+   is better since on lispworks/x86 double == float.
 
 ### Possible Optimizations
 
@@ -90,6 +94,8 @@ This is a collection of TODO items and ideas in no particular order.
        (if <we care about fasl portability>
            `(load-time-value ,form)
            form))
+-> cffi-tests.asd's :c-test-lib component is causing the whole testsuite
+   to be recompiled everytime. Figure that out.
 
 ### Documentation
 
