@@ -255,20 +255,18 @@ the function call."
        (:return-type ,(convert-foreign-type rettype))
        (:language :stdc)))))
 
-;;; Register a callback function.  FIXME: I don't really like using
-;;; the unexported function FFI::EXEC-ON-STACK here, but I don't see
-;;; another way to create a FFI:FOREIGN-VARIABLE from a parsed type at
-;;; run-time. [2005-01-05 JJB]
+;;; Register and create a callback function.
 (defun register-callback (name function parsed-type)
   (setf (gethash name *callbacks*)
-        (list function parsed-type (ffi::exec-on-stack
-                                    (lambda (x)
-                                      (ffi:foreign-address
-                                       (ffi:foreign-value x)))
-                                    parsed-type function))))
+        (list function parsed-type
+              (ffi:with-foreign-object (ptr 'ffi:c-pointer)
+                ;; Create callback by converting Lisp function to foreign
+                (setf (ffi:memory-as ptr parsed-type) function)
+                (ffi:foreign-value ptr)))))
 
 ;;; Restore all saved callback pointers when restarting the Lisp
 ;;; image.  This is pushed onto CUSTOM:*INIT-HOOKS*.
+;;; Needs clisp > 2.35, bugfix 2005-09-29
 (defun restore-callback-pointers ()
   (maphash
    (lambda (name list)
