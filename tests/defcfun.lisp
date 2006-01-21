@@ -128,3 +128,52 @@
 (deftest defcfun.noop
     (noop)
   nil)
+
+;;;# Calling varargs functions
+
+(defcfun "sprintf" :int
+  (str :pointer)
+  (control :string)
+  &rest)
+
+(deftest defcfun.varargs.char
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%c" :char 65))
+  "A")
+
+(deftest defcfun.varargs.short
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%d" :short 42))
+  "42")
+
+(deftest defcfun.varargs.int
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%d" :int 1000))
+  "1000")
+
+(deftest defcfun.varargs.long
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%ld" :long 131072))
+  "131072")
+
+(deftest defcfun.varargs.float
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%.2f" :float (coerce pi 'single-float)))
+  "3.14")
+    
+(deftest defcfun.varargs.double
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%.2f" :double (coerce pi 'double-float)))
+  "3.14")
+
+(deftest defcfun.varargs.string
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (sprintf s "%s, %s!" :string "Hello" :string "world"))
+  "Hello, world!")

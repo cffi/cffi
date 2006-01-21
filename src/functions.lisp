@@ -78,6 +78,41 @@
          ,name-or-pointer ,@(mapcan #'list ctypes syms)
          ,(canonicalize-foreign-type rettype))))))
 
+(defun promote-varargs-type (builtin-type)
+  "Default argument promotions."
+  (case builtin-type
+    (:float :double)
+    ((:char :short) :int)
+    ((:unsigned-char :unsigned-short) :unsigned-int)
+    (t builtin-type)))
+
+;;; ATM, the only difference between this macro and FOREIGN-FUNCALL is that
+;;; it does argument promotion for that variadic argument. This could be useful
+;;; to call an hypothetical %foreign-funcall-varargs on some hypothetical lisp
+;;; on an hypothetical platform that has different calling conventions for
+;;; varargs functions. :-)
+(defmacro foreign-funcall-varargs (name-or-pointer fixed-args &rest varargs)
+  "Wrapper around %FOREIGN-FUNCALL(-POINTER) that translates its arguments
+and does type promotion for the variadic arguments."
+  (multiple-value-bind (fixed-types fixed-ctypes fixed-fargs)
+      (parse-args-and-types fixed-args)
+    (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
+        (parse-args-and-types varargs)
+      (let ((syms (make-gensym-list (+ (length fixed-fargs)
+                                       (length varargs-fargs)))))
+        `(translate-objects
+          ,syms ,(append fixed-fargs varargs-fargs)
+          ,(append fixed-types varargs-types) ,rettype
+          (,(if (stringp name-or-pointer)
+                '%foreign-funcall
+                '%foreign-funcall-pointer)
+            ,name-or-pointer
+            ,@(mapcan #'list
+                      (nconc fixed-ctypes
+                             (mapcar #'promote-varargs-type varargs-ctypes))
+                      syms)
+            ,(canonicalize-foreign-type rettype)))))))
+
 ;;;# Defining Foreign Functions
 ;;;
 ;;; The DEFCFUN macro provides a declarative interface for defining
@@ -125,11 +160,12 @@
   (with-unique-names (varargs)
     (let ((arg-names (mapcar #'car args)))
       `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
-         `(foreign-funcall ,',foreign-name
-                           ,@,`(list ,@(loop for (name type) in args
-                                             collect type collect name))
-                           ,@,varargs
-                           ,',return-type)))))
+         `(foreign-funcall-varargs
+           ,',foreign-name
+           ,,`(list ,@(loop for (name type) in args
+                            collect type collect name))
+           ,@,varargs
+           ,',return-type)))))
 
 ;;; If we find a &REST token at the end of ARGS, it's a varargs function
 ;;; therefore we define a lisp macro using %DEFCFUN-VARARGS instead of a
