@@ -227,11 +227,13 @@ the function call."
   "Similar to %foreign-funcall but takes a pointer instead of a string."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
-    `(funcall (ffi:foreign-function ,ptr (ffi:parse-c-type
-                                          '(ffi:c-function
-                                            (:arguments ,@types)
-                                            (:return-type ,rettype)
-                                            (:language :stdc))))
+    `(funcall (ffi:foreign-function ,ptr
+                                    (load-time-value
+                                     (ffi:parse-c-type
+                                      '(ffi:c-function
+                                        (:arguments ,@types)
+                                        (:return-type ,rettype)
+                                        (:language :stdc)))))
               ,@fargs)))
 
 ;;;# Callbacks
