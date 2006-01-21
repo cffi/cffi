@@ -101,7 +101,7 @@
 ;; of foreign types part of the public interface in CLisp. :-)
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign TYPE."
-  #+(and darwin ppc32)
+  #+(and cffi-features:darwin cffi-features:ppc32)
   (when (eq type :double)
     (return-from %foreign-type-alignment 8))
   ;; Override not necessary for the remaining types...
