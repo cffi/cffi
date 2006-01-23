@@ -100,10 +100,9 @@ This is a collection of TODO items and ideas in no particular order.
 ### Documentation
 
 -> Fill the missing sections in the CFFI User Manual.
--> Write a tutorial section. (In progress, see: "bits from a new tutorial"
-   <http://article.gmane.org/gmane.lisp.cffi.devel/273>)
 -> Update the CFFI-SYS Specification.
 -> Generally improve the reference docs and examples.
+-> Document defcfun's new vargargs capabilities.
 
 ### Other
 
