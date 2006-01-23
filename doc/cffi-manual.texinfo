@@ -35,6 +35,16 @@
 @end deftp
 @end macro
 
+@macro Variable {args}
+@defvr {Special Variable} \args\
+@end defvr
+@end macro
+
+@macro Condition {args}
+@deftp {Condition Type} \args\
+@end deftp
+@end macro
+
 @macro cffi
 @acronym{CFFI}
 @end macro
@@ -45,11 +55,33 @@
 @end quotation
 @end macro
 
+@c Info "requires" that x-refs end in a period or comma, or ) in the
+@c case of @pxref.  So the following implements that requirement for
+@c the "See also" subheadings that permeate this manual, but only in
+@c Info mode.
+@c
+@c Most of them are also dictionary symbols, so I use this also to
+@c print a pretty section name.  Non-dictionary seealsos should not
+@c exist; refer to them inline in the descriptive text.
+@ifinfo
+@macro seealso {name}
+@ref{\name\}.
+@end macro
+@end ifinfo
+
+@ifnotinfo
+@macro seealso {name}
+@ref{\name\,, @code{\name\}}
+@end macro
+@end ifnotinfo
+
+
 @c ============================= Macros =============================
 
 
-@c Show types in the same index as the functions.
-@synindex tp fn
+@c Show types, functions, and concepts in the same index.
+@syncodeindex tp cp
+@syncodeindex fn cp
 
 @copying
 Copyright @copyright{} 2005, James Bielman  <jamesjb at jamesjb.com> @*
@@ -111,7 +143,8 @@ DEALINGS IN THE SOFTWARE.
 * Libraries::                   
 * Callbacks::                   
 * Limitations::                 
-* Symbol Index::                
+* Platform-specific features::  Details about the underlying system.
+* Index::                       
 
 @detailmenu
  --- Dictionary ---
@@ -177,7 +210,12 @@ Functions
 
 Libraries
 
-* load-foreign-library::        Loads a foreign library.
+* *darwin-framework-directories*::  Search path for Darwin frameworks.
+* define-foreign-library::      Explain how to load a foreign library.
+* *foreign-library-directories*::  Search path for shared libraries.
+* load-foreign-library::        Load a foreign library.
+* load-foreign-library-error::  Signalled on failure of its namesake.
+* use-foreign-library::         Load a foreign library when needed.
 
 Callbacks
 
@@ -863,7 +901,7 @@ specify the desired C type of the third argument.  This is essentially
 what happens in a call to the function written in C.}
 
 @cindex streams and C
-@cindex @sc{FILE}* and streams
+@cindex @sc{file}* and streams
 The second is that the @code{CURLOPT_WRITEDATA} argument is completely
 incompatible with the desired Lisp data, a
 stream.@footnote{@xref{Other Kinds of Streams,,, libc, GNU C Library
@@ -944,7 +982,7 @@ for the resultant function's third argument.
 
 This macro is intended for use in DEFINE-CURL-OPTIONS."
   `(progn
-     (defcfun ("curl_easy_setopt" ,name) :curl-code
+     (defcfun ("curl_easy_setopt" ,name) curl-code
        (easy-handle easy-handle)
        (option ,option-type)
        (new-value ,foreign-type))
@@ -1856,7 +1894,7 @@ translation.
 @c DEFCSTRUCT
 
 @node defcstruct
-@heading defcstruct
+@unnumberedsec @code{defcstruct}
 @subheading Syntax
 @Macro{defcstruct name-and-options &body doc-and-slots => name}
 
@@ -1865,7 +1903,8 @@ name-and-options ::= structure-name | (structure-name &key size)
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count offset) @}*
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item structure-name
 The name of new structure type.
 
@@ -1941,9 +1980,9 @@ of objects.
 @end example
 
 @subheading See Also
-@ref{foreign-slot-pointer} @*
-@ref{foreign-slot-value} @*
-@ref{with-foreign-slots}
+@seealso{foreign-slot-pointer} @*
+@seealso{foreign-slot-value} @*
+@seealso{with-foreign-slots}
 
 
 
@@ -1952,14 +1991,15 @@ of objects.
 @c DEFCUNION
 
 @node defcunion
-@heading defcunion
+@unnumberedsec @code{defcunion}
 @subheading Syntax
 @Macro{defcunion name &body doc-and-slots => name}
 
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count) @}*
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item name
 The name of new union type.
 
@@ -1990,8 +2030,8 @@ for accessing a union's slots.
 @end lisp
 
 @subheading See Also
-@ref{foreign-slot-pointer} @*
-@ref{foreign-slot-value}
+@seealso{foreign-slot-pointer} @*
+@seealso{foreign-slot-value}
 
 
 
@@ -2000,12 +2040,13 @@ for accessing a union's slots.
 @c DEFCTYPE
 
 @node defctype
-@heading defctype
+@unnumberedsec @code{defctype}
 @subheading Syntax
 @Macro{defctype name base-type &optional docstring}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item name
 The name of the new foreign type.
 
@@ -2032,7 +2073,7 @@ The new type inherits @emph{base-type}'s translators.
 @end lisp
 
 @subheading See Also
-@ref{define-foreign-type} @*
+@seealso{define-foreign-type} @*
 @c @ref{define-type-translator}
 
 
@@ -2042,14 +2083,15 @@ The new type inherits @emph{base-type}'s translators.
 @c DEFCENUM
 
 @node defcenum
-@heading defcenum
+@unnumberedsec @code{defcenum}
 @subheading Syntax
 @Macro{defcenum name &body enum-list}
 
 enum-list ::= [docstring] @{ keyword | (keyword value) @}*
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item name
 The name of the new enum type.
 
@@ -2101,8 +2143,8 @@ of an @code{enum} type is expected.
 @end example
 
 @subheading See Also
-@ref{foreign-enum-value} @*
-@ref{foreign-enum-keyword}
+@seealso{foreign-enum-value} @*
+@seealso{foreign-enum-keyword}
 
 
 
@@ -2209,12 +2251,13 @@ of an @code{enum} type is expected.
 @c DEFINE-FOREIGN-TYPE
 
 @node define-foreign-type
-@heading define-foreign-type
+@unnumberedsec @code{define-foreign-type}
 @subheading Syntax
 @Macro{define-foreign-type type-name lambda-list &body body => type-name}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type-name
 A symbol naming the new foreign type.
 
@@ -2272,7 +2315,7 @@ yet.
 @end lisp
 
 @subheading See Also
-@ref{defctype} @*
+@seealso{defctype} @*
 @c @ref{define-type-translator}
 
 
@@ -2282,12 +2325,13 @@ yet.
 @c EXPLAIN-FOREIGN-SLOT-VALUE
 
 @node explain-foreign-slot-value
-@heading explain-foreign-slot-value
+@unnumberedsec @code{explain-foreign-slot-value}
 @subheading Syntax
 @Macro{explain-foreign-slot-value ptr type &rest slot-names}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 ...
 
@@ -2323,12 +2367,13 @@ expression in C and prints it to @code{*standard-output*}.
 @c FOREIGN-ENUM-KEYWORD
 
 @node foreign-enum-keyword
-@heading foreign-enum-keyword
+@unnumberedsec @code{foreign-enum-keyword}
 @subheading Syntax
 @Function{foreign-enum-keyword type value => keyword}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 An @code{enum} type.
 
@@ -2358,8 +2403,8 @@ An error is signaled if @emph{type} doesn't contain such @emph{value}.
 @end example
 
 @subheading See Also
-@ref{defcenum} @*
-@ref{foreign-enum-value}
+@seealso{defcenum} @*
+@seealso{foreign-enum-value}
 
 
 
@@ -2368,12 +2413,13 @@ An error is signaled if @emph{type} doesn't contain such @emph{value}.
 @c FOREIGN-ENUM-VALUE
 
 @node foreign-enum-value
-@heading foreign-enum-value
+@unnumberedsec @code{foreign-enum-value}
 @subheading Syntax
 @Function{foreign-enum-value type keyword => value}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 An @code{enum} type.
 
@@ -2403,8 +2449,8 @@ An error is signaled if @emph{type} doesn't contain such @emph{keyword}.
 @end example
 
 @subheading See Also
-@ref{defcenum} @*
-@ref{foreign-enum-keyword}
+@seealso{defcenum} @*
+@seealso{foreign-enum-keyword}
 
 
 
@@ -2413,12 +2459,13 @@ An error is signaled if @emph{type} doesn't contain such @emph{keyword}.
 @c FOREIGN-SLOT-NAMES
 
 @node foreign-slot-names
-@heading foreign-slot-names
+@unnumberedsec @code{foreign-slot-names}
 @subheading Syntax
 @Function{foreign-slot-names type => names}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 A foreign struct type.
 
@@ -2443,10 +2490,10 @@ the foreign slots of a struct type. This list has no particular order.
 @end example
 
 @subheading See Also
-@ref{defcstruct} @*
-@ref{foreign-slot-offset} @*
-@ref{foreign-slot-value} @*
-@ref{foreign-slot-pointer}
+@seealso{defcstruct} @*
+@seealso{foreign-slot-offset} @*
+@seealso{foreign-slot-value} @*
+@seealso{foreign-slot-pointer}
 
 
 
@@ -2455,12 +2502,13 @@ the foreign slots of a struct type. This list has no particular order.
 @c FOREIGN-SLOT-OFFSET
 
 @node foreign-slot-offset
-@heading foreign-slot-offset
+@unnumberedsec @code{foreign-slot-offset}
 @subheading Syntax
 @Function{foreign-slot-offset type slot-name => offset}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 A foreign struct type.
 
@@ -2490,10 +2538,10 @@ bytes of a slot in a foreign struct type.
 @end example
 
 @subheading See Also
-@ref{defcstruct} @*
-@ref{foreign-slot-names} @*
-@ref{foreign-slot-pointer} @*
-@ref{foreign-slot-value}
+@seealso{defcstruct} @*
+@seealso{foreign-slot-names} @*
+@seealso{foreign-slot-pointer} @*
+@seealso{foreign-slot-value}
 
 
 
@@ -2502,12 +2550,13 @@ bytes of a slot in a foreign struct type.
 @c FOREIGN-SLOT-POINTER
 
 @node foreign-slot-pointer
-@heading foreign-slot-pointer
+@unnumberedsec @code{foreign-slot-pointer}
 @subheading Syntax
 @Function{foreign-slot-pointer ptr type &rest slot-names => pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A pointer to structure.
 
@@ -2546,10 +2595,10 @@ For aggregate slots, this is the same value returned by
 @end example
 
 @subheading See Also
-@ref{defcstruct} @*
-@ref{foreign-slot-value} @*
-@ref{foreign-slot-names} @*
-@ref{foreign-slot-offset}
+@seealso{defcstruct} @*
+@seealso{foreign-slot-value} @*
+@seealso{foreign-slot-names} @*
+@seealso{foreign-slot-offset}
 
 
 
@@ -2558,12 +2607,13 @@ For aggregate slots, this is the same value returned by
 @c FOREIGN-SLOT-VALUE
 
 @node foreign-slot-value
-@heading foreign-slot-value
+@unnumberedsec @code{foreign-slot-value}
 @subheading Syntax
 @Accessor{foreign-slot-value ptr type &rest slot-names => object}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A pointer to structure.
 
@@ -2611,11 +2661,11 @@ There are compiler macros for @code{foreign-slot-value} and its
 @end example
 
 @subheading See Also
-@ref{defcstruct} @*
-@ref{foreign-slot-names} @*
-@ref{foreign-slot-offset} @*
-@ref{foreign-slot-pointer} @*
-@ref{with-foreign-slots}
+@seealso{defcstruct} @*
+@seealso{foreign-slot-names} @*
+@seealso{foreign-slot-offset} @*
+@seealso{foreign-slot-pointer} @*
+@seealso{with-foreign-slots}
 
 
 
@@ -2624,13 +2674,14 @@ There are compiler macros for @code{foreign-slot-value} and its
 @c FOREIGN-TYPE-ALIGNMENT
 
 @node foreign-type-alignment
-@heading foreign-type-alignment
+@unnumberedsec @code{foreign-type-alignment}
 @subheading Syntax
 @c XXX: This is actually a generic function.
 @Function{foreign-type-alignment type => alignment}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 A foreign type.
 
@@ -2663,7 +2714,7 @@ The function @code{foreign-type-alignment} returns the
 @end example
 
 @subheading See Also
-@ref{foreign-type-size}
+@seealso{foreign-type-size}
 
 
 
@@ -2672,13 +2723,14 @@ The function @code{foreign-type-alignment} returns the
 @c FOREIGN-TYPE-SIZE
 
 @node foreign-type-size
-@heading foreign-type-size
+@unnumberedsec @code{foreign-type-size}
 @subheading Syntax
 @c XXX: this is actually a generic function.
 @Function{foreign-type-size type => size}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 A foreign type.
 
@@ -2707,18 +2759,19 @@ The function @code{foreign-type-size} return the @emph{size} of
 @end example
 
 @subheading See Also
-@ref{foreign-type-alignment}
+@seealso{foreign-type-alignment}
 
 @c ===================================================================
 @c FREE-TRANSLATED-OBJECT
 
 @node free-translated-object
-@heading free-translated-object
+@unnumberedsec @code{free-translated-object}
 @subheading Syntax
 @GenericFunction{free-translated-object value type-name param}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item pointer
 The foreign value returned by @code{translate-to-foreign}.
 
@@ -2739,20 +2792,21 @@ Any methods defined on this generic function must EQL-specialize the
 the @code{defctype} macro.
 
 @subheading See Also
-@ref{Foreign Type Translators} @*
-@ref{translate-to-foreign}
+@seealso{Foreign Type Translators} @*
+@seealso{translate-to-foreign}
 
 @c ===================================================================
 @c TRANSLATE-FROM-FOREIGN
 
 @node translate-from-foreign
-@heading translate-from-foreign
+@unnumberedsec @code{translate-from-foreign}
 @subheading Syntax
 @GenericFunction{translate-from-foreign foreign-value type-name
                                         => lisp-value}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item foreign-value
 The foreign value to convert to a Lisp object.
 
@@ -2780,21 +2834,22 @@ defined with @code{defctype}.  Specifically, translations may not be
 defined for built-in types.
 
 @subheading See Also
-@ref{Foreign Type Translators} @*
-@ref{translate-to-foreign} @*
-@ref{free-translated-object}
+@seealso{Foreign Type Translators} @*
+@seealso{translate-to-foreign} @*
+@seealso{free-translated-object}
 
 @c ===================================================================
 @c TRANSLATE-TO-FOREIGN
 
 @node translate-to-foreign
-@heading translate-to-foreign
+@unnumberedsec @code{translate-to-foreign}
 @subheading Syntax
 @GenericFunction{translate-to-foreign lisp-value type-name 
                                       => foreign-value, alloc-param}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item lisp-value
 The lisp value to convert to foreign representation.
 
@@ -2834,21 +2889,22 @@ defined with @code{defctype}.  Specifically, translations may not be
 defined for built-in types.
 
 @subheading See Also
-@ref{Foreign Type Translators} @*
-@ref{translate-from-foreign} @*
-@ref{free-translated-object}
+@seealso{Foreign Type Translators} @*
+@seealso{translate-from-foreign} @*
+@seealso{free-translated-object}
 
 
 @c ===================================================================
 @c WITH-FOREIGN-SLOTS
 
 @node with-foreign-slots
-@heading with-foreign-slots
+@unnumberedsec @code{with-foreign-slots}
 @subheading Syntax
 @Macro{with-foreign-slots (vars ptr type) &body body}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item vars
 A list of symbols.
 
@@ -2895,9 +2951,9 @@ each var in @emph{vars} to reference foreign slots in @emph{ptr} of
 @end example
 
 @subheading See Also
-@ref{defcstruct} @*
-@ref{defcunion} @*
-@ref{foreign-slot-value}
+@seealso{defcstruct} @*
+@seealso{defcunion} @*
+@seealso{foreign-slot-value}
 
 
 
@@ -2958,12 +3014,13 @@ creating objects that exist until freed with @code{foreign-free}.
 @c FOREIGN-FREE
 
 @node foreign-free
-@heading foreign-free
+@unnumberedsec @code{foreign-free}
 @subheading Syntax
 @Function{foreign-free ptr => undefined}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A foreign pointer.
 @end table
@@ -2983,8 +3040,8 @@ pointer twice are undefined.
 @end example
 
 @subheading See Also
-@ref{foreign-alloc} @*
-@ref{with-foreign-pointer}
+@seealso{foreign-alloc} @*
+@seealso{with-foreign-pointer}
 
 
 
@@ -2993,13 +3050,14 @@ pointer twice are undefined.
 @c FOREIGN-ALLOC
 
 @node foreign-alloc
-@heading foreign-alloc
+@unnumberedsec @code{foreign-alloc}
 @subheading Syntax
 @Function{foreign-alloc type &key initial-element initial-contents
                         (count 1) => pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item type
 A foreign type.
 
@@ -3067,8 +3125,8 @@ allocated memory by the @code{:string} type translator for the string
 @code{"foo"}.
 
 @subheading See Also
-@ref{foreign-free} @*
-@ref{with-foreign-pointer}
+@seealso{foreign-free} @*
+@seealso{with-foreign-pointer}
 
 
 
@@ -3077,12 +3135,13 @@ allocated memory by the @code{:string} type translator for the string
 @c FOREIGN-SYMBOL-POINTER
 
 @node foreign-symbol-pointer
-@heading foreign-symbol-pointer
+@unnumberedsec @code{foreign-symbol-pointer}
 @subheading Syntax
 @Function{foreign-symbol-pointer foreign-name kind => ptr}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item foreign-name
 A string.
 
@@ -3124,7 +3183,7 @@ silently ignore this, while others might return erroneous values.
 @end example
 
 @subheading See Also
-@ref{defcvar}
+@seealso{defcvar}
 
 
 
@@ -3133,13 +3192,15 @@ silently ignore this, while others might return erroneous values.
 @c INC-POINTER
 
 @node inc-pointer
-@heading inc-pointer
+@unnumberedsec @code{inc-pointer}
 @subheading Syntax
 @Function{inc-pointer ptr offset => new-pointer}
 
 @subheading Arguments and Values
-@table @emph
-@item ptr, new-pointer
+
+@table @var
+@item ptr
+@itemx new-pointer
 A foreign pointer.
 
 @item offset
@@ -3162,10 +3223,10 @@ The function @code{inc-pointer} will return a @emph{new-pointer} pointing
 @end example
 
 @subheading See Also
-@ref{make-pointer} @*
-@ref{pointerp} @*
-@ref{null-pointer} @*
-@ref{null-pointer-p}
+@seealso{make-pointer} @*
+@seealso{pointerp} @*
+@seealso{null-pointer} @*
+@seealso{null-pointer-p}
 
 
 
@@ -3174,12 +3235,13 @@ The function @code{inc-pointer} will return a @emph{new-pointer} pointing
 @c MAKE-POINTER
 
 @node make-pointer
-@heading make-pointer
+@unnumberedsec @code{make-pointer}
 @subheading Syntax
 @Function{make-pointer address => ptr}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item address
 An integer.
 
@@ -3207,13 +3269,13 @@ pointing to @emph{address}.
 @end example
 
 @subheading See Also
-@ref{inc-pointer} @*
-@ref{null-pointer} @*
-@ref{null-pointer-p} @*
-@ref{pointerp} @*
-@ref{pointer-address} @*
-@ref{pointer-eq} @*
-@ref{mem-ref}
+@seealso{inc-pointer} @*
+@seealso{null-pointer} @*
+@seealso{null-pointer-p} @*
+@seealso{pointerp} @*
+@seealso{pointer-address} @*
+@seealso{pointer-eq} @*
+@seealso{mem-ref}
 
 
 
@@ -3222,14 +3284,15 @@ pointing to @emph{address}.
 @c MEM-AREF
 
 @node mem-aref
-@heading mem-aref
+@unnumberedsec @code{mem-aref}
 @subheading Syntax
 @Accessor{mem-aref ptr type &optional (index 0)}
 
 (setf (@strong{mem-aref} @emph{ptr type &optional (index 0)) new-value})
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A foreign pointer.
 
@@ -3272,7 +3335,7 @@ automatically calculate the offset from an @emph{index}.
 @end example
 
 @subheading See Also
-@ref{mem-ref}
+@seealso{mem-ref}
 
 
 
@@ -3281,12 +3344,13 @@ automatically calculate the offset from an @emph{index}.
 @c MEM-REF
 
 @node mem-ref
-@heading mem-ref
+@unnumberedsec @code{mem-ref}
 @subheading Syntax
 @Accessor{mem-ref ptr type &optional offset => object}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A pointer.
 
@@ -3320,7 +3384,7 @@ The value @emph{ptr} points to.
 @end example
 
 @subheading See Also
-@ref{mem-aref}
+@seealso{mem-aref}
 
 
 
@@ -3329,12 +3393,13 @@ The value @emph{ptr} points to.
 @c NULL-POINTER
 
 @node null-pointer
-@heading null-pointer
+@unnumberedsec @code{null-pointer}
 @subheading Syntax
 @Function{null-pointer => pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item pointer
 A @code{NULL} pointer.
 @end table
@@ -3352,8 +3417,8 @@ The function @code{null-pointer} returns a null pointer.
 @end example
 
 @subheading See Also
-@ref{null-pointer-p} @*
-@ref{make-pointer}
+@seealso{null-pointer-p} @*
+@seealso{make-pointer}
 
 
 
@@ -3362,12 +3427,13 @@ The function @code{null-pointer} returns a null pointer.
 @c NULL-POINTER-P
 
 @node null-pointer-p
-@heading null-pointer-p
+@unnumberedsec @code{null-pointer-p}
 @subheading Syntax
 @Function{null-pointer-p ptr => boolean}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A foreign pointer that may be a null pointer.
 
@@ -3400,8 +3466,8 @@ pointer and false otherwise.
 @end example
 
 @subheading See Also
-@ref{null-pointer} @*
-@ref{pointerp}
+@seealso{null-pointer} @*
+@seealso{pointerp}
 
 
 
@@ -3410,12 +3476,13 @@ pointer and false otherwise.
 @c POINTERP
 
 @node pointerp
-@heading pointerp
+@unnumberedsec @code{pointerp}
 @subheading Syntax
 @Function{pointerp ptr => boolean}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 An object that may be a foreign pointer.
 
@@ -3443,8 +3510,8 @@ implementation @code{pointerp} will return true for any ordinary integer.
 @end example
 
 @subheading See Also
-@ref{make-pointer}
-@ref{null-pointer-p}
+@seealso{make-pointer}
+@seealso{null-pointer-p}
 
 
 
@@ -3452,12 +3519,13 @@ implementation @code{pointerp} will return true for any ordinary integer.
 @c POINTER-ADDRESS
 
 @node pointer-address
-@heading pointer-address
+@unnumberedsec @code{pointer-address}
 @subheading Syntax
 @Function{pointer-address ptr => address}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A foreign pointer.
 
@@ -3479,13 +3547,13 @@ a foreign pointer @emph{ptr}.
 @end example
 
 @subheading See Also
-@ref{make-pointer} @*
-@ref{inc-pointer} @*
-@ref{null-pointer} @*
-@ref{null-pointer-p} @*
-@ref{pointerp} @*
-@ref{pointer-eq} @*
-@ref{mem-ref}
+@seealso{make-pointer} @*
+@seealso{inc-pointer} @*
+@seealso{null-pointer} @*
+@seealso{null-pointer-p} @*
+@seealso{pointerp} @*
+@seealso{pointer-eq} @*
+@seealso{mem-ref}
 
 
 
@@ -3494,13 +3562,15 @@ a foreign pointer @emph{ptr}.
 @c POINTER-EQ
 
 @node pointer-eq
-@heading pointer-eq
+@unnumberedsec @code{pointer-eq}
 @subheading Syntax
 @Function{pointer-eq ptr1 ptr2 => boolean}
 
 @subheading Arguments and Values
-@table @emph
-@item ptr1, ptr2
+
+@table @var
+@item ptr1
+@itemx ptr2
 A foreign pointer.
 
 @item boolean
@@ -3532,14 +3602,14 @@ above.
 @end example
 
 @subheading See Also
-@ref{inc-pointer}
+@seealso{inc-pointer}
 
 
 @c ===================================================================
 @c WITH-FOREIGN-OBJECT
 
 @node with-foreign-object
-@heading with-foreign-object
+@unnumberedsec @code{with-foreign-object}
 @subheading Syntax
 @Macro{with-foreign-object (var type &optional count) &body body}
 
@@ -3548,7 +3618,8 @@ above.
 bindings = @{(var type &optional count)@}*
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item var
 A symbol.
 
@@ -3574,23 +3645,25 @@ and may be stack allocated if supported by the host Lisp.
         (loop for i below 10
               collect (mem-aref array :int i)))
 @result{} (22 7 22 52 69 1 46 93 90 65)
-@end lisp
+@end example
 
 @subheading See Also
-@ref{foreign-alloc}
+@seealso{foreign-alloc}
 
 
 @c ===================================================================
 @c WITH-FOREIGN-POINTER
 
 @node with-foreign-pointer
-@heading with-foreign-pointer
+@unnumberedsec @code{with-foreign-pointer}
 @subheading Syntax
 @Macro{with-foreign-pointer (var size &optional size-var) &body body}
 
 @subheading Arguments and Values
-@table @emph
-@item var, size-var
+
+@table @var
+@item var
+@itemx size-var
 A symbol.
 
 @item size
@@ -3621,8 +3694,8 @@ If @emph{size-var} is supplied, it will be bound to @emph{size} during
 @end example
 
 @subheading See Also
-@ref{foreign-alloc} @*
-@ref{foreign-free}
+@seealso{foreign-alloc} @*
+@seealso{foreign-free}
 
 
 
@@ -3651,12 +3724,13 @@ Dictionary
 @c FOREIGN-STRING-ALLOC
 
 @node foreign-string-alloc
-@heading foreign-string-alloc
+@unnumberedsec @code{foreign-string-alloc}
 @subheading Syntax
 @Function{foreign-string-alloc string => pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item string
 A Lisp string.
 
@@ -3680,8 +3754,8 @@ This string must be freed with @code{foreign-string-free}.
 @end example
 
 @subheading See Also
-@ref{foreign-string-free} @*
-@ref{with-foreign-string}
+@seealso{foreign-string-free} @*
+@seealso{with-foreign-string}
 @c @ref{:string}
 
 
@@ -3691,12 +3765,13 @@ This string must be freed with @code{foreign-string-free}.
 @c FOREIGN-STRING-FREE
 
 @node foreign-string-free
-@heading foreign-string-free
+@unnumberedsec @code{foreign-string-free}
 @subheading Syntax
 @Function{foreign-string-free pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item pointer
 A pointer to string allocated by @code{foreign-string-alloc}.
 @end table
@@ -3708,7 +3783,7 @@ allocated by @code{foreign-string-alloc}.
 @subheading Examples
 
 @subheading See Also
-@ref{foreign-string-alloc}
+@seealso{foreign-string-alloc}
 
 
 
@@ -3716,13 +3791,14 @@ allocated by @code{foreign-string-alloc}.
 @c FOREIGN-STRING-TO-LISP
 
 @node foreign-string-to-lisp
-@heading foreign-string-to-lisp
+@unnumberedsec @code{foreign-string-to-lisp}
 @subheading Syntax
 @Function{foreign-string-to-lisp ptr &optional size null-terminated-p
 => string}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item ptr
 A pointer.
 
@@ -3757,7 +3833,7 @@ Lisp strings and foreign strings.
 @end example
 
 @subheading See Also
-@ref{foreign-string-to-lisp}
+@seealso{foreign-string-to-lisp}
 
 
 
@@ -3766,12 +3842,13 @@ Lisp strings and foreign strings.
 @c LISP-STRING-TO-FOREIGN
 
 @node lisp-string-to-foreign
-@heading lisp-string-to-foreign
+@unnumberedsec @code{lisp-string-to-foreign}
 @subheading Syntax
 @Function{lisp-string-to-foreign string ptr size}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item string
 A Lisp string.
 
@@ -3796,9 +3873,9 @@ foreign string will be null-terminated.
 @end example
 
 @subheading See Also
-@ref{foreign-string-alloc} @*
-@ref{foreign-string-to-lisp} @*
-@ref{with-foreign-pointer-as-string}
+@seealso{foreign-string-alloc} @*
+@seealso{foreign-string-to-lisp} @*
+@seealso{with-foreign-pointer-as-string}
 
 
 
@@ -3807,12 +3884,13 @@ foreign string will be null-terminated.
 @c WITH-FOREIGN-STRING
 
 @node with-foreign-string
-@heading with-foreign-string
+@unnumberedsec @code{with-foreign-string}
 @subheading Syntax
 @Macro{with-foreign-string (var lisp-string) &body body}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item var
 A symbol.
 
@@ -3836,8 +3914,8 @@ allocated foreign string containing @emph{lisp-string}.
 @end example
 
 @subheading See Also
-@ref{foreign-string-alloc} @*
-@ref{with-foreign-pointer-as-string}
+@seealso{foreign-string-alloc} @*
+@seealso{with-foreign-pointer-as-string}
 
 
 
@@ -3846,12 +3924,13 @@ allocated foreign string containing @emph{lisp-string}.
 @c WITH-FOREIGN-POINTER-AS-STRING
 
 @node with-foreign-pointer-as-string
-@heading with-foreign-pointer-as-string
+@unnumberedsec @code{with-foreign-pointer-as-string}
 @subheading Syntax
 @Macro{with-foreign-pointer-as-string (var size &optional size-var) &body body}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item var
 A symbol.
 
@@ -3876,8 +3955,8 @@ used as the returned value of an implicit @code{progn} around @emph{body}.
 @end example
 
 @subheading See Also
-@ref{foreign-string-alloc} @*
-@ref{with-foreign-string}
+@seealso{foreign-string-alloc} @*
+@seealso{with-foreign-string}
 
 
 
@@ -3902,14 +3981,15 @@ Dictionary
 @c DEFCVAR
 
 @node defcvar
-@heading defcvar
+@unnumberedsec @code{defcvar}
 @subheading Syntax
 @Macro{defcvar name type &key read-only => lisp-name}
 
 name ::= lisp-name | foreign-name | (foreign-name lisp-name)
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item foreign-name
 A string denoting a foreign function.
 
@@ -3964,7 +4044,7 @@ Trying to modify a read-only foreign variable:
 C standard library.}
 
 @subheading See Also
-@ref{get-var-pointer}
+@seealso{get-var-pointer}
 
 
 
@@ -3973,12 +4053,13 @@ C standard library.}
 @c GET-VAR-POINTER
 
 @node get-var-pointer
-@heading get-var-pointer
+@unnumberedsec @code{get-var-pointer}
 @subheading Syntax
 @Function{get-var-pointer symbol => pointer}
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item symbol
 A symbol denoting a foreign variable defined with @code{defcvar}.
 
@@ -4005,7 +4086,7 @@ foreign global variable @emph{symbol} previously defined with
 @end example
 
 @subheading See Also
-@ref{defcvar}
+@seealso{defcvar}
 
 
 
@@ -4039,7 +4120,7 @@ Dictionary
 @c DEFCFUN
 
 @node defcfun
-@heading defcfun
+@unnumberedsec @code{defcfun}
 @subheading Syntax
 @Macro{defcfun name return-type &body arguments => lisp-name}
 
@@ -4047,7 +4128,8 @@ name ::= lisp-name | foreign-name | (foreign-name lisp-name) @*
 arguments ::= @{ (arg-name arg-type) @}*
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item foreign-name
 A string denoting a foreign function.
 
@@ -4057,7 +4139,8 @@ A symbol naming the Lisp function to be created.
 @item arg-name
 A symbol.
 
-@item return-type, arg-type
+@item return-type
+@itemx arg-type
 A foreign type.
 @end table
 
@@ -4098,7 +4181,7 @@ hyphens with underscores.
 @end example
 
 @subheading See Also
-@ref{foreign-funcall}
+@seealso{foreign-funcall}
 
 
 
@@ -4107,14 +4190,15 @@ hyphens with underscores.
 @c FOREIGN-FUNCALL
 
 @node foreign-funcall
-@heading foreign-funcall
+@unnumberedsec @code{foreign-funcall}
 @subheading Syntax
 @Macro{foreign-funcall name-or-pointer &rest arguments => return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type] 
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item name-or-pointer
 Either a string or a pointer.
 
@@ -4152,6 +4236,7 @@ these implementations, @code{:no-foreign-funcall} will be present in
 @example
 @sc{cffi>} (foreign-funcall "strlen" :string "foo" :int)
 @result{} 3
+@end example
 
 Given the C code:
 
@@ -4186,7 +4271,7 @@ Or, equivalently:
 @end example
 
 @subheading See Also
-@ref{defcfun}
+@seealso{defcfun}
 
 
 
@@ -4198,38 +4283,403 @@ Or, equivalently:
 @chapter Libraries
 
 @menu
+* Defining a library::          
+* Library definition style::    
+
 Dictionary
 
-* load-foreign-library::        
+* *darwin-framework-directories*::  Search path for Darwin frameworks.
+* define-foreign-library::      Explain how to load a foreign library.
+* *foreign-library-directories*::  Search path for shared libraries.
+* load-foreign-library::        Load a foreign library.
+* load-foreign-library-error::  Signalled on failure of its namesake.
+* use-foreign-library::         Load a foreign library when needed.
 @end menu
 
 
+@node Defining a library
+@section Defining a library
+
+Almost all foreign code you might want to access exists in some kind
+of shared library.  The meaning of @dfn{shared library} varies among
+platforms, but for our purposes, we will consider it to include
+@file{.so} files on @sc{unix}, frameworks on Darwin (and derivatives
+like Mac @acronym{OS X}), and @file{.dll} files on Windows.
+
+Bringing one of these libraries into the Lisp image is normally a
+two-step process.
+
+@enumerate
+@item
+Describe to @cffi{} how to load the library at some future point,
+depending on platform and other factors, with a
+@code{define-foreign-library} top-level form.
+
+@item
+Load the library so defined with either a top-level
+@code{use-foreign-library} form or by calling the function
+@code{load-foreign-library}.
+@end enumerate
+
+@xref{Tutorial-Loading,, Loading foreign libraries}, for a working
+example of the above two steps.
+
+
+@node Library definition style
+@section Library definition style
+
+Looking at the @code{libcurl} library definition presented earlier,
+you may ask why we did not simply do this:
+
+@lisp
+(define-foreign-library libcurl
+  (t (:default "libcurl")))
+@end lisp
+
+@noindent
+Indeed, this would work just as well on the computer on which I tested
+the tutorial.  There are a couple of good reasons to provide the
+@file{.so}'s current version number, however.  Namely, the versionless
+@file{.so} is not packaged on most @sc{unix} systems along with the
+actual, fully-versioned library; instead, it is included in the
+``development'' package along with C headers and static @file{.a}
+libraries.
+
+The reason @cffi{} does not try to account for this lies in the
+meaning of the version numbers.  A full treatment of shared library
+versions is beyond this manual's scope; see @ref{Versioning,, Library
+interface versions, libtool, @acronym{GNU} Libtool}, for helpful
+information for the unfamiliar.  For our purposes, consider that a
+mismatch between the library version with which you tested and the
+installed library version may cause undefined
+behavior.@footnote{Windows programmers may chafe at adding a
+@sc{unix}-specific clause to @code{define-foreign-library}.  Instead,
+ask why the Windows solution to library incompatibility is ``include
+your own version of every library you use with every program''.}
+
+@impnote{Maybe some notes should go here about OS X, which I know
+little about.  --stephen}
+
+
+@node *darwin-framework-directories*
+@unnumberedsec @code{*darwin-framework-directories*}
+@subheading Syntax
+
+@Variable{*darwin-framework-directories*}
+
+@subheading Value type
+
+A list, in which each element is a string, a pathname, or a simple
+Lisp expression.
+
+@subheading Initial value
+
+A list containing the following, in order: an expression corresponding
+to Darwin path @file{~/Library/Frameworks/},
+@code{#P"/Library/Frameworks/"}, and
+@code{#P"/System/Library/Frameworks/"}.
+
+@subheading Description
+
+The meaning of ``simple Lisp expression'' is explained in
+@ref{*foreign-library-directories*}.  In contrast to that variable,
+this is not a fallback search path; the default value described above
+is intended to be a reasonably complete search path on Darwin systems.
+
+@subheading Examples
+
+@c For an OS X user to fill in.
+
+@subheading See also
+
+@seealso{*foreign-library-directories*} @*
+@seealso{define-foreign-library}
+
+
+@node define-foreign-library
+@unnumberedsec @code{define-foreign-library}
+
+@subheading Syntax
+
+@Macro{define-foreign-library name load-clause @dots{} @result{} name}
+
+load-clause ::= @{ (feature library) @}*
+
+@subheading Arguments and Values
+
+@table @var
+@item name
+A symbol.
+
+@item feature
+A feature expression.
+
+@item library
+A library designator.
+@end table
+
+@subheading Description
+
+Creates a new library designator called @var{name}.  The
+@var{load-clause}s describe how to load that designator when passed to
+@code{load-foreign-library} or @code{use-foreign-library}.
+
+When trying to load the library @var{name}, the relevant function
+searches the @var{load-clause}s in order for the first one where
+@var{feature} evaluates to true.  That happens for any of the
+following situations:@footnote{This is described in
+@code{cffi-feature-p} in @file{libraries.lisp}.}
+
+@enumerate 1
+@item
+If @var{feature} is a symbol (idiomatically a keyword), a symbol with
+the same name, but interned into the @code{cffi-features} package, is
+present in @code{common-lisp:*features*}.
+
+@item
+If @var{feature} is a list, depending on @code{(first @var{feature})},
+a keyword:
+
+@table @code
+@item :and
+All of the feature expressions in @code{(rest @var{feature})} are
+true.
+
+@item :or
+At least one of the feature expressions in @code{(rest @var{feature})}
+is true.
+
+@item :not
+The feature expression @code{(second @var{feature})} is not true.
+@end table
+@end enumerate
+
+Upon finding the first true @var{feature}, the library loader then
+loads @var{library}.  The meaning of ``library designator'' is
+described in @ref{load-foreign-library}.
+
+
+@subheading Examples
+
+@xref{Tutorial-Loading,, Loading foreign libraries}.
+
+
+@subheading See Also
+
+@seealso{load-foreign-library}
+
+
+@node *foreign-library-directories*
+@unnumberedsec @code{*foreign-library-directories*}
+@subheading Syntax
+
+@Variable{*foreign-library-directories*}
+
+@subheading Value type
+
+A list, in which each element is a string, a pathname, or a simple
+Lisp expression.
+
+@subheading Initial value
+
+The empty list.
+
+@subheading Description
+
+A @dfn{simple Lisp expression} is intended to provide functionality
+commonly used in search paths such as
+@acronym{ASDF}'s@footnote{@xref{Using asdf to load systems,,, asdf,
+asdf: another system definition facility}, for information on
+@code{asdf:*central-registry*}.}, and is defined recursively as
+follows:@footnote{See @code{mini-eval} in @file{libraries.lisp} for
+the source of this definition.  As is always the case with a Lisp
+@code{eval}, it's easier to understand the Lisp definition than the
+english.}
+
+@enumerate
+@item
+A list, whose @samp{first} is a function designator, and whose
+@samp{rest} is a list of simple Lisp expressions to be evaluated and
+passed to the so-designated function.  The result is the result of the
+function call.
+
+@item
+A symbol, whose result is its symbol value.
+
+@item
+Anything else evaluates to itself.
+@end enumerate
+
+Most, if not all, Lisps supported by @cffi{} have a reasonable default
+search algorithm for foreign libraries.  For example, Lisps for
+@sc{unix} usually call
+@uref{http://www.opengroup.org/onlinepubs/009695399/functions/dlopen.html,,
+@code{dlopen(3)}}, which in turn looks in the system library
+directories.  Only if that fails does @cffi{} look for the named
+library file in these directories, and load it from there if found.
+
+Thus, this is intended to be a @cffi{}-only fallback to the library
+search configuration provided by your operating system.  For example,
+if you distribute a foreign library with your Lisp package, you can
+add the library's containing directory to this list and portably
+expect @cffi{} to find it.
+
+
+@subheading Examples
+
+@example
+$ ls
+@print{} liblibli.so    libli.lisp
+@end example
+
+@noindent
+In @file{libli.lisp}:
+
+@lisp
+(pushnew #P"/home/sirian/lisp/libli/" *foreign-library-directories*
+         :test #'equal)
+
+(load-foreign-library '(:default "liblibli"))
+@end lisp
+
+
+@subheading See also
+
+@seealso{*darwin-framework-directories*} @*
+@seealso{define-foreign-library}
 
 
 @c ===================================================================
 @c LOAD-FOREIGN-LIBRARY
 
 @node load-foreign-library
-@heading load-foreign-library
+@unnumberedsec @code{load-foreign-library}
 @subheading Syntax
-@Function{load-foreign-library name}
+@Function{load-foreign-library library}
 
 @subheading Arguments and Values
-@table @emph
-@item name
-...
+
+@table @var
+@item library
+A library designator.
 @end table
 
 @subheading Description
-@emph{For now, this interface is dirt simple. It simply passes the
-library name to the underlying function in CFFI-SYS. Once we get some
-user feedback about implementing a search strategy this will get
-fancier. --james}
+
+Load the library indicated by @var{library}.  A @dfn{library
+designator} is defined as follows:
+
+@enumerate
+@item
+If a symbol, is considered a name previously defined with
+@code{define-foreign-library}.
+
+@item
+If a string or pathname, passed as a namestring directly to the
+implementation's foreign library loader.  If that fails, search the
+directories in @code{*foreign-library-directories*} with
+@code{cl:probe-file}; if found, the absolute path is passed to the
+implementation's loader.
+
+@item
+If a list, the meaning depends on @code{(first @var{library})}:
+
+@table @code
+@item :framework
+The second list element is taken to be a Darwin framework name, which
+is then loaded.
+
+@item :or
+Each remaining list element, itself a library designator, is loaded in
+order, until one succeeds.
+
+@item :default
+The name is transformed according to the platform's naming convention
+to shared libraries, and the resultant string is loaded as a library
+designator.  For example, on @sc{unix}, the name is suffixed with
+@file{.so}.
+@end table
+@end enumerate
+
+If the load fails, signal a @code{load-foreign-library-error}.
+
 
 @subheading Examples
+
+@xref{Tutorial-Loading,, Loading foreign libraries}.
+
 @subheading See Also
 
+@seealso{define-foreign-library} @*
+@seealso{*foreign-library-directories*} @*
+@seealso{load-foreign-library-error} @*
+@seealso{use-foreign-library}
 
+
+@node load-foreign-library-error
+@unnumberedsec @code{load-foreign-library-error}
+
+@subheading Syntax
+
+@Condition{load-foreign-library-error}
+
+@subheading Class precedence list
+
+@code{load-foreign-library-error}, @code{error},
+@code{serious-condition}, @code{condition}, @code{t}
+
+@subheading Description
+
+Signalled when a foreign library load completely fails.  The exact
+meaning of this varies depending on the real conditions at work, but
+almost universally, the implementation's error message is useless.
+However, @cffi{} does provide the useful restarts @code{retry} and
+@code{use-value}; invoke the @code{retry} restart to try loading the
+foreign library again, or the @code{use-value} restart to try loading
+a different foreign library designator.
+
+@subheading See also
+
+@seealso{load-foreign-library}
+
+
+@node use-foreign-library
+@unnumberedsec @code{use-foreign-library}
+
+@subheading Syntax
+
+@Macro{use-foreign-library name}
+
+@subheading Arguments and values
+
+@table @var
+@item name
+A library designator; unevaluated.
+@end table
+
+
+@subheading Description
+
+@xref{load-foreign-library}, for the meaning of ``library
+designator''.  This is intended to be the top-level form used
+idiomatically after a @code{define-foreign-library} form to go ahead
+and load the library; it also sets the ``current foreign library''.
+Finally, on implementations where the regular evaluation rule is
+insufficient for foreign library loading, it loads it at the required
+time.@footnote{Namely, @acronym{CMUCL}.  See
+@code{use-foreign-library} in @file{libraries.lisp} for details.}
+
+@c current foreign library is a concept created a few hours ago as of
+@c this writing.  It is not actually used yet, but probably will be.
+
+@subheading Examples
+
+@xref{Tutorial-Loading,, Loading foreign libraries}.
+
+
+@subheading See also
+
+@seealso{load-foreign-library}
 
 
 @c ===================================================================
@@ -4253,18 +4703,20 @@ Dictionary
 @c CALLBACK
 
 @node callback
-@heading callback
+@unnumberedsec @code{callback}
 @subheading Syntax
 @Macro{callback symbol => pointer}
 
 (setf (@strong{callback} @emph{symbol) new-value})
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item symbol
 A symbol denoting a callback.
 
-@item pointer, new-value
+@item pointer
+@itemx new-value
 A pointer.
 @end table
 
@@ -4288,8 +4740,8 @@ denoted by the symbol @emph{name}.
 @end example
 
 @subheading See Also
-@ref{get-callback} @*
-@ref{defcallback}
+@seealso{get-callback} @*
+@seealso{defcallback}
 
 
 
@@ -4298,14 +4750,15 @@ denoted by the symbol @emph{name}.
 @c DEFCALLBACK
 
 @node defcallback
-@heading defcallback
+@unnumberedsec @code{defcallback}
 @subheading Syntax
 @Macro{defcallback name return-type arguments &body body => name}
 
 arguments ::= (@{ (arg-name arg-type) @}*)
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item name
 A symbol naming the callback created.
 
@@ -4359,8 +4812,8 @@ This Lisp function can be accessed by the @code{callback} macro or the
 @end example
 
 @subheading See Also
-@ref{callback} @*
-@ref{get-callback}
+@seealso{callback} @*
+@seealso{get-callback}
 
 
 
@@ -4369,7 +4822,7 @@ This Lisp function can be accessed by the @code{callback} macro or the
 @c GET-CALLBACK
 
 @node get-callback
-@heading get-callback
+@unnumberedsec @code{get-callback}
 @subheading Syntax
 @Accessor{get-callback symbol => pointer}
 
@@ -4377,11 +4830,12 @@ This Lisp function can be accessed by the @code{callback} macro or the
 @c (setf (@strong{get-callback} @emph{symbol) new-value})
 
 @subheading Arguments and Values
-@table @emph
+
+@table @var
 @item symbol
 A symbol denoting a callback.
 
-@item new-value, pointer
+@item pointer
 A pointer.
 @end table
 
@@ -4401,8 +4855,8 @@ example, to pass as arguments to foreign functions.
 @end example
 
 @subheading See Also
-@ref{callback} @*
-@ref{defcallback}
+@seealso{callback} @*
+@seealso{defcallback}
 
 
 
@@ -4413,9 +4867,70 @@ example, to pass as arguments to foreign functions.
 @node Limitations
 @chapter Limitations
 
+These are @cffi{}'s limitations across all platforms; for information
+on the warts on particular Lisp implementations, see
+@ref{Implementation Support and Known Issues}.
 
-@node Symbol Index
-@unnumbered Symbol Index
-@printindex fn
+@itemize @bullet
+@item
+The tutorial includes a treatment of the primary, intractable
+limitation of @cffi{}, or any @acronym{FFI}: that the abstractions
+commonly used by C are insufficiently expressive.
+@xref{Tutorial-Abstraction,, Breaking the abstraction}, for more
+details.
+
+@item
+C @code{struct}s cannot be passed by value.
+@end itemize
+
+@c more?
+
+
+@node Platform-specific features
+@appendix Platform-specific features
+
+@cffi{} does some platform tests on loading.  The details vary between
+Lisps; in fact, the purpose is to unify the list of available platform
+features for use elsewhere in the @cffi{} code.  These features are
+also part of the public interface; see @ref{define-foreign-library}.
+
+The exact meanings of the features follow.  Though you will usually
+refer to these symbols as keywords, @cffi{} internally views them in
+the package @code{cffi-features}.
+
+@table @code
+@item darwin
+This operating system is Darwin or a derivative thereof, such as
+Mac @acronym{OS X}.
+
+@item foreign-funcall
+The macro @code{foreign-funcall} is available.  On other platforms,
+the only way to call a foreign function is through @code{defcfun}.
+@xref{foreign-funcall}, and @code{defcfun}.
+
+@item long-long
+The @acronym{GNU} C @code{long long} type is available as a foreign
+type.
+
+@item ppc32
+The underlying @acronym{CPU} architecture is 32-bit PowerPC.
+
+@item unix
+This operating system is a @sc{unix}-like, such as
+@acronym{GNU}/Linux, Darwin, or even Cygwin on Lisps that show the
+@sc{unix}-like interface provided by Cygwin to Lisp code.
+
+@item windows
+This operating system is Windows.
+
+@item x86
+The underlying @acronym{CPU} architecture is x86, such as on
+processors from Intel or @acronym{AMD}.
+@end table
+
+
+@node Index
+@unnumbered Index
+@printindex cp
 
 @bye
