@@ -185,13 +185,29 @@ gzip -f -9 -c $PACKAGE.txt >$outdir/$PACKAGE.txt.gz
 ascii_gz_size="`calcsize $outdir/$PACKAGE.txt.gz`"
 mv $PACKAGE.txt $outdir/
 
+# Print a SED expression that will translate references to MANUAL to
+# the proper page on gnu.org.  This is a horrible shell hack done
+# because \| in sed regexps is a GNU extension.
+monognuorg () {
+    case "$1" in
+	libtool) echo "s!$1.html!http://www.gnu.org/software/$1/manual.html!" ;;
+	*) echo "s!$1.html!http://www.gnu.org/software/$1/manual/html_mono/$1.html!" ;;
+    esac
+}
+polygnuorg () {
+    case "$1" in
+	libtool) echo 's!\.\./'"$1/.*\.html!http://www.gnu.org/software/$1/manual.html!" ;;
+	*) echo 's!\.\./'"$1!http://www.gnu.org/software/$1/manual/html_node!" ;;
+    esac
+}
+
 cmd="${MAKEINFO} --no-split --html -o $PACKAGE.html $html $srcfile"
 echo "Generating monolithic html... ($cmd)"
 rm -rf $PACKAGE.html  # in case a directory is left over
 eval $cmd
 sbcl --load colorize-lisp-examples.lisp $PACKAGE.html
-#fix libc xrefs
-sed -e 's!libc\.html!http://www.gnu.org/software/libc/manual/html_mono/libc.html!' $PACKAGE.html >$outdir/$PACKAGE.html
+#fix libc/libtool xrefs
+sed -e `monognuorg libc` -e `monognuorg libtool` $PACKAGE.html >$outdir/$PACKAGE.html
 rm $PACKAGE.html
 html_mono_size="`calcsize $outdir/$PACKAGE.html`"
 gzip -f -9 -c $outdir/$PACKAGE.html >$outdir/$PACKAGE.html.gz
@@ -206,7 +222,7 @@ sbcl --load colorize-lisp-examples.lisp "${split_html_dir}/*.html"
   cd ${split_html_dir} || exit 1
   #fix libc xrefs
   for broken_file in *.html; do
-      sed -e 's!\.\./libc!http://www.gnu.org/software/libc/manual/html_node!' "$broken_file" > "$broken_file".temp
+      sed -e `polygnuorg libc` -e `polygnuorg libtool` "$broken_file" > "$broken_file".temp
       mv -f "$broken_file".temp "$broken_file"
   done
   tar -czf ../$outdir/${PACKAGE}.html_node.tar.gz -- *.html
