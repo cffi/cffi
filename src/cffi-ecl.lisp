@@ -58,8 +58,8 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; Backend features.
-          cffi-features:foreign-funcall
+        '(;; Backend mis-features.
+          cffi-features:no-long-long
           ;; OS/CPU features.
           #+darwin       cffi-features:darwin 
           #+unix         cffi-features:unix

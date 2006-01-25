@@ -93,7 +93,9 @@ Style notes:
 
 @copying
 Copyright @copyright{} 2005, James Bielman  <jamesjb at jamesjb.com> @*
-Copyright @copyright{} 2005, Lu@'{@dotless{i}}s Oliveira  <loliveira at common-lisp.net>
+Copyright @copyright{} 2005, 2006 Lu@'{@dotless{i}}s Oliveira
+  <loliveira at common-lisp.net> @*
+Copyright @copyright{} 2006, Stephen Compall  <s11 at member.fsf.org>
 
 @quotation
 Permission is hereby granted, free of charge, to any person
@@ -149,7 +151,7 @@ software or the use or other dealings in the software.}
 * Callbacks::                   
 * Limitations::                 
 * Platform-specific features::  Details about the underlying system.
-* Index::                       
+* Comprehensive Index::                       
 
 @detailmenu
  --- Dictionary ---
@@ -1988,8 +1990,6 @@ CFFI> (foreign-type-size 'foo)
 @seealso{with-foreign-slots}
 
 
-
-
 @c ===================================================================
 @c DEFCUNION
 
@@ -2037,8 +2037,6 @@ for accessing a union's slots.
 @seealso{foreign-slot-value}
 
 
-
-
 @c ===================================================================
 @c DEFCTYPE
 
@@ -2078,8 +2076,6 @@ The new type inherits @emph{base-type}'s translators.
 @subheading See Also
 @seealso{define-foreign-type} @*
 @c @ref{define-type-translator}
-
-
 
 
 @c ===================================================================
@@ -2144,8 +2140,6 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @subheading See Also
 @seealso{foreign-enum-value} @*
 @seealso{foreign-enum-keyword}
-
-
 
 
 @c ===================================================================
@@ -2244,8 +2238,6 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @c @subheading See Also
 
 
-
-
 @c ===================================================================
 @c DEFINE-FOREIGN-TYPE
 
@@ -2316,8 +2308,6 @@ yet.
 @c @ref{define-type-translator}
 
 
-
-
 @c ===================================================================
 @c EXPLAIN-FOREIGN-SLOT-VALUE
 
@@ -2356,8 +2346,6 @@ CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
 @end lisp
 
 @c @subheading See Also
-
-
 
 
 @c ===================================================================
@@ -2402,8 +2390,6 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @seealso{foreign-enum-value}
 
 
-
-
 @c ===================================================================
 @c FOREIGN-ENUM-VALUE
 
@@ -2446,8 +2432,6 @@ CFFI> (foreign-enum-keyword 'boolean :yes)
 @seealso{foreign-enum-keyword}
 
 
-
-
 @c ===================================================================
 @c FOREIGN-SLOT-NAMES
 
@@ -2485,8 +2469,6 @@ CFFI> (foreign-slot-names 'timeval)
 @seealso{foreign-slot-offset} @*
 @seealso{foreign-slot-value} @*
 @seealso{foreign-slot-pointer}
-
-
 
 
 @c ===================================================================
@@ -2531,8 +2513,6 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @seealso{foreign-slot-names} @*
 @seealso{foreign-slot-pointer} @*
 @seealso{foreign-slot-value}
-
-
 
 
 @c ===================================================================
@@ -2586,8 +2566,6 @@ CFFI> (with-foreign-object (ptr 'point)
 @seealso{foreign-slot-value} @*
 @seealso{foreign-slot-names} @*
 @seealso{foreign-slot-offset}
-
-
 
 
 @c ===================================================================
@@ -2653,8 +2631,6 @@ CFFI> (with-foreign-object (ptr 'point)
 @seealso{with-foreign-slots}
 
 
-
-
 @c ===================================================================
 @c FOREIGN-TYPE-ALIGNMENT
 
@@ -2700,8 +2676,6 @@ CFFI> (foreign-type-alignment 'foo)
 @seealso{foreign-type-size}
 
 
-
-
 @c ===================================================================
 @c FOREIGN-TYPE-SIZE
 
@@ -2743,8 +2717,6 @@ CFFI> (foreign-type-size 'foo)
 @seealso{foreign-type-alignment}
 
 
-
-
 @c ===================================================================
 @c FREE-TRANSLATED-OBJECT
 
@@ -2778,8 +2750,6 @@ the @code{defctype} macro.
 @subheading See Also
 @seealso{Foreign Type Translators} @*
 @seealso{translate-to-foreign}
-
-
 
 
 @c ===================================================================
@@ -2824,8 +2794,6 @@ defined for built-in types.
 @seealso{Foreign Type Translators} @*
 @seealso{translate-to-foreign} @*
 @seealso{free-translated-object}
-
-
 
 
 @c ===================================================================
@@ -2882,8 +2850,6 @@ defined for built-in types.
 @seealso{Foreign Type Translators} @*
 @seealso{translate-from-foreign} @*
 @seealso{free-translated-object}
-
-
 
 
 @c ===================================================================
@@ -2946,8 +2912,6 @@ CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
 @seealso{foreign-slot-value}
 
 
-
-
 @c ===================================================================
 @c CHAPTER: Pointers
 
@@ -2998,8 +2962,6 @@ creating objects that exist until freed with @code{foreign-free}.
 @section Accessing Foreign Memory
 
 
-
-
 @c ===================================================================
 @c FOREIGN-FREE
 
@@ -3032,8 +2994,6 @@ CFFI> (foreign-free *)
 @subheading See Also
 @seealso{foreign-alloc} @*
 @seealso{with-foreign-pointer}
-
-
 
 
 @c ===================================================================
@@ -3118,8 +3078,6 @@ allocated memory by the @code{:string} type translator for the string
 @seealso{with-foreign-pointer}
 
 
-
-
 @c ===================================================================
 @c FOREIGN-SYMBOL-POINTER
 
@@ -3175,8 +3133,6 @@ CFFI> (foreign-symbol-pointer "unexistant symbol" :data)
 @seealso{defcvar}
 
 
-
-
 @c ===================================================================
 @c INC-POINTER
 
@@ -3216,8 +3172,6 @@ CFFI> (foreign-string-to-lisp *)
 @seealso{pointerp} @*
 @seealso{null-pointer} @*
 @seealso{null-pointer-p}
-
-
 
 
 @c ===================================================================
@@ -3265,8 +3219,6 @@ CFFI> (null-pointer-p *)
 @seealso{pointer-address} @*
 @seealso{pointer-eq} @*
 @seealso{mem-ref}
-
-
 
 
 @c ===================================================================
@@ -3327,8 +3279,6 @@ CFFI> (with-foreign-object (array :int 10)
 @seealso{mem-ref}
 
 
-
-
 @c ===================================================================
 @c MEM-REF
 
@@ -3376,8 +3326,6 @@ CFFI> (mem-ref ptr-to-int :int)
 @seealso{mem-aref}
 
 
-
-
 @c ===================================================================
 @c NULL-POINTER
 
@@ -3408,8 +3356,6 @@ CFFI> (pointerp *)
 @subheading See Also
 @seealso{null-pointer-p} @*
 @seealso{make-pointer}
-
-
 
 
 @c ===================================================================
@@ -3457,8 +3403,6 @@ CFFI> (contains-str-p "Popcorns" "salt")
 @seealso{pointerp}
 
 
-
-
 @c ===================================================================
 @c POINTERP
 
@@ -3501,8 +3445,6 @@ CFFI> (pointerp "this is not a pointer")
 @seealso{null-pointer-p}
 
 
-
-
 @c ===================================================================
 @c POINTER-ADDRESS
 
@@ -3542,8 +3484,6 @@ CFFI> (pointer-address (make-pointer 123))
 @seealso{pointerp} @*
 @seealso{pointer-eq} @*
 @seealso{mem-ref}
-
-
 
 
 @c ===================================================================
@@ -4139,6 +4079,22 @@ CFFI> (strlen "123")
 
 CFFI> (c-abs -42)
 @result{} 42
+@end lisp
+
+@impnote{The following example illustrates @code{defcfun}'s undocumented
+support for variadic functions. Note that argument promotion is done
+automatically. --luis}
+
+@lisp
+(defcfun "sprintf" :int
+  (str :pointer)
+  (control :string)
+  &rest)
+
+CFFI> (with-foreign-pointer-as-string (s 100)
+        (sprintf s "%c %d %.2f %s" :char 90 :short 42 :float pi
+                 :string "super-locrian"))
+@result{} "A 42 3.14 super-locrian"
 @end lisp
 
 @subheading See Also
@@ -4892,7 +4848,7 @@ processors from Intel or @acronym{AMD}.
 @end table
 
 
-@node Index
+@node Comprehensive Index
 @unnumbered Index
 @printindex cp
 

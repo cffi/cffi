@@ -34,7 +34,7 @@
 
 ;;; Don't run these tests if the implementation does not support
 ;;; foreign-funcall.
-#+cffi-features:foreign-funcall 
+#-cffi-features:no-foreign-funcall 
 (progn
 
 (deftest funcall.char
@@ -58,7 +58,7 @@
     (foreign-funcall "labs" :long -131072 :long)
   131072)
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (deftest funcall.long-long
     (foreign-funcall "llabs" :long-long -9223372036854775807 :long-long)
   9223372036854775807)
@@ -127,4 +127,4 @@
                        :string "Hello" :string "world" :int))
   "Hello, world!")
 
-) ;; #+cffi-features:foreign-funcall
+) ;; #-cffi-features:no-foreign-funcall

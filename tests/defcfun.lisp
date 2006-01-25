@@ -56,7 +56,7 @@
   131072)
 
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defcfun "llabs" :long-long
     (n :long-long))

@@ -59,8 +59,9 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; Backend features.
-          
+        '(;; Backend mis-features.
+          cffi-features:no-long-long
+          cffi-features:no-foreign-funcall
           ;; OS/CPU features.
           cffi-features:windows
           cffi-features:x86

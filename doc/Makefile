@@ -25,13 +25,13 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
-clean:
-	find . \( -name "*.info" -o -name "*.aux" -o -name "*.cp" -o -name "*.fn" -o -name "*.fns" -o -name "*.ky" -o -name "*.log" -o -name "*.pg" -o -name "*.toc" -o -name "*.tp" -o -name "*.vr" \) -exec rm {} \;
-	rm -rf manual spec
-
 docs:
 	sh gendocs.sh -o manual --html "--css-include=style.css" cffi-manual "CFFI User Manual"
 	sh gendocs.sh -o spec --html "--css-include=style.css" cffi-sys-spec "CFFI-SYS Interface Specification"
+
+clean:
+	find . \( -name "*.info" -o -name "*.aux" -o -name "*.cp" -o -name "*.fn" -o -name "*.fns" -o -name "*.ky" -o -name "*.log" -o -name "*.pg" -o -name "*.toc" -o -name "*.tp" -o -name "*.vr" \) -exec rm {} \;
+	rm -rf manual spec
 
 upload-docs:
 	rsync -av --delete -e ssh manual spec common-lisp.net:/project/cffi/public_html/

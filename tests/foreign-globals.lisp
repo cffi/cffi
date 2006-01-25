@@ -40,7 +40,7 @@
 (defcvar "var_pointer"           :pointer)
 (defcvar "var_string"            :string)
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defcvar "var_long_long"          :long-long)
   (defcvar "var_unsigned_long_long" :unsigned-long-long))
@@ -93,7 +93,7 @@
     *var-string*
   "Hello, foreign world!")
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   #+openmcl (push 'foreign-globals.set.long-long rt::*expected-failures*)
 
@@ -129,7 +129,7 @@
         (foreign-free (mem-ref (get-var-pointer '*var-string*) :pointer))))
   "Ehxosxangxo")
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (deftest foreign-globals.set.long-long
     (with-old-value-restored (*var-long-long*)
       (setq *var-long-long* -9223000000000005808)

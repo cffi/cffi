@@ -746,7 +746,7 @@ obtained using define-foreign-type."
 (define-built-in-foreign-type :pointer)
 (define-built-in-foreign-type :void)
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
@@ -758,7 +758,7 @@ obtained using define-foreign-type."
 (defctype :uint   :unsigned-int)
 (defctype :ulong  :unsigned-long)
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defctype :llong  :long-long)
   (defctype :ullong :unsigned-long-long))
@@ -779,8 +779,8 @@ obtained using define-foreign-type."
                        (notice-foreign-typedef type match))))))
     ;; signed
     (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
-                 '(:char :short :int :long #+cffi-features:long-long :long-long))
+                 '(:char :short :int :long #-cffi-features:no-long-long :long-long))
     ;; unsigned
     (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
                  '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
-                   #+cffi-features:long-long :unsigned-long-long))))
+                   #-cffi-features:no-long-long :unsigned-long-long))))

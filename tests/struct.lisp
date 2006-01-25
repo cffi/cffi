@@ -214,7 +214,7 @@
   (a-double 1.0d0 a-short 2 a-char 3 another-short 4))
 
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defcstruct s-long-long
     (a-long-long :long-long)

@@ -33,8 +33,8 @@
 (defpackage #:cffi-features
   (:export
    ;; Features related to the CFFI-SYS backend.
-   #:long-long
-   #:foreign-funcall
+   #:no-long-long
+   #:no-foreign-funcall
 
    ;; Features related to the operating system.
    ;; Currently only these are pushed to *features*, more should be added.

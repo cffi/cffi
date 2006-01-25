@@ -40,7 +40,7 @@
 (defcfun "expect_pointer_sum"        :int (f :pointer))
 (defcfun "expect_strcat"             :int (f :pointer))
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defcfun "expect_long_long_sum"          :int (f :pointer))
   (defcfun "expect_unsigned_long_long_sum" :int (f :pointer)))
@@ -79,7 +79,7 @@
     ((a :unsigned-long) (b :unsigned-long))
   (+ a b))
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   (defcallback sum-long-long :long-long
       ((a :long-long) (b :long-long))
@@ -135,7 +135,7 @@
     (expect-unsigned-long-sum (callback sum-unsigned-long))
   1)
 
-#+cffi-features:long-long
+#-cffi-features:no-long-long
 (progn
   #+openmcl (push 'callbacks.long-long rt::*expected-failures*)
 
@@ -163,11 +163,11 @@
     (expect-strcat (callback lisp-strcat))
   1)
 
-#+cffi-features:foreign-funcall
+#-cffi-features:no-foreign-funcall
 (defcallback return-a-string-not-nil :string ()
   "abc")
 
-#+cffi-features:foreign-funcall
+#-cffi-features:no-foreign-funcall
 (deftest callbacks.string-not-docstring
     (foreign-funcall (callback return-a-string-not-nil) :string)
   "abc")
