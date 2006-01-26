@@ -33,6 +33,9 @@
 (defpackage #:cffi-features
   (:export
    ;; Features related to the CFFI-SYS backend.
+   ;; Why no-*? This reflects the hope that these symbols will
+   ;; go away completely and all lisps support long-long's and
+   ;; the foreign-funcall primitive.
    #:no-long-long
    #:no-foreign-funcall
 
