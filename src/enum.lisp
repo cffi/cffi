@@ -67,11 +67,14 @@
         (setq default-value (1+ value))))
     type))
 
-(defmacro defcenum (name &body enum-list)
+(defmacro defcenum (name-and-options &body enum-list)
   "Define an foreign enumerated type."
   (discard-docstring enum-list)
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-foreign-type (make-foreign-enum ',name :int ',enum-list))))
+  (destructuring-bind (name &optional (base-type :int))
+      (mklist name-and-options)
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-type
+        (make-foreign-enum ',name ',base-type ',enum-list)))))
 
 (defmethod translate-type-to-foreign (value (type foreign-enum))
   (if (keywordp value)
@@ -87,7 +90,7 @@
 (defun %foreign-enum-value (type keyword)
   (check-type keyword keyword)
   (or (gethash keyword (keyword-values type))
-      (error "~S is not defined as a keyword for enym type ~S."
+      (error "~S is not defined as a keyword for enum type ~S."
                keyword type)))
 
 (defun foreign-enum-value (type keyword)

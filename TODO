@@ -103,6 +103,7 @@ This is a collection of TODO items and ideas in no particular order.
 -> Update the CFFI-SYS Specification.
 -> Generally improve the reference docs and examples.
 -> Document defcfun's new vargargs capabilities.
+-> Document defenum's new base-type option.
 
 ### Other
 
