@@ -60,10 +60,11 @@
             (error "A foreign enum cannot contain duplicate keywords: ~S."
                    keyword)
             (setf (gethash keyword (keyword-values type)) value))
-        (if (gethash value (value-keywords type))
-            (error "A foreign enum cannot contain duplicate values: ~S."
-                   value)
-            (setf (gethash value (value-keywords type)) keyword))
+        ;; This completely arbitrary behaviour: we keep the last we
+        ;; value->keyword mapping. I suppose the opposite would be just as
+        ;; good (keeping the first). Returning a list with all the keywords
+        ;; might be a solution too? Suggestions welcome. --luis
+        (setf (gethash value (value-keywords type)) keyword)
         (setq default-value (1+ value))))
     type))
 
