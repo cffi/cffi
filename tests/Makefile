@@ -27,29 +27,20 @@
 
 OSTYPE = $(shell uname)
 
+CC             := gcc
+CFLAGS         := -lm -Wall -std=c99 -pedantic
+SHLIB_CFLAGS   := -shared
+SHLIB_EXT      := .so
+
+ifneq ($(if $(findstring $(OSTYPE),Linux FreeBSD),OK), OK)
 ifeq ($(OSTYPE), Darwin)
-CC                := gcc
-CFLAGS            := -lm -Wall -std=c99 -pedantic
-SHLIB_CFLAGS      := -bundle
-SHLIB_EXT         := .so
-else
-ifeq ($(OSTYPE), Linux)
-CC                := gcc
-CFLAGS            := -lm -Wall -std=c99 -pedantic
-SHLIB_CFLAGS      := -shared
-SHLIB_EXT         := .so
+SHLIB_CFLAGS   := -bundle
 else
 ifeq ($(OSTYPE), SunOS)
-CC                := gcc
-CFLAGS            := -c -Wall -std=c99 -pedantic
-SHLIB_CFLAGS      := -shared
-SHLIB_EXT         := .so
+CFLAGS         := -c -Wall -std=c99 -pedantic
 else
 # Let's assume this is win32
-CC                := gcc
-CFLAGS            := -lm -Wall -std=c99 -pedantic
-SHLIB_CFLAGS      := -shared
-SHLIB_EXT         := .dll 
+SHLIB_EXT      := .dll 
 endif
 endif
 endif
