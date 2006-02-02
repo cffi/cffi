@@ -113,7 +113,7 @@
 (defmacro define-foreign-library (name &body pairs)
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
-  `(progn
+  `(eval-when (#+cmu :compile-toplevel :load-toplevel :execute)
      (setf (get-foreign-library ',name) ',pairs)
      ',name))
 
