@@ -362,7 +362,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   ;; to a list containing whatever type NAME has.
   (let ((excl::*load-foreign-types*
          (list (pathname-type (parse-namestring name)))))
-    (ignore-errors (load name :foreign t))))
+    (ignore-errors #+(version>= 7) (load name :foreign t)
+                   #-(version>= 7) (load name))))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
