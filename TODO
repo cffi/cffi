@@ -76,6 +76,7 @@ This is a collection of TODO items and ideas in no particular order.
    and a lisp double to :float. We should either coerce on lisps that
    don't accept this or check-type on lisps that do. Probably the former
    is better since on lispworks/x86 double == float.
+-> What happens when the same library is loaded twice.
 
 ### Possible Optimizations
 
@@ -104,6 +105,7 @@ This is a collection of TODO items and ideas in no particular order.
 -> Generally improve the reference docs and examples.
 -> Document defcfun's new vargargs capabilities.
 -> Document defenum's new base-type option.
+-> Document defbitfield.
 
 ### Other
 

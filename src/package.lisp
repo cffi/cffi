@@ -79,10 +79,13 @@
    #:defcunion
    #:defctype
    #:defcenum
+   #:defbitfield
    ;#:define-type-spec-parser
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
+   #:foreign-bitfield-symbols
+   #:foreign-bitfield-value
    #:foreign-slot-pointer
    #:foreign-slot-value
    #:foreign-slot-offset

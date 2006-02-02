@@ -53,7 +53,7 @@
         (default-value 0))
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value))
-          (mklist pair) 
+          (mklist pair)
         (check-type keyword keyword)
         (check-type value integer)
         (if (gethash keyword (keyword-values type))
@@ -76,14 +76,6 @@
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
         (make-foreign-enum ',name ',base-type ',enum-list)))))
-
-(defmethod translate-type-to-foreign (value (type foreign-enum))
-  (if (keywordp value)
-      (%foreign-enum-value type value)
-      value))
-
-(defmethod translate-type-from-foreign (value (type foreign-enum))
-  (%foreign-enum-keyword type value))
 
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
@@ -113,3 +105,90 @@
     (if (not (typep type-obj 'foreign-enum))
         (error "~S is not a foreign enum type." type)
         (%foreign-enum-keyword type-obj value))))
+
+(defmethod translate-type-to-foreign (value (type foreign-enum))
+  (if (keywordp value)
+      (%foreign-enum-value type value)
+      value))
+
+(defmethod translate-type-from-foreign (value (type foreign-enum))
+  (%foreign-enum-keyword type value))
+
+;;;# Foreign Bitfields as Lisp keywords
+;;;
+;;; DEFBITFIELD is an abstraction similar to the one provided by DEFCENUM.
+;;; With some changes to DEFCENUM, this could certainly be implemented on
+;;; top of it.
+
+(defclass foreign-bitfield (foreign-type-alias)
+  ((symbol-values
+    :initform (make-hash-table :test 'eq)
+    :reader symbol-values)
+   (value-symbols
+    :initform (make-hash-table)
+    :reader value-symbols))
+  (:documentation "Describes a foreign bitfield type."))
+
+(defun make-foreign-bitfield (type-name base-type values)
+  "Makes a new instance of the foreign-bitfield class."
+  (let ((type (make-instance 'foreign-bitfield :name type-name
+                             :actual-type (parse-type base-type))))
+    (dolist (pair values)
+      (destructuring-bind (symbol value) pair
+        (check-type value integer)
+        (check-type symbol symbol)
+        (if (gethash symbol (symbol-values type))
+            (error "A foreign bitfield cannot contain duplicate symbols: ~S."
+                   symbol)
+            (setf (gethash symbol (symbol-values type)) value))
+        (push symbol (gethash value (value-symbols type)))))
+    type))
+
+(defmacro defbitfield (name-and-options &body masks)
+  "Define an foreign enumerated type."
+  (discard-docstring masks)
+  (destructuring-bind (name &optional (base-type :int))
+      (mklist name-and-options)
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-type
+        (make-foreign-bitfield ',name ',base-type ',masks)))))
+
+(defun %foreign-bitfield-value (type symbols)
+  (let ((bitfield 0))
+    (dolist (symbol symbols)
+      (check-type symbol symbol)
+      (let ((value (or (gethash symbol (symbol-values type))
+                       (error "~S is not a valid symbol for bitfield type ~S."
+                              symbol type))))
+        (setq bitfield (logior bitfield value))))
+    bitfield))
+
+(defun foreign-bitfield-value (type symbols)
+  "Convert a list of symbols into an integer according to the TYPE bitfield."
+  (let ((type-obj (parse-type type)))
+    (if (not (typep type-obj 'foreign-bitfield))
+      (error "~S is not a foreign bitfield type." type)
+      (%foreign-bitfield-value type-obj symbols))))
+
+(defun %foreign-bitfield-symbols (type value)
+  (check-type value integer)
+  (loop for mask being the hash-keys in (value-symbols type)
+            using (hash-value symbols)
+        when (= (logand value mask) mask)
+        append symbols))
+
+(defun foreign-bitfield-symbols (type value)
+  "Convert an integer VALUE into a list of matching symbols according to
+the bitfield TYPE."
+  (let ((type-obj (parse-type type)))
+    (if (not (typep type-obj 'foreign-bitfield))
+        (error "~S is not a foreign bitfield type." type)
+        (%foreign-bitfield-symbols type-obj value))))
+
+(defmethod translate-type-to-foreign (value (type foreign-bitfield))
+  (if (integerp value)
+      value
+      (%foreign-bitfield-value type (mklist value))))
+
+(defmethod translate-type-from-foreign (value (type foreign-bitfield))
+  (%foreign-bitfield-symbols type value))
