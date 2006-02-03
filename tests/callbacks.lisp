@@ -211,3 +211,16 @@
       (pass-int-ref (callback read-int-from-pointer))
       *int*)
   1984)
+
+;;; test funcalling of a callback and also declarations inside
+;;; callbacks.
+
+#-cffi-features:no-foreign-funcall
+(progn
+  (defcallback sum-2 :int ((a :int) (b :int) (c :int))
+    (declare (ignore c))
+    (+ a b))
+
+  (deftest callbacks.funcall
+      (foreign-funcall (callback sum-2) :int 2 :int 3 :int 1 :int)
+    5))
