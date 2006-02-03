@@ -27,20 +27,18 @@
 
 (in-package #:cffi-tests)
 
-;; hmm..
-(defparameter *lib*
-  (make-pathname :name "libtest"
-                 :type
-                 #-(or win32 mswindows) "so"
-                 #+(or win32 mswindows) "dll"
-                 ;; XXX: find a better way. This is here so that we can find
-                 ;; the library even if the fasls are not placed next to
-                 ;; the source code.
-                 :defaults #.(or *compile-file-truename* *load-truename*)
-                 :version :newest))
+(define-foreign-library libtest
+  (:unix (:or "libtest.so" "libtest32.so"))
+  (:darwin "libtest.so")
+  (:windows "libtest.dll" "msvcrt.dll"))
 
-(load-foreign-library *lib*)
+;;; Return the directory containing the source when compiling or
+;;; loading this file.  We don't use *LOAD-TRUENAME* because the fasl
+;;; file may be in a different directory than the source with certain
+;;; ASDF extensions loaded.
+(defun load-directory ()
+  (let ((here #.(or *compile-file-truename* *load-truename*)))
+    (make-pathname :directory (pathname-directory here))))
 
-;;; FIXME: this shouldn't be a special case. --luis
-#+(and (or ecl sbcl) win32)
-(load-foreign-library "msvcrt")
+(let ((*foreign-library-directories* (list (load-directory))))
+  (load-foreign-library 'libtest))
