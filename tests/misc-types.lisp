@@ -96,3 +96,31 @@
   (1 1 2 2 4 4
    #-cffi-features:no-long-long 8
    #-cffi-features:no-long-long 8))
+
+(defctype untranslated-int :int :translate-p nil)
+
+(defmethod translate-to-foreign (value (type (eql 'untranslated-int)))
+  (+ value 42))
+
+(defmethod translate-from-foreign (value (type (eql 'untranslated-int)))
+  (+ value 666))
+
+(defcfun ("abs" untranslated-abs) untranslated-int
+  (value untranslated-int))
+
+;;; Ensure that type translators are not called on non-translatable
+;;; typedefs when passing arguments or returning values to foreign
+;;; functions.
+(deftest misc-types.untranslated-typedef
+    (untranslated-abs 1)
+  1)
+
+;;; Ensure that type translators are not called on non-translatable
+;;; typedefs when passing values or returning from a callback.
+#-cffi-features:no-foreign-funcall
+(progn
+  (defcallback untranslated-callback untranslated-int ((x untranslated-int))
+    x)
+  (deftest misc-types.untranslated-callback
+      (foreign-funcall (callback untranslated-callback) :int 1 :int)
+    1))
