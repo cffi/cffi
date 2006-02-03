@@ -30,6 +30,7 @@
 (defpackage #:cffi-utils
   (:use #:common-lisp)
   (:export #:discard-docstring
+           #:parse-body
            #:with-unique-names
            #:once-only
            #:mklist
@@ -64,6 +65,18 @@
 string and the only element."
   `(when (and (stringp (car ,body-var)) (cdr ,body-var))
      (pop ,body-var)))
+
+;;; Parse a body of code, removing an optional documentation string
+;;; and declaration forms.  Returns the actual body, docstring, and
+;;; declarations as three multiple values.
+(defun parse-body (body)
+  (let ((docstring nil)
+        (declarations nil))
+    (when (and (stringp (car body)) (cdr body))
+      (setf docstring (pop body)))
+    (loop while (and (consp (car body)) (eql (caar body) 'cl:declare))
+          do (push (pop body) declarations))
+    (values body docstring (nreverse declarations))))
 
 ;;; LET-IF (renamed to BIF) and LET-WHEN taken from KMRCL
 (defmacro let-when ((var test-form) &body body)

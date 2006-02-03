@@ -194,15 +194,18 @@ and does type promotion for the variadic arguments."
           ,rettype ,call))))))
 
 (defmacro defcallback (name return-type args &body body)
-  (discard-docstring body)
-  (let ((arg-names (mapcar #'car args))
-        (arg-types (mapcar #'cadr args)))
-    `(progn
-       (%defcallback ,name ,(canonicalize-foreign-type return-type)
-           ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
-         (inverse-translate-objects ,arg-names ,arg-types ,return-type
-                                    (block ,name ,@body)))
-       ',name)))
+  (multiple-value-bind (body docstring declarations)
+      (parse-body body)
+    (declare (ignore docstring))
+    (let ((arg-names (mapcar #'car args))
+          (arg-types (mapcar #'cadr args)))
+      `(progn
+         (%defcallback ,name ,(canonicalize-foreign-type return-type)
+             ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
+           ,@declarations
+           (inverse-translate-objects ,arg-names ,arg-types ,return-type
+                                      (block ,name ,@body)))
+         ',name))))
 
 (defun get-callback (symbol)
   (%callback symbol))
