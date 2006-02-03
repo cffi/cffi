@@ -487,9 +487,6 @@ to open-code (SETF MEM-REF) forms."
   "Return the offset of SLOT in a struct TYPE."
   (slot-offset (get-slot-info type slot-name)))
 
-;; This is the slow interface to getting the fields of foreign slots.
-;; Eventually there will be a compiler macro that optimizes this when
-;; the structure type and slot name are known at compile time.
 (defun foreign-slot-value (ptr type slot-name)
   "Return the value of SLOT-NAME in the foreign structure at PTR."
   (foreign-struct-slot-value ptr (get-slot-info type slot-name)))
