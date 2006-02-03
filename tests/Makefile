@@ -56,12 +56,21 @@ ifeq ($(ARCH), ppc970)
 CFLAGS += -m64
 endif
 
-all: shlibs
+SHLIBS = libtest$(SHLIB_EXT)
 
-shlibs: libtest$(SHLIB_EXT)
+ifeq ($(ARCH), x86_64)
+SHLIBS += libtest32$(SHLIB_EXT)
+endif
 
-%$(SHLIB_EXT): %.c
+shlibs: $(SHLIBS)
+
+libtest$(SHLIB_EXT): libtest.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+
+ifeq ($(ARCH), x86_64)
+libtest32$(SHLIB_EXT): libtest.c
+	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+endif
 
 clean:
 	rm -f *.so *.dylib *.dll *.bundle
