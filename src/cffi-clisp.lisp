@@ -67,11 +67,14 @@
           #+macos  cffi-features:darwin
           #+unix   cffi-features:unix
           #+win32  cffi-features:windows
-          #+pc386  cffi-features:x86
           ))
-  (when (string-equal (machine-type) "POWER MACINTOSH")
-    ;; FIXME: probably catches PPC64 aswell
-    (pushnew 'cffi-features:ppc32 *features*)))
+  (cond ((string-equal (machine-type) "X86_64")
+         (pushnew 'cffi-features:x86-64 *features*))
+        ((member :pc386 *features*)
+         (pushnew 'cffi-features:x86 *features*))
+        ;; FIXME: probably catches PPC64 as well
+        ((string-equal (machine-type) "POWER MACINTOSH")
+         (pushnew 'cffi-features:ppc32 *features*))))
 
 ;;;# Built-In Foreign Types
 

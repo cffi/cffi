@@ -49,4 +49,4 @@
    ;; Currently only these are pushed to *features*, more should be added.
    #:ppc32
    #:x86
-   ))
+   #:x86-64))

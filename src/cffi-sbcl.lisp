@@ -65,6 +65,7 @@
           #+unix    cffi-features:unix
           #+win32   cffi-features:windows
           #+x86     cffi-features:x86
+          #+x86-64  cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
           )))
 
