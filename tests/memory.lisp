@@ -234,3 +234,50 @@
     (with-foreign-object (x :int)
       (pointer-eq x (inc-pointer x 0)))
   t)
+
+;;; Test the INITIAL-ELEMENT keyword argument to FOREIGN-ALLOC.
+(deftest foreign-alloc.1
+    (let ((ptr (foreign-alloc :int :initial-element 42)))
+      (unwind-protect
+           (mem-ref ptr :int)
+        (foreign-free ptr)))
+  42)
+
+;;; Test the INITIAL-ELEMENT and COUNT arguments to FOREIGN-ALLOC.
+(deftest foreign-alloc.2
+    (let ((ptr (foreign-alloc :int :count 4 :initial-element 100)))
+      (unwind-protect
+           (loop for i from 0 below 4
+                 collect (mem-aref ptr :int i))
+        (foreign-free ptr)))
+  (100 100 100 100))
+
+;;; Test the INITIAL-CONTENTS and COUNT arguments to FOREIGN-ALLOC,
+;;; passing a list of initial values.
+(deftest foreign-alloc.3
+    (let ((ptr (foreign-alloc :int :count 4 :initial-contents '(4 3 2 1))))
+      (unwind-protect
+           (loop for i from 0 below 4
+                 collect (mem-aref ptr :int i))
+        (foreign-free ptr)))
+  (4 3 2 1))
+
+;;; Test INITIAL-CONTENTS and COUNT with FOREIGN-ALLOC passing a
+;;; vector of initial values.
+(deftest foreign-alloc.4
+    (let ((ptr (foreign-alloc :int :count 4 :initial-contents #(10 20 30 40))))
+      (unwind-protect
+           (loop for i from 0 below 4
+                 collect (mem-aref ptr :int i))
+        (foreign-free ptr)))
+  (10 20 30 40))
+
+;;; Ensure calling FOREIGN-ALLOC with both INITIAL-ELEMENT and
+;;; INITIAL-CONTENTS signals an error.
+(deftest foreign-alloc.5
+    (values
+     (ignore-errors
+       (let ((ptr (foreign-alloc :int :initial-element 1 :initial-contents '(1))))
+         (foreign-free ptr))
+       t))
+  nil)

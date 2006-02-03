@@ -5,7 +5,6 @@ This is a collection of TODO items and ideas in no particular order.
 ### Testing
 
 -> Test uffi-compat with more UFFI libraries.
--> Write FOREIGN-ALLOC test involving its many keyword arguments.
 -> Write more FOREIGN-GLOBALS.SET.* tests.
 -> Write tests for DEFCFUN, FOREIGN-FUNCALL and DEFCALLBACK that
    exercise all possible combinations of argument types, preferably
