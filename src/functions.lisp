@@ -46,9 +46,9 @@
     ;; the return value and perform the call.
     ((null args)
      (let ((parsed-type (parse-type rettype)))
-       (if (typep parsed-type 'foreign-built-in-type)
-           `(values ,call)
-           `(translate-type-from-foreign ,call ,parsed-type))))
+       (if (translate-p parsed-type)
+           `(translate-type-from-foreign ,call ,parsed-type)
+           `(values ,call))))
     ;; More than one argument is available---translate the first
     ;; argument/type pair and recurse.
     (t `(with-object-translated (,(car syms) ,(car args) ,(car types))

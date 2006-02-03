@@ -118,6 +118,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (:documentation
    "Unparse FOREIGN-TYPE to a type specification (symbol or list)."))
 
+(defgeneric translate-p (foreign-type)
+  (:documentation
+   "Return true if type translators should run on FOREIGN-TYPE."))
+
 ;;;# Foreign Types
 
 (defclass foreign-type ()
@@ -156,6 +160,10 @@ Signals an error if the type cannot be resolved."
   "Return the size in bytes of a foreign type."
   (foreign-type-size (parse-type type)))
 
+(defmethod translate-p ((type foreign-type))
+  "By default, types will be translated."
+  t)
+
 ;;;# Built-In Foreign Types
 
 (defclass foreign-built-in-type (foreign-type)
@@ -182,6 +190,10 @@ Signals an error if the type cannot be resolved."
   "Return the size of a built-in type."
   (%foreign-type-size (type-keyword type)))
 
+(defmethod translate-p ((type foreign-built-in-type))
+  "Built-in types are never translated."
+  nil)
+
 (defmacro define-built-in-foreign-type (keyword)
   "Defines a built-in foreign-type."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -200,7 +212,12 @@ Signals an error if the type cannot be resolved."
   ((actual-type
     ;; The FOREIGN-TYPE instance this type is an alias for.
     :initarg :actual-type
-    :accessor actual-type))
+    :accessor actual-type)
+   (translate-p
+    ;; If true, this type should be translated (the default).
+    :initform t
+    :initarg :translate-p
+    :accessor translate-p))
   (:documentation "A type that aliases another type."))
 
 (defmethod canonicalize ((type foreign-type-alias))

@@ -134,14 +134,14 @@
 (defmacro with-object-translated ((var value type-spec) &body body)
   (let ((type (parse-type type-spec))
         (param (gensym "PARAM-")))
-    (if (typep type 'foreign-built-in-type)
-        `(let ((,var ,value))
-          ,@body)
+    (if (translate-p type)
         `(multiple-value-bind (,var ,param)
-          (translate-type-to-foreign ,value ,type)
-          (unwind-protect
-               (progn ,@body)
-            (free-type-translated-object ,var ,type ,param))))))
+             (translate-type-to-foreign ,value ,type)
+           (unwind-protect
+                (progn ,@body)
+             (free-type-translated-object ,var ,type ,param)))
+        `(let ((,var ,value))
+          ,@body))))
 
 ;;;# Dereferencing Foreign Pointers
 
@@ -323,12 +323,11 @@ to open-code (SETF MEM-REF) forms."
   "Return a form to get the value of a slot from PTR."
   (let* ((type (slot-type slot))
          (parsed-type (parse-type type)))
-    ;; If PARSED-TYPE is a built-in type, don't bother translating.
-    (if (typep parsed-type 'foreign-built-in-type)
-        `(mem-ref ,ptr ',type ,(slot-offset slot))
+    (if (translate-p parsed-type)
         `(translate-type-from-foreign
           (mem-ref ,ptr ',type ,(slot-offset slot))
-          ,parsed-type))))
+          ,parsed-type)
+        `(mem-ref ,ptr ',type ,(slot-offset slot)))))
 
 (defmethod (setf foreign-struct-slot-value) (value ptr (slot simple-struct-slot))
   "Set the value of a simple SLOT to VALUE in PTR."
@@ -341,11 +340,10 @@ to open-code (SETF MEM-REF) forms."
   "Return a form to set the value of a simple structure slot."
   (let* ((type (slot-type slot))
          (parsed-type (parse-type type)))
-    ;; If PARSED-TYPE is a built-in type, don't bother translating.
-    (if (typep parsed-type 'foreign-built-in-type)
-        `(setf (mem-ref ,ptr ',type ,(slot-offset slot)) ,value)
+    (if (translate-p parsed-type)
         `(setf (mem-ref ,ptr ',type ,(slot-offset slot))
-               (translate-type-to-foreign ,value ,parsed-type)))))
+               (translate-type-to-foreign ,value ,parsed-type))
+        `(setf (mem-ref ,ptr ',type ,(slot-offset slot)) ,value))))
 
 ;;;### Aggregate Slots
 
@@ -666,14 +664,15 @@ The buffer has dynamic extent and may be stack allocated."
                       :actual-type (parse-type (progn ,@body))))
      ',type))
 
-(defmacro defctype (name base-type &optional docstring)
+(defmacro defctype (name base-type &key (translate-p t) documentation)
   "Utility macro for simple C-like typedefs. A similar effect could be
 obtained using define-foreign-type."
-  (declare (ignore docstring))
+  (declare (ignore documentation))
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-type
       (make-instance 'foreign-typedef :name ',name
-                     :actual-type (parse-type ',base-type)))))
+                     :actual-type (parse-type ',base-type)
+                     :translate-p ,translate-p))))
 
 ;;;## Anonymous Type Translators
 ;;;
@@ -753,15 +752,15 @@ obtained using define-foreign-type."
 
 ;;; A couple of handy typedefs.
 
-(defctype :uchar  :unsigned-char)
-(defctype :ushort :unsigned-short)
-(defctype :uint   :unsigned-int)
-(defctype :ulong  :unsigned-long)
+(defctype :uchar  :unsigned-char :translate-p nil)
+(defctype :ushort :unsigned-short :translate-p nil)
+(defctype :uint   :unsigned-int :translate-p nil)
+(defctype :ulong  :unsigned-long :translate-p nil)
 
 #-cffi-features:no-long-long
 (progn
-  (defctype :llong  :long-long)
-  (defctype :ullong :unsigned-long-long))
+  (defctype :llong  :long-long :translate-p nil)
+  (defctype :ullong :unsigned-long-long :translate-p nil))
 
 ;;; We try to define the :[u]int{8,16,32,64} types by looking at
 ;;; the sizes of the built-in integer types and defining typedefs.
@@ -771,7 +770,8 @@ obtained using define-foreign-type."
            (notice-foreign-typedef (type actual-type)
              (notice-foreign-type
               (make-instance 'foreign-typedef :name type
-                             :actual-type (find-type actual-type))))
+                             :actual-type (find-type actual-type)
+                             :translate-p nil)))
            (match-types (sized-types builtin-types)
              (loop for (type . size) in sized-types do
                    (let ((match (find-matching-size size builtin-types)))
