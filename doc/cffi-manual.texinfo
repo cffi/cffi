@@ -2043,7 +2043,7 @@ for accessing a union's slots.
 @node defctype
 @unnumberedsec defctype
 @subheading Syntax
-@Macro{defctype name base-type &optional docstring}
+@Macro{defctype name base-type &key documentation translate-p}
 
 @subheading Arguments and Values
 
@@ -2054,8 +2054,14 @@ The name of the new foreign type.
 @item base-type
 A symbol or a list defining the new type.
 
-@item docstring
-A documentation string, ignored.
+@item documentation
+A documentation string, currently ignored.
+
+@item translate-p
+A boolean.  If true (the default), the type will be subject to type
+translation.  This may be false to avoid extra generic function call
+overhead when it is known that no type translation is needed, perhaps
+because @emph{base-type} is a built-in type.
 @end table
 
 @subheading Description
@@ -2067,10 +2073,12 @@ The new type inherits @emph{base-type}'s translators.
 @subheading Examples
 @lisp
 (defctype my-string :string
-  "My own string type.")
+  :documentation "My own string type.")
 
 (defctype long-bools (:boolean :long)
-  "Booleans that map to C longs.")
+  :documentation "Booleans that map to C longs.")
+
+(defctype my-float :float :translate-p nil)
 @end lisp
 
 @subheading See Also
