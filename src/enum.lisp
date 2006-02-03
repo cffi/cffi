@@ -80,31 +80,33 @@
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
 ;;; until someone has a serious performance need to do so though. --jamesjb
-(defun %foreign-enum-value (type keyword)
+(defun %foreign-enum-value (type keyword &key errorp)
   (check-type keyword keyword)
   (or (gethash keyword (keyword-values type))
-      (error "~S is not defined as a keyword for enum type ~S."
-               keyword type)))
+      (when errorp
+        (error "~S is not defined as a keyword for enum type ~S."
+               keyword type))))
 
-(defun foreign-enum-value (type keyword)
+(defun foreign-enum-value (type keyword &key (errorp t))
   "Convert a KEYWORD into an integer according to the enum TYPE."
   (let ((type-obj (parse-type type)))
     (if (not (typep type-obj 'foreign-enum))
       (error "~S is not a foreign enum type." type)
-      (%foreign-enum-value type-obj keyword))))
+      (%foreign-enum-value type-obj keyword :errorp errorp))))
 
-(defun %foreign-enum-keyword (type value)
+(defun %foreign-enum-keyword (type value &key errorp)
   (check-type value integer)
   (or (gethash value (value-keywords type))
-      (error "~S is not defined as a value for enum type ~S."
-             value type)))
+      (when errorp
+        (error "~S is not defined as a value for enum type ~S."
+               value type))))
 
-(defun foreign-enum-keyword (type value)
+(defun foreign-enum-keyword (type value &key (errorp t))
   "Convert an integer VALUE into a keyword according to the enum TYPE."
   (let ((type-obj (parse-type type)))
     (if (not (typep type-obj 'foreign-enum))
         (error "~S is not a foreign enum type." type)
-        (%foreign-enum-keyword type-obj value))))
+        (%foreign-enum-keyword type-obj value :errorp errorp))))
 
 (defmethod translate-type-to-foreign (value (type foreign-enum))
   (if (keywordp value)
