@@ -77,8 +77,7 @@
 ;;                          (second value))))
 ;;   "A useful type.")
 
-(defctype funky-string (:wrapper my-string :to-c funkify :from-c 3rd-person)
-  "A useful type.")
+(defctype funky-string (:wrapper my-string :to-c funkify :from-c 3rd-person))
 
 (defcfun ("my_strdup" funky-strdup) funky-string
   (str funky-string))
