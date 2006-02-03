@@ -218,3 +218,19 @@
 (deftest pointer.2
     (pointer-address (null-pointer))
   0)
+
+;;; Ensure that a pointer to the highest possible address can be
+;;; created using MAKE-POINTER.  Regression test for CLISP/X86-64.
+(deftest make-pointer.high
+    (let* ((pointer-length (foreign-type-size :pointer))
+           (high-address (1- (expt 2 (* pointer-length 8))))
+           (pointer (make-pointer high-address)))
+      (- high-address (pointer-address pointer)))
+  0)
+
+;;; Ensure that incrementing a pointer by zero bytes returns an
+;;; equivalent pointer.
+(deftest inc-pointer.zero
+    (with-foreign-object (x :int)
+      (pointer-eq x (inc-pointer x 0)))
+  t)
