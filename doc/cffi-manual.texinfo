@@ -162,7 +162,6 @@ Foreign Types
 * defcunion::                   Defines a C union type.
 * defctype::                    Defines a foreign typedef.
 * defcenum::                    Defines a C enumeration.
-@c * define-type-translator::      Defines a type translation.
 @c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
 * explain-foreign-slot-value::  <unimplemented>
@@ -1673,7 +1672,7 @@ Dictionary
 @c * define-type-translator::      
 @c * define-type-spec-parser::     
 * define-foreign-type::         
-* explain-foreign-slot-value::        
+@c * explain-foreign-slot-value::        
 * foreign-enum-keyword::        
 * foreign-enum-value::          
 * foreign-slot-names::          
@@ -1742,21 +1741,19 @@ symbol @code{cffi-features:no-long-long} is pushed into
 Foreign integer types of specific sizes, corresponding to the C types
 defined in @code{stdint.h}.
 
-@impnote{These are not implemented yet. --luis}
+@c @ForeignType{:size}
+@c @ForeignType{:ssize}
+@c @ForeignType{:ptrdiff}
+@c @ForeignType{:time}
 
-@ForeignType{:size}
-@ForeignType{:ssize}
-@ForeignType{:ptrdiff}
-@ForeignType{:time}
+@c Foreign integer types corresponding to the standard C types (without
+@c the @code{_t} suffix).
 
-Foreign integer types corresponding to the standard C types (without
-the @code{_t} suffix).
+@c @impnote{These are not implemented yet. --luis}
 
-@impnote{These are not implemented yet. --luis}
-
-@impnote{I'm sure there are more of these that could be useful, let's
-add any types that can't be defined portably to this list as
-necessary. --james}
+@c @impnote{I'm sure there are more of these that could be useful, let's
+@c add any types that can't be defined portably to this list as
+@c necessary. --james}
 
 @ForeignType{:float}
 @ForeignType{:double}
@@ -2151,102 +2148,6 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 
 
 @c ===================================================================
-@c DEFINE-TYPE-TRANSLATOR
-
-@c @node define-type-translator
-@c @heading define-type-translator
-@c @subheading Syntax
-@c @Macro{define-type-translator type direction arguments &body body}
-
-@c arguments ::= (value-arg &optional var-arg body-arg)
-
-@c @subheading Arguments and Values
-@c @table @emph
-@c @item type
-@c A symbol naming a previously user-defined foreign type.
-
-@c @item direction
-@c One of @code{:to-c}, @code{:from-c} or @code{:to-c-dynamic}
-
-@c @item type-arg
-@c ...
-
-@c @item value-arg
-@c ...
-
-@c @item var-arg
-@c ...
-
-@c @item body-arg
-@c ...
-
-@c @item body
-@c The body of this type translator.
-@c @end table
-
-@c @subheading Description
-@c @emph{TODO. For now check the examples.}
-
-@c @subheading Examples
-@c Here is how CFFI's @code{:boolean} type translator is defined:
-@c @lisp
-@c (define-type-translator :boolean :from-c (value) 
-@c   "Type translator to convert t/nil to a C boolean."
-@c   `(if ,value 1 0))
-
-@c (define-type-translator :boolean :to-c (value)
-@c   "Type translator to convert C booleans to t/nil."
-@c   `(not (zerop ,value)))
-@c @end lisp
-
-@c And the @code{:string} type:
-
-@c @lisp
-@c (define-type-translator :string :to-c-dynamic (value var body)
-@c   "Convert a lisp string to a foreign string with dynamic extent."
-@c   `(with-foreign-string (,var ,value)
-@c      ,@@body))
-
-@c (define-type-translator :string :to-c (value)
-@c   "Convert a lisp string to a foreign string."
-@c   `(foreign-string-alloc ,value))
-
-@c (define-type-translator :string :from-c (value)
-@c   "Convert a foreign string to a lisp string."
-@c   `(foreign-string-to-lisp ,value))
-@c @end lisp
-
-@c @subheading See Also
-@c @ref{defctype} @*
-@c @ref{define-foreign-type}
-
-
-
-@c @c ===================================================================
-@c @c DEFINE-TYPE-SPEC-PARSER
-
-@c @node define-type-spec-parser
-@c @heading define-type-spec-parser
-@c @subheading Syntax
-
-@c @subheading Arguments and Values
-@c @table @emph
-@c @item ...
-@c asd
-
-@c @item ...
-@c asd
-@c @end table
-
-@c @subheading Description
-@c @emph{Note: It doesn't make much sense for this macro to be exported
-@c yet. --luis}
-
-@c @subheading Examples
-@c @subheading See Also
-
-
-@c ===================================================================
 @c DEFINE-FOREIGN-TYPE
 
 @node define-foreign-type
@@ -2319,39 +2220,39 @@ yet.
 @c ===================================================================
 @c EXPLAIN-FOREIGN-SLOT-VALUE
 
-@node explain-foreign-slot-value
-@unnumberedsec explain-foreign-slot-value
-@subheading Syntax
-@Macro{explain-foreign-slot-value ptr type &rest slot-names}
+@c @node explain-foreign-slot-value
+@c @unnumberedsec explain-foreign-slot-value
+@c @subheading Syntax
+@c @Macro{explain-foreign-slot-value ptr type &rest slot-names}
 
-@subheading Arguments and Values
+@c @subheading Arguments and Values
 
-@table @var
-@item ptr
-...
+@c @table @var
+@c @item ptr
+@c ...
 
-@item type
-...
+@c @item type
+@c ...
 
-@item slot-names
-...
-@end table
+@c @item slot-names
+@c ...
+@c @end table
 
-@subheading Description
-This macro translates the slot access that would occur by calling
-@code{foreign-slot-value} with the same arguments into an equivalent
-expression in C and prints it to @code{*standard-output*}.
+@c @subheading Description
+@c This macro translates the slot access that would occur by calling
+@c @code{foreign-slot-value} with the same arguments into an equivalent
+@c expression in C and prints it to @code{*standard-output*}.
 
-@emph{Note: this is not implemented yet.}
+@c @emph{Note: this is not implemented yet.}
 
-@subheading Examples
-@lisp
-CFFI> (explain-foreign-slot-value ptr 'timeval 'tv-secs)
-@result{} ptr->tv_secs
+@c @subheading Examples
+@c @lisp
+@c CFFI> (explain-foreign-slot-value ptr 'timeval 'tv-secs)
+@c @result{} ptr->tv_secs
 
-CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
-@result{} emp->hire_date.tv_usecs
-@end lisp
+@c CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
+@c @result{} emp->hire_date.tv_usecs
+@c @end lisp
 
 @c @subheading See Also
 
@@ -2362,7 +2263,7 @@ CFFI> (explain-foreign-slot-value emp 'employee 'hire-date 'tv-usecs)
 @node foreign-enum-keyword
 @unnumberedsec foreign-enum-keyword
 @subheading Syntax
-@Function{foreign-enum-keyword type value => keyword}
+@Function{foreign-enum-keyword type value &key errorp => keyword}
 
 @subheading Arguments and Values
 
@@ -2373,6 +2274,11 @@ An @code{enum} type.
 @item value
 An integer.
 
+@item errorp
+If true (the default), signal an error if @emph{value} is not defined
+in @emph{type}.  If false, @code{foreign-enum-keyword} returns
+@code{nil}.
+
 @item keyword
 A keyword symbol.
 @end table
@@ -2381,7 +2287,8 @@ A keyword symbol.
 The function @code{foreign-enum-keyword} returns the keyword symbol
 that corresponds to @emph{value} in @emph{type}.
 
-An error is signaled if @emph{type} doesn't contain such @emph{value}.
+An error is signaled if @emph{type} doesn't contain such @emph{value}
+and @emph{errorp} is true.
 
 @subheading Examples
 @lisp
@@ -2404,7 +2311,7 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @node foreign-enum-value
 @unnumberedsec foreign-enum-value
 @subheading Syntax
-@Function{foreign-enum-value type keyword => value}
+@Function{foreign-enum-value type keyword &key errorp => value}
 
 @subheading Arguments and Values
 
@@ -2415,6 +2322,11 @@ An @code{enum} type.
 @item keyword
 A keyword symbol.
 
+@item errorp
+If true (the default), signal an error if @emph{keyword} is not
+defined in @emph{type}.  If false, @code{foreign-enum-value} returns
+@code{nil}.
+
 @item value
 An integer.
 @end table
@@ -2423,7 +2335,8 @@ An integer.
 The function @code{foreign-enum-keyword} returns the @emph{value} that
 corresponds to @emph{keyword} in @emph{type}.
 
-An error is signaled if @emph{type} doesn't contain such @emph{keyword}.
+An error is signaled if @emph{type} doesn't contain such
+@emph{keyword}, and @emph{errorp} is true.
 
 @subheading Examples
 @lisp
@@ -2582,7 +2495,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @node foreign-slot-value
 @unnumberedsec foreign-slot-value
 @subheading Syntax
-@Accessor{foreign-slot-value ptr type &rest slot-names => object}
+@Accessor{foreign-slot-value ptr type slot-name => object}
 
 @subheading Arguments and Values
 
@@ -2593,11 +2506,11 @@ A pointer to structure.
 @item type
 A foreign structure type.
 
-@item slot-names
-One or more slot names.
+@item slot-name
+A symbol naming a slot in the structure type.
 
 @item object
-The object contained in the slot specified in @emph{slot-names}.
+The object contained in the slot specified by @emph{slot-name}.
 @end table
 
 @subheading Description
