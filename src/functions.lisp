@@ -186,12 +186,17 @@ and does type promotion for the variadic arguments."
   (cond
     ((null args)
      (let ((parsed-type (parse-type rettype)))
-       `(translate-type-to-foreign ,call ,parsed-type)))
+       (if (translate-p parsed-type)
+           `(translate-type-to-foreign ,call ,parsed-type)
+           call)))
     (t
      (let ((type (parse-type (car types))))
-       `(let ((,(car args) (translate-type-from-foreign ,(car args) ,type)))
-         (inverse-translate-objects ,(rest args) ,(rest types)
-          ,rettype ,call))))))
+       (if (translate-p type)
+           `(let ((,(car args) (translate-type-from-foreign ,(car args) ,type)))
+              (inverse-translate-objects ,(rest args) ,(rest types)
+                                         ,rettype ,call))
+           `(inverse-translate-objects ,(rest args) ,(rest types)
+                                       ,rettype ,call))))))
 
 (defmacro defcallback (name return-type args &body body)
   (multiple-value-bind (body docstring declarations)
