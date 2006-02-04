@@ -160,6 +160,9 @@
       (sprintf s "%ld" :long 131072))
   "131072")
 
+;;; This test is disabled for now because C floats are promoted to
+;;; doubles when passed through varargs.
+#-(and)
 (deftest defcfun.varargs.float
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
