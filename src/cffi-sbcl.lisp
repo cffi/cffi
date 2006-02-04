@@ -62,7 +62,7 @@
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; OS/CPU features.
           #+darwin  cffi-features:darwin
-          #+unix    cffi-features:unix
+          #+(and unix (not win32)) cffi-features:unix
           #+win32   cffi-features:windows
           #+x86     cffi-features:x86
           #+x86-64  cffi-features:x86-64
