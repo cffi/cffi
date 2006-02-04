@@ -35,7 +35,7 @@
 (defsystem cffi
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.1.0"
+  :version "0.9.0"
   :licence "MIT"
   :components 
   ((:module src
