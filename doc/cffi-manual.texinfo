@@ -395,9 +395,6 @@ Versions prior to 4.4 are untested.
 @subheading Known issues
 @itemize
 @item
-@emph{(all platforms)} No @code{FOREIGN-FUNCALL}.
-
-@item
 @emph{(all platforms)} Does not support (unsigned) long long.
 @end itemize
 
