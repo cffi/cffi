@@ -2,7 +2,7 @@
 #
 # Makefile --- Make targets for generating the documentation.
 #
-# Copyright (C) 2005, Luis Oliveira  <loliveira at common-lisp.net>
+# Copyright (C) 2005-2006, Luis Oliveira  <loliveira at common-lisp.net>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,7 +30,7 @@ docs:
 	sh gendocs.sh -o spec --html "--css-include=style.css" cffi-sys-spec "CFFI-SYS Interface Specification"
 
 clean:
-	find . \( -name "*.info" -o -name "*.aux" -o -name "*.cp" -o -name "*.fn" -o -name "*.fns" -o -name "*.ky" -o -name "*.log" -o -name "*.pg" -o -name "*.toc" -o -name "*.tp" -o -name "*.vr" \) -exec rm {} \;
+	find . \( -name "*.info" -o -name "*.aux" -o -name "*.cp" -o -name "*.fn" -o -name "*.fns" -o -name "*.ky" -o -name "*.log" -o -name "*.pg" -o -name "*.toc" -o -name "*.tp" -o -name "*.vr" -o -name "*.dvi" -o -name "*.cps" -o -name "*.vrs" \) -exec rm {} \;
 	rm -rf manual spec
 
 upload-docs:

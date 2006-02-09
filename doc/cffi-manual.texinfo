@@ -160,7 +160,7 @@ Foreign Types
 * defcenum::                    Defines a C enumeration.
 @c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
-* explain-foreign-slot-value::  <unimplemented>
+@c * explain-foreign-slot-value::  <unimplemented>
 * foreign-enum-keyword::        Finds a keyword in an enum type.
 * foreign-enum-value::          Finds a value in an enum type.
 * foreign-slot-names::          Returns a list of slot names in a foreign struct.
