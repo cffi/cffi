@@ -69,10 +69,6 @@ Style notes:
 @c case of @pxref.  So the following implements that requirement for
 @c the "See also" subheadings that permeate this manual, but only in
 @c Info mode.
-@c
-@c Most of them are also dictionary symbols, so I use this also to
-@c print a pretty section name.  Non-dictionary seealsos should not
-@c exist; refer to them inline in the descriptive text.
 @ifinfo
 @macro seealso {name}
 @ref{\name\}.
@@ -743,7 +739,7 @@ performing any download actions.  This is done through
 @code{curl_easy_setopt}:
 
 @example
-CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...);
+CURLcode curl_easy_setopt(CURL *curl, CURLoption option, @dots{});
 @end example
 
 @cindex varargs
@@ -2836,9 +2832,26 @@ CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
 @node Pointers
 @chapter Pointers
 
-@emph{Describe the theory of how foreign variables work---they are
-always pointers, even when accessing integer types or embedded
-structures. You cannot represent a structure by value.}
+All C data in @cffi{} is referenced through pointers.  This includes
+defined C variables that hold immediate values, and integers.
+
+To see why this is, consider the case of the C integer.  It is not
+only an arbitrary representation for an integer, congruent to Lisp's
+fixnums; the C integer has a specific bit pattern in memory defined by
+the C @acronym{ABI}.  Lisp has no such constraint on its fixnums;
+therefore, it only makes sense to think of fixnums as C integers if
+you assume that @cffi{} converts them when necessary, such as when
+storing it in C format for use in a function call, or as the value of
+a C variable.  This, of course, can only be done by defining an area
+of memory@footnote{The definition of @dfn{memory} includes the
+@acronym{CPU} registers.}, represented in the abstract by an address,
+and storing it there.
+
+Due to this compartmentalization, it only makes sense to manipulate
+raw C data in Lisp through pointers to it.  For example, while there
+may be a Lisp representation of a @code{struct} that is converted to C
+at store time, you may only manipulate its raw data through a pointer.
+Speaking abstractly, the C compiler does this also.
 
 @menu
 * Basic Pointer Operations::    
@@ -2866,6 +2879,13 @@ Dictionary
 @node Basic Pointer Operations
 @section Basic Pointer Operations
 
+Manipulating pointers proper can be accomplished through most of the
+other operations defined in the Pointers dictionary, such as
+@code{make-pointer}, @code{pointer-address}, and @code{pointer-eq}.
+When using them, keep in mind that they merely manipulate the Lisp
+representation of pointers, not the values they point to.
+
+
 @node Allocating Foreign Memory
 @section Allocating Foreign Memory
 
@@ -2873,11 +2893,32 @@ Dictionary
 Stack allocation, done with @code{with-foreign-object}, is sometimes
 called ``dynamic'' allocation in Lisp, because memory allocated as
 such has dynamic extent, much as with @code{let} bindings of special
-variables.  Heap allocation is done with @code{foreign-alloc},
-creating objects that exist until freed with @code{foreign-free}.
+variables.
+
+This should not be confused with what C calls ``dynamic'' allocation,
+or that done with @code{malloc} and friends.  This sort of heap
+allocation is done with @code{foreign-alloc}, creating objects that
+exist until freed with @code{foreign-free}.
+
 
 @node Accessing Foreign Memory
 @section Accessing Foreign Memory
+
+When manipulating raw C data, consider that all pointers are pointing
+to an array.  When you only want one C value, such as a single
+@code{struct}, this array only has one such value.  It is worthwhile
+to remember that everything is an array, though, because this is also
+the semantic that C imposes natively.
+
+C values are accessed as the @code{setf}-able places defined by
+@code{mem-aref} and @code{mem-ref}.  Given a pointer and a @cffi{}
+type (@pxref{Foreign Types}), either of these will dereference the
+pointer, translate the C data there back to Lisp, and return the
+result of said translation, performing the reverse operation when
+@code{setf}-ing.  @code{mem-aref} should be used to index into C
+arrays; use @code{mem-ref} when you want to access a logically single
+value, or compute a raw pointer offset first rather than the computed
+C value offsets found by @code{mem-aref}.
 
 
 @c ===================================================================
@@ -3549,6 +3590,11 @@ CFFI> (with-foreign-pointer (string 4 size)
 
 @node Strings
 @chapter Strings
+
+As with many languages, Lisp and C have special support for logical
+arrays of characters, going so far as to give them a special name,
+``strings''.  In that spirit, @cffi{} provides special support for
+translating between Lisp and C strings.
 
 @menu
 Dictionary
