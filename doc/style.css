@@ -9,7 +9,7 @@ h1, h2, h3, h4, h5, h6 {font-family:  Helvetica, sans-serif}
 dfn {font-family: inherit; font-variant: italic; font-weight: bolder }
 kbd {font-family: monospace; text-decoration: underline}
 /*var {font-family: Helvetica, sans-serif; font-variant: slanted}*/
-var {font-variant: italic;}
+var {font-variant: slanted;}
 td  {padding-right: 1em; padding-left: 1em}
 sub {font-size: smaller}
 .node {padding: 0; margin: 0}
