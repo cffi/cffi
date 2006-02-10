@@ -12,9 +12,7 @@ Style notes:
 * The reference section names and "See Also" list are roman, not
   @code.  This is to follow the format of CLHS.
 
-* How it looks in HTML is the priority.  One nice thing to do would be
-  to @r the Lisp comments, but only if the extra html (which confuses
-  colorize) can be stripped, perhaps in colorize.
+* How it looks in HTML is the priority.
 @end ignore
 
 @c ============================= Macros =============================
@@ -616,8 +614,8 @@ load @cffi{}.
 @lisp
 (asdf:oos 'asdf:load-op :cffi)
 
-;;; Nothing special about the "CFFI-USER" package.  We're just
-;;; using it as a substitute for your own CL package.
+;;; @r{Nothing special about the "CFFI-USER" package.  We're just}
+;;; @r{using it as a substitute for your own CL package.}
 (defpackage :cffi-user
   (:use :common-lisp :cffi))
 
@@ -658,12 +656,12 @@ Let's pick this apart into appropriate Lisp code:
 
 @tutorialsource{First CURLcode}
 @lisp
-;;; A CURLcode is the universal error code.  curl/curl.h says
-;;; no return code will ever be removed, and new ones will be
-;;; added to the end.
+;;; @r{A CURLcode is the universal error code.  curl/curl.h says}
+;;; @r{no return code will ever be removed, and new ones will be}
+;;; @r{added to the end.}
 (defctype curl-code :int)
 
-;;; Initialize libcurl with FLAGS.
+;;; @r{Initialize libcurl with FLAGS.}
 (defcfun "curl_global_init" curl-code
   (flags :long))
 @end lisp
@@ -738,8 +736,9 @@ The @code{libcurl} tutorial says we'll want to set many options before
 performing any download actions.  This is done through
 @code{curl_easy_setopt}:
 
+@c That is literally ..., not an ellipsis.
 @example
-CURLcode curl_easy_setopt(CURL *curl, CURLoption option, @dots{});
+CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...);
 @end example
 
 @cindex varargs
@@ -775,7 +774,7 @@ defined by the CURLOPTTYPE_LONG et al constants in curl.h."
        (defcenum ,name
          ,@@(loop for (name type number) in enum-args
               collect (list name (enumerated-value type number))))
-       ',name)))                ;for REPL users' sanity
+       ',name)))                ;@r{for REPL users' sanity}
 
 (define-curl-options curl-option
     (long 0 objectpoint 10000 functionpoint 20000 off-t 30000)
@@ -925,9 +924,9 @@ call @code{curl_easy_setopt}.  However, we can encapsulate some of the
 necessary information with the following.
 
 @lisp
-;;; We will use this typedef later in a more creative way.  For
-;;; now, just consider it a marker that this isn't just any
-;;; pointer.
+;;; @r{We will use this typedef later in a more creative way.  For}
+;;; @r{now, just consider it a marker that this isn't just any}
+;;; @r{pointer.}
 (defctype easy-handle :pointer)
 
 (defmacro curl-easy-setopt (easy-handle enumerated-name
@@ -996,10 +995,10 @@ set-`TYPE-NAME'-`OPTION-NAME', where OPTION-NAME is the NAME from
 the above destructuring."
   (flet ((enumerated-value (type offset)
            (+ (getf type-offsets type) offset))
-         ;;map PROCEDURE, destructuring each of ENUM-ARGS
+         ;;@r{map PROCEDURE, destructuring each of ENUM-ARGS}
          (map-enum-args (procedure)
            (mapcar (lambda (arg) (apply procedure arg)) enum-args))
-         ;;build a name like SET-CURL-OPTION-NOSIGNAL
+         ;;@r{build a name like SET-CURL-OPTION-NOSIGNAL}
          (make-setter-name (option-name)
            (intern (concatenate
                     'string "SET-" (symbol-name type-name)
@@ -1140,7 +1139,7 @@ what we must do:
     (with-foreign-string (url "http://www.cliki.net/CFFI")
       (setf easy-handle (curl-easy-init))
       (set-curl-option-url easy-handle url)
-      #|do more with the easy-handle, like actually get the URL|#)
+      #|@r{do more with the easy-handle, like actually get the URL}|#)
     (when easy-handle
       (curl-easy-cleanup easy-handle))))
 @end lisp
@@ -1284,7 +1283,7 @@ redefining @code{free-easy-handle}.
   "Hashtable of easy handles to C strings serving as error
 writeback buffers.")
 
-;;; An extra byte is very little to pay for peace of mind.
+;;; @r{An extra byte is very little to pay for peace of mind.}
 (defparameter *curl-error-size* 257
   "Minimum char[] size used by cURL to report errors.")
 
@@ -1369,21 +1368,21 @@ The above signature trivially translates into a @cffi{}
 @code{defcallback} form, as follows.
 
 @lisp
-;;; Alias in case size_t changes.
+;;; @r{Alias in case size_t changes.}
 (defctype size :unsigned-int)
 
-;;; To be set as the CURLOPT_WRITEFUNCTION of every easy handle.
+;;; @r{To be set as the CURLOPT_WRITEFUNCTION of every easy handle.}
 (defcallback easy-write size ((ptr :pointer) (size size)
                               (nmemb size) (stream :pointer))
   (let ((data-size (* size nmemb)))
     (handler-case
-      ;; We use the dynamically-bound *easy-write-procedure* to
-      ;; call a closure with useful lexical context.
+      ;; @r{We use the dynamically-bound *easy-write-procedure* to}
+      ;; @r{call a closure with useful lexical context.}
       (progn (funcall (symbol-value '*easy-write-procedure*)
                       (foreign-string-to-lisp ptr data-size nil))
-             data-size)         ;indicates success
-      ;; The WRITEFUNCTION should return something other than the
-      ;; #bytes available to signal an error.
+             data-size)         ;@r{indicates success}
+      ;; @r{The WRITEFUNCTION should return something other than the}
+      ;; @r{#bytes available to signal an error.}
       (error () (if (zerop data-size) 1 0)))))
 @end lisp
 
@@ -1428,7 +1427,7 @@ can describe the new option by modifying and reevaluating
   (:nosignal long 99)
   (:errorbuffer objectpoint 10)
   (:url objectpoint 2)
-  (:writefunction functionpoint 11)) ;new item here
+  (:writefunction functionpoint 11)) ;@r{new item here}
 @end lisp
 
 Finally, we can use the defined callback and the new
@@ -1782,7 +1781,7 @@ and the name of the type to be wrapped.  Here is how a simpler version
 of the built-in @code{:boolean} type could be defined:
 
 @lisp
-;;; Define MY-BOOLEAN as an alias for the built-in type :INT.
+;;; @r{Define MY-BOOLEAN as an alias for the built-in type :INT.}
 (defctype my-boolean :int)
 @end lisp
 
@@ -1806,7 +1805,7 @@ tell @cffi{} how to automatically convert Lisp values to
 @code{translate-to-foreign} on the @code{my-boolean} type:
 
 @lisp
-;;; Define a method that converts Lisp booleans to C booleans.
+;;; @r{Define a method that converts Lisp booleans to C booleans.}
 (defmethod translate-to-foreign (value (type (eql 'my-boolean)))
   (if value 1 0))
 @end lisp
@@ -1818,7 +1817,7 @@ functions that return a @code{my-boolean}, specialize the
 @code{translate-from-foreign} generic function:
 
 @lisp
-;;; Define a method that converts C booleans to Lisp booleans.
+;;; @r{Define a method that converts C booleans to Lisp booleans.}
 (defmethod translate-from-foreign (value (type (eql 'my-boolean)))
   (not (zerop value)))
 @end lisp
@@ -1946,28 +1945,28 @@ of objects.
   (y :int))
 
 CFFI> (with-foreign-object (ptr 'point)
-        ;; Initialize the slots
+        ;; @r{Initialize the slots}
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; Return a list with the coordinates
+        ;; @r{Return a list with the coordinates}
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
 @result{} (42 42)
 @end lisp
 
 @lisp
-;; Using the :size and :offset options to define a partial structure.
-;; (this is useful when you are interested in only a few slots
-;; of a big foreign structure)
+;; @r{Using the :size and :offset options to define a partial structure.}
+;; @r{(this is useful when you are interested in only a few slots}
+;; @r{of a big foreign structure)}
 
 (defcstruct (foo :size 32)
   "Some struct with 32 bytes."
-                        ; <16 bytes we don't care about>
-  (x :int :offset 16)   ; an int at offset 16
-  (y :int)              ; another int at offset 16+sizeof(int)
-                        ; <a couple more bytes we don't care about>
-  (z :char :offset 24)  ; a char at offset 24
-                        ; <7 more bytes ignored (since size is 32)>
+                        ; @r{<16 bytes we don't care about>}
+  (x :int :offset 16)   ; @r{an int at offset 16}
+  (y :int)              ; @r{another int at offset 16+sizeof(int)}
+                        ; @r{<a couple more bytes we don't care about>}
+  (z :char :offset 24)  ; @r{a char at offset 24}
+                        ; @r{<7 more bytes ignored (since size is 32)>}
   )
 
 CFFI> (foreign-type-size 'foo)
@@ -2194,7 +2193,7 @@ CFFI> (canonicalize-foreign-type :boolean)
 CFFI> (canonicalize-foreign-type '(:boolean :long))
 @result{} :LONG
 CFFI> (canonicalize-foreign-type '(:boolean :float))
-;; @error{} signalled by ECASE.
+;; @r{@error{} signalled by ECASE.}
 @end lisp
 
 This next example is hypothetical as there is no @code{:array} type
@@ -2472,7 +2471,7 @@ For aggregate slots, this is the same value returned by
 CFFI> (with-foreign-object (ptr 'point)
         (foreign-slot-pointer ptr 'point 'x))
 @result{} #<FOREIGN-ADDRESS #xBFFF6E60>
-;; Note: the exact pointer representation varies from lisp to lisp.
+;; @r{Note: the exact pointer representation varies from lisp to lisp.}
 @end lisp
 
 @subheading See Also
@@ -2528,10 +2527,10 @@ There are compiler macros for @code{foreign-slot-value} and its
   (y :int))
 
 CFFI> (with-foreign-object (ptr 'point)
-        ;; Initialize the slots
+        ;; @r{Initialize the slots}
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; Return a list with the coordinates
+        ;; @r{Return a list with the coordinates}
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
 @result{} (42 42)
@@ -3002,10 +3001,10 @@ exclusive.
 @subheading Examples
 @lisp
 CFFI> (foreign-alloc :char)
-@result{} #<A Mac Pointer #x102D80>     ; A pointer to 1 byte of memory.
+@result{} #<A Mac Pointer #x102D80>     ; @r{A pointer to 1 byte of memory.}
 
 CFFI> (foreign-alloc :char :count 20)
-@result{} #<A Mac Pointer #x1024A0>     ; A pointer to 20 bytes of memory.
+@result{} #<A Mac Pointer #x1024A0>     ; @r{A pointer to 20 bytes of memory.}
 
 CFFI> (foreign-alloc :int :initial-element 12)
 @result{} #<A Mac Pointer #x1028B0>
@@ -3213,7 +3212,7 @@ automatically calculate the offset from an @var{index}.
 @lisp
 (mem-aref ptr type n)
 
-;; is identical to:
+;; @r{is identical to:}
 
 (mem-ref ptr type (* n (foreign-type-size type)))
 @end lisp
@@ -3912,7 +3911,7 @@ Trying to modify a read-only foreign variable:
 CFFI> (defcvar ("errno" +error-number+) :int :read-only t)
 @result{} +ERROR-NUMBER+
 CFFI> (setf +error-number+ 12)
-;; @error{} Trying to modify read-only foreign var: +ERROR-NUMBER+.
+;; @r{@error{} Trying to modify read-only foreign var: +ERROR-NUMBER+.}
 @end lisp
 
 @emph{Note that accessing @code{errno} this way won't work with every
@@ -4688,12 +4687,12 @@ This Lisp function can be accessed by the @code{callback} macro or the
           (t 0))))
 
 CFFI> (with-foreign-object (array :int 10)
-        ;; Initialize array.
+        ;; @r{Initialize array.}
         (loop for i from 0 and n in '(7 2 10 4 3 5 1 6 9 8)
               do (setf (mem-aref array :int i) n))
-        ;; Sort it.
+        ;; @r{Sort it.}
         (qsort array 10 (foreign-type-size :int) (callback <))
-        ;; Return it as a list.
+        ;; @r{Return it as a list.}
         (loop for i from 0 below 10
               collect (mem-aref array :int i)))
 @result{} (1 2 3 4 5 6 7 8 9 10)

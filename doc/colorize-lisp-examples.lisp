@@ -967,43 +967,70 @@ output to *verbose-out*.  Returns the shell's exit code."
 (defconstant +indent+ 2
   "Indentation used in the examples.")
 
+(defun texinfo->raw-lisp (code)
+  "Answer CODE with spurious Texinfo output removed.  For use in
+preprocessing output in a @lisp block before passing to colorize."
+  (decode-from-tt
+   (with-output-to-string (output)
+     (do* ((last-position 0)
+           (next-position
+            #0=(search #1="<span class=\"roman\">" code
+                       :start2 last-position :test #'char-equal)
+            #0#))
+          ((eq nil next-position)
+           (write-string code output :start last-position))
+       (write-string code output :start last-position :end next-position)
+       (let ((end (search #2="</span>" code
+                          :start2 (+ next-position (length #1#))
+                          :test #'char-equal)))
+         (assert (integerp end) ()
+                 "Missing ~A tag in HTML for @lisp block~%~
+                  HTML contents of block:~%~A" #2# code)
+         (write-string code output
+                       :start (+ next-position (length #1#))
+                       :end end)
+         (setf last-position (+ end (length #2#))))))))
+
 (defun process-file (from to)
   (with-open-file (output to :direction :output :if-exists :error)
     (with-open-file (input from :direction :input)
-      (let ((inside-pre nil)
-            (piece-of-code ""))
-        (with-each-stream-line (line input)
-          (if inside-pre
-              (if (string-starts-with "</pre>" line)
-                  (progn
-                    ;(format t "-->~A<--~%" (decode-from-tt piece-of-code))
-                    (let ((colored (colorize:html-colorization
+      (let ((line-processor nil)
+            (piece-of-code '()))
+        (labels
+            ((process-line-inside-pre (line)
+               (cond ((string-starts-with "</pre>" line)
+                       (with-input-from-string
+                           (stream (colorize:html-colorization
                                     :common-lisp
-                                    (decode-from-tt piece-of-code))))
-                      (with-input-from-string (stream colored)
-                        (with-each-stream-line (cline stream)
-                          (format output "  ~A~%" cline))))
-                    (write-line line output)
-                    (setq piece-of-code ""
-                          inside-pre nil))
-                  (let ((to-append (subseq line +indent+)))
-                    (string-append piece-of-code
-                                   (if (string-equal "" to-append)
-                                       " "
-                                       to-append)
-                                   (string #\Newline))))
-              (if (or (string-starts-with "<pre class=\"lisp\">" line)
-                      (string-starts-with "<pre class=\"smalllisp\">" line))
-                  ;; the laziness to refactor...
-                  (let ((len (if (string-starts-with "<pre class=\"lisp\">"line)
-                                 18
-                                 23)))
-                    (setq inside-pre t)
-                    (write-string "<pre class=\"lisp\">" output)
-                    (string-append piece-of-code (subseq line (+ len +indent+))
-                                   (string #\Newline)))
-                  (write-line line output))))))))
-        
+                                    (texinfo->raw-lisp
+                                     (apply #'concatenate 'string
+                                            (nreverse piece-of-code)))))
+                         (with-each-stream-line (cline stream)
+                           (format output "  ~A~%" cline)))
+                       (write-line line output)
+                       (setq piece-of-code '()
+                             line-processor #'process-regular-line))
+                     (t (let ((to-append (subseq line +indent+)))
+                          (push (if (string= "" to-append)
+                                  " "
+                                  to-append) piece-of-code)
+                          (push (string #\Newline) piece-of-code)))))
+             (process-regular-line (line)
+               (let ((len (some (lambda (test-string)
+                                  (when (string-starts-with test-string line)
+                                    (length test-string)))
+                               '("<pre class=\"lisp\">"
+                                 "<pre class=\"smalllisp\">"))))
+                 (cond (len
+                         (setq line-processor #'process-line-inside-pre)
+                         (write-string "<pre class=\"lisp\">" output)
+                         (push (subseq line (+ len +indent+)) piece-of-code)
+                         (push (string #\Newline) piece-of-code))
+                       (t (write-line line output))))))
+          (setf line-processor #'process-regular-line)
+          (with-each-stream-line (line input)
+            (funcall line-processor line)))))))
+
 (defun process-dir (dir)
   (dolist (html-file (directory dir))
     (let* ((name (namestring html-file))
