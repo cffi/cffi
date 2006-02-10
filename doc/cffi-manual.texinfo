@@ -1920,7 +1920,7 @@ Use this option to override the size (in bytes) of the struct.
 The type specifier for the slot.
 
 @item count
-Used to declare an array of size @emph{count} inside the
+Used to declare an array of size @var{count} inside the
 structure.
 
 @item offset
@@ -1949,7 +1949,7 @@ CFFI> (with-foreign-object (ptr 'point)
         ;; Initialize the slots
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; @r{Return a list with the coordinates}
+        ;; Return a list with the coordinates
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
 @result{} (42 42)
@@ -2006,7 +2006,7 @@ A symbol naming the slot.
 The type specifier for the slot.
 
 @item count
-Used to declare an array of size @emph{count} inside the
+Used to declare an array of size @var{count} inside the
 structure.
 @end table
 
@@ -2051,14 +2051,14 @@ A documentation string, currently ignored.
 A boolean.  If true (the default), the type will be subject to type
 translation.  This may be false to avoid extra generic function call
 overhead when it is known that no type translation is needed, perhaps
-because @emph{base-type} is a built-in type.
+because @var{base-type} is a built-in type.
 @end table
 
 @subheading Description
 The @code{defctype} macro provides a mechanism similar to C's
 @code{typedef} to define new types.
 
-The new type inherits @emph{base-type}'s translators.
+The new type inherits @var{base-type}'s translators.
 
 @subheading Examples
 @lisp
@@ -2106,7 +2106,7 @@ An index value for a keyword.
 The @code{defcenum} macro is used to define foreign types that map
 keyword symbols to integer values, similar to the C @code{enum} type.
 
-If @emph{value} is omitted its value will either be 0, if it's the
+If @var{value} is omitted its value will either be 0, if it's the
 first entry, or it it will continue the progression from the last
 specified value.
 
@@ -2163,9 +2163,9 @@ One or more forms that provide a definition of the new foreign type.
 
 @subheading Description
 The macro @code{define-foreign-type} defines a new parameterized type
-called @emph{type-name}. Given the arguments specified in
-@emph{lambda-list}, executing @emph{body} should return a type
-specifier which will determine the behaviour of @emph{type-name}.  The
+called @var{type-name}. Given the arguments specified in
+@var{lambda-list}, executing @var{body} should return a type
+specifier which will determine the behaviour of @var{type-name}.  The
 behaviour of parameterized types can be further customized by
 specializing @code{translate-to-foreign},
 @code{translate-from-foreign}, and @code{free-translated-object}.
@@ -2268,8 +2268,8 @@ An @code{enum} type.
 An integer.
 
 @item errorp
-If true (the default), signal an error if @emph{value} is not defined
-in @emph{type}.  If false, @code{foreign-enum-keyword} returns
+If true (the default), signal an error if @var{value} is not defined
+in @var{type}.  If false, @code{foreign-enum-keyword} returns
 @code{nil}.
 
 @item keyword
@@ -2278,10 +2278,10 @@ A keyword symbol.
 
 @subheading Description
 The function @code{foreign-enum-keyword} returns the keyword symbol
-that corresponds to @emph{value} in @emph{type}.
+that corresponds to @var{value} in @var{type}.
 
-An error is signaled if @emph{type} doesn't contain such @emph{value}
-and @emph{errorp} is true.
+An error is signaled if @var{type} doesn't contain such @var{value}
+and @var{errorp} is true.
 
 @subheading Examples
 @lisp
@@ -2316,8 +2316,8 @@ An @code{enum} type.
 A keyword symbol.
 
 @item errorp
-If true (the default), signal an error if @emph{keyword} is not
-defined in @emph{type}.  If false, @code{foreign-enum-value} returns
+If true (the default), signal an error if @var{keyword} is not
+defined in @var{type}.  If false, @code{foreign-enum-value} returns
 @code{nil}.
 
 @item value
@@ -2325,11 +2325,11 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{foreign-enum-keyword} returns the @emph{value} that
-corresponds to @emph{keyword} in @emph{type}.
+The function @code{foreign-enum-keyword} returns the @var{value} that
+corresponds to @var{keyword} in @var{type}.
 
-An error is signaled if @emph{type} doesn't contain such
-@emph{keyword}, and @emph{errorp} is true.
+An error is signaled if @var{type} doesn't contain such
+@var{keyword}, and @var{errorp} is true.
 
 @subheading Examples
 @lisp
@@ -2407,7 +2407,7 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{foreign-slot-offset} returns the @emph{offset} in
+The function @code{foreign-slot-offset} returns the @var{offset} in
 bytes of a slot in a foreign struct type.
 
 @subheading Examples
@@ -2441,7 +2441,7 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 
 @table @var
 @item ptr
-A pointer to structure.
+A pointer to a structure.
 
 @item type
 A foreign structure type.
@@ -2450,14 +2450,14 @@ A foreign structure type.
 One or more slot names.
 
 @item pointer
-A pointer to the slot specified in @emph{slot-names}.
+A pointer to the slot specified in @var{slot-names}.
 @end table
 
 @subheading Description
-Returns a pointer to a slot referred by @emph{slot-names} in a foreign
-object of type @emph{type} at @emph{ptr}. The returned pointer points
+Returns a pointer to a slot referred by @var{slot-names} in a foreign
+object of type @var{type} at @var{ptr}. The returned pointer points
 inside the structure. Both the pointer and the memory it points to
-have the same extent as @emph{ptr}.
+have the same extent as @var{ptr}.
 
 For aggregate slots, this is the same value returned by
 @code{foreign-slot-value}.
@@ -2494,7 +2494,7 @@ CFFI> (with-foreign-object (ptr 'point)
 
 @table @var
 @item ptr
-A pointer to structure.
+A pointer to a structure.
 
 @item type
 A foreign structure type.
@@ -2503,7 +2503,7 @@ A foreign structure type.
 A symbol naming a slot in the structure type.
 
 @item object
-The object contained in the slot specified by @emph{slot-name}.
+The object contained in the slot specified by @var{slot-name}.
 @end table
 
 @subheading Description
@@ -2514,11 +2514,11 @@ expressed as @code{ptr->slot}.
 For aggregate slots, a pointer inside the structure to the beginning
 of the slot's data is returned. In C, this would be expressed as
 @code{&ptr->slot}. This pointer and the memory it points to have the
-same extent as @emph{ptr}.
+same extent as @var{ptr}.
 
 There are compiler macros for @code{foreign-slot-value} and its
 @code{setf} expansion that open code the memory access when 
-@emph{type} and @emph{slot-names} are constant at compile-time.
+@var{type} and @var{slot-names} are constant at compile-time.
 
 @subheading Examples
 @lisp
@@ -2566,7 +2566,7 @@ An integer.
 
 @subheading Description
 The function @code{foreign-type-alignment} returns the
-@emph{alignment} of @emph{type} in bytes.
+@var{alignment} of @var{type} in bytes.
 
 @subheading Examples
 @lisp
@@ -2610,8 +2610,8 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{foreign-type-size} return the @emph{size} of
-@emph{type} in bytes.
+The function @code{foreign-type-size} return the @var{size} of
+@var{type} in bytes.
 
 @subheading Examples
 @lisp
@@ -2658,7 +2658,7 @@ automatic deallocation of foreign objects as they are passed to C
 functions.
 
 Any methods defined on this generic function must EQL-specialize the
-@emph{type-name} parameter on a symbol defined as a foreign type by
+@var{type-name} parameter on a symbol defined as a foreign type by
 the @code{defctype} macro.
 
 @subheading See Also
@@ -2792,8 +2792,8 @@ A list of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-slots} macro creates local symbol macros for
-each var in @emph{vars} to reference foreign slots in @emph{ptr} of
-@emph{type}. It is similar to Common Lisp's @code{with-slots} macro.
+each var in @var{vars} to reference foreign slots in @var{ptr} of
+@var{type}. It is similar to Common Lisp's @code{with-slots} macro.
 
 @subheading Examples
 @lisp
@@ -2984,19 +2984,19 @@ A foreign pointer to the newly allocated memory.
 
 @subheading Description
 The @code{foreign-alloc} function allocates enough memory to hold
-@emph{count} objects of type @emph{type} and returns a
-@emph{pointer}. This memory must be explicitly freed using
+@var{count} objects of type @var{type} and returns a
+@var{pointer}. This memory must be explicitly freed using
 @code{foreign-free} once it is no longer needed.
 
-If @emph{initial-element} is supplied, it is used to initialize the
-@emph{count} objects the newly allocated memory holds.
+If @var{initial-element} is supplied, it is used to initialize the
+@var{count} objects the newly allocated memory holds.
 
-If an @emph{initial-contents} sequence is supplied, it must have a
-length less than or equal to @emph{count} and each of its elements
+If an @var{initial-contents} sequence is supplied, it must have a
+length less than or equal to @var{count} and each of its elements
 will be used to initialize the contents of the newly allocated
 memory.
 
-@emph{initial-element} and @emph{initial-contents} are mutually
+@var{initial-element} and @var{initial-contents} are mutually
 exclusive.
 
 @subheading Examples
@@ -3061,16 +3061,16 @@ A foreign pointer, or @code{nil}.
 @subheading Description
 The function @code{foreign-symbol-pointer} will return a foreign
 pointer corresponding to the foreign symbol denoted by the string
-@emph{foreign-name}. The @emph{kind} argument specifies whether
-@emph{foreign-name} is a function or a variable and should be
+@var{foreign-name}. The @var{kind} argument specifies whether
+@var{foreign-name} is a function or a variable and should be
 respectively @code{:code} or @code{:data}. If a foreign symbol named
-@emph{foreign-name} doesn't exist, @code{nil} is returned.
+@var{foreign-name} doesn't exist, @code{nil} is returned.
 
-ABI name manglings will be performed on @emph{foreign-name} by
+ABI name manglings will be performed on @var{foreign-name} by
 @code{foreign-symbol-pointer} if necessary. (eg: adding a leading
 underscore on darwin/ppc)
 
-@strong{Warning:} the consequences of misspecifying the @emph{kind}
+@strong{Warning:} the consequences of misspecifying the @var{kind}
 argument are, unfortunately, unspecified. Some implementations will
 silently ignore this, while others might return erroneous values.
 
@@ -3112,8 +3112,8 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{inc-pointer} will return a @emph{new-pointer} pointing
-@emph{offset} bytes past @emph{ptr}.
+The function @code{inc-pointer} will return a @var{new-pointer} pointing
+@var{offset} bytes past @var{ptr}.
 
 @subheading Examples
 
@@ -3153,7 +3153,7 @@ A foreign pointer.
 
 @subheading Description
 The function @code{make-pointer} will return a foreign pointer
-pointing to @emph{address}.
+pointing to @var{address}.
 
 @subheading Examples
 
@@ -3203,12 +3203,12 @@ A foreign type.
 An integer.
 
 @item new-value
-A Lisp value compatible with @emph{type}.
+A Lisp value compatible with @var{type}.
 @end table
 
 @subheading Description
 The @code{mem-aref} function is similar to @code{mem-ref} but will
-automatically calculate the offset from an @emph{index}.
+automatically calculate the offset from an @var{index}.
 
 @lisp
 (mem-aref ptr type n)
@@ -3259,7 +3259,7 @@ A foreign type.
 An integer (in byte units).
 
 @item object
-The value @emph{ptr} points to.
+The value @var{ptr} points to.
 @end table
 
 @subheading Description
@@ -3336,7 +3336,7 @@ A foreign pointer that may be a null pointer.
 @end table
 
 @subheading Description
-The function @code{null-pointer-p} returns true if @emph{ptr} is a null
+The function @code{null-pointer-p} returns true if @var{ptr} is a null
 pointer and false otherwise.
 
 @subheading Examples
@@ -3381,7 +3381,7 @@ An object that may be a foreign pointer.
 @end table
 
 @subheading Description
-The function @code{pointerp} returns true if @emph{ptr} is a foreign
+The function @code{pointerp} returns true if @var{ptr} is a foreign
 pointer and false otherwise.
 
 @subheading Implementation-specific Notes
@@ -3423,8 +3423,8 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{pointer-address} will return the @emph{address} of
-a foreign pointer @emph{ptr}.
+The function @code{pointer-address} will return the @var{address} of
+a foreign pointer @var{ptr}.
 
 @subheading Examples
 
@@ -3465,8 +3465,8 @@ A foreign pointer.
 @end table
 
 @subheading Description
-The function @code{pointer-eq} returns true if @emph{ptr1} and
-@emph{ptr2} point to the same memory address and false otherwise.
+The function @code{pointer-eq} returns true if @var{ptr1} and
+@var{ptr2} point to the same memory address and false otherwise.
 
 @subheading Implementation-specific Notes
 The representation of foreign pointers varies across the various Lisp
@@ -3519,8 +3519,8 @@ An integer.
 
 @subheading Description
 The macros @code{with-foreign-object} and @code{with-foreign-objects}
-bind @emph{var} to a pointer to @emph{count} newly allocated objects
-of type @emph{type} during @emph{body}. The buffer has dynamic extent
+bind @var{var} to a pointer to @var{count} newly allocated objects
+of type @var{type} during @var{body}. The buffer has dynamic extent
 and may be stack allocated if supported by the host Lisp.
 
 @subheading Examples
@@ -3561,13 +3561,13 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-pointer} macro, binds @emph{var} to @emph{size}
-bytes of foreign memory during @emph{body}. The pointer in @emph{var}
-is invalid beyond the dynamic extend of @emph{body} and may be
+The @code{with-foreign-pointer} macro, binds @var{var} to @var{size}
+bytes of foreign memory during @var{body}. The pointer in @var{var}
+is invalid beyond the dynamic extend of @var{body} and may be
 stack-allocated if supported by the implementation.
 
-If @emph{size-var} is supplied, it will be bound to @emph{size} during
-@emph{body}.
+If @var{size-var} is supplied, it will be bound to @var{size} during
+@var{body}.
 
 @subheading Examples
 
@@ -3623,12 +3623,12 @@ Dictionary
 A Lisp string.
 
 @item pointer
-A pointer to the newly allocated foreign string containg @emph{string}.
+A pointer to the newly allocated foreign string containg @var{string}.
 @end table
 
 @subheading Description
 The @code{foreign-string-alloc} function allocates a foreign string
-containing a Lisp @emph{string}.
+containing a Lisp @var{string}.
 
 This string must be freed with @code{foreign-string-free}.
 
@@ -3659,7 +3659,7 @@ CFFI> (foreign-funcall "strlen" :pointer str :int)
 
 @table @var
 @item pointer
-A pointer to string allocated by @code{foreign-string-alloc}.
+A pointer to a string allocated by @code{foreign-string-alloc}.
 @end table
 
 @subheading Description
@@ -3691,19 +3691,19 @@ A pointer.
 The maximum string size. @code{most-positive-fixnum}, by default.
 
 @item null-terminated-p
-Specifies if the string @emph{ptr} points to is null terminated. True,
+Specifies if the string @var{ptr} points to is null terminated. True,
 by default.
 @end table
 
 @subheading Description
-The @code{foreign-string-to-lisp} function copies at most @emph{size}
-characters from @emph{ptr} into a Lisp string.
+The @code{foreign-string-to-lisp} function copies at most @var{size}
+characters from @var{ptr} into a Lisp string.
 
-When @emph{null-terminated-p} is true (the default), characters are
-copied until @emph{size} is reached or a @code{NULL} character is
+When @var{null-terminated-p} is true (the default), characters are
+copied until @var{size} is reached or a @code{NULL} character is
 found.
 
-If @emph{ptr} is a null pointer, returns nil.
+If @var{ptr} is a null pointer, returns nil.
 
 Note that the @code{:string} type will automatically convert between
 Lisp strings and foreign strings.
@@ -3744,7 +3744,7 @@ An integer.
 
 @subheading Description
 The @code{lisp-string-to-foreign} function copies at most
-@emph{size}-1 characters from a Lisp @emph{string} to @emph{ptr}. The
+@var{size}-1 characters from a Lisp @var{string} to @var{ptr}. The
 foreign string will be null-terminated.
 
 @subheading Examples
@@ -3783,8 +3783,8 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-string} macro will bind @emph{var} to a newly
-allocated foreign string containing @emph{lisp-string}.
+The @code{with-foreign-string} macro will bind @var{var} to a newly
+allocated foreign string containing @var{lisp-string}.
 
 @subheading Examples
 
@@ -3822,8 +3822,8 @@ List of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-pointer-as-string} macro is similar to
-@code{with-foreign-pointer} except that @emph{var}, as a Lisp string, is
-used as the returned value of an implicit @code{progn} around @emph{body}.
+@code{with-foreign-pointer} except that @var{var}, as a Lisp string, is
+used as the returned value of an implicit @code{progn} around @var{body}.
 
 @subheading Examples
 
@@ -3881,7 +3881,7 @@ A boolean.
 @subheading Description
 The @code{defcvar} macro 
 
-When one of @emph{lisp-name} or @emph{foreign-name} is omitted, the
+When one of @var{lisp-name} or @var{foreign-name} is omitted, the
 other is automatically derived using the following rules:
 
 @itemize
@@ -3941,8 +3941,8 @@ A foreign pointer.
 @end table
 
 @subheading Description
-The function @code{get-var-pointer} will return a @emph{pointer} to the
-foreign global variable @emph{symbol} previously defined with
+The function @code{get-var-pointer} will return a @var{pointer} to the
+foreign global variable @var{symbol} previously defined with
 @code{defcvar}.
 
 @subheading Examples
@@ -4017,7 +4017,7 @@ A foreign type.
 The @code{defcfun} macro provides a declarative interface for defining
 Lisp functions that call foreign functions.
 
-When one of @emph{lisp-name} or @emph{foreign-name} is omitted, the
+When one of @var{lisp-name} or @var{foreign-name} is omitted, the
 other is automatically derived using the following rules:
 
 @itemize
@@ -4085,7 +4085,7 @@ Either a string or a pointer.
 A foreign type.
 
 @item arg
-An argument of type @emph{arg-type}.
+An argument of type @var{arg-type}.
 
 @item return-type
 A foreign type, @code{:void} by default.
@@ -4307,42 +4307,42 @@ A library designator.
 
 @subheading Description
 
-Creates a new library designator called @emph{name}.  The
-@emph{load-clause}s describe how to load that designator when passed to
+Creates a new library designator called @var{name}.  The
+@var{load-clause}s describe how to load that designator when passed to
 @code{load-foreign-library} or @code{use-foreign-library}.
 
-When trying to load the library @emph{name}, the relevant function
-searches the @emph{load-clause}s in order for the first one where
-@emph{feature} evaluates to true.  That happens for any of the
+When trying to load the library @var{name}, the relevant function
+searches the @var{load-clause}s in order for the first one where
+@var{feature} evaluates to true.  That happens for any of the
 following situations:@footnote{This is described in
 @code{cffi-feature-p} in @file{libraries.lisp}.}
 
 @enumerate 1
 @item
-If @emph{feature} is a symbol (idiomatically a keyword), a symbol with
+If @var{feature} is a symbol (idiomatically a keyword), a symbol with
 the same name, but interned into the @code{cffi-features} package, is
 present in @code{common-lisp:*features*}.
 
 @item
-If @emph{feature} is a list, depending on @code{(first @emph{feature})},
+If @var{feature} is a list, depending on @code{(first @var{feature})},
 a keyword:
 
 @table @code
 @item :and
-All of the feature expressions in @code{(rest @emph{feature})} are
+All of the feature expressions in @code{(rest @var{feature})} are
 true.
 
 @item :or
-At least one of the feature expressions in @code{(rest @emph{feature})}
+At least one of the feature expressions in @code{(rest @var{feature})}
 is true.
 
 @item :not
-The feature expression @code{(second @emph{feature})} is not true.
+The feature expression @code{(second @var{feature})} is not true.
 @end table
 @end enumerate
 
-Upon finding the first true @emph{feature}, the library loader then
-loads each @emph{library}.  The meaning of ``library designator'' is
+Upon finding the first true @var{feature}, the library loader then
+loads each @var{library}.  The meaning of ``library designator'' is
 described in @ref{load-foreign-library}.
 
 
@@ -4458,7 +4458,7 @@ A library designator.
 
 @subheading Description
 
-Load the library indicated by @emph{library}.  A @dfn{library
+Load the library indicated by @var{library}.  A @dfn{library
 designator} is defined as follows:
 
 @enumerate
@@ -4474,7 +4474,7 @@ directories in @code{*foreign-library-directories*} with
 implementation's loader.
 
 @item
-If a list, the meaning depends on @code{(first @emph{library})}:
+If a list, the meaning depends on @code{(first @var{library})}:
 
 @table @code
 @item :framework
@@ -4605,8 +4605,6 @@ Dictionary
 @subheading Syntax
 @Macro{callback symbol => pointer}
 
-(setf (@strong{callback} @emph{symbol) new-value})
-
 @subheading Arguments and Values
 
 @table @var
@@ -4621,7 +4619,7 @@ A pointer.
 @subheading Description
 The @code{callback} macro is analogous to the standard CL special
 operator @code{function} and will return a pointer to the callback
-denoted by the symbol @emph{name}.
+denoted by the symbol @var{name}.
 
 @subheading Examples
 
@@ -4726,7 +4724,7 @@ A pointer.
 
 @subheading Description
 This is the functional version of the @code{callback} macro. It
-returns a pointer to the callback named by @emph{symbol} suitable, for
+returns a pointer to the callback named by @var{symbol} suitable, for
 example, to pass as arguments to foreign functions.
 
 @subheading Examples
