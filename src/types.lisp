@@ -709,7 +709,7 @@ obtained using define-foreign-type."
 
 (define-foreign-type :boolean (&optional (base-type :int))
   "Boolean type. Maps to an :int by default. Only accepts integer types."
-  (ecase base-type
+  (ecase (canonicalize-foreign-type base-type)
     ((:char
       :unsigned-char
       :int
