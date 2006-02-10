@@ -2528,10 +2528,10 @@ There are compiler macros for @code{foreign-slot-value} and its
   (y :int))
 
 CFFI> (with-foreign-object (ptr 'point)
-        ;; @r{Initialize the slots}
+        ;; Initialize the slots
         (setf (foreign-slot-value ptr 'point 'x) 42
               (foreign-slot-value ptr 'point 'y) 42)
-        ;; @r{Return a list with the coordinates}
+        ;; Return a list with the coordinates
         (with-foreign-slots ((x y) ptr point)
           (list x y)))
 @result{} (42 42)
