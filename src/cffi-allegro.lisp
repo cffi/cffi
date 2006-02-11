@@ -69,6 +69,7 @@
           #+mswindows  cffi-features:windows
           #+powerpc    cffi-features:ppc32
           #+x86        cffi-features:x86
+          #+x86-64     cffi-features:x86-64
           )))
 
 ;;;# Basic Pointer Operations
