@@ -58,6 +58,8 @@ char *my_strdup(const char *str)
  * Foreign Globals
  */
 
+DLLEXPORT char *         dll_version        = "060209";
+
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;
 DLLEXPORT unsigned char  var_unsigned_char  = 255;
