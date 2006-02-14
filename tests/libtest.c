@@ -58,7 +58,7 @@ char *my_strdup(const char *str)
  * Foreign Globals
  */
 
-DLLEXPORT char *         dll_version        = "060209";
+DLLEXPORT char *         dll_version        = "20060209";
 
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;
@@ -427,6 +427,227 @@ DLLEXPORT
 void noop()
 {
     return;
+}
+
+/*
+ * DEFCFUN.BFF.1
+ *
+ * (let ((rettype (find-type :long))
+ *       (arg-types (n-random-types-no-ll 127)))
+ *   (c-function rettype arg-types)
+ *   (gen-function-test rettype arg-types))
+ */
+
+DLLEXPORT long sum_127_no_ll
+  (long a1, unsigned long a2, short a3, unsigned short a4, float a5,
+   double a6, unsigned long a7, float a8, unsigned char a9, unsigned
+   short a10, short a11, unsigned long a12, double a13, long a14,
+   unsigned int a15, void* a16, unsigned int a17, unsigned short a18,
+   long a19, float a20, void* a21, float a22, int a23, int a24, unsigned
+   short a25, long a26, long a27, double a28, unsigned char a29, unsigned
+   int a30, unsigned int a31, int a32, unsigned short a33, unsigned int
+   a34, void* a35, double a36, double a37, long a38, short a39, unsigned
+   short a40, long a41, char a42, long a43, unsigned short a44, void*
+   a45, int a46, unsigned int a47, double a48, unsigned char a49,
+   unsigned char a50, float a51, int a52, unsigned short a53, double a54,
+   short a55, unsigned char a56, unsigned long a57, float a58, float a59,
+   float a60, void* a61, void* a62, unsigned int a63, unsigned long a64,
+   char a65, short a66, unsigned short a67, unsigned long a68, void* a69,
+   float a70, double a71, long a72, unsigned long a73, short a74,
+   unsigned int a75, unsigned short a76, int a77, unsigned short a78,
+   char a79, double a80, short a81, unsigned char a82, float a83, char
+   a84, int a85, double a86, unsigned char a87, int a88, unsigned long
+   a89, double a90, short a91, short a92, unsigned int a93, unsigned char
+   a94, float a95, long a96, float a97, long a98, long a99, int a100, int
+   a101, unsigned int a102, char a103, char a104, unsigned short a105,
+   unsigned int a106, unsigned short a107, unsigned short a108, int a109,
+   long a110, char a111, double a112, unsigned int a113, char a114, short
+   a115, unsigned long a116, unsigned int a117, short a118, unsigned char
+   a119, float a120, void* a121, double a122, int a123, long a124, char
+   a125, unsigned short a126, float a127)
+{
+    return (long) a1 + a2 + a3 + a4 + ((int) a5) + ((int) a6) + a7 +
+        ((int) a8) + a9 + a10 + a11 + a12 + ((int) a13) + a14 + a15 +
+        ((unsigned int) a16) + a17 + a18 + a19 + ((int) a20) +
+        ((unsigned int) a21) + ((int) a22) + a23 + a24 + a25 + a26 + a27 +
+        ((int) a28) + a29 + a30 + a31 + a32 + a33 + a34 + ((unsigned int) a35) +
+        ((int) a36) + ((int) a37) + a38 + a39 + a40 + a41 + a42 + a43 + a44 +
+        ((unsigned int) a45) + a46 + a47 + ((int) a48) + a49 + a50 +
+        ((int) a51) + a52 + a53 + ((int) a54) + a55 + a56 + a57 + ((int) a58) +
+        ((int) a59) + ((int) a60) + ((unsigned int) a61) +
+        ((unsigned int) a62) + a63 + a64 + a65 + a66 + a67 + a68 +
+        ((unsigned int) a69) + ((int) a70) + ((int) a71) + a72 + a73 + a74 +
+        a75 + a76 + a77 + a78 + a79 + ((int) a80) + a81 + a82 + ((int) a83) +
+        a84 + a85 + ((int) a86) + a87 + a88 + a89 + ((int) a90) + a91 + a92 +
+        a93 + a94 + ((int) a95) + a96 + ((int) a97) + a98 + a99 + a100 + a101 +
+        a102 + a103 + a104 + a105 + a106 + a107 + a108 + a109 + a110 + a111 +
+        ((int) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 +
+        ((int) a120) + ((unsigned int) a121) + ((int) a122) + a123 + a124 +
+        a125 + a126 + ((int) a127);
+}
+
+/*
+ * DEFCFUN.BFF.2
+ *
+ * (let ((rettype (find-type :long-long))
+ *       (arg-types (n-random-types 127)))
+ *   (c-function rettype arg-types)
+ *   (gen-function-test rettype arg-types))
+ */
+
+#include <stdio.h>
+
+DLLEXPORT long long sum_127
+  (void* a1, void* a2, float a3, unsigned long a4, void* a5, long long
+  a6, double a7, double a8, unsigned short a9, int a10, long long a11,
+  long a12, short a13, unsigned int a14, long a15, unsigned char a16,
+  int a17, double a18, short a19, short a20, long long a21, unsigned
+  int a22, unsigned short a23, short a24, void* a25, short a26,
+  unsigned short a27, unsigned short a28, int a29, long long a30,
+  void* a31, int a32, unsigned long a33, unsigned long a34, void* a35,
+  unsigned long long a36, float a37, int a38, short a39, void* a40,
+  unsigned long long a41, long long a42, unsigned long a43, unsigned
+  long a44, unsigned long long a45, unsigned long a46, char a47,
+  double a48, long a49, unsigned int a50, int a51, short a52, void*
+  a53, long a54, unsigned long long a55, int a56, unsigned short a57,
+  unsigned long long a58, float a59, void* a60, float a61, unsigned
+  short a62, unsigned long a63, float a64, unsigned int a65, unsigned
+  long long a66, void* a67, double a68, unsigned long long a69, double
+  a70, double a71, long long a72, void* a73, unsigned short a74, long
+  a75, void* a76, short a77, double a78, long a79, unsigned char a80,
+  void* a81, unsigned char a82, long a83, double a84, void* a85, int
+  a86, double a87, unsigned char a88, double a89, short a90, long a91,
+  int a92, long a93, double a94, unsigned short a95, unsigned int a96,
+  int a97, char a98, long long a99, double a100, float a101, unsigned
+  long a102, short a103, void* a104, float a105, long long a106, int
+  a107, long long a108, long long a109, double a110, unsigned long
+  long a111, double a112, unsigned long a113, char a114, char a115,
+  unsigned long a116, short a117, unsigned char a118, unsigned char
+  a119, int a120, int a121, float a122, unsigned char a123, unsigned
+  char a124, double a125, unsigned long long a126, char a127)
+{
+    return (long long) ((unsigned int) a1) + ((unsigned int) a2) + ((int) a3) +
+        a4 + ((unsigned int) a5) + a6 + ((int) a7) + ((int) a8) + a9 + a10 +
+        a11 + a12 + a13 + a14 + a15 + a16 + a17 + ((int) a18) + a19 + a20 +
+        a21 + a22 + a23 + a24 + ((unsigned int) a25) + a26 + a27 + a28 + a29 +
+        a30 + ((unsigned int) a31) + a32 + a33 + a34 + ((unsigned int) a35) +
+        a36 + ((int) a37) + a38 + a39 + ((unsigned int) a40) + a41 + a42 + a43 +
+        a44 + a45 + a46 + a47 + ((int) a48) + a49 + a50 + a51 + a52 +
+        ((unsigned int) a53) + a54 + a55 + a56 + a57 + a58 + ((int) a59) +
+        ((unsigned int) a60) + ((int) a61) + a62 + a63 + ((int) a64) + a65 + a66
+        + ((unsigned int) a67) + ((int) a68) + a69 + ((int) a70) + ((int) a71) +
+        a72 + ((unsigned int) a73) + a74 + a75 + ((unsigned int) a76) + a77 +
+        ((int) a78) + a79 + a80 + ((unsigned int) a81) + a82 + a83 + ((int) a84)
+        + ((unsigned int) a85) + a86 + ((int) a87) + a88 + ((int) a89) + a90 +
+        a91 + a92 + a93 + ((int) a94) + a95 + a96 + a97 + a98 + a99 +
+        ((int) a100) + ((int) a101) + a102 + a103 + ((unsigned int) a104) +
+        ((int) a105) + a106 + a107 + a108 + a109 + ((int) a110) + a111 +
+        ((int) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 + a120 +
+        a121 + ((int) a122) + a123 + a124 + ((int) a125) + a126 + a127;
+}
+
+/*
+ * CALLBACKS.BFF.1  (cb-test :no-long-long t)
+ */
+
+DLLEXPORT long call_sum_127_no_ll
+  (long (*func)
+   (unsigned long, void*, long, double, unsigned long, float, float,
+    int, unsigned int, double, double, double, void*, unsigned short,
+    unsigned short, void*, long, long, int, short, unsigned short,
+    unsigned short, char, long, void*, void*, char, unsigned char,
+    unsigned long, short, int, int, unsigned char, short, long, long,
+    void*, unsigned short, char, double, unsigned short, void*, short,
+    unsigned long, unsigned short, float, unsigned char, short, float,
+    short, char, unsigned long, unsigned long, char, float, long, void*,
+    short, float, unsigned int, float, unsigned int, double, unsigned int,
+    unsigned char, int, long, char, short, double, int, void*, char,
+    unsigned short, void*, unsigned short, void*, unsigned long, double,
+    void*, long, float, unsigned short, unsigned short, void*, float, int,
+    unsigned int, double, float, long, void*, unsigned short, float,
+    unsigned char, unsigned char, float, unsigned int, float, unsigned
+    short, double, unsigned short, unsigned long, unsigned int, unsigned
+    long, void*, unsigned char, char, char, unsigned short, unsigned long,
+    float, short, void*, long, unsigned short, short, double, short, int,
+    char, unsigned long, long, int, void*, double, unsigned char))
+{
+    return
+        func(948223085, (void *) 803308438, -465723152, 20385,
+             219679466, -10035, 13915, -1193455756, 1265303699, 27935, -18478,
+             -10508, (void *) 215389089, 55561, 55472, (void *) 146070433,
+             -1040819989, -17851453, -1622662247, -19473, 20837, 30216, 79,
+             986800400, (void *) 390281604, (void *) 1178532858, 19, 117,
+             78337699, -5718, -991300738, 872160910, 184, 926, -1487245383,
+             1633973783, (void *) 33738609, 53985, -116, 31645, 27196, (void *)
+             145569903, -6960, 17252220, 47404, -10491, 88, -30438, -21212,
+             -1982, -16, 1175270, 7949380, -121, 8559, -432968526, (void *)
+             293455312, 11894, -8394, 142421516, -25758, 3422998, 4004,
+             15758212, 198, -1071899743, -1284904617, -11, -17219, -30039,
+             311589092, (void *) 541468577, 123, 63517, (void *) 1252504506,
+             39368, (void *) 10057868, 134781408, -7143, (void *) 72825877,
+             -1190798667, -30862, 63757, 14965, (void *) 802391252, 22008,
+             -517289619, 806091099, 1125, 451, -498145176, (void *) 55960931,
+             15379, 4629, 184, 254, 22532, 465856451, -1669, 49416, -16546,
+             2983, 4337541, 65292495, 39253529, (void *) 669025, 211, 85, -19,
+             24298, 65358, 16776, -29957, (void *) 124311, -163231228, 2610,
+             -7806, 26434, -21913, -753615541, 120, 358697932, -1198889034,
+             -2131350926, (void *) 3749492036, -13413, 17);
+}
+
+/*
+ * CALLBACKS.BFF.2  (cb-test)
+ */
+
+DLLEXPORT long long call_sum_127
+  (long long (*func)
+   (short, char, void*, float, long, double, unsigned long long,
+    unsigned short, unsigned char, char, char, unsigned short, unsigned
+    long long, unsigned short, long long, unsigned short, unsigned long
+    long, unsigned char, unsigned char, unsigned long long, long long,
+    char, float, unsigned int, float, float, unsigned int, float, char,
+    unsigned char, long, long long, unsigned char, double, long,
+    double, unsigned int, unsigned short, long long, unsigned int, int,
+    unsigned long long, long, short, unsigned int, unsigned int,
+    unsigned long long, unsigned int, long, void*, unsigned char, char,
+    long long, unsigned short, unsigned int, float, unsigned char,
+    unsigned long, long long, float, long, float, int, float, unsigned
+    short, unsigned long long, short, unsigned long, long, char,
+    unsigned short, long long, short, double, void*, unsigned int,
+    char, unsigned int, void*, void*, unsigned char, void*, unsigned
+    short, unsigned char, long, void*, char, long, unsigned short,
+    unsigned char, double, unsigned long long, unsigned short, unsigned
+    short, unsigned int, long, char, long, char, short, unsigned short,
+    unsigned long, unsigned long, short, long long, long long, long
+    long, double, unsigned short, unsigned char, short, unsigned char,
+    long, long long, unsigned long long, unsigned int, unsigned long,
+    unsigned char, long long, unsigned char, unsigned long long,
+    double, unsigned char, long long, unsigned char, char, long long))
+{
+    return
+        func(-8573, 14, (void *) 832601021, -32334, -1532040888,
+             -18478, 2793023182591311826, 2740, 230, 103, 97, 13121,
+             5112369026351511084, 7763, -8134147951003417418, 34348,
+             5776613699556468853, 19, 122, 1431603726926527625,
+             439503521880490337, -112, -21557, 1578969190, -22008, -4953,
+             2127745975, -7262, -6, 180, 226352974, -3928775366167459219, 134,
+             -17730, -1175042526, 23868, 3494181009, 57364,
+             3134876875147518682, 104531655, -1286882727, 803577887579693487,
+             1349268803, 24912, 3313099419, 3907347884, 1738833249233805034,
+             2794230885, 1008818752, (void *) 1820044575, 189, 61,
+             -931654560961745071, 57531, 3096859985, 10405, 220, 3631311224,
+             -8531370353478907668, 31258, 678896693, -32150, -1869057813,
+             -19877, 62841, 4161660185772906873, -23869, 4016251006, 610353435,
+             105, 47315, -1051054492535331660, 6846, -15163, (void *)
+             736672359, 2123928476, -122, 3859258652, (void *) 3923394833,
+             (void *) 1265031970, 161, (void *) 1993867800, 55056, 122,
+             1562112760, (void *) 866615125, -79, -1261399547, 31737, 254,
+             -31279, 5462649659172897980, 5202, 7644, 174224940, -337854382,
+             -45, -583502442, -37, -13266, 24520, 2198606699, 2890453969,
+             -8282, -2295716637858246075, -1905178488651598878,
+             -6384652209316714643, 14841, 35443, 132, 15524, 187, 2138878229,
+             -5153032566879951000, 9056545530140684207, 4124632010, 276167701,
+             56, -2307310370663738730, 66, 9113015627153789746, -9618, 167,
+             755753399701306200, 119, -28, -990561962725435433);
 }
 
 /* vim: ts=4 et
