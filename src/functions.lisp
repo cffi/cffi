@@ -92,10 +92,10 @@ and does type promotion for the variadic arguments."
       (parse-args-and-types fixed-args)
     (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
         (parse-args-and-types varargs)
-      (let ((syms (make-gensym-list (+ (length fixed-fargs)
-                                       (length varargs-fargs)))))
+      (let ((fixed-syms (make-gensym-list (length fixed-fargs)))
+            (varargs-syms (make-gensym-list (length varargs-fargs))))
         (translate-objects
-         syms (append fixed-fargs varargs-fargs)
+         (append fixed-syms varargs-syms) (append fixed-fargs varargs-fargs)
          (append fixed-types varargs-types) rettype
          `(,(if (stringp name-or-pointer)
                 '%foreign-funcall
@@ -104,7 +104,12 @@ and does type promotion for the variadic arguments."
             ,@(mapcan #'list
                       (nconc fixed-ctypes
                              (mapcar #'promote-varargs-type varargs-ctypes))
-                      syms)
+                      (append fixed-syms
+                              (loop for sym in varargs-syms
+                                    and type in varargs-ctypes
+                                    if (eq type :float)
+                                    collect `(float ,sym 1.0d0)
+                                    else collect sym)))
             ,(canonicalize-foreign-type rettype)))))))
 
 ;;;# Defining Foreign Functions
