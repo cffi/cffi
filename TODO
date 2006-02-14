@@ -6,12 +6,7 @@ This is a collection of TODO items and ideas in no particular order.
 
 -> Test uffi-compat with more UFFI libraries.
 -> Write more FOREIGN-GLOBALS.SET.* tests.
--> Write tests for DEFCFUN, FOREIGN-FUNCALL and DEFCALLBACK that
-   exercise all possible combinations of argument types, preferably
-   in an automated fashion (for inspiration, see
-   <http://article.gmane.org/gmane.lisp.steel-bank.devel/6130>). This
-   would have found ABI bugs in CMUCL/SBCL not long ago and might help
-   find more.
+-> Finish tests/random-tester.lisp
 -> Write benchmarks comparing CFFI vs. native FFIs and also demonstrating
    performance of each platform.
 -> Write more STRUCT.ALIGNMENT.* tests (namely involving the :LONG-LONG
