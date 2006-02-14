@@ -44,8 +44,10 @@
   (load-foreign-library 'libtest))
 
 ;;; check libtest version
-(defconstant +required-dll-version+ "060209")
+(defparameter +required-dll-version+ "20060209")
+
 (defcvar "dll_version" :string)
+
 (unless (string= *dll-version* +required-dll-version+)
   (error (format nil
                  "version check failed: expected ~s but libtest reports ~s"
