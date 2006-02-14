@@ -39,21 +39,15 @@
 ;;; (passed to TRANSLATE-OBJECTS as the CALL argument) instead
 ;;; of CFFI-SYS:%FOREIGN-FUNCALL to call the foreign-function.
 
-(defmacro translate-objects (syms args types rettype call)
-  "Helper macro for FOREIGN-FUNCALL and DEFCFUN."
-  (cond
-    ;; All arguments have been translated, translate
-    ;; the return value and perform the call.
-    ((null args)
-     (let ((parsed-type (parse-type rettype)))
-       (if (translate-p parsed-type)
-           `(translate-type-from-foreign ,call ,parsed-type)
-           `(values ,call))))
-    ;; More than one argument is available---translate the first
-    ;; argument/type pair and recurse.
-    (t `(with-object-translated (,(car syms) ,(car args) ,(car types))
-          (translate-objects
-           ,(rest syms) ,(rest args) ,(rest types) ,rettype ,call)))))
+(defun translate-objects (syms args types rettype call-form)
+  "Helper function for FOREIGN-FUNCALL and DEFCFUN."
+  (if (null args)
+      (expand-type-from-foreign call-form (parse-type rettype))
+      (expand-type-to-foreign-dyn
+       (car args) (car syms)
+       (list (translate-objects (cdr syms) (cdr args)
+                                (cdr types) rettype call-form))
+       (parse-type (car types)))))
 
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
@@ -70,13 +64,13 @@
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs))))
-      `(translate-objects
-        ,syms ,fargs ,types ,rettype
-        (,(if (stringp name-or-pointer)
+      (translate-objects
+       syms fargs types rettype
+       `(,(if (stringp name-or-pointer)
               '%foreign-funcall
               '%foreign-funcall-pointer)
-         ,name-or-pointer ,@(mapcan #'list ctypes syms)
-         ,(canonicalize-foreign-type rettype))))))
+          ,name-or-pointer ,@(mapcan #'list ctypes syms)
+          ,(canonicalize-foreign-type rettype))))))
 
 (defun promote-varargs-type (builtin-type)
   "Default argument promotions."
@@ -100,10 +94,10 @@ and does type promotion for the variadic arguments."
         (parse-args-and-types varargs)
       (let ((syms (make-gensym-list (+ (length fixed-fargs)
                                        (length varargs-fargs)))))
-        `(translate-objects
-          ,syms ,(append fixed-fargs varargs-fargs)
-          ,(append fixed-types varargs-types) ,rettype
-          (,(if (stringp name-or-pointer)
+        (translate-objects
+         syms (append fixed-fargs varargs-fargs)
+         (append fixed-types varargs-types) rettype
+         `(,(if (stringp name-or-pointer)
                 '%foreign-funcall
                 '%foreign-funcall-pointer)
             ,name-or-pointer
@@ -148,13 +142,13 @@ and does type promotion for the variadic arguments."
         (syms (make-gensym-list (length args))))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
-            foreign-name lisp-name (canonicalize-foreign-type return-type)
-            syms (mapcar #'canonicalize-foreign-type arg-types))
+          foreign-name lisp-name (canonicalize-foreign-type return-type)
+          syms (mapcar #'canonicalize-foreign-type arg-types))
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
-           (translate-objects
-            ,syms ,arg-names ,arg-types ,return-type ,caller))))))
+           ,(translate-objects
+             syms arg-names arg-types return-type caller))))))
 
 (defun %defcfun-varargs (lisp-name foreign-name return-type args)
   (with-unique-names (varargs)
@@ -181,22 +175,25 @@ and does type promotion for the variadic arguments."
 
 ;;;# Defining Callbacks
 
-(defmacro inverse-translate-objects (args types rettype call)
-  "Helper macro for DEFCALLBACK."
-  (cond
-    ((null args)
-     (let ((parsed-type (parse-type rettype)))
-       (if (translate-p parsed-type)
-           `(translate-type-to-foreign ,call ,parsed-type)
-           call)))
-    (t
-     (let ((type (parse-type (car types))))
-       (if (translate-p type)
-           `(let ((,(car args) (translate-type-from-foreign ,(car args) ,type)))
-              (inverse-translate-objects ,(rest args) ,(rest types)
-                                         ,rettype ,call))
-           `(inverse-translate-objects ,(rest args) ,(rest types)
-                                       ,rettype ,call))))))
+(defun inverse-translate-objects (args ignored-args types rettype call)
+  "Helper function for DEFCALLBACK."
+  (labels ((rec (args types)
+             (cond ((null args)
+                    (expand-type-to-foreign call (parse-type rettype)))
+                   ;; Don't apply translations for arguments that were
+                   ;; declared ignored in order to avoid warnings.
+                   ((not (member (car args) ignored-args))
+                    `(let ((,(car args) ,(expand-type-from-foreign
+                                          (car args) (parse-type (car types)))))
+                       ,(rec (cdr args) (cdr types))))
+                   (t (rec (cdr args) (cdr types)))))) 
+    (rec args types)))
+
+(defun collect-ignored-args (declarations)
+  (loop for declaration in declarations
+        append (loop for decl in (cdr declaration)
+                     when (eq (car decl) 'cl:ignore)
+                     append (cdr decl))))
 
 (defmacro defcallback (name return-type args &body body)
   (multiple-value-bind (body docstring declarations)
@@ -208,8 +205,9 @@ and does type promotion for the variadic arguments."
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
            ,@declarations
-           (inverse-translate-objects ,arg-names ,arg-types ,return-type
-                                      (block ,name ,@body)))
+           ,(inverse-translate-objects
+             arg-names (collect-ignored-args declarations) arg-types
+             return-type `(block ,name ,@body)))
          ',name))))
 
 (defun get-callback (symbol)

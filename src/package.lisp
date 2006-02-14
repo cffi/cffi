@@ -80,7 +80,6 @@
    #:defctype
    #:defcenum
    #:defbitfield
-   ;#:define-type-spec-parser
    #:define-foreign-type
    #:foreign-enum-keyword
    #:foreign-enum-value
@@ -100,6 +99,10 @@
    #:translate-to-foreign
    #:translate-from-foreign
    #:free-translated-object
+   #:expand-to-foreign-dyn
+   #:expand-to-foreign
+   #:expand-from-foreign
+   #:*runtime-translator-form*
 
    ;; Foreign globals.
    #:defcvar

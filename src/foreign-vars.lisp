@@ -62,26 +62,20 @@
 returning nil when foreign-name is not found."
   (or (foreign-symbol-pointer foreign-name :data)
       (error "Trying access undefined foreign variable ~S." foreign-name)))
-  
+
 (defmacro defcvar (name type &key read-only)
   "Define a foreign global variable."
   (let* ((lisp-name (lisp-var-name name))
          (foreign-name (foreign-var-name name))
-         (fn (symbolicate '#:%var-accessor- lisp-name))
-         (ptype (parse-type type)))
-    (when (aggregatep ptype) ; we can't really setf an aggregate type
-      (setq read-only t))    ; at least not yet...
+         (fn (symbolicate '#:%var-accessor- lisp-name)))
+    (when (aggregatep (parse-type type)) ; we can't really setf an aggregate
+      (setq read-only t))                ; type, at least not yet...
     `(progn
        ;; Save foreign-name for posterior access by get-var-ptr
        (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)
        ;; Getter
        (defun ,fn ()
-         ,(if (aggregatep ptype)
-              ;; no dereference for aggregate types.
-              `(foreign-symbol-pointer-or-lose ,foreign-name)
-              `(translate-type-from-foreign
-                (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)
-                ,ptype)))
+         (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)) 
        ;; Setter
        (defun (setf ,fn) (value)
          ,(if read-only '(declare (ignore value)) (values))
@@ -89,7 +83,7 @@ returning nil when foreign-name is not found."
               `(error ,(format nil "Trying to modify read-only foreign var: ~A."
                                lisp-name))
               `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
-                      ',type)
-                (translate-type-to-foreign value ,ptype))))
+                              ',type)
+                     value)))
        ;; Symbol macro
        (define-symbol-macro ,lisp-name (,fn)))))
