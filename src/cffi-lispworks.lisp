@@ -155,17 +155,101 @@ be stack allocated if supported by the implementation."
     (:pointer         :pointer)
     (:void            :void)))
 
+;;; Convert a CFFI type keyword to a symbol suitable for passing to
+;;; FLI:FOREIGN-TYPED-AREF.
+#+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(defun convert-foreign-typed-aref-type (cffi-type)
+  (ecase cffi-type
+    ((:char :short :int :long)
+     `(signed-byte ,(* 8 (%foreign-type-size cffi-type))))
+    ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long)
+     `(unsigned-byte ,(* 8 (%foreign-type-size cffi-type))))
+    (:float 'single-float)
+    (:double 'double-float)))
+
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of type TYPE OFFSET bytes from PTR."
   (unless (zerop offset)
     (setf ptr (inc-pointer ptr offset)))
   (fli:dereference ptr :type (convert-foreign-type type)))
 
+;;; Determine the most efficient way to increment PTR by OFFSET bytes
+;;; for use in a call to FLI:FOREIGN-TYPED-AREF.  Returns a form to
+;;; use as the pointer in the call and a second value to pass as the
+;;; index.  If OFFSET is constant and a multiple of the size of TYPE,
+;;; convert it to an array index, otherwise use INC-POINTER.
+#+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(defun pointer-and-index (ptr type offset)
+  (if (constantp offset)
+      (let ((offset (eval offset))
+            (size (%foreign-type-size type)))
+        (multiple-value-bind (q r) (truncate offset size)
+          (if (zerop r)
+              (values ptr q)
+              (values `(inc-pointer ,ptr ,offset) 0))))
+      (values `(inc-pointer ,ptr ,offset) 0)))
+
+;;; In LispWorks versions where FLI:FOREIGN-TYPED-AREF is fbound, use
+;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-REF.
+#+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((type (eval type)))
+        (if (eql type :pointer)
+            (let ((fli-type (convert-foreign-type type))
+                  (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
+              `(fli:dereference ,ptr-form :type ',fli-type))
+            (let ((lisp-type (convert-foreign-typed-aref-type type)))
+              (multiple-value-bind (ptr-form index)
+                  (pointer-and-index ptr type off)
+                `(locally
+                   (declare (optimize (speed 3) (safety 0)))
+                   (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index))))))
+      form))
+
+;;; Open-code the call to FLI:DEREFERENCE when TYPE is constant at
+;;; macroexpansion time, when FLI:FOREIGN-TYPED-AREF is not available.
+#-#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
+            (type (convert-foreign-type (eval type))))
+        `(fli:dereference ,ptr-form :type ',type))
+      form))
+
 (defun %mem-set (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
     (setf ptr (inc-pointer ptr offset)))
   (setf (fli:dereference ptr :type (convert-foreign-type type)) value))
+
+;;; In LispWorks versions where FLI:FOREIGN-TYPED-AREF is fbound, use
+;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-SET.
+#+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((type (eval type)))
+        (if (eql type :pointer)
+            (let ((fli-type (convert-foreign-type type))
+                  (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
+              `(setf (fli:dereference ,ptr-form :type ',fli-type) ,val))
+            (let ((lisp-type (convert-foreign-typed-aref-type type)))
+              (multiple-value-bind (ptr-form index)
+                  (pointer-and-index ptr type off)
+                `(locally
+                   (declare (optimize (speed 3) (safety 0)))
+                   (setf (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index) ,val))))))
+      form))
+
+;;; Open-code the call to (SETF FLI:DEREFERENCE) when TYPE is constant
+;;; at macroexpansion time.
+#-#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
+(define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
+            (type (convert-foreign-type (eval type))))
+        `(setf (fli:dereference ,ptr-form :type ',type) ,val))
+      form))
 
 ;;;# Foreign Type Operations
 
