@@ -14,8 +14,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> Run tests both interpreted (where it makes sense) and compiled.
 -> Run tests with the different kinds of shared libraries available on
    MacOS X.
--> Build both 64-bit and 32-bit versions of libtest on amd64 Linux and
-   attempt to load both of them when running the testsuite.
 
 ### Ports
 
