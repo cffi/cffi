@@ -242,7 +242,9 @@
 ;;; (cb-test :no-long-long t)
 
 (defcfun "call_sum_127_no_ll" :long (cb :pointer))
- 
+
+;;; CMUCL chokes on this one.
+#-cmu
 (defcallback sum-127-no-ll :long
     ((a1 :unsigned-long) (a2 :pointer) (a3 :long) (a4 :double)
      (a5 :unsigned-long) (a6 :float) (a7 :float) (a8 :int) (a9 :unsigned-int)
@@ -295,6 +297,9 @@
      a115 a116 a117 (values (floor a118)) a119 a120 a121 a122 a123 a124
      (pointer-address a125) (values (floor a126)) a127))
 
+#+(or openmcl (and cffi-features:darwin (or allegro cmu lispworks)))
+(push 'callbacks.bff.1 regression-test::*expected-failures*)
+
 (deftest callbacks.bff.1
     (call-sum-127-no-ll (callback sum-127-no-ll))
   2008547941)
@@ -304,7 +309,9 @@
 #-cffi-features:no-long-long
 (progn
   (defcfun "call_sum_127" :long-long (cb :pointer))
-  
+
+  ;;; CMUCL chokes on this one.
+  #-cmu
   (defcallback sum-127 :long-long
       ((a1 :short) (a2 :char) (a3 :pointer) (a4 :float) (a5 :long) (a6 :double)
        (a7 :unsigned-long-long) (a8 :unsigned-short) (a9 :unsigned-char)
@@ -354,6 +361,9 @@
        a92 a93 a94 a95 a96 a97 a98 a99 a100 a101 a102 a103 a104 a105 a106 a107
        (values (floor a108)) a109 a110 a111 a112 a113 a114 a115 a116 a117 a118
        a119 a120 a121 (values (floor a122)) a123 a124 a125 a126 a127))
+
+  #+(or openmcl (and cffi-features:darwin cmu))
+  (push 'callbacks.bff.2 rt::*expected-failures*)
   
   (deftest callbacks.bff.2
       (call-sum-127 (callback sum-127))

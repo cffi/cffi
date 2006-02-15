@@ -466,24 +466,24 @@ DLLEXPORT long sum_127_no_ll
    a119, float a120, void* a121, double a122, int a123, long a124, char
    a125, unsigned short a126, float a127)
 {
-    return (long) a1 + a2 + a3 + a4 + ((int) a5) + ((int) a6) + a7 +
-        ((int) a8) + a9 + a10 + a11 + a12 + ((int) a13) + a14 + a15 +
-        ((unsigned int) a16) + a17 + a18 + a19 + ((int) a20) +
-        ((unsigned int) a21) + ((int) a22) + a23 + a24 + a25 + a26 + a27 +
-        ((int) a28) + a29 + a30 + a31 + a32 + a33 + a34 + ((unsigned int) a35) +
-        ((int) a36) + ((int) a37) + a38 + a39 + a40 + a41 + a42 + a43 + a44 +
-        ((unsigned int) a45) + a46 + a47 + ((int) a48) + a49 + a50 +
-        ((int) a51) + a52 + a53 + ((int) a54) + a55 + a56 + a57 + ((int) a58) +
-        ((int) a59) + ((int) a60) + ((unsigned int) a61) +
+    return (long) a1 + a2 + a3 + a4 + ((long) a5) + ((long) a6) + a7 +
+        ((long) a8) + a9 + a10 + a11 + a12 + ((long) a13) + a14 + a15 +
+        ((unsigned int) a16) + a17 + a18 + a19 + ((long) a20) +
+        ((unsigned int) a21) + ((long) a22) + a23 + a24 + a25 + a26 + a27 +
+        ((long) a28) + a29 + a30 + a31 + a32 + a33 + a34 + ((unsigned int) a35) +
+        ((long) a36) + ((long) a37) + a38 + a39 + a40 + a41 + a42 + a43 + a44 +
+        ((unsigned int) a45) + a46 + a47 + ((long) a48) + a49 + a50 +
+        ((long) a51) + a52 + a53 + ((long) a54) + a55 + a56 + a57 + ((long) a58) +
+        ((long) a59) + ((long) a60) + ((unsigned int) a61) +
         ((unsigned int) a62) + a63 + a64 + a65 + a66 + a67 + a68 +
-        ((unsigned int) a69) + ((int) a70) + ((int) a71) + a72 + a73 + a74 +
-        a75 + a76 + a77 + a78 + a79 + ((int) a80) + a81 + a82 + ((int) a83) +
-        a84 + a85 + ((int) a86) + a87 + a88 + a89 + ((int) a90) + a91 + a92 +
-        a93 + a94 + ((int) a95) + a96 + ((int) a97) + a98 + a99 + a100 + a101 +
+        ((unsigned int) a69) + ((long) a70) + ((long) a71) + a72 + a73 + a74 +
+        a75 + a76 + a77 + a78 + a79 + ((long) a80) + a81 + a82 + ((long) a83) +
+        a84 + a85 + ((long) a86) + a87 + a88 + a89 + ((long) a90) + a91 + a92 +
+        a93 + a94 + ((long) a95) + a96 + ((long) a97) + a98 + a99 + a100 + a101 +
         a102 + a103 + a104 + a105 + a106 + a107 + a108 + a109 + a110 + a111 +
-        ((int) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 +
-        ((int) a120) + ((unsigned int) a121) + ((int) a122) + a123 + a124 +
-        a125 + a126 + ((int) a127);
+        ((long) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 +
+        ((long) a120) + ((unsigned int) a121) + ((long) a122) + a123 + a124 +
+        a125 + a126 + ((long) a127);
 }
 
 /*
@@ -526,24 +526,24 @@ DLLEXPORT long long sum_127
   a119, int a120, int a121, float a122, unsigned char a123, unsigned
   char a124, double a125, unsigned long long a126, char a127)
 {
-    return (long long) ((unsigned int) a1) + ((unsigned int) a2) + ((int) a3) +
-        a4 + ((unsigned int) a5) + a6 + ((int) a7) + ((int) a8) + a9 + a10 +
-        a11 + a12 + a13 + a14 + a15 + a16 + a17 + ((int) a18) + a19 + a20 +
+    return (long long) ((unsigned int) a1) + ((unsigned int) a2) + ((long) a3) +
+        a4 + ((unsigned int) a5) + a6 + ((long) a7) + ((long) a8) + a9 + a10 +
+        a11 + a12 + a13 + a14 + a15 + a16 + a17 + ((long) a18) + a19 + a20 +
         a21 + a22 + a23 + a24 + ((unsigned int) a25) + a26 + a27 + a28 + a29 +
         a30 + ((unsigned int) a31) + a32 + a33 + a34 + ((unsigned int) a35) +
-        a36 + ((int) a37) + a38 + a39 + ((unsigned int) a40) + a41 + a42 + a43 +
-        a44 + a45 + a46 + a47 + ((int) a48) + a49 + a50 + a51 + a52 +
-        ((unsigned int) a53) + a54 + a55 + a56 + a57 + a58 + ((int) a59) +
-        ((unsigned int) a60) + ((int) a61) + a62 + a63 + ((int) a64) + a65 + a66
-        + ((unsigned int) a67) + ((int) a68) + a69 + ((int) a70) + ((int) a71) +
+        a36 + ((long) a37) + a38 + a39 + ((unsigned int) a40) + a41 + a42 + a43 +
+        a44 + a45 + a46 + a47 + ((long) a48) + a49 + a50 + a51 + a52 +
+        ((unsigned int) a53) + a54 + a55 + a56 + a57 + a58 + ((long) a59) +
+        ((unsigned int) a60) + ((long) a61) + a62 + a63 + ((long) a64) + a65 + a66
+        + ((unsigned int) a67) + ((long) a68) + a69 + ((long) a70) + ((long) a71) +
         a72 + ((unsigned int) a73) + a74 + a75 + ((unsigned int) a76) + a77 +
-        ((int) a78) + a79 + a80 + ((unsigned int) a81) + a82 + a83 + ((int) a84)
-        + ((unsigned int) a85) + a86 + ((int) a87) + a88 + ((int) a89) + a90 +
-        a91 + a92 + a93 + ((int) a94) + a95 + a96 + a97 + a98 + a99 +
-        ((int) a100) + ((int) a101) + a102 + a103 + ((unsigned int) a104) +
-        ((int) a105) + a106 + a107 + a108 + a109 + ((int) a110) + a111 +
-        ((int) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 + a120 +
-        a121 + ((int) a122) + a123 + a124 + ((int) a125) + a126 + a127;
+        ((long) a78) + a79 + a80 + ((unsigned int) a81) + a82 + a83 + ((long) a84)
+        + ((unsigned int) a85) + a86 + ((long) a87) + a88 + ((long) a89) + a90 +
+        a91 + a92 + a93 + ((long) a94) + a95 + a96 + a97 + a98 + a99 +
+        ((long) a100) + ((long) a101) + a102 + a103 + ((unsigned int) a104) +
+        ((long) a105) + a106 + a107 + a108 + a109 + ((long) a110) + a111 +
+        ((long) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 + a120 +
+        a121 + ((long) a122) + a123 + a124 + ((long) a125) + a126 + a127;
 }
 
 /*
