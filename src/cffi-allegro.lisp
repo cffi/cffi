@@ -172,11 +172,31 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (setf ptr (inc-pointer ptr offset)))
   (ff:fslot-value-typed (convert-foreign-type type) :c ptr))
 
+;;; Compiler macro to open-code the call to FSLOT-VALUE-TYPED when the
+;;; CFFI type is constant.  Allegro does its own transformation on the
+;;; call that results in efficient code.
+(define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
+        `(ff:fslot-value-typed ',(convert-foreign-type (eval type))
+                               :c ,ptr-form))
+      form))
+
 (defun %mem-set (value ptr type &optional (offset 0))
   "Set the object of TYPE at OFFSET bytes from PTR."
   (unless (zerop offset)
     (setf ptr (inc-pointer ptr offset)))
   (setf (ff:fslot-value-typed (convert-foreign-type type) :c ptr) value))
+
+;;; Compiler macro to open-code the call to (SETF FSLOT-VALUE-TYPED)
+;;; when the CFFI type is constant.  Allegro does its own
+;;; transformation on the call that results in efficient code.
+(define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
+  (if (constantp type)
+      (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
+        `(setf (ff:fslot-value-typed ',(convert-foreign-type (eval type))
+                                     :c ,ptr-form) ,val))
+      form))
 
 ;;;# Calling Foreign Functions
 
