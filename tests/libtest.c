@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 
 /*
  * Some functions that aren't avaiable on WIN32
@@ -60,7 +61,7 @@ char *my_strdup(const char *str)
  * (var_int is used in MISC-TYPES.EXPAND.3 as well)
  */
 
-DLLEXPORT char *         dll_version        = "20060209";
+DLLEXPORT char *         dll_version        = "20060215";
 
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;
@@ -78,6 +79,11 @@ DLLEXPORT char *         var_string         = "Hello, foreign world!";
 
 DLLEXPORT long long          var_long_long          = -9223372036854775807LL;
 DLLEXPORT unsigned long long var_unsigned_long_long = 18446744073709551615ULL;
+
+DLLEXPORT float float_max = FLT_MAX;
+DLLEXPORT float float_min = FLT_MIN;
+DLLEXPORT double double_max = DBL_MAX;
+DLLEXPORT double double_min = DBL_MIN;
 
 /*
  * Callbacks

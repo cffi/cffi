@@ -44,7 +44,7 @@
   (load-foreign-library 'libtest))
 
 ;;; check libtest version
-(defparameter *required-dll-version* "20060209")
+(defparameter *required-dll-version* "20060215")
 
 (defcvar "dll_version" :string)
 
@@ -53,3 +53,11 @@
                  "version check failed: expected ~s but libtest reports ~s"
                  *required-dll-version*
                  *dll-version*)))
+
+;;; The maximum and minimum values for single and double precision C
+;;; floating point values, which may be quite different from the
+;;; corresponding Lisp versions.
+(defcvar "float_max" :float)
+(defcvar "float_min" :float)
+(defcvar "double_max" :double)
+(defcvar "double_min" :double)

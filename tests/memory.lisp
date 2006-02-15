@@ -97,15 +97,15 @@
 
 (deftest deref.float.2
     (with-foreign-object (p :float)
-      (setf (mem-ref p :float) most-positive-single-float)
+      (setf (mem-ref p :float) *float-max*)
       (mem-ref p :float))
-  #.most-positive-single-float)
+  #.*float-max*)
 
 (deftest deref.float.3
     (with-foreign-object (p :float)
-      (setf (mem-ref p :float) least-positive-single-float)
+      (setf (mem-ref p :float) *float-min*)
       (mem-ref p :float))
-  #.least-positive-single-float)
+  #.*float-min*)
 
 (deftest deref.double.1
     (with-foreign-object (p :double)
@@ -115,15 +115,15 @@
 
 (deftest deref.double.2
     (with-foreign-object (p :double)
-      (setf (mem-ref p :double) most-positive-double-float)
+      (setf (mem-ref p :double) *double-max*)
       (mem-ref p :double))
-  #.most-positive-double-float)
+  #.*double-max*)
 
 (deftest deref.double.3
     (with-foreign-object (p :double)
-      (setf (mem-ref p :double) least-positive-double-float)
+      (setf (mem-ref p :double) *double-min*)
       (mem-ref p :double))
-  #.least-positive-double-float)
+  #.*double-min*)
 
 ;;; make sure the lisp doesn't convert NULL to NIL
 (deftest deref.pointer.null
@@ -375,16 +375,16 @@
 (deftest deref.nonconst.float.2
     (let ((type :float))
       (with-foreign-object (p type)
-        (setf (mem-ref p type) most-positive-single-float)
+        (setf (mem-ref p type) *float-max*)
         (mem-ref p type)))
-  #.most-positive-single-float)
+  #.*float-max*)
 
 (deftest deref.nonconst.float.3
     (let ((type :float))
       (with-foreign-object (p type)
-        (setf (mem-ref p type) least-positive-single-float)
+        (setf (mem-ref p type) *float-min*)
         (mem-ref p type)))
-  #.least-positive-single-float)
+  #.*float-min*)
 
 (deftest deref.nonconst.double.1
     (let ((type :double))
@@ -396,13 +396,13 @@
 (deftest deref.nonconst.double.2
     (let ((type :double))
       (with-foreign-object (p type)
-        (setf (mem-ref p type) most-positive-double-float)
+        (setf (mem-ref p type) *double-max*)
         (mem-ref p type)))
-  #.most-positive-double-float)
+  #.*double-max*)
 
 (deftest deref.nonconst.double.3
     (let ((type :double))
       (with-foreign-object (p type)
-        (setf (mem-ref p type) least-positive-double-float)
+        (setf (mem-ref p type) *double-min*)
         (mem-ref p type)))
-  #.least-positive-double-float)
+  #.*double-min*)
