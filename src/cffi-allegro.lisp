@@ -338,6 +338,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
           '#:cffi-callbacks))
 
 (defmacro %defcallback (name rettype arg-names arg-types &body body)
+  (declare (ignore rettype))
   (let ((cb-name (intern-callback name)))
     `(progn
        (ff:defun-foreign-callable ,cb-name
