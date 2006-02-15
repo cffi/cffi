@@ -283,7 +283,8 @@ WITH-POINTER-TO-VECTOR-DATA."
             ,@body))))
 
 (defun %callback (name)
-  (gethash name *callbacks*))
+  (or (gethash name *callbacks*)
+      (error "Undefined callback: ~S" name)))
 
 ;;;# Loading and Closing Foreign Libraries
 

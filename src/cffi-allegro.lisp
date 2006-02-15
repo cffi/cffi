@@ -371,7 +371,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;; Return the saved Lisp callback pointer from *CALLBACKS* for the
 ;;; CFFI callback named NAME.
 (defun %callback (name)
-  (cdr (gethash name *callbacks*)))
+  (or (cdr (gethash name *callbacks*))
+      (error "Undefined callback: ~S" name)))
 
 ;;;# Loading and Closing Foreign Libraries
 

@@ -270,7 +270,8 @@ WITH-POINTER-TO-VECTOR-DATA."
        (setf (gethash ',name *callbacks*) (symbol-value ',cb-name)))))
 
 (defun %callback (name)
-  (gethash name *callbacks*))
+  (or (gethash name *callbacks*)
+      (error "Undefined callback: ~S" name)))
 
 ;;;# Loading Foreign Libraries
 

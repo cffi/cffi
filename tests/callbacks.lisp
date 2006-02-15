@@ -358,3 +358,9 @@
   (deftest callbacks.bff.2
       (call-sum-127 (callback sum-127))
     8166570665645582011))
+
+;;; regression test: (callback non-existant-callback) should throw an error
+
+(deftest callbacks.non-existant
+    (not (null (nth-value 1 (ignore-errors (callback doesnt-exist)))))
+  t)
