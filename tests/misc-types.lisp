@@ -2,7 +2,7 @@
 ;;;
 ;;; misc-types.lisp --- Various tests on the type system.
 ;;;
-;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -48,8 +48,8 @@
   (a (:boolean :long))
   (b (:boolean :unsigned-long)))
 
-(deftest misc-types.boolean
-    (list (equalequal nil nil)
+(deftest misc-types.boolean.1
+    (list (equalequal nil nil) 
           (equalequal t t)
           (equalequal t 23)
           (bool-and 'a 'b)
@@ -57,6 +57,19 @@
           (bool-xor t nil)
           (bool-xor nil nil))
   (t t t t nil t nil))
+
+
+;;; Regression test: boolean type only worked with canonicalized
+;;; built-in integer types. Should work for any type that canonicalizes
+;;; to a built-in integer type.
+(defctype int-for-bool :int)
+(defcfun "equalequal2" :boolean
+  (a (:boolean int-for-bool))
+  (b (:boolean :uint)))
+
+(deftest misc-types.boolean.2
+    (equalequal2 nil t)
+  nil)
 
 (defctype my-string :string+ptr)
 
@@ -124,3 +137,54 @@
   (deftest misc-types.untranslated-callback
       (foreign-funcall (callback untranslated-callback) :int 1 :int)
     1))
+
+(defctype error-error :int)
+
+(defmethod translate-to-foreign (value (name (eql 'error-error)))
+  (declare (ignore value))
+  (error "translate-to-foreign invoked."))
+
+(defmethod translate-from-foreign (value (name (eql 'error-error)))
+  (declare (ignore value))
+  (error "translate-from-foreign invoked."))
+
+(defmethod expand-to-foreign (value (name (eql 'error-error)))
+  value)
+
+(defmethod expand-from-foreign (value (name (eql 'error-error)))
+  value)
+
+(defcfun ("abs" expand-abs) error-error
+  (n error-error))
+
+(defcvar ("var_int" *expand-var-int*) error-error)
+
+(defcfun ("expect_int_sum" expand-expect-int-sum) :boolean
+  (cb :pointer))
+
+(defcallback expand-int-sum error-error ((x error-error) (y error-error))
+  (+ x y))
+
+;;; Ensure that macroexpansion-time translators are called where this
+;;; is guaranteed (defcfun, defcvar, foreign-funcall and defcallback)
+(deftest misc-types.expand.1
+    (expand-abs -1)
+  1)
+
+#-cffi-features:no-foreign-funcall
+(deftest misc-types.expand.2
+    (foreign-funcall "abs" error-error -1 error-error)
+  1)
+
+(deftest misc-types.expand.3
+    (let ((old (mem-ref (get-var-pointer '*expand-var-int*) :int)))
+      (unwind-protect
+           (progn
+             (setf *expand-var-int* 42)
+             *expand-var-int*)
+        (setf (mem-ref (get-var-pointer '*expand-var-int*) :int) old)))
+  42)
+
+(deftest misc-types.expand.4
+    (expand-expect-int-sum (callback expand-int-sum))
+  t)

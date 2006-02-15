@@ -56,6 +56,8 @@ char *my_strdup(const char *str)
 
 /*
  * Foreign Globals
+ *
+ * (var_int is used in MISC-TYPES.EXPAND.3 as well)
  */
 
 DLLEXPORT char *         dll_version        = "20060209";
@@ -106,6 +108,7 @@ int expect_unsigned_short_sum(unsigned short (*f)(unsigned short,
     return f(USHRT_MAX-1, 1) == USHRT_MAX;
 }
 
+/* used in MISC-TYPES.EXPAND.4 as well */
 DLLEXPORT
 int expect_int_sum(int (*f)(int, int))
 {

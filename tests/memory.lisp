@@ -75,6 +75,20 @@
       (mem-ref p :unsigned-long))
   536870912)
 
+#-cffi-features:no-long-long
+(progn
+  (deftest deref.long-long
+      (with-foreign-object (p :long-long)
+        (setf (mem-ref p :long-long) -9223372036854775807)
+        (mem-ref p :long-long))
+    -9223372036854775807)
+
+  (deftest deref.unsigned-long-long
+      (with-foreign-object (p :unsigned-long-long)
+        (setf (mem-ref p :unsigned-long-long) 18446744073709551615)
+        (mem-ref p :unsigned-long-long))
+    18446744073709551615))
+
 (deftest deref.float.1
     (with-foreign-object (p :float)
       (setf (mem-ref p :float) 0.0)
@@ -111,15 +125,14 @@
       (mem-ref p :double))
   #.least-positive-double-float)
 
-;; make sure the lisp doesn't convert NULL to NIL
+;;; make sure the lisp doesn't convert NULL to NIL
 (deftest deref.pointer.null
     (with-foreign-object (p :pointer)
       (setf (mem-ref p :pointer) (null-pointer))
       (null-pointer-p (mem-ref p :pointer)))
   t)
 
-;; regression test. lisp-string-to-foreign should handle empty strings
-
+;;; regression test. lisp-string-to-foreign should handle empty strings
 (deftest lisp-string-to-foreign.empty
     (with-foreign-pointer (str 2)
       (setf (mem-ref str :unsigned-char) 42)
@@ -129,7 +142,6 @@
 
 ;; regression test. with-foreign-pointer shouldn't evaluate
 ;; the size argument twice.
-
 (deftest with-foreign-pointer.evalx2
     (let ((count 0))
       (with-foreign-pointer (x (incf count) size-var)
@@ -145,7 +157,6 @@
   66 2 2)
 
 ;; regression test. mem-aref's setf expansion evaluated its type argument twice.
-
 (deftest mem-aref.eval-type-x2
     (let ((count 0))
       (with-foreign-pointer (p 1)
@@ -164,7 +175,6 @@
   2 -1 2 1)
 
 ;; regression tests. nested mem-ref's and mem-aref's had bogus getters
-
 (deftest mem-ref.nested
     (with-foreign-object (p :pointer)
       (with-foreign-object (i :int)
@@ -183,13 +193,12 @@
         (mem-aref i :int 1)))
   1984)
 
-;; regression tests. dereferencing an aggregate type.
-;; dereferencing a struct say, should return a pointer to the
-;; struct itself, not returning the first 4 bytes (or whatever)
-;; as a pointer (since structs are actually pointer).
-;; This important for accessing an array of structs, which is
-;; what the deref.array-of-aggregates test does.
-
+;;; regression tests. dereferencing an aggregate type. dereferencing a
+;;; struct should return a pointer to the struct itself, not return the
+;;; first 4 bytes (or whatever the size of :pointer is) as a pointer.
+;;;
+;;; This important for accessing an array of structs, which is
+;;; what the deref.array-of-aggregates test does.
 (defcstruct some-struct (x :int))
 
 (deftest deref.aggregate
@@ -208,13 +217,12 @@
                                         'some-struct 'x)))
   (112 112 112))
 
-;; pointer operations
-
+;;; pointer operations
 (deftest pointer.1
     (pointer-address (make-pointer 42))
   42)
 
-;; I suppose this test is not very good. --luis
+;;; I suppose this test is not very good. --luis
 (deftest pointer.2
     (pointer-address (null-pointer))
   0)
@@ -281,3 +289,120 @@
          (foreign-free ptr))
        t))
   nil)
+
+;;; Tests for mem-ref with a non-constant type. This is a way to test
+;;; the functional interface (without compiler macros).
+
+(deftest deref.nonconst.char
+    (let ((type :char))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) -127)
+        (mem-ref p type)))
+  -127)
+
+(deftest deref.nonconst.unsigned-char
+    (let ((type :unsigned-char))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 255)
+        (mem-ref p type)))
+  255)
+
+(deftest deref.nonconst.short
+    (let ((type :short))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) -32767)
+        (mem-ref p type)))
+  -32767)
+
+(deftest deref.nonconst.unsigned-short
+    (let ((type :unsigned-short))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 65535)
+        (mem-ref p type)))
+  65535)
+
+(deftest deref.nonconst.int
+    (let ((type :int))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) -131072)
+        (mem-ref p type)))
+  -131072)
+
+(deftest deref.nonconst.unsigned-int
+    (let ((type :unsigned-int))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 262144)
+        (mem-ref p type)))
+  262144)
+
+(deftest deref.nonconst.long
+    (let ((type :long))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) -536870911)
+        (mem-ref p type)))
+  -536870911)
+
+(deftest deref.nonconst.unsigned-long
+    (let ((type :unsigned-long))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 536870912)
+        (mem-ref p type)))
+  536870912)
+
+#-cffi-features:no-long-long
+(progn
+  (deftest deref.nonconst.long-long
+      (let ((type :long-long))
+        (with-foreign-object (p type)
+          (setf (mem-ref p type) -9223372036854775807)
+          (mem-ref p type)))
+    -9223372036854775807)
+
+  (deftest deref.nonconst.unsigned-long-long
+      (let ((type :unsigned-long-long))
+        (with-foreign-object (p type)
+          (setf (mem-ref p type) 18446744073709551615)
+          (mem-ref p type)))
+    18446744073709551615))
+
+(deftest deref.nonconst.float.1
+    (let ((type :float))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 0.0)
+        (mem-ref p type)))
+  0.0)
+
+(deftest deref.nonconst.float.2
+    (let ((type :float))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) most-positive-single-float)
+        (mem-ref p type)))
+  #.most-positive-single-float)
+
+(deftest deref.nonconst.float.3
+    (let ((type :float))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) least-positive-single-float)
+        (mem-ref p type)))
+  #.least-positive-single-float)
+
+(deftest deref.nonconst.double.1
+    (let ((type :double))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 0.0d0)
+        (mem-ref p type)))
+  0.0d0)
+
+(deftest deref.nonconst.double.2
+    (let ((type :double))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) most-positive-double-float)
+        (mem-ref p type)))
+  #.most-positive-double-float)
+
+(deftest deref.nonconst.double.3
+    (let ((type :double))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) least-positive-double-float)
+        (mem-ref p type)))
+  #.least-positive-double-float)
