@@ -63,7 +63,7 @@
 ;;; built-in integer types. Should work for any type that canonicalizes
 ;;; to a built-in integer type.
 (defctype int-for-bool :int)
-(defcfun "equalequal2" :boolean
+(defcfun ("equalequal" equalequal2) :boolean
   (a (:boolean int-for-bool))
   (b (:boolean :uint)))
 
@@ -148,11 +148,12 @@
   (declare (ignore value))
   (error "translate-from-foreign invoked."))
 
-(defmethod expand-to-foreign (value (name (eql 'error-error)))
-  value)
+(eval-when (:load-toplevel :compile-toplevel :execute)
+  (defmethod expand-to-foreign (value (name (eql 'error-error)))
+    value)
 
-(defmethod expand-from-foreign (value (name (eql 'error-error)))
-  value)
+  (defmethod expand-from-foreign (value (name (eql 'error-error)))
+    value))
 
 (defcfun ("abs" expand-abs) error-error
   (n error-error))
