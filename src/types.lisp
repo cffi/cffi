@@ -214,6 +214,29 @@
       (expand-from-foreign value (name type))
       *runtime-translator-form*))
 
+;;; User interface for converting values from/to foreign using the
+;;; type translators. Something doesn't feel right about this, makes
+;;; me want to just export PARSE-TYPE...
+
+(defun convert-to-foreign (value type)
+  (translate-type-to-foreign value (parse-type type)))
+
+(define-compiler-macro convert-to-foreign (value type)
+  (if (constantp type)
+      (expand-type-to-foreign value (parse-type (eval type)))
+      `(translate-type-to-foreign ,value (parse-type ,type))))
+
+(defun convert-from-foreign (value type)
+  (translate-type-from-foreign value (parse-type type)))
+
+(define-compiler-macro convert-from-foreign (value type)
+  (if (constantp type)
+      (expand-type-from-foreign value (parse-type (eval type)))
+      `(translate-type-from-foreign ,value (parse-type ,type))))
+
+(defun free-converted-object (value type param)
+  (free-type-translated-object value type param))
+
 ;;;# Dereferencing Foreign Pointers
 
 (defun mem-ref (ptr type &optional (offset 0))

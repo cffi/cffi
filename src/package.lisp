@@ -94,6 +94,9 @@
    #:with-foreign-object
    #:with-foreign-objects
    #:with-foreign-slots
+   #:convert-to-foreign
+   #:convert-from-foreign
+   #:free-converted-object
 
    ;; Extensible foreign type operations.
    #:translate-to-foreign
