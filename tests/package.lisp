@@ -28,5 +28,5 @@
 (in-package #:cl-user)
 
 (defpackage #:cffi-tests
-  (:use #:cl #:cffi #:regression-test)
+  (:use #:cl #:cffi #:cffi-sys #:regression-test)
   (:export #:do-tests))

@@ -156,6 +156,40 @@
         (values (mem-ref p :char 0) (mem-ref p :char 1) i)))
   66 2 2)
 
+;;; This needs to be in a real function for at least Allegro CL or the
+;;; compiler macro on %MEM-REF is not expanded and the test doesn't
+;;; actually test anything!
+(defun %mem-ref-left-to-right ()
+  (let ((result nil))
+    (with-foreign-object (p :char)
+      (%mem-set 42 p :char)
+      (%mem-ref (progn (push 1 result) p) :char (progn (push 2 result) 0))
+      (nreverse result))))
+
+;;; Test left-to-right evaluation of the arguments to %MEM-REF when
+;;; optimized by the compiler macro.
+(deftest %mem-ref.left-to-right
+    (%mem-ref-left-to-right)
+  (1 2))
+
+;;; This needs to be in a top-level function for at least Allegro CL
+;;; or the compiler macro on %MEM-SET is not expanded and the test
+;;; doesn't actually test anything!
+(defun %mem-set-left-to-right ()
+  (let ((result nil))
+    (with-foreign-object (p :char)
+      (%mem-set (progn (push 1 result) 0)
+                (progn (push 2 result) p)
+                :char
+                (progn (push 3 result) 0))
+      (nreverse result))))
+
+;;; Test left-to-right evaluation of the arguments to %MEM-SET when
+;;; optimized by the compiler macro.
+(deftest %mem-set.left-to-right
+    (%mem-set-left-to-right)
+  (1 2 3))
+
 ;; regression test. mem-aref's setf expansion evaluated its type argument twice.
 (deftest mem-aref.eval-type-x2
     (let ((count 0))

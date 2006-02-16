@@ -193,9 +193,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;; transformation on the call that results in efficient code.
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
   (if (constantp type)
-      (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
-        `(setf (ff:fslot-value-typed ',(convert-foreign-type (eval type))
-                                     :c ,ptr-form) ,val))
+      (once-only (val)
+        (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
+          `(setf (ff:fslot-value-typed ',(convert-foreign-type (eval type))
+                                       :c ,ptr-form) ,val)))
       form))
 
 ;;;# Calling Foreign Functions

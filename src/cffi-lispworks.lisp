@@ -228,17 +228,18 @@ be stack allocated if supported by the implementation."
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
   (if (constantp type)
-      (let ((type (eval type)))
-        (if (eql type :pointer)
-            (let ((fli-type (convert-foreign-type type))
-                  (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
-              `(setf (fli:dereference ,ptr-form :type ',fli-type) ,val))
-            (let ((lisp-type (convert-foreign-typed-aref-type type)))
-              (multiple-value-bind (ptr-form index)
-                  (pointer-and-index ptr type off)
-                `(locally
-                   (declare (optimize (speed 3) (safety 0)))
-                   (setf (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index) ,val))))))
+      (once-only (val)
+        (let ((type (eval type)))
+          (if (eql type :pointer)
+              (let ((fli-type (convert-foreign-type type))
+                    (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
+                `(setf (fli:dereference ,ptr-form :type ',fli-type) ,val))
+              (let ((lisp-type (convert-foreign-typed-aref-type type)))
+                (multiple-value-bind (ptr-form index)
+                    (pointer-and-index ptr type off)
+                  `(locally
+                       (declare (optimize (speed 3) (safety 0)))
+                     (setf (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index) ,val)))))))
       form))
 
 ;;; Open-code the call to (SETF FLI:DEREFERENCE) when TYPE is constant
@@ -246,9 +247,10 @@ be stack allocated if supported by the implementation."
 #-#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
   (if (constantp type)
-      (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
-            (type (convert-foreign-type (eval type))))
-        `(setf (fli:dereference ,ptr-form :type ',type) ,val))
+      (once-only (val)
+        (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
+              (type (convert-foreign-type (eval type))))
+          `(setf (fli:dereference ,ptr-form :type ',type) ,val)))
       form))
 
 ;;;# Foreign Type Operations
