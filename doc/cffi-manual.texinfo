@@ -1803,7 +1803,7 @@ types.
 
 The @code{:string} type performs automatic conversion between Lisp and
 C strings. Note that, in the case of functions the converted C string
-will have dynamic extend (ie. it will be automatically freed after the
+will have dynamic extent (ie. it will be automatically freed after the
 foreign function returns).
 
 @lisp
