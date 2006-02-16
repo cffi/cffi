@@ -160,6 +160,7 @@ software or the use or other dealings in the software.}
 
 Foreign Types
 
+* defbitfield::                 Defines a bitfield.
 * defcstruct::                  Defines a C structure type.
 * defcunion::                   Defines a C union type.
 * defctype::                    Defines a foreign typedef.
@@ -167,6 +168,8 @@ Foreign Types
 @c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
 @c * explain-foreign-slot-value::  <unimplemented>
+* foreign-bitfield-symbols::    Returns a list of symbols for a bitfield type.
+* foreign-bitfield-value::      Calculates a value for a bitfield type.
 * foreign-enum-keyword::        Finds a keyword in an enum type.
 * foreign-enum-value::          Finds a value in an enum type.
 * foreign-slot-names::          Returns a list of slot names in a foreign struct.
@@ -321,7 +324,10 @@ fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
 CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
 
 @item
-@emph{(v8.0b, linux/ppc)} Fails FUNCALL.VARARGS.DOUBLE.
+@emph{(v8.0b, linux/ppc)} Fails @code{FUNCALL.VARARGS.DOUBLE}.
+
+@item
+@emph{(darwin/ppc)} Fails @code{CALLBACKS.BFF.1}.
 @end itemize
 
 
@@ -369,10 +375,14 @@ version 2.35 or newer is required.
 
 @strong{Tested platforms:} linux/x86, darwin/ppc.
 
-Versions prior to 19B are untested. For darwin/ppc, the 2005-12 (19C)
+Versions prior to 19B are untested. For darwin/ppc, the 2006-02 (19C)
 snapshot or later is recommended.
 
-@c @subheading Known issues
+@subheading Known issues
+@itemize
+@emph{(darwin/ppc)} Fails the tests @code{CALLBACKS.BFF.1} and
+@code{CALLBACKS.BFF.2}.
+@end itemize
 
 @section @acronym{ECL}
 
@@ -398,6 +408,9 @@ Versions prior to 4.4 are untested.
 @itemize
 @item
 @emph{(all platforms)} Does not support (unsigned) long long.
+
+@item
+@emph{(darwin/ppc)} Fails the test @code{CALLBACKS.BFF.1}.
 @end itemize
 
 
@@ -767,7 +780,7 @@ should be enlightening.
 @tutorialsource{CURLoption enumeration}
 @lisp
 (defmacro define-curl-options (name type-offsets &rest enum-args)
-  "As with CFFI:DEFENUM, except each of ENUM-ARGS is as follows:
+  "As with CFFI:DEFCENUM, except each of ENUM-ARGS is as follows:
 
     (NAME TYPE NUMBER)
 
@@ -988,7 +1001,7 @@ This macro is intended for use in DEFINE-CURL-OPTIONS."
      (curry-curl-option-setter ',name ',option-value)))
 
 (defmacro define-curl-options (type-name type-offsets &rest enum-args)
-  "As with CFFI:DEFENUM, except each of ENUM-ARGS is as follows:
+  "As with CFFI:DEFCENUM, except each of ENUM-ARGS is as follows:
 
     (NAME TYPE NUMBER)
 
@@ -1657,6 +1670,7 @@ define new types.
 
 @menu
 * Built-In Types::              
+* Other Types::                 
 * Defining Typedefs::           
 * Foreign Type Translators::    
 * Foreign Structure Types::     
@@ -1665,14 +1679,16 @@ define new types.
 
 Dictionary
 
+* defbitfield::                 
 * defcstruct::                  
 * defcunion::                   
 * defctype::                    
 * defcenum::                    
-@c * define-type-translator::      
 @c * define-type-spec-parser::     
 * define-foreign-type::         
 @c * explain-foreign-slot-value::        
+* foreign-bitfield-symbols::    
+* foreign-bitfield-value::      
 * foreign-enum-keyword::        
 * foreign-enum-value::          
 * foreign-slot-names::          
@@ -1777,6 +1793,64 @@ A foreign pointer to an object of any type, corresponding to
 
 No type at all. Only valid as the return type of a function.
 
+@node Other Types
+@section Other Types
+
+@cffi{} also provides a few useful types that aren't built-in C
+types.
+
+@ForeignType{:string}
+
+The @code{:string} type performs automatic conversion between Lisp and
+C strings. Note that, in the case of functions the converted C string
+will have dynamic extend (ie. it will be automatically freed after the
+foreign function returns).
+
+@lisp
+;;; :STRING example
+CFFI> (foreign-funcall "getenv" :string "SHELL" :string)
+"/bin/bash"
+@end lisp
+
+@ForeignType{:boolean &optional (base-type :int)}
+
+The @code{:boolean} type converts between a Lisp boolean and a C
+boolean. It canonicalizes to @var{base-type} which is @code{:int} by
+default.
+
+@lisp
+(convert-to-foreign nil :boolean) @result{} 0
+(convert-to-foreign <something-non-nil> :boolean) @result{} 1
+(convert-from-foreign 0 :boolean) @result{} nil
+(convert-from-foreign <something-not-0> :boolean) @result{} t
+@end lisp
+
+@ForeignType{:wrapper base-type &key to-c from-c}
+
+The @code{:wrapper} type stores two symbols passed to the @var{to-c}
+and @var{from-c} arguments. When a value is being translated to or
+from C, this type @code{funcall}s the respective symbol.
+
+@code{:wrapper} types will be typedefs for @var{base-type} and will
+inherit its translators, if any.
+
+Here's an example of how the @code{:boolean} type could be defined in
+terms of @code{:wrapper}.
+
+@lisp
+(defun bool-c-to-lisp (value)
+  (not (zerop value)))
+
+(defun bool-lisp-to-c (value)
+  (if value 1 0))
+
+(defctype my-bool (:wrapper :int :from-c bool-c-to-lisp
+                                 :to-c bool-lisp-to-c))
+
+(convert-to-foreign nil 'my-bool) @result{} 0
+(convert-from-foreign 1 'my-bool) @result{} t
+@end lisp
+
 @node Defining Typedefs
 @section Defining Typedefs
 
@@ -1843,8 +1917,107 @@ null pointer, signalling an error if a null pointer is passed.  This
 will prevent some pointer errors when calling foreign functions that
 cannot handle null pointers.
 
+@strong{Note:} these methods are meant as extensible hooks only and
+you should not call them directly. Use @code{convert-to-foreign},
+@code{convert-from-foreign} and @code{free-converted-object}
+instead. These will take care of following the typedef chain, for
+example, calling all the applicable translators. It will also work
+for non user-defined types like enums.
+
 @xref{Tutorial-Types,, Defining new types}, for a more involved
 tutorial example of type translators.
+
+@heading Optimizing Type Translators
+
+Being based on generic functions, the type translation mechanism
+described above can add a bit of overhead. Most of the times, this is
+not significant but we provide a way of getting rid of the overhead
+for the cases where it matters.
+
+A good way to understand this issue is to look at the code generated
+by @code{defcfun}. Consider the following example using the
+@code{my-boolean} type defined above:
+
+@lisp
+CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
+(DEFUN FOO (X)
+  (MULTIPLE-VALUE-BIND (#:G3148 #:PARAM3149)
+      (TRANSLATE-TYPE-TO-FOREIGN X #<FOREIGN-TYPEDEF MY-BOOLEAN>)
+    (UNWIND-PROTECT
+        (PROGN
+          (TRANSLATE-TYPE-FROM-FOREIGN
+           (%FOREIGN-FUNCALL "foo" :INT #:G3148 :INT)
+           #<FOREIGN-TYPEDEF MY-BOOLEAN>))
+      (FREE-TYPE-TRANSLATED-OBJECT #:G3148
+                                   #<FOREIGN-TYPEDEF MY-BOOLEAN>
+                                   #:PARAM3149))))
+@end lisp
+
+In order to get rid of those generic function calls, @cffi{} has
+another set of extensible generic functions that provide an interface
+similar to @acronym{CL}'s compiler macros:
+@code{expand-to-foreign-dyn}, @code{expand-to-foreign} and
+@code{expand-from-foreign}. Here's how one could define
+@code{my-boolean} with them:
+
+@lisp
+(defmethod expand-to-foreign (value (type (eql 'my-boolean)))
+  `(if ,value 1 0))
+
+(defmethod expand-from-foreign (value (type (eql 'my-boolean)))
+  `(not (zerop ,value)))
+@end lisp
+
+And here's what the macroexpansion of @code{foo} now looks like:
+
+@lisp
+CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
+(DEFUN FOO (X)
+  (LET ((#:G3182 (IF X 1 0)))
+    (NOT (ZEROP (%FOREIGN-FUNCALL "foo" :INT #:G3182 :INT)))))
+@end lisp
+
+Much better.
+
+The third generic function in this set is @code{expand-to-foreign-dyn}
+which can be used when it's necessary to allocate something with
+dynamic extent. Consider the following example:
+
+@lisp
+;;; This type inherits :string's translators.
+(defctype stack-allocated-string :string)
+
+(defmethod expand-to-foreign-dyn
+    (value var body (type (eql 'stack-allocated-string)))
+  `(with-foreign-string (,var ,value)
+     ,@@body))
+@end lisp
+
+Not unlike @code{define-compiler-macro}'s @code{&whole} argument,
+@cffi{} binds the special variable
+@strong{@code{*runtime-translator-form*}} to a form you can return
+from any of the @code{expand-*} methods.
+
+The @code{expand-*} methods have precedence over their
+@code{translate-*} counterparts and are guaranteed to be used in
+@code{defcfun}, @code{foreign-funcall}, @code{defcvar} and
+@code{defcallback}. They are also used in compiler macros for the
+following @cffi{} operators: @code{mem-ref}, @code{mem-aref},
+@code{foreign-slot-value}, @code{convert-to-foreign} and
+@code{convert-from-foreign}, in which cases its use is not guaranteed
+and depends on whether the Lisp compiler calls the respective compiler
+macros or not. 
+
+@code{expand-to-foreign-dyn} has precedence over
+@code{expand-to-foreign} and is only used in @code{defcfun} and
+@code{foreign-funcall}.
+
+@strong{Important note:} this set of generic functions is called at
+macroexpansion time and therefore you will need to either load the
+method definitions earlier in a seperate file from, say,
+@code{defcfun}s that will use them or wrap them in an
+@code{eval-when}. Otherwise, they will not be found and the runtime
+translators will be used instead.
 
 @node Foreign Structure Types
 @section Foreign Structure Types
@@ -1894,6 +2067,87 @@ translation.
 @c chapter, where foreign-alloc is.
 
 @xref{Allocating Foreign Memory}.
+
+
+@c ===================================================================
+@c DEFBITFIELD
+
+@node defbitfield
+@unnumberedsec defbitfield
+@subheading Syntax
+@Macro{defbitfield name-and-options &body masks}
+
+masks ::= [docstring] @{ (symbol value) @}* @*
+name-and-options ::= name | (name &optional (base-type :int))
+
+@subheading Arguments and Values
+
+@table @var
+@item name
+The name of the new bitfield type.
+
+@item docstring
+A documentation string, ignored.
+
+@item base-type
+A symbol denoting a foreign type.
+
+@item symbol
+A Lisp symbol.
+
+@item value
+An integer representing a bitmask.
+@end table
+
+@subheading Description
+The @code{defbitfield} macro is used to define foreign types that map
+lists of lisp symbols to integer values.
+
+If @var{value} is omitted its value will either be 0, if it's the
+first entry, or it it will continue the progression from the last
+specified value.
+
+Symbol lists will be automatically converted to values and vice-versa
+when being passed as arguments to or returned from foreign functions,
+respectively. The same applies to any other situations where an object
+of a bitfield type is expected.
+
+Types defined with @code{defbitfield} canonicalize to @var{base-type}
+which is @code{:int} by default.
+
+@subheading Examples
+@lisp
+(defbitfield open-flags
+  (:rdonly   #x0000)
+  (:wronly   #x0001)
+  (:rdwr     #x0002)
+  (:nonblock $x0004)
+  (:append   #x0008)
+  (:creat    #x0200))
+  ;; etc..
+
+CFFI> (foreign-bitfield-symbols 'open-flags #b1101)
+@result{} (:RDONLY :WRONLY :NONBLOCK :APPEND)
+
+CFFI> (foreign-bitfield-value 'open-flags '(:rdwr :creat))
+@result{} 514   ; #x0202
+
+(defcfun ("open" unix-open) :int
+  (path :string)
+  (flags open-flags)
+  (mode :uint16)) ; unportable
+
+CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
+@result{} <an fd>
+
+;;; Consider also the following lispier wrapper around open()
+(defun lispier-open (path mode &rest flags)
+  (unix-open path flags mode))
+@end lisp
+
+@subheading See Also
+@seealso{foreign-bitfield-value} @*
+@seealso{foreign-bitfield-symbols}
 
 
 @c ===================================================================
@@ -2089,9 +2343,10 @@ The new type inherits @var{base-type}'s translators.
 @node defcenum
 @unnumberedsec defcenum
 @subheading Syntax
-@Macro{defcenum name &body enum-list}
+@Macro{defcenum name-and-options &body enum-list}
 
 enum-list ::= [docstring] @{ keyword | (keyword value) @}*
+name-and-options ::= name | (name &optional (base-type :int))
 
 @subheading Arguments and Values
 
@@ -2101,6 +2356,9 @@ The name of the new enum type.
 
 @item docstring
 A documentation string, ignored.
+
+@item base-type
+A symbol denoting a foreign type.
 
 @item keyword
 A keyword symbol.
@@ -2121,6 +2379,9 @@ Keywords will be automatically converted to values and vice-versa when
 being passed as arguments to or returned from foreign functions,
 respectively. The same applies to any other situations where an object
 of an @code{enum} type is expected.
+
+Types defined with @code{defcenum} canonicalize to @var{base-type}
+which is @code{:int} by default.
 
 @subheading Examples
 @lisp
@@ -2258,6 +2519,89 @@ yet.
 
 
 @c ===================================================================
+@c FOREIGN-BITFIELD-SYMBOLS
+
+@node foreign-bitfield-symbols
+@unnumberedsec foreign-bitfield-symbols
+@subheading Syntax
+@Function{foreign-bitfield-symbols type value => symbols}
+
+@subheading Arguments and Values
+
+@table @var
+@item type
+A @code{bitfield} type.
+
+@item value
+An integer.
+
+@item symbols
+A list of symbols.
+@code{nil}.
+@end table
+
+@subheading Description
+The function @code{foreign-bitfield-symbols} returns the Lisp symbol
+that corresponds to @var{value} in @var{type}.
+
+@subheading Examples
+@lisp
+(defbitfield flags
+  (flag-a 1)
+  (flag-b 2)
+  (flag-c 4))
+
+CFFI> (foreign-bitfield-symbols 'boolean #b101)
+@result{} (FLAG-A FLAG-C)
+@end lisp
+
+@subheading See Also
+@seealso{defbitfield} @*
+@seealso{foreign-bitfield-value}
+
+
+@c ===================================================================
+@c FOREIGN-BITFIELD-VALUE
+
+@node foreign-bitfield-value
+@unnumberedsec foreign-bitfield-value
+@subheading Syntax
+@Function{foreign-bitfield-value type symbols => value}
+
+@subheading Arguments and Values
+
+@table @var
+@item type
+A @code{bitfield} type.
+
+@item symbol
+A Lisp symbol.
+
+@item value
+An integer.
+@end table
+
+@subheading Description
+The function @code{foreign-bitfield-value} returns the @var{value} that
+corresponds to the symbols in the @var{symbols} list.
+
+@subheading Examples
+@lisp
+(defbitfield flags
+  (flag-a 1)
+  (flag-b 2)
+  (flag-c 4))
+
+CFFI> (foreign-bitfield-value 'flags '(flag-a flag-c))
+@result{} 5  ; #b101
+@end lisp
+
+@subheading See Also
+@seealso{defbitfield} @*
+@seealso{foreign-bitfield-symbols}
+
+
+@c ===================================================================
 @c FOREIGN-ENUM-KEYWORD
 
 @node foreign-enum-keyword
@@ -2332,7 +2676,7 @@ An integer.
 @end table
 
 @subheading Description
-The function @code{foreign-enum-keyword} returns the @var{value} that
+The function @code{foreign-enum-value} returns the @var{value} that
 corresponds to @var{keyword} in @var{type}.
 
 An error is signaled if @var{type} doesn't contain such
@@ -2344,7 +2688,7 @@ An error is signaled if @var{type} doesn't contain such
   :no
   :yes)
 
-CFFI> (foreign-enum-keyword 'boolean :yes)
+CFFI> (foreign-enum-value 'boolean :yes)
 @result{} 1
 @end lisp
 
@@ -3651,7 +3995,7 @@ CFFI> (foreign-funcall "strlen" :pointer str :int)
 @subheading See Also
 @seealso{foreign-string-free} @*
 @seealso{with-foreign-string}
-@c @ref{:string}
+@c @seealso{:string}
 
 
 @c ===================================================================
@@ -3725,7 +4069,9 @@ CFFI> (foreign-string-to-lisp *)
 @end lisp
 
 @subheading See Also
-@seealso{foreign-string-to-lisp}
+@seealso{lisp-string-to-foreign} @*
+@seealso{foreign-string-alloc}
+@c @seealso{:string}
 
 
 @c ===================================================================
@@ -3998,10 +4344,11 @@ Dictionary
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
-@Macro{defcfun name return-type &body arguments => lisp-name}
+@Macro{defcfun name return-type &body arguments [varargs-maker] => lisp-name}
 
 name ::= lisp-name | foreign-name | (foreign-name lisp-name) @*
 arguments ::= @{ (arg-name arg-type) @}*
+varargs-marker ::= &rest
 
 @subheading Arguments and Values
 
@@ -4036,6 +4383,17 @@ Lisp names are converted to foreign names by lowercasing and replacing
 hyphens with underscores.
 @end itemize
 
+If you place the symbol @code{&rest} in the end of the argument list
+after the fixed arguments, @code{defcfun} will treat the foreign
+function as a @strong{variadic function}. The variadic arguments
+should be passed in a way similar to what @code{foreign-funcall} would
+expect. Unlike @code{foreign-funcall} though, @code{defcfun} will take
+care of doing argument promotion. Note that in this case
+@code{defcfun} will generate a Lisp @emph{macro} instead of a
+function and will only work for Lisps that support
+@code{foreign-funcall.}
+
+
 @subheading Examples
 
 @lisp
@@ -4052,9 +4410,7 @@ CFFI> (c-abs -42)
 @result{} 42
 @end lisp
 
-@impnote{The following example illustrates @code{defcfun}'s undocumented
-support for variadic functions. Note that argument promotion is done
-automatically. --luis}
+Variadic function example:
 
 @lisp
 (defcfun "sprintf" :int
