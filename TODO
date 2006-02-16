@@ -78,6 +78,9 @@ This is a collection of TODO items and ideas in no particular order.
 -> Optimize UFFI-COMPAT when the vector stuff is implemented.
 -> Being able to declare that some C int will always fit in a Lisp
    fixnum.
+-> An option for defcfun to expand into a compiler macro which would
+   allow the macroexpansion-time translators to look at the forms
+   passed to the function.
 
 ### Known Issues
 
