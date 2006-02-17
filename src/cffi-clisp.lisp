@@ -205,7 +205,7 @@ values to pass to the function, and the CLisp FFI return type."
   (let ((return-type nil))
     (loop for (type arg) on args by #'cddr
           if arg collect (list (gensym) (convert-foreign-type type)) into types
-             and collect arg into fargs
+          and collect arg into fargs
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 

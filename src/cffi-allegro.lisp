@@ -220,10 +220,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Returns a list of types, list of args and return type."
   (let ((return-type :void))
     (loop for (type arg) on args by #'cddr
-       if arg collect (convert-foreign-type type :funcall) into types
+          if arg collect (convert-foreign-type type :funcall) into types
           and collect arg into fargs
-       else do (setf return-type (convert-foreign-type type :funcall))
-       finally (return (values types fargs return-type)))))
+          else do (setf return-type (convert-foreign-type type :funcall))
+          finally (return (values types fargs return-type)))))
 
 (defun convert-to-lisp-type (type)
   (if (equal '(* :void) type)

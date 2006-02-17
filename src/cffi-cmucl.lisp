@@ -176,30 +176,27 @@ WITH-POINTER-TO-VECTOR-DATA."
   `(progn
     (defun %mem-ref (ptr type &optional (offset 0))
       (ecase type
-        ,@(loop
-             for (keyword fn) in pairs
-             collect `(,keyword (,fn ptr offset)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (,fn ptr offset)))))
     (defun %mem-set (value ptr type &optional (offset 0))
       (ecase type
-        ,@(loop
-             for (keyword fn) in pairs
-             collect `(,keyword (setf (,fn ptr offset) value)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
       (if (constantp type)
           (ecase (eval type)
-            ,@(loop
-                 for (keyword fn) in pairs
-                 collect `(,keyword `(,',fn ,ptr ,offset))))
+            ,@(loop for (keyword fn) in pairs
+                    collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
       (if (constantp type)
           (once-only (value)
             (ecase (eval type)
-              ,@(loop
-                   for (keyword fn) in pairs
-                   collect `(,keyword `(setf (,',fn ,ptr ,offset) ,value)))))
+              ,@(loop for (keyword fn) in pairs
+                      collect `(,keyword `(setf (,',fn ,ptr ,offset)
+                                                ,value)))))
           form))))
 
 (define-mem-accessors
@@ -253,10 +250,10 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Return an ALIEN function type for ARGS."
   (let ((return-type nil))
     (loop for (type arg) on args by #'cddr
-       if arg collect (convert-foreign-type type) into types
+          if arg collect (convert-foreign-type type) into types
           and collect arg into fargs
-       else do (setf return-type (convert-foreign-type type))
-       finally (return (values types fargs return-type)))))
+          else do (setf return-type (convert-foreign-type type))
+          finally (return (values types fargs return-type)))))
 
 (defmacro %%foreign-funcall (name types fargs rettype)
   "Internal guts of %FOREIGN-FUNCALL."

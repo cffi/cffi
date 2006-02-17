@@ -193,7 +193,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (let ((return-type :void))
     (loop for (type arg) on args by #'cddr
           if arg collect (convert-foreign-type type) into types
-             and collect arg into values
+          and collect arg into values
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types values return-type)))))
 

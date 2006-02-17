@@ -144,30 +144,27 @@ WITH-POINTER-TO-VECTOR-DATA."
   `(progn
     (defun %mem-ref (ptr type &optional (offset 0))
       (ecase type
-        ,@(loop
-             for (keyword fn) in pairs
-             collect `(,keyword (,fn ptr offset)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (,fn ptr offset)))))
     (defun %mem-set (value ptr type &optional (offset 0))
       (ecase type
-        ,@(loop
-             for (keyword fn) in pairs
-             collect `(,keyword (setf (,fn ptr offset) value)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
       (if (constantp type)
           (ecase (eval type)
-            ,@(loop
-                 for (keyword fn) in pairs
-                 collect `(,keyword `(,',fn ,ptr ,offset))))
+            ,@(loop for (keyword fn) in pairs
+                    collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
       (if (constantp type)
           (once-only (value)
             (ecase (eval type)
-              ,@(loop
-                   for (keyword fn) in pairs
-                   collect `(,keyword `(setf (,',fn ,ptr ,offset) ,value)))))
+              ,@(loop for (keyword fn) in pairs
+                      collect `(,keyword `(setf (,',fn ,ptr ,offset)
+                                                ,value)))))
           form))))
 
 (define-mem-accessors
