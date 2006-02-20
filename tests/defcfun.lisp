@@ -294,3 +294,14 @@
        27033.0d0 1096518219 -12 104 3392025403 -27911 60 89 509297051
        -533066551 29158.0 110 54 -9802.0d0 593950442165910888 -79)
     7758614658402721936))
+
+;;; regression test: defining an undefined foreign function should only
+;;; throw some sort of warning, not signal an error.
+#+cmu (push 'defcfun.undefined rt::*expected-failures*)
+
+(deftest defcfun.undefined
+    (progn
+      (eval '(defcfun "undefined_foreign_function" :void))
+      (compile 'undefined-foreign-function)
+      t)
+  t)

@@ -217,13 +217,19 @@ the function call."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
     (let ((ctype `(ffi:c-function (:arguments ,@types)
-                                   (:return-type ,rettype)
-                                   (:language :stdc))))
+                                  (:return-type ,rettype)
+                                  (:language :stdc))))
       `(funcall
         (load-time-value
-         (ffi::foreign-library-function
-          ,name (ffi::foreign-library :default)
-          nil (ffi:parse-c-type ',ctype)))
+         (multiple-value-bind (ff error)
+             (ignore-errors
+               (ffi::foreign-library-function
+                ,name (ffi::foreign-library :default)
+                nil (ffi:parse-c-type ',ctype)))
+           (or ff
+               (warn (format nil "~?"
+                             (simple-condition-format-control error)
+                             (simple-condition-format-arguments error)))))) 
         ,@fargs))))
 
 (defmacro %foreign-funcall-pointer (ptr &rest args)
