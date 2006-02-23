@@ -77,7 +77,8 @@ This is a collection of TODO items and ideas in no particular order.
 -> More compiler macros on some of the CFFI-SYS implementations.
 -> Optimize UFFI-COMPAT when the vector stuff is implemented.
 -> Being able to declare that some C int will always fit in a Lisp
-   fixnum.
+   fixnum. Allegro has a :fixnum ftype and CMUCL/SBCL can use
+   (unsigned-byte 29) others could perhaps behave like :int?
 -> An option for defcfun to expand into a compiler macro which would
    allow the macroexpansion-time translators to look at the forms
    passed to the function.
