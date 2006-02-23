@@ -113,7 +113,7 @@
 (defmacro define-foreign-library (name &body pairs)
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
-  `(eval-when (#+cmu :compile-toplevel :load-toplevel :execute)
+  `(eval-when (#+(or cmu scl) :compile-toplevel :load-toplevel :execute)
      (setf (get-foreign-library ',name) ',pairs)
      ',name))
 
@@ -243,7 +243,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
        (:or (try-foreign-library-alternatives (rest library)))))))
 
 (defmacro use-foreign-library (name)
-  `(eval-when (:load-toplevel :execute #+cmu :compile-toplevel)
+  `(eval-when (:load-toplevel :execute #+(or cmu scl) :compile-toplevel)
      (load-foreign-library ',name)))
 
 ;;;# Closing Foreign Libraries

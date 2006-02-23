@@ -125,6 +125,29 @@
       (mem-ref p :double))
   #.*double-min*)
 
+;;; TODO: use something like *DOUBLE-MIN/MAX* above once we actually
+;;; have an available lisp that supports long double.
+;#-cffi-features:no-long-float
+#+(and scl long-double)
+(progn
+  (deftest deref.long-double.1
+      (with-foreign-object (p :long-double)
+        (setf (mem-ref p :long-double) 0.0l0)
+        (mem-ref p :long-double))
+    0.0l0)
+
+  (deftest deref.long-double.2
+      (with-foreign-object (p :long-double)
+        (setf (mem-ref p :long-double) most-positive-long-float)
+        (mem-ref p :long-double))
+    #.most-positive-long-float)
+
+  (deftest deref.long-double.3
+      (with-foreign-object (p :long-double)
+        (setf (mem-ref p :long-double) least-positive-long-float)
+        (mem-ref p :long-double))
+    #.least-positive-long-float))
+
 ;;; make sure the lisp doesn't convert NULL to NIL
 (deftest deref.pointer.null
     (with-foreign-object (p :pointer)

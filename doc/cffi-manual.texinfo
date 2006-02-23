@@ -300,10 +300,9 @@ for performance, use a compiler-macro instead.
 
 @cffi{} supports various free and commercial Lisp implementations:
 Allegro CL, Corman CL, @sc{clisp}, @acronym{CMUCL}, @acronym{ECL},
-LispWorks, Open@acronym{MCL} and @acronym{SBCL}.
+LispWorks, Open@acronym{MCL}, @acronym{SBCL} and the Scieneer CL.
 
-There are also plans to support Digitool @acronym{MCL}, @acronym{GCL}
-and Scieneer CL.
+There are also plans to support Digitool @acronym{MCL}, and @acronym{GCL}.
 
 
 @section Allegro CL
@@ -443,6 +442,14 @@ Version 0.9.6 or newer is recommended.
 @emph{(linux/ppc)} Fails 3 tests: @code{FUNCALL.LONG-LONG,
 DEFCFUN.LONG-LONG} and @code{FUNCALL.VARARGS.DOUBLE}.
 @end itemize
+
+
+@section The Scieneer Common Lisp
+
+@strong{Tested platforms:} linux/x86, linux/amd64.
+
+Version 1.2.10 or newer is recommended.  Passes all tests.
+The x86 and AMD64 ports feature long-double support.
 
 
 @c ===================================================================
@@ -1783,6 +1790,10 @@ precision, among each respective category.
 
 @impnote{This is not true for Lispworks (on linux/x86 and win32 at
 least). --luis}
+
+@ForeignType{:long-double}
+
+This type is only supported on SCL.
 
 @ForeignType{:pointer}
 

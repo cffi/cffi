@@ -848,6 +848,10 @@ obtained using define-foreign-type."
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
 
+;;; When some lisp other than SCL supports :long-double we should
+;;; use #-cffi-features:no-long-double here instead.
+#+(and scl long-float) (define-built-in-foreign-type :long-double)
+
 ;;; A couple of handy typedefs.
 
 (defctype :uchar  :unsigned-char :translate-p nil)

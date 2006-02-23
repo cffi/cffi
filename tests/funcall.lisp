@@ -71,6 +71,11 @@
     (foreign-funcall "sqrt" :double 36.0d0 :double)
   6.0d0)
 
+#+(and scl long-float)
+(deftest funcall.long-double
+    (foreign-funcall "sqrtl" :long-double 36.0l0 :long-double)
+  6.0l0)
+
 (deftest funcall.string.1
     (foreign-funcall "strlen" :string "Hello" :int)
   5)
@@ -118,6 +123,14 @@
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%.2f"
                        :double (coerce pi 'double-float) :int))
+  "3.14")
+
+#+(and scl long-float)
+(deftest funcall.varargs.long-double
+    (with-foreign-pointer-as-string (s 100)
+      (setf (mem-ref s :char) 0)
+      (foreign-funcall "sprintf" :pointer s :string "%.2Lf"
+                       :long-double pi :int))
   "3.14")
 
 (deftest funcall.varargs.string

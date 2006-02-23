@@ -173,6 +173,13 @@ int expect_double_sum(double (*f)(double, double))
 }
 
 DLLEXPORT
+int expect_long_double_sum(long double (*f)(long double, long double))
+{
+    /*printf("\n>>> DOUBLE: %f<<<\n", f(-20.0, -22.0));*/
+    return f(-20.0, -22.0) == -42.0;
+}
+
+DLLEXPORT
 int expect_pointer_sum(void* (*f)(void*, int))
 {
     return f(NULL, 0xDEAD) == (void *) 0xDEAD;

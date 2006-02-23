@@ -21,8 +21,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> Fix the ECL port.
 -> Fix bugs in the Corman port.
 -> Port to MCL.
--> Port to SCL. Note: Its maintainer has offered to do a port. It might
-   be a good idea to wait until CFFI-SYS is stable, though.
 
 ### Features
 

@@ -39,6 +39,9 @@
    #:no-long-long
    #:no-foreign-funcall
 
+   ;; Only SCL support long-double...
+   ;;#:no-long-double
+   
    ;; Features related to the operating system.
    ;; Currently only these are pushed to *features*, more should be added.
    #:darwin
@@ -49,4 +52,5 @@
    ;; Currently only these are pushed to *features*, more should be added.
    #:ppc32
    #:x86
-   #:x86-64))
+   #:x86-64
+   ))

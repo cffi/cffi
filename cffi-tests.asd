@@ -70,7 +70,7 @@
      (:file "misc-types")))))
 
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
-  (or (funcall (intern "DO-TESTS" '#:regression-test))
+  (or (funcall (intern (symbol-name '#:do-tests) '#:regression-test))
       (error "test-op failed.")))
 
 ;;; vim: ft=lisp et

@@ -215,6 +215,7 @@ and does type promotion for the variadic arguments."
              return-type `(block ,name ,@body)))
          ',name))))
 
+(declaim (inline get-callback))
 (defun get-callback (symbol)
   (%callback symbol))
 
