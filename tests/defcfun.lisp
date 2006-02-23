@@ -58,11 +58,11 @@
 
 #-cffi-features:no-long-long
 (progn
-  (defcfun "llabs" :long-long
+  (defcfun "my_llabs" :long-long
     (n :long-long))
 
   (deftest defcfun.long-long
-      (llabs -9223372036854775807)
+      (my-llabs -9223372036854775807)
     9223372036854775807))
 
 

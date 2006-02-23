@@ -55,13 +55,19 @@ char *my_strdup(const char *str)
     return p;
 }
 
+DLLEXPORT
+long long my_llabs(long long n)
+{
+    return n < 0 ? -n : n;
+}
+
 /*
  * Foreign Globals
  *
  * (var_int is used in MISC-TYPES.EXPAND.3 as well)
  */
 
-DLLEXPORT char *         dll_version        = "20060215";
+DLLEXPORT char *         dll_version        = "20060223";
 
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;

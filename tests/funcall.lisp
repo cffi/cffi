@@ -60,7 +60,7 @@
 
 #-cffi-features:no-long-long
 (deftest funcall.long-long
-    (foreign-funcall "llabs" :long-long -9223372036854775807 :long-long)
+    (foreign-funcall "my_llabs" :long-long -9223372036854775807 :long-long)
   9223372036854775807)
 
 (deftest funcall.float
