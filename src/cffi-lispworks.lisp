@@ -295,7 +295,10 @@ signature.")
                  (fli:define-foreign-funcallable ,internal-name
                      ,(loop for type in types
                             collect (list (gensym) type))
-                   :result-type ,rettype))))
+                   :result-type ,rettype
+                   :language :ansi-c
+                   ;; avoid warning about cdecl not being supported on mac
+                   #-mac ,@'(:calling-convention :cdecl)))))
     internal-name))
 
 (defun get-foreign-funcallable (types rettype)
