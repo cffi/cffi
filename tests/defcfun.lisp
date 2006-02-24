@@ -314,7 +314,7 @@
 
 ;;; regression test: defining an undefined foreign function should only
 ;;; throw some sort of warning, not signal an error.
-#+cmu (push 'defcfun.undefined rt::*expected-failures*)
+#+cmu (pushnew 'defcfun.undefined rt::*expected-failures*)
 
 (deftest defcfun.undefined
     (progn
@@ -322,3 +322,34 @@
       (compile 'undefined-foreign-function)
       t)
   t)
+
+;;; Test whether all doubles are passed correctly. On some platforms, eg.
+;;; darwin/ppc, some are passed on registers others on the stack.
+(defcfun "sum_double26" :double
+  (a1 :double) (a2 :double) (a3 :double) (a4 :double) (a5 :double)
+  (a6 :double) (a7 :double) (a8 :double) (a9 :double) (a10 :double)
+  (a11 :double) (a12 :double) (a13 :double) (a14 :double) (a15 :double)
+  (a16 :double) (a17 :double) (a18 :double) (a19 :double) (a20 :double)
+  (a21 :double) (a22 :double) (a23 :double) (a24 :double) (a25 :double)
+  (a26 :double))
+
+(deftest defcfun.double26
+    (sum-double26 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0
+                  3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0
+                  3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0 3.14d0
+                  3.14d0 3.14d0 3.14d0 3.14d0 3.14d0)
+  81.64d0)
+
+;;; Same as above for floats.
+(defcfun "sum_float26" :float
+  (a1 :float) (a2 :float) (a3 :float) (a4 :float) (a5 :float)
+  (a6 :float) (a7 :float) (a8 :float) (a9 :float) (a10 :float)
+  (a11 :float) (a12 :float) (a13 :float) (a14 :float) (a15 :float)
+  (a16 :float) (a17 :float) (a18 :float) (a19 :float) (a20 :float)
+  (a21 :float) (a22 :float) (a23 :float) (a24 :float) (a25 :float)
+  (a26 :float))
+
+(deftest defcfun.float26
+    (sum-float26 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0
+                 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0)
+  130.0)

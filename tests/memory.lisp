@@ -77,6 +77,9 @@
 
 #-cffi-features:no-long-long
 (progn
+  #+(and cffi-features:darwin openmcl)
+  (pushnew 'deref.long-long rt::*expected-failures*)
+
   (deftest deref.long-long
       (with-foreign-object (p :long-long)
         (setf (mem-ref p :long-long) -9223372036854775807)
@@ -408,6 +411,9 @@
 
 #-cffi-features:no-long-long
 (progn
+  #+(and cffi-features:darwin openmcl)
+  (pushnew 'deref.nonconst.long-long rt::*expected-failures*)
+
   (deftest deref.nonconst.long-long
       (let ((type :long-long))
         (with-foreign-object (p type)

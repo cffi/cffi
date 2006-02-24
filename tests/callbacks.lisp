@@ -2,7 +2,7 @@
 ;;;
 ;;; callbacks.lisp --- Tests on callbacks.
 ;;;
-;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -288,26 +288,29 @@
      (a115 :long) (a116 :unsigned-short) (a117 :short) (a118 :double)
      (a119 :short) (a120 :int) (a121 :char) (a122 :unsigned-long) (a123 :long)
      (a124 :int) (a125 :pointer) (a126 :double) (a127 :unsigned-char))
-  (+ a1 (pointer-address a2) a3 (values (floor a4)) a5 (values (floor a6))
-     (values (floor a7)) a8 a9 (values (floor a10)) (values (floor a11))
-     (values (floor a12)) (pointer-address a13) a14 a15 (pointer-address a16)
-     a17 a18 a19 a20 a21 a22 a23 a24 (pointer-address a25)
-     (pointer-address a26) a27 a28 a29 a30 a31 a32 a33 a34 a35 a36
-     (pointer-address a37) a38 a39 (values (floor a40)) a41
-     (pointer-address a42) a43 a44 a45 (values (floor a46)) a47 a48
-     (values (floor a49)) a50 a51 a52 a53 a54 (values (floor a55))
-     a56 (pointer-address a57) a58 (values (floor a59)) a60
-     (values (floor a61)) a62 (values (floor a63)) a64 a65 a66 a67 a68 a69
-     (values (floor a70)) a71 (pointer-address a72) a73 a74
-     (pointer-address a75) a76 (pointer-address a77) a78 (values (floor a79))
-     (pointer-address a80) a81 (values (floor a82)) a83 a84
-     (pointer-address a85) (values (floor a86)) a87 a88 (values (floor a89))
-     (values (floor a90)) a91 (pointer-address a92) a93 (values (floor a94))
-     a95 a96 (values (floor a97)) a98 (values (floor a99)) a100
-     (values (floor a101)) a102 a103 a104 a105 (pointer-address a106) a107
-     a108 a109 a110 a111 (values (floor a112)) a113 (pointer-address a114)
-     a115 a116 a117 (values (floor a118)) a119 a120 a121 a122 a123 a124
-     (pointer-address a125) (values (floor a126)) a127))
+  (let ((args (list a1 (pointer-address a2) a3 (floor a4) a5 (floor a6)
+                    (floor a7) a8 a9 (floor a10) (floor a11) (floor a12)
+                    (pointer-address a13) a14 a15 (pointer-address a16) a17 a18
+                    a19 a20 a21 a22 a23 a24 (pointer-address a25)
+                    (pointer-address a26) a27 a28 a29 a30 a31 a32 a33 a34 a35
+                    a36 (pointer-address a37) a38 a39 (floor a40) a41
+                    (pointer-address a42) a43 a44 a45 (floor a46) a47 a48
+                    (floor a49) a50 a51 a52 a53 a54 (floor a55) a56
+                    (pointer-address a57) a58 (floor a59) a60 (floor a61) a62
+                    (floor a63) a64 a65 a66 a67 a68 a69 (floor a70) a71
+                    (pointer-address a72) a73 a74 (pointer-address a75) a76
+                    (pointer-address a77) a78 (floor a79) (pointer-address a80)
+                    a81 (floor a82) a83 a84 (pointer-address a85) (floor a86)
+                    a87 a88 (floor a89) (floor a90) a91 (pointer-address a92)
+                    a93 (floor a94) a95 a96 (floor a97) a98 (floor a99) a100
+                    (floor a101) a102 a103 a104 a105 (pointer-address a106) a107
+                    a108 a109 a110 a111 (floor a112) a113 (pointer-address a114)
+                    a115 a116 a117 (floor a118) a119 a120 a121 a122 a123 a124
+                    (pointer-address a125) (floor a126) a127)))
+    #-(and)
+    (loop for i from 1 and arg in args do
+          (format t "a~A: ~A~%" i arg))
+    (reduce #'+ args)))
 
 #+(or openmcl (and cffi-features:darwin (or allegro cmu lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
@@ -382,7 +385,83 @@
     8166570665645582011))
 
 ;;; regression test: (callback non-existant-callback) should throw an error
-
 (deftest callbacks.non-existant
     (not (null (nth-value 1 (ignore-errors (callback doesnt-exist)))))
   t)
+
+;;; Handling many arguments of type double. Many lisps (used to) fail
+;;; this one on darwin/ppc. This test might be bogus due to floating
+;;; point arithmetic rounding errors.
+(defcallback double26 :double
+    ((a1 :double) (a2 :double) (a3 :double) (a4 :double) (a5 :double)
+     (a6 :double) (a7 :double) (a8 :double) (a9 :double) (a10 :double)
+     (a11 :double) (a12 :double) (a13 :double) (a14 :double) (a15 :double)
+     (a16 :double) (a17 :double) (a18 :double) (a19 :double) (a20 :double)
+     (a21 :double) (a22 :double) (a23 :double) (a24 :double) (a25 :double)
+     (a26 :double))
+  (let ((args (list a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15
+                    a16 a17 a18 a19 a20 a21 a22 a23 a24 a25 a26)))
+    #-(and)
+    (loop for i from 1 and arg in args do
+          (format t "a~A: ~A~%" i arg))
+    (reduce #'+ args)))
+
+(defcfun "call_double26" :double (f :pointer))
+
+#+(and cffi-features:darwin allegro)
+(pushnew 'callbacks.double26 rt::*expected-failures*)
+
+(deftest callbacks.double26
+    (call-double26 (callback double26))
+  81.64d0)
+
+#-cffi-features:no-foreign-funcall
+(deftest callbacks.double26.funcall
+    (foreign-funcall (callback double26) :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double)
+  81.64d0)
+
+;;; Same as above, for floats.
+(defcallback float26 :float
+    ((a1 :float) (a2 :float) (a3 :float) (a4 :float) (a5 :float)
+     (a6 :float) (a7 :float) (a8 :float) (a9 :float) (a10 :float)
+     (a11 :float) (a12 :float) (a13 :float) (a14 :float) (a15 :float)
+     (a16 :float) (a17 :float) (a18 :float) (a19 :float) (a20 :float)
+     (a21 :float) (a22 :float) (a23 :float) (a24 :float) (a25 :float)
+     (a26 :float))
+  (let ((args (list a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15
+                    a16 a17 a18 a19 a20 a21 a22 a23 a24 a25 a26)))
+    #-(and)
+    (loop for i from 1 and arg in args do
+          (format t "a~A: ~A~%" i arg))
+    (reduce #'+ args)))
+
+(defcfun "call_float26" :float (f :pointer))
+
+#+(and cffi-features:darwin (or lispworks openmcl))
+(pushnew 'callbacks.float26 rt::*expected-failures*)
+
+(deftest callbacks.float26
+    (call-float26 (callback float26))
+  130.0)
+
+#+(and cffi-features:darwin (or lispworks openmcl))
+(pushnew 'callbacks.float26.funcall rt::*expected-failures*)
+
+#-cffi-features:no-foreign-funcall
+(deftest callbacks.float26.funcall
+    (foreign-funcall (callback float26) :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float)
+  130.0)

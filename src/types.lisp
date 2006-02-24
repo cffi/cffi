@@ -881,7 +881,8 @@ obtained using define-foreign-type."
                        (notice-foreign-typedef type match))))))
     ;; signed
     (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
-                 '(:char :short :int :long #-cffi-features:no-long-long :long-long))
+                 '(:char :short :int :long
+                   #-cffi-features:no-long-long :long-long))
     ;; unsigned
     (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
                  '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long

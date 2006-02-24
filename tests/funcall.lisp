@@ -140,4 +140,30 @@
                        :string "Hello" :string "world" :int))
   "Hello, world!")
 
+;;; See DEFCFUN.DOUBLE26.
+(deftest funcall.double26
+    (foreign-funcall "sum_double26"
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double 3.14d0
+                     :double 3.14d0 :double 3.14d0 :double)
+  81.64d0)
+
+
+;;; See DEFCFUN.FLOAT26.
+(deftest funcall.float26
+    (foreign-funcall "sum_float26"
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float 5.0 :float 5.0 :float 5.0 :float 5.0
+                     :float 5.0 :float)
+  130.0)
+
 ) ;; #-cffi-features:no-foreign-funcall

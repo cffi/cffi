@@ -31,6 +31,7 @@
 #define DLLEXPORT
 #endif
 
+#include <stdio.h>
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
@@ -368,7 +369,7 @@ struct s_s_double2 {
     short another_short;          /* 2 bytes */
                                   /* 2 bytes padding */
 };                                /* total size: 24 bytes */
-                                  /* aligment: 4 */
+                                  /* alignment: 4 */
 
 DLLEXPORT
 struct s_s_double2 the_s_s_double2 = { 3, { 1.0, 2 }, 4 };
@@ -516,8 +517,6 @@ DLLEXPORT long sum_127_no_ll
  *   (c-function rettype arg-types)
  *   (gen-function-test rettype arg-types))
  */
-
-#include <stdio.h>
 
 DLLEXPORT long long sum_127
   (void* a1, void* a2, float a3, unsigned long a4, void* a5, long long
@@ -670,6 +669,70 @@ DLLEXPORT long long call_sum_127
              -5153032566879951000, 9056545530140684207, 4124632010, 276167701,
              56, -2307310370663738730, 66, 9113015627153789746, -9618, 167,
              755753399701306200, 119, -28, -990561962725435433);
+}
+
+/*
+ * CALLBACKS.DOUBLE26
+ */
+
+DLLEXPORT double call_double26
+  (double (*f)(double, double, double, double, double, double, double, double,
+               double, double, double, double, double, double, double, double,
+               double, double, double, double, double, double, double, double,
+               double, double))
+{
+    return f(3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14,
+             3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14, 3.14,
+             3.14, 3.14, 3.14, 3.14);
+}
+
+/*
+ * DEFCFUN.DOUBLE26 and FUNCALL.DOUBLE26
+ */
+
+DLLEXPORT
+double sum_double26(double a1, double a2, double a3, double a4, double a5,
+                    double a6, double a7, double a8, double a9, double a10,
+                    double a11, double a12, double a13, double a14, double a15,
+                    double a16, double a17, double a18, double a19, double a20,
+                    double a21, double a22, double a23, double a24, double a25,
+                    double a26)
+{
+    return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 +
+        a14 + a15 + a16 + a17 + a18 + a19 + a20 + a21 + a22 + a23 + a24 + a25 +
+        a26;
+}
+
+/*
+ * CALLBACKS.FLOAT26
+ */
+
+DLLEXPORT float call_float26
+  (float (*f)(float, float, float, float, float, float, float, float,
+              float, float, float, float, float, float, float, float,
+              float, float, float, float, float, float, float, float,
+              float, float))
+{
+    return f(5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+             5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+             5.0, 5.0, 5.0, 5.0);
+}
+
+/*
+ * DEFCFUN.FLOAT26 and FUNCALL.FLOAT26
+ */
+
+DLLEXPORT
+float sum_float26(float a1, float a2, float a3, float a4, float a5,
+                  float a6, float a7, float a8, float a9, float a10,
+                  float a11, float a12, float a13, float a14, float a15,
+                  float a16, float a17, float a18, float a19, float a20,
+                  float a21, float a22, float a23, float a24, float a25,
+                  float a26)
+{
+    return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 +
+        a14 + a15 + a16 + a17 + a18 + a19 + a20 + a21 + a22 + a23 + a24 + a25 +
+        a26;
 }
 
 /* vim: ts=4 et
