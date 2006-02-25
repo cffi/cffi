@@ -3359,7 +3359,8 @@ If @var{initial-element} is supplied, it is used to initialize the
 If an @var{initial-contents} sequence is supplied, it must have a
 length less than or equal to @var{count} and each of its elements
 will be used to initialize the contents of the newly allocated
-memory.
+memory. @var{count} can be omitted and will default to
+@code{(length @var{initial-contents})}.
 
 @var{initial-element} and @var{initial-contents} are mutually
 exclusive.
@@ -3420,6 +3421,7 @@ CFFI> (progn
 
 @subheading See Also
 @seealso{foreign-free} @*
+@seealso{with-foreign-object} @*
 @seealso{with-foreign-pointer}
 
 
