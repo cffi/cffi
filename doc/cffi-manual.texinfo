@@ -3323,7 +3323,7 @@ CFFI> (foreign-free *)
 @node foreign-alloc
 @unnumberedsec foreign-alloc
 @subheading Syntax
-@Function{foreign-alloc type &key initial-element initial-contents (count 1) => pointer}
+@Function{foreign-alloc type &key initial-element initial-contents (count 1) null-terminated-p => pointer}
 
 @subheading Arguments and Values
 
@@ -3339,6 +3339,9 @@ A sequence.
 
 @item count
 An integer bigger than or equal to 1. 1, by default.
+
+@item null-terminated-p
+A boolean, false by default.
 
 @item pointer
 A foreign pointer to the newly allocated memory.
@@ -3360,6 +3363,12 @@ memory.
 
 @var{initial-element} and @var{initial-contents} are mutually
 exclusive.
+
+When @var{null-terminated-p} is true,
+@code{(1+ (max @var{count} (length @var{initial-contents})))} elements
+are allocated and the last one is set to @code{NULL}. Note that in
+this case @var{type} must be a pointer type (ie. a type that
+canonicalizes to @code{:pointer}), otherwise an error is signaled.
 
 @subheading Examples
 @lisp
@@ -3386,13 +3395,28 @@ CFFI> (loop for i from 0 below 3
             collect (mem-aref * :int i))
 @result{} (1 2 3)
 
+;;; Allocate a char** pointer that points to newly allocated memory
+;;; by the :string type translator for the string "foo".
 CFFI> (foreign-alloc :string :initial-element "foo")
 @result{} #<A Mac Pointer #x102C40>
 @end lisp
 
-This will actually allocate a @code{char**} that points to newly
-allocated memory by the @code{:string} type translator for the string
-@code{"foo"}.
+@lisp
+;;; Allocate a null-terminated array of strings.
+;;; (Note: FOREIGN-STRING-TO-LISP returns NIL when passed a null pointer)
+CFFI> (foreign-alloc :string
+                     :initial-contents '("foo" "bar" "baz")
+                     :null-terminated-p t)
+@result{} #<A Mac Pointer #x102D20>
+CFFI> (loop for i from 0 below 4
+            collect (mem-aref * :string i))
+@result{} ("foo" "bar" "baz" NIL)
+CFFI> (progn
+        (dotimes (i 3)
+          (foreign-free (mem-aref ** :pointer i)))
+        (foreign-free **))
+@result{} nil
+@end lisp
 
 @subheading See Also
 @seealso{foreign-free} @*
@@ -4040,8 +4064,7 @@ allocated by @code{foreign-string-alloc}.
 @node foreign-string-to-lisp
 @unnumberedsec foreign-string-to-lisp
 @subheading Syntax
-@Function{foreign-string-to-lisp ptr &optional size null-terminated-p
-=> string}
+@Function{foreign-string-to-lisp ptr &optional size null-terminated-p => string}
 
 @subheading Arguments and Values
 

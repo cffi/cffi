@@ -350,6 +350,48 @@
        t))
   nil)
 
+;;; Regression test: FOREIGN-ALLOC shouldn't actually perform translation
+;;; on initial-element/initial-contents since MEM-AREF will do that already.
+(defctype not-an-int :int)
+
+(defmethod translate-to-foreign (value (name (eql 'not-an-int)))
+  (assert (not (integerp value)))
+  0)
+
+(deftest foreign-alloc.6
+    (let ((ptr (foreign-alloc 'not-an-int :initial-element 'foooo)))
+      (foreign-free ptr)
+      t)
+  t)
+
+;;; Ensure calling FOREIGN-ALLOC with NULL-TERMINATED-P and a non-pointer
+;;; type signals an error.
+(deftest foreign-alloc.7
+    (values
+     (ignore-errors
+       (let ((ptr (foreign-alloc :int :null-terminated-p t)))
+         (foreign-free ptr))
+       t))
+  nil)
+
+;;; The opposite of the above test.
+(defctype pointer-alias :pointer)
+
+(deftest foreign-alloc.8
+    (progn
+      (foreign-free (foreign-alloc 'pointer-alias :count 0 :null-terminated-p t))
+      t)
+  t)
+
+;;; Ensure calling FOREIGN-ALLOC with NULL-TERMINATED-P actually places
+;;; a null pointer at the end. Not a very reliable test apparently.
+(deftest foreign-alloc.9
+    (let ((ptr (foreign-alloc :pointer :count 0 :null-terminated-p t)))
+      (unwind-protect
+           (null-pointer-p (mem-ref ptr :pointer))
+        (foreign-free ptr)))
+  t)
+
 ;;; Tests for mem-ref with a non-constant type. This is a way to test
 ;;; the functional interface (without compiler macros).
 
