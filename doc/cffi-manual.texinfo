@@ -3338,7 +3338,8 @@ A Lisp object.
 A sequence.
 
 @item count
-An integer bigger than or equal to 1. 1, by default.
+An integer. Defaults to 1 or the length of @var{initial-contents} if
+supplied.
 
 @item null-terminated-p
 A boolean, false by default.
@@ -3359,8 +3360,10 @@ If @var{initial-element} is supplied, it is used to initialize the
 If an @var{initial-contents} sequence is supplied, it must have a
 length less than or equal to @var{count} and each of its elements
 will be used to initialize the contents of the newly allocated
-memory. @var{count} can be omitted and will default to
-@code{(length @var{initial-contents})}.
+memory.
+
+If @var{count} is omitted and @var{initial-contents} is specified, it
+will default to @code{(length @var{initial-contents})}.
 
 @var{initial-element} and @var{initial-contents} are mutually
 exclusive.
