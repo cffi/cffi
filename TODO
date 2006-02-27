@@ -79,7 +79,7 @@ This is a collection of TODO items and ideas in no particular order.
    (unsigned-byte 29) others could perhaps behave like :int?
 -> An option for defcfun to expand into a compiler macro which would
    allow the macroexpansion-time translators to look at the forms
-   passed to the function.
+   passed to the functions.
 
 ### Known Issues
 
@@ -93,6 +93,8 @@ This is a collection of TODO items and ideas in no particular order.
            form))
 -> cffi-tests.asd's :c-test-lib component is causing the whole testsuite
    to be recompiled everytime. Figure that out.
+-> The (if (constantp foo) (do-something-with (eval foo)) ...) pattern
+   used in many places throughout the code is apparently not 100% safe.
 
 ### Documentation
 
