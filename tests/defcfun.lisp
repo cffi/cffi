@@ -2,7 +2,7 @@
 ;;;
 ;;; defcfun.lisp --- Tests function definition and calling.
 ;;;
-;;; Copyright (C) 2005, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -314,11 +314,13 @@
 
 ;;; regression test: defining an undefined foreign function should only
 ;;; throw some sort of warning, not signal an error.
-#+cmu (pushnew 'defcfun.undefined rt::*expected-failures*)
+
+#+(or cmu (and sbcl (not linkage-table)))
+(pushnew 'defcfun.undefined rt::*expected-failures*)
 
 (deftest defcfun.undefined
     (progn
-      (eval '(defcfun "undefined_foreign_function" :void))
+      (eval '(defcfun ("undefined_foreign_function" undefined-foreign-function) :void))
       (compile 'undefined-foreign-function)
       t)
   t)

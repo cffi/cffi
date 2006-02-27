@@ -67,7 +67,8 @@
      (:file "struct")
      (:file "union")
      (:file "enum")
-     (:file "misc-types")))))
+     (:file "misc-types")
+     (:file "misc")))))
 
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
   (or (funcall (intern (symbol-name '#:do-tests) '#:regression-test))
