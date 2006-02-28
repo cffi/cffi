@@ -141,9 +141,10 @@ software or the use or other dealings in the software.}
 @end ifnottex
 
 @menu
-* Introduction::                
-* Implementation Support and Known Issues::  
-* Tutorial::
+* Introduction::                What is CFFI?
+* Implementation Support and Known Issues::  On your Lisp.
+* Tutorial::                    Interactive intro to using CFFI.
+* Wrapper generators::          CFFI forms from munging C source code.
 * Foreign Types::               
 * Pointers::                    
 * Strings::                     
@@ -1666,6 +1667,65 @@ free-translated-object, structs.}
 
 
 @c ===================================================================
+@c CHAPTER: Wrapper generators
+
+@node Wrapper generators
+@chapter Wrapper generators
+
+@cffi{}'s interface is designed for human programmers, being aimed at
+aesthetic as well as technical sophistication.  However, there are a
+few programs aimed at translating C and C++ header files, or
+approximations thereof, into @cffi{} forms constituting a foreign
+interface to the symbols in those files.
+
+These wrapper generators are known to support output of @cffi{} forms.
+
+@table @asis
+@item @uref{http://www.cliki.net/Verrazano,Verrazano}
+Designed specifically for Common Lisp.  Uses @acronym{GCC}'s parser
+output in @acronym{XML} format to discover functions, variables, and
+other header file data.  This means you need @acronym{GCC} to generate
+forms; on the other hand, the parser employed is mostly compliant with
+@acronym{ANSI} C.
+
+@item @uref{http://www.cliki.net/SWIG,SWIG}
+A foreign interface generator originally designed to generate Python
+bindings, it has been ported to many other systems, including @cffi{}
+in version 1.3.28.  Includes its own C declaration munger, not
+intended to be fully-compliant with @acronym{ANSI} C.
+@end table
+
+First, this manual does not describe use of these other programs; they
+have documentation of their own.  If you have problems using a
+generated interface, please look at the output @cffi{} forms and
+verify that they are a correct @cffi{} interface to the library in
+question; if they are correct, contact @cffi{} developers with
+details, keeping in mind that they communicate in terms of those forms
+rather than any particular wrapper generator.  Otherwise, contact the
+maintainers of the wrapper generator you are using, provided you can
+reasonably expect more accuracy from the generator.
+
+When is more accuracy an unreasonable expectation?  As described in
+the tutorial (@pxref{Tutorial-Abstraction,, Breaking the
+abstraction}), the information in C declarations is insufficient to
+completely describe every interface.  In fact, it is quite common to
+run into an interface that cannot be handled automatically, and
+generators should be excused from generating a complete interface in
+these cases.
+
+As further described in the tutorial, the thinnest Lisp interface to a
+C function is not always the most pleasant one.  In many cases, you
+will want to manually write a Lispier interface to the C functions
+that interest you.
+
+Wrapper generators should be treated as time-savers, not complete
+automation of the full foreign interface writing job.  Reports of the
+amount of work done by generators vary from 30% to 90%.  The
+incremental development style enabled by @cffi{} generally reduces
+this proportion below that for languages like Python.
+
+
+@c ===================================================================
 @c CHAPTER: Foreign Types
 
 @node Foreign Types
@@ -1831,9 +1891,9 @@ default.
 
 @lisp
 (convert-to-foreign nil :boolean) @result{} 0
-(convert-to-foreign <something-non-nil> :boolean) @result{} 1
+(convert-to-foreign t :boolean) @result{} 1
 (convert-from-foreign 0 :boolean) @result{} nil
-(convert-from-foreign <something-not-0> :boolean) @result{} t
+(convert-from-foreign 1 :boolean) @result{} t
 @end lisp
 
 @ForeignType{:wrapper base-type &key to-c from-c}
@@ -1928,8 +1988,8 @@ null pointer, signalling an error if a null pointer is passed.  This
 will prevent some pointer errors when calling foreign functions that
 cannot handle null pointers.
 
-@strong{Note:} these methods are meant as extensible hooks only and
-you should not call them directly. Use @code{convert-to-foreign},
+@strong{Please note:} these methods are meant as extensible hooks only
+and you should not call them directly. Use @code{convert-to-foreign},
 @code{convert-from-foreign} and @code{free-converted-object}
 instead. These will take care of following the typedef chain, for
 example, calling all the applicable translators. It will also work
@@ -3277,10 +3337,10 @@ C values are accessed as the @code{setf}-able places defined by
 type (@pxref{Foreign Types}), either of these will dereference the
 pointer, translate the C data there back to Lisp, and return the
 result of said translation, performing the reverse operation when
-@code{setf}-ing.  @code{mem-aref} should be used to index into C
-arrays; use @code{mem-ref} when you want to access a logically single
-value, or compute a raw pointer offset first rather than the computed
-C value offsets found by @code{mem-aref}.
+@code{setf}-ing.  To decide which one to use, consider whether you
+would use the array index operator @code{[@var{n}]} or the pointer
+dereference @code{*} in C; use @code{mem-aref} for array indexing and
+@code{mem-ref} for pointer dereferencing.
 
 
 @c ===================================================================
@@ -3893,7 +3953,7 @@ CFFI> (pointer-eq (null-pointer) (null-pointer))
 
 @Macro{with-foreign-objects (bindings) &body body}
 
-bindings = @{(var type &optional count)@}*
+bindings ::= @{(var type &optional count)@}*
 
 @subheading Arguments and Values
 
@@ -3986,6 +4046,11 @@ As with many languages, Lisp and C have special support for logical
 arrays of characters, going so far as to give them a special name,
 ``strings''.  In that spirit, @cffi{} provides special support for
 translating between Lisp and C strings.
+
+The @code{:string} type and the symbols related below also serve as an
+example of what you can do portably with @cffi{}; were it not
+included, you could write an equally functional @file{strings.lisp}
+without referring to any implementation-specific symbols.
 
 @menu
 Dictionary
