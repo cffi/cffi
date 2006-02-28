@@ -52,6 +52,9 @@ This is a collection of TODO items and ideas in no particular order.
    word, PDB it, put the word.
 -> External encodings for the :STRING type. See:
    <http://article.gmane.org/gmane.lisp.cffi.devel/292>
+-> Define a lisp type for pointers in the backends. Eg: for clisp:
+     (deftype pointer-type (or ffi:foreign-address null))
+   Useful for type declarations.
 
 ### Underspecified Semantics
 
