@@ -142,7 +142,7 @@ software or the use or other dealings in the software.}
 
 @menu
 * Introduction::                What is CFFI?
-* Implementation Support and Known Issues::  On your Lisp.
+* Implementation Support::      
 * Tutorial::                    Interactive intro to using CFFI.
 * Wrapper generators::          CFFI forms from munging C source code.
 * Foreign Types::               
@@ -291,13 +291,11 @@ for performance, use a compiler-macro instead.
 @end itemize
 
 
-
-
 @c ===================================================================
-@c CHAPTER: Implementation Support and Known Issues
+@c CHAPTER: Implementation Support
 
-@node Implementation Support and Known Issues
-@chapter Implementation Support and Known Issues
+@node Implementation Support
+@chapter Implementation Support
 
 @cffi{} supports various free and commercial Lisp implementations:
 Allegro CL, Corman CL, @sc{clisp}, @acronym{CMUCL}, @acronym{ECL},
@@ -310,26 +308,16 @@ There are also plans to support Digitool @acronym{MCL}, and @acronym{GCL}.
 
 @strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
 
-Both the 6.2 and 7.0 versions are supported. The 8.0 beta is also
-known to work. Earlier versions are untested and unsupported.
+Version 7.0 is supported. The 8.0 beta is also known to work. Earlier
+versions are untested and unsupported but patches to support them
+are welcome.
 
-@subheading Known issues
+@subheading Limitations
+
 @itemize
 @item
-@emph{(all platforms)} Does not support (unsigned) long long.
-
-@item
-@emph{(v6.2, darwin/ppc)} Due to a bug in Allegro, 4 callback tests
-fail: @code{CALLBACKS.CHAR, CALLBACKS.UNSIGNED-CHAR, CALLBACKS.SHORT,
-CALLBACKS.UNSIGNED-SHORT}. This is fixed in version 7.0.
-
-@item
-@emph{(v8.0b, linux/ppc)} Fails @code{FUNCALL.VARARGS.DOUBLE}.
-
-@item
-@emph{(darwin/ppc)} Fails @code{CALLBACKS.BFF.1}.
+Does not support the @code{:long-long} type.
 @end itemize
-
 
 @section Corman CL
 
@@ -341,16 +329,11 @@ loader. Please follow @uref{http://www.weitz.de/corman-asdf/, these
 instructions} by Edi Weitz to setup ASDF for Corman CL in a way that
 works around these issues.
 
-@subheading Known issues
+@subheading Limitations
+
 @itemize
 @item
-@emph{(win32/x86)} No @code{FOREIGN-FUNCALL}.
-
-@item
-@emph{(win32/x86)} 7 tests fail.
-
-@item
-@emph{(win32/x86)} Does not support (unsigned) long long.
+Does not support @code{foreign-funcall}.
 @end itemize
 
 
@@ -361,15 +344,6 @@ works around these issues.
 Version is 2.34 or newer is required on win32/x86. For other platforms
 version 2.35 or newer is required.
 
-@subheading Known issues
-@itemize
-@item
-@emph{(all platforms)} Does not support (unsigned) long long.
-
-@item
-@emph{(linux/ppc)} Fails @code{FUNCALL.VARARGS.DOUBLE}.
-@end itemize
-
 
 @section @acronym{CMUCL}
 
@@ -378,11 +352,6 @@ version 2.35 or newer is required.
 Versions prior to 19B are untested. For darwin/ppc, the 2006-02 (19C)
 snapshot or later is recommended.
 
-@subheading Known issues
-@itemize
-@emph{(darwin/ppc)} Fails the tests @code{CALLBACKS.BFF.1} and
-@code{CALLBACKS.BFF.2}.
-@end itemize
 
 @section @acronym{ECL}
 
@@ -391,10 +360,10 @@ snapshot or later is recommended.
 As of November 2005, the CVS version of ECL is required. It is
 reported to pass all tests.
 
-@subheading Known issues
+@subheading Limitations
 @itemize
 @item
-@emph{(all platforms)} Does not support (unsigned) long long.
+Does not support the @code{:long-long} type.
 @end itemize
 
 
@@ -404,13 +373,10 @@ reported to pass all tests.
 
 Versions prior to 4.4 are untested.
 
-@subheading Known issues
+@subheading Limitations
 @itemize
 @item
-@emph{(all platforms)} Does not support (unsigned) long long.
-
-@item
-@emph{(darwin/ppc)} Fails the test @code{CALLBACKS.BFF.1}.
+Does not support the @code{:long-long} type.
 @end itemize
 
 
@@ -420,16 +386,6 @@ Versions prior to 4.4 are untested.
 
 Open@acronym{MCL} 1.0 or newer is recommended.
 
-@subheading Known issues
-@itemize
-@item
-@emph{(darwin/ppc and linux/ppc)} Fails the tests
-@code{CALLBACKS.LONG-LONG} and @code{FOREIGN-GLOBALS.SET.LONG-LONG}.
-
-@item
-@emph{(ppc64)} There seem to be some bugs that affect @cffi{}.
-@end itemize
-
 
 @section @acronym{SBCL}
 
@@ -437,15 +393,15 @@ Open@acronym{MCL} 1.0 or newer is recommended.
 
 Version 0.9.6 or newer is recommended.
 
-@subheading Known issues
+@subheading Limitations
+
 @itemize
 @item
-@emph{(linux/ppc)} Fails 3 tests: @code{FUNCALL.LONG-LONG,
-DEFCFUN.LONG-LONG} and @code{FUNCALL.VARARGS.DOUBLE}.
+Not all platforms support callbacks.
 @end itemize
 
 
-@section The Scieneer Common Lisp
+@section Scieneer CL
 
 @strong{Tested platforms:} linux/x86, linux/amd64.
 
@@ -1372,10 +1328,10 @@ pointer.
 @impnote{This is much trickier than calling C functions from Lisp, as
 it literally involves somehow generating a new C function that is as
 good as any created by the compiler.  Therefore, not all Lisps support
-them.  @xref{Implementation Support and Known Issues}, for information
-about @cffi{} support issues in this and other areas.  You may want to
-consider changing to a Lisp that supports callbacks in order to
-continue with this tutorial.}
+them.  @xref{Implementation Support}, for information about @cffi{}
+support issues in this and other areas.  You may want to consider
+changing to a Lisp that supports callbacks in order to continue with
+this tutorial.}
 
 @cindex callback definition
 @cindex defining callbacks
@@ -5217,7 +5173,7 @@ CFFI> (get-callback 'sum)
 
 These are @cffi{}'s limitations across all platforms; for information
 on the warts on particular Lisp implementations, see
-@ref{Implementation Support and Known Issues}.
+@ref{Implementation Support}.
 
 @itemize @bullet
 @item
