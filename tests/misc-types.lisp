@@ -189,3 +189,45 @@
 (deftest misc-types.expand.4
     (expand-expect-int-sum (callback expand-int-sum))
   t)
+
+(defctype translate-tracker :int)
+
+(declaim (special .fto-called.))
+
+(defmethod free-translated-object (value (type-name (eql 'translate-tracker))
+                                   param)
+  (declare (ignore value param))
+  (setf .fto-called. t))
+
+(defctype expand-tracker :int)
+
+(defmethod free-translated-object (value (type-name (eql 'expand-tracker))
+                                   param)
+  (declare (ignore value param))
+  (setf .fto-called. t))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod expand-to-foreign (value (type-name (eql 'expand-tracker)))
+    (declare (ignore value))
+    *runtime-translator-form*))
+
+(defcfun ("abs" ttracker-abs) :int
+  (n translate-tracker))
+
+(defcfun ("abs" etracker-abs) :int
+  (n expand-tracker))
+
+;; free-translated-object must be called when there is no etf
+(deftest misc-types.expand.5
+    (let ((.fto-called. nil))
+      (ttracker-abs -1)
+      .fto-called.)
+  t)
+
+;; free-translated-object must not be called when there is an etf, but
+;; they answer *runtime-translator-form*
+(deftest misc-types.expand.6
+    (let ((.fto-called. nil))
+      (etracker-abs -1)
+      .fto-called.)
+  nil)

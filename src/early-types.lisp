@@ -453,7 +453,7 @@ Signals an error if the type cannot be resolved."
          (expand-to-foreign-dyn value var body (name type)))
         ;; If there is to-foreign _expansion_ we use that.
         ((applicablep #'expand-to-foreign value (name type))
-         `(let ((,var ,(expand-to-foreign value (name type))))
+         `(let ((,var ,(expand-type-to-foreign value type)))
             ,@body))
         ;; Else...
         (t *runtime-translator-form*)))
