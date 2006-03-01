@@ -1616,10 +1616,10 @@ details.  In particular, if something seems obviously missing, it is
 likely that either code or a good reason for lack of code is already
 present.
 
-@impnote{This is something of a first draft; there are some other
-things in @cffi{} that might deserve tutorial sections.  Let us know
-which ones you care about.  define-foreign-type,
-free-translated-object, structs.}
+@impnote{There are some other things in @cffi{} that might deserve
+tutorial sections, such as define-foreign-type,
+free-translated-object, or structs.  Let us know which ones you care
+about.}
 
 
 @c ===================================================================
@@ -1680,6 +1680,12 @@ amount of work done by generators vary from 30% to 90%.  The
 incremental development style enabled by @cffi{} generally reduces
 this proportion below that for languages like Python.
 
+@c Where I got the above 30-90% figures:
+@c 30%: lemonodor's post about SWIG
+@c 90%: Balooga on #lisp.  He said 99%, but that's probably an
+@c      exaggeration (leave it to me to pass judgement :)
+@c -stephen
+
 
 @c ===================================================================
 @c CHAPTER: Foreign Types
@@ -1696,12 +1702,15 @@ define new types.
 * Other Types::                 
 * Defining Typedefs::           
 * Foreign Type Translators::    
+* Optimizing Type Translators:: 
 * Foreign Structure Types::     
 * Operations on Types::         
 * Allocating Foreign Objects::  
 
 Dictionary
 
+* convert-from-foreign::        
+* convert-to-foreign::          
 * defbitfield::                 
 * defcstruct::                  
 * defcunion::                   
@@ -1720,6 +1729,7 @@ Dictionary
 * foreign-slot-value::          
 * foreign-type-alignment::      
 * foreign-type-size::           
+* free-converted-object::       
 * free-translated-object::
 * translate-from-foreign::
 * translate-to-foreign::
@@ -1944,22 +1954,27 @@ null pointer, signalling an error if a null pointer is passed.  This
 will prevent some pointer errors when calling foreign functions that
 cannot handle null pointers.
 
-@strong{Please note:} these methods are meant as extensible hooks only
-and you should not call them directly. Use @code{convert-to-foreign},
-@code{convert-from-foreign} and @code{free-converted-object}
-instead. These will take care of following the typedef chain, for
-example, calling all the applicable translators. It will also work
-for non user-defined types like enums.
+@strong{Please note:} these methods are meant as extensible hooks
+only, and you should not call them directly.  Use
+@code{convert-to-foreign}, @code{convert-from-foreign} and
+@code{free-converted-object} instead.  These will take care of
+following the typedef chain, for example, calling all the applicable
+translators.  They will also work for @cffi{}'s built-in types, such
+as enums.
 
 @xref{Tutorial-Types,, Defining new types}, for a more involved
 tutorial example of type translators.
 
-@heading Optimizing Type Translators
+@node Optimizing Type Translators
+@section Optimizing Type Translators
 
+@cindex type translators, optimizing
+@cindex compiler macros for type translation
+@cindex defining type-translation compiler macros
 Being based on generic functions, the type translation mechanism
-described above can add a bit of overhead. Most of the times, this is
-not significant but we provide a way of getting rid of the overhead
-for the cases where it matters.
+described above can add a bit of overhead.  This is usually not
+significant, but we nevertheless provide a way of getting rid of the
+overhead for the cases where it matters.
 
 A good way to understand this issue is to look at the code generated
 by @code{defcfun}. Consider the following example using the
@@ -1981,7 +1996,7 @@ CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
 @end lisp
 
 In order to get rid of those generic function calls, @cffi{} has
-another set of extensible generic functions that provide an interface
+another set of extensible generic functions that provide functionality
 similar to @acronym{CL}'s compiler macros:
 @code{expand-to-foreign-dyn}, @code{expand-to-foreign} and
 @code{expand-from-foreign}. Here's how one could define
@@ -1995,6 +2010,7 @@ similar to @acronym{CL}'s compiler macros:
   `(not (zerop ,value)))
 @end lisp
 
+@noindent
 And here's what the macroexpansion of @code{foo} now looks like:
 
 @lisp
@@ -2004,11 +2020,13 @@ CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
     (NOT (ZEROP (%FOREIGN-FUNCALL "foo" :INT #:G3182 :INT)))))
 @end lisp
 
+@noindent
 Much better.
 
-The third generic function in this set is @code{expand-to-foreign-dyn}
-which can be used when it's necessary to allocate something with
-dynamic extent. Consider the following example:
+The third generic function in this interface is
+@code{expand-to-foreign-dyn} which can be used when it's necessary to
+allocate something with dynamic extent. Consider the following
+example:
 
 @lisp
 ;;; This type inherits :string's translators.
@@ -2020,31 +2038,35 @@ dynamic extent. Consider the following example:
      ,@@body))
 @end lisp
 
-Not unlike @code{define-compiler-macro}'s @code{&whole} argument,
-@cffi{} binds the special variable
-@strong{@code{*runtime-translator-form*}} to a form you can return
-from any of the @code{expand-*} methods.
+To provide short-circuiting functionality similar to that provided by
+@code{define-compiler-macro}'s @code{&whole} argument, @cffi{} binds
+the special variable @strong{@code{*runtime-translator-form*}}.
+Return it instead in cases where your method cannot generate an
+appropriate replacement for it.
 
 The @code{expand-*} methods have precedence over their
 @code{translate-*} counterparts and are guaranteed to be used in
 @code{defcfun}, @code{foreign-funcall}, @code{defcvar} and
-@code{defcallback}. They are also used in compiler macros for the
-following @cffi{} operators: @code{mem-ref}, @code{mem-aref},
-@code{foreign-slot-value}, @code{convert-to-foreign} and
-@code{convert-from-foreign}, in which cases its use is not guaranteed
-and depends on whether the Lisp compiler calls the respective compiler
-macros or not. 
+@code{defcallback}.  They may or may not be used in other @cffi{}
+operators that need to translate between Lisp and C data; you may only
+assume that @code{expand-*} methods will probably only be called
+during Lisp compilation.
 
 @code{expand-to-foreign-dyn} has precedence over
 @code{expand-to-foreign} and is only used in @code{defcfun} and
-@code{foreign-funcall}.
+@code{foreign-funcall}, only making sense in those contexts.
 
 @strong{Important note:} this set of generic functions is called at
-macroexpansion time and therefore you will need to either load the
-method definitions earlier in a seperate file from, say,
-@code{defcfun}s that will use them or wrap them in an
-@code{eval-when}. Otherwise, they will not be found and the runtime
-translators will be used instead.
+macroexpansion time.  Methods are defined when loaded or evaluated,
+not compiled.  You are responsible for ensuring that your
+@code{expand-*} methods are defined when the @code{foreign-funcall} or
+other forms that use them are compiled.  One way to do this is to put
+the method definitions earlier in the file and inside an appropriate
+@code{eval-when} form; another way is to always load a separate Lisp
+or @acronym{FASL} file containing your @code{expand-*} definitions
+before compiling files with forms that ought to use them.  Otherwise,
+they will not be found and the runtime translators will be used
+instead.
 
 @node Foreign Structure Types
 @section Foreign Structure Types
@@ -2094,6 +2116,117 @@ translation.
 @c chapter, where foreign-alloc is.
 
 @xref{Allocating Foreign Memory}.
+
+
+@c ===================================================================
+@c CONVERT-FROM-FOREIGN
+
+@node convert-from-foreign
+@unnumberedsec convert-from-foreign
+@subheading Syntax
+@Function{convert-from-foreign foreign-value type @result{} value}
+
+@subheading Arguments and Values
+
+@table @var
+@item foreign-value
+The primitive C value as returned from a primitive foreign function or
+from @code{convert-to-foreign}.
+
+@item type
+A @cffi{} type specifier.
+
+@item value
+The Lisp value translated from @var{foreign-value}.
+@end table
+
+@subheading Description
+
+This is an external interface to the type translation facility.  In
+the implementation, all foreign functions are ultimately defined as
+type translation wrappers around primitive foreign function
+invocations.
+
+This function is available mostly for inspection of the type
+translation process, and possibly optimization of special cases of
+your foreign function calls.
+
+Its behavior is better described under @code{translate-from-foreign}'s
+documentation.
+
+@subheading Examples
+
+@lisp
+CFFI-USER> (convert-to-foreign "a boat" :string)
+@result{} #<FOREIGN-ADDRESS #x097ACDC0>
+@result{} (T)
+CFFI-USER> (convert-from-foreign * :string)
+@result{} "a boat"
+@end lisp
+
+@subheading See Also
+@seealso{convert-to-foreign} @*
+@seealso{translate-from-foreign}
+
+
+@c ===================================================================
+@c CONVERT-TO-FOREIGN
+
+@node convert-to-foreign
+@unnumberedsec convert-to-foreign
+@subheading Syntax
+@Function{convert-to-foreign value type @result{} foreign-value, alloc-params}
+
+@subheading Arguments and Values
+
+@table @var
+@item value
+The Lisp object to be translated to a foreign object.
+
+@item type
+A @cffi{} type specifier.
+
+@item foreign-value
+The primitive C value, ready to be passed to a primitive foreign
+function.
+
+@item alloc-params
+Something of a translation state; you must pass it to
+@code{free-converted-object} along with the foreign value for that to
+work.
+@end table
+
+@subheading Description
+
+This is an external interface to the type translation facility.  In
+the implementation, all foreign functions are ultimately defined as
+type translation wrappers around primitive foreign function
+invocations.
+
+This function is available mostly for inspection of the type
+translation process, and possibly optimization of special cases of
+your foreign function calls.
+
+Its behavior is better described under @code{translate-to-foreign}'s
+documentation.
+
+@subheading Examples
+
+@lisp
+CFFI-USER> (convert-to-foreign t :boolean)
+@result{} 1
+@result{} (NIL)
+CFFI-USER> (convert-to-foreign "hello, world" :string)
+@result{} #<FOREIGN-ADDRESS #x097C5F80>
+@result{} (T)
+CFFI-USER> (code-char (mem-aref * :char 5))
+@result{} #\,
+@end lisp
+
+@subheading See Also
+@seealso{convert-from-foreign} @*
+@seealso{free-converted-object} @*
+@seealso{translate-to-foreign}
 
 
 @c ===================================================================
@@ -3010,6 +3143,60 @@ CFFI> (foreign-type-size 'foo)
 
 
 @c ===================================================================
+@c FREE-CONVERTED-OBJECT
+
+@node free-converted-object
+@unnumberedsec free-converted-object
+@subheading Syntax
+@Function{free-converted-object foreign-value type params}
+
+@subheading Arguments and Values
+
+@table @var
+@item foreign-value
+The C object to be freed.
+
+@item type
+A @cffi{} type specifier.
+
+@item params
+The state returned as the second value from @code{convert-to-foreign};
+used to implement the third argument to @code{free-translated-object}.
+@end table
+
+@subheading Description
+
+The return value is unspecified.
+
+This is an external interface to the type translation facility.  In
+the implementation, all foreign functions are ultimately defined as
+type translation wrappers around primitive foreign function
+invocations.
+
+This function is available mostly for inspection of the type
+translation process, and possibly optimization of special cases of
+your foreign function calls.
+
+Its behavior is better described under @code{free-translated-object}'s
+documentation.
+
+@subheading Examples
+
+@lisp
+CFFI-USER> (convert-to-foreign "a boat" :string)
+@result{} #<FOREIGN-ADDRESS #x097ACDC0>
+@result{} (T)
+CFFI-USER> (free-converted-object * :string '(t))
+@result{} NIL
+@end lisp
+
+@subheading See Also
+@seealso{convert-from-foreign} @*
+@seealso{convert-to-foreign} @*
+@seealso{free-translated-object}
+
+
+@c ===================================================================
 @c FREE-TRANSLATED-OBJECT
 
 @node free-translated-object
@@ -3219,17 +3406,16 @@ fixnums; the C integer has a specific bit pattern in memory defined by
 the C @acronym{ABI}.  Lisp has no such constraint on its fixnums;
 therefore, it only makes sense to think of fixnums as C integers if
 you assume that @cffi{} converts them when necessary, such as when
-storing it in C format for use in a function call, or as the value of
-a C variable.  This, of course, can only be done by defining an area
-of memory@footnote{The definition of @dfn{memory} includes the
-@acronym{CPU} registers.}, represented in the abstract by an address,
-and storing it there.
+storing one for use in a C function call, or as the value of a C
+variable.  This requires defining an area of memory@footnote{The
+definition of @dfn{memory} includes the @acronym{CPU} registers.},
+represented through an effective address, and storing it there.
 
 Due to this compartmentalization, it only makes sense to manipulate
 raw C data in Lisp through pointers to it.  For example, while there
 may be a Lisp representation of a @code{struct} that is converted to C
 at store time, you may only manipulate its raw data through a pointer.
-Speaking abstractly, the C compiler does this also.
+The C compiler does this also, albeit informally.
 
 @menu
 * Basic Pointer Operations::    
