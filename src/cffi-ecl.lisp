@@ -215,7 +215,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %load-foreign-library (name)
   "Load a foreign library from NAME."
-  (ffi:load-foreign-library name))
+  #-dffi (error "LOAD-FOREIGN-LIBRARY requires ECL's DFFI support. Use ~
+                 FFI:LOAD-FOREIGN-LIBRARY with a constant argument instead.")
+  #+dffi (ffi:load-foreign-library name))
 
 ;;;# Callbacks
 

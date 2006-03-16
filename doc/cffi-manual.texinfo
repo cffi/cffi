@@ -364,6 +364,12 @@ reported to pass all tests.
 @itemize
 @item
 Does not support the @code{:long-long} type.
+
+@item
+On platforms where ECL's dynamic FFI is not supported (ie. when
+@code{:dffi} is not present in @code{*features*}),
+@code{cffi:load-foreign-library} does not work and you must use ECL's
+own @code{ffi:load-foreign-library} with a constant string argument.
 @end itemize
 
 
@@ -5105,6 +5111,11 @@ designator.  For example, on @sc{unix}, the name is suffixed with
 
 If the load fails, signal a @code{load-foreign-library-error}.
 
+@subheading Implementation-specific Notes
+On ECL platforms where its dynamic FFI is not supported (ie. when
+@code{:dffi} is not present in @code{*features*}),
+@code{cffi:load-foreign-library} does not work and you must use ECL's
+own @code{ffi:load-foreign-library} with a constant string argument.
 
 @subheading Examples
 
