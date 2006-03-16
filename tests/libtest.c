@@ -735,5 +735,24 @@ float sum_float26(float a1, float a2, float a3, float a4, float a5,
         a26;
 }
 
+/*
+ * Symbol case.
+ */
+
+DLLEXPORT int UPPERCASEINT1    = 12345;
+DLLEXPORT int UPPER_CASE_INT1  = 23456;
+DLLEXPORT int MiXeDCaSeInT1    = 34567;
+DLLEXPORT int MiXeD_CaSe_InT1  = 45678;
+
+DLLEXPORT int UPPERCASEINT2    = 12345;
+DLLEXPORT int UPPER_CASE_INT2  = 23456;
+DLLEXPORT int MiXeDCaSeInT2    = 34567;
+DLLEXPORT int MiXeD_CaSe_InT2  = 45678;
+
+DLLEXPORT int UPPERCASEINT3    = 12345;
+DLLEXPORT int UPPER_CASE_INT3  = 23456;
+DLLEXPORT int MiXeDCaSeInT3    = 34567;
+DLLEXPORT int MiXeD_CaSe_InT3  = 45678;
+
 /* vim: ts=4 et
 */

@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:ccl #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp  ; ccl:pointerp
    #:pointer-eq
    #:%foreign-alloc
@@ -65,6 +66,12 @@
           #+unix              cffi-features:unix
           #+ppc32-target      cffi-features:ppc32
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Allocation
 ;;;

@@ -31,6 +31,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -75,6 +76,12 @@
         ;; FIXME: probably catches PPC64 as well
         ((string-equal (machine-type) "POWER MACINTOSH")
          (pushnew 'cffi-features:ppc32 *features*))))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Built-In Foreign Types
 

@@ -351,11 +351,13 @@ field-name"
 (defmacro def-foreign-var (name type module)
   "Define a symbol macro to access a foreign variable."
   (declare (ignore module))
-  `(cffi:defcvar ,(if (listp name)
-                      name
-                      (list name (intern (string-upcase
-                                          (substitute #\- #\_ name)))))
-       ,(convert-uffi-type type)))
+  (flet ((lisp-name (name)
+           (intern (cffi-sys:canonicalize-symbol-name-case
+                    (substitute #\- #\_ name)))))
+    `(cffi:defcvar ,(if (listp name)
+                        name
+                        (list name (lisp-name name)))
+         ,(convert-uffi-type type))))
 
 (defmacro convert-from-cstring (s)
   "Convert a cstring to a Lisp string."
@@ -490,10 +492,12 @@ library type if type is not specified."
                                      supporting-libraries))))
           #+scl
           (let ((type (pathname-type (parse-namestring filename))))
-            (alien:load-foreign filename 
-                                :libraries
-                                (convert-supporting-libraries-to-string
-                                 supporting-libraries)))
+            (if (string-equal type "so")
+                (sys::load-dynamic-object filename)
+                (alien:load-foreign filename 
+                                    :libraries
+                                    (convert-supporting-libraries-to-string
+                                     supporting-libraries))))
 
           #-cmu
           (cffi:load-foreign-library filename)
@@ -506,14 +510,14 @@ library type if type is not specified."
   "Return the value of the environment variable."
   #+allegro (sys::getenv (string var))
   #+clisp (sys::getenv (string var))
-  #+cmu (cdr (assoc (string var) ext:*environment-list* :test #'equalp
-                    :key #'string))
+  #+(or cmu scl) (cdr (assoc (string var) ext:*environment-list* :test #'equalp
+                             :key #'string))
   #+gcl (si:getenv (string var))
   #+lispworks (lw:environment-variable (string var))
   #+lucid (lcl:environment-variable (string var))
   #+mcl (ccl::getenv var)
   #+sbcl (sb-ext:posix-getenv var)
-  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl)
+  #-(or allegro clisp cmu scl gcl lispworks lucid mcl sbcl)
   (error 'not-implemented :proc (list 'getenv var)))
 
 ;; Taken from UFFI's src/os.lisp

@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -71,6 +72,14 @@
           #+x86        cffi-features:x86
           #+x86-64     cffi-features:x86-64
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (if (eq excl:*current-case-mode* :case-sensitive-lower)
+      (string-downcase name)
+      (string-upcase name)))
 
 ;;;# Basic Pointer Operations
 

@@ -33,10 +33,8 @@
   "Return the Lisp symbol for foreign var NAME."
   (etypecase name
     (list (second name))
-    (string (intern
-             (format nil "*~A*"
-                     (symbol-name
-                       (read-from-string (substitute #\- #\_ name))))))))
+    (string (intern (format nil "*~A*" (canonicalize-symbol-name-case
+                                        (substitute #\- #\_ name)))))))
 
 (defun foreign-var-name (name)
   "Return the foreign var name of NAME."
@@ -61,7 +59,7 @@
   "Like foreign-symbol-ptr but throws an error instead of
 returning nil when foreign-name is not found."
   (or (foreign-symbol-pointer foreign-name :data)
-      (error "Trying access undefined foreign variable ~S." foreign-name)))
+      (error "Trying to access undefined foreign variable ~S." foreign-name)))
 
 (defmacro defcvar (name type &key read-only)
   "Define a foreign global variable."

@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:cl #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -70,6 +71,12 @@
           #+harp::pc386   cffi-features:x86
           #+harp::powerpc cffi-features:ppc32
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Basic Pointer Operations
 (defun pointerp (ptr)

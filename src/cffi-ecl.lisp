@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:%foreign-alloc
@@ -68,6 +69,12 @@
           ;;#+athlon       cffi-features:x86
           #+powerpc7450  cffi-features:ppc32 
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Allocation
 

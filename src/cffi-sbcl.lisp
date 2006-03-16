@@ -30,6 +30,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:sb-alien #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -68,6 +69,12 @@
           #+x86-64  cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Basic Pointer Operations
 

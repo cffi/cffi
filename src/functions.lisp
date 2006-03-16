@@ -121,7 +121,7 @@ and does type promotion for the variadic arguments."
   "Return the Lisp function name for foreign function NAME."
   (etypecase name
     (list (second name))
-    (string (read-from-string (substitute #\- #\_ name)))
+    (string (intern (canonicalize-symbol-name-case (substitute #\- #\_ name))))
     (symbol name)))
 
 (defun foreign-function-name (name)

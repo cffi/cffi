@@ -45,6 +45,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp #:alien #:c-call #:cffi-utils)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -81,6 +82,14 @@
           #+amd64   cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
           )))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (if (eq ext:*case-mode* :upper)
+      (string-upcase name)
+      (string-downcase name)))
 
 ;;;# Basic Pointer Operations
 
@@ -130,13 +139,12 @@
   (cond ((constantp size)
          (let ((alien-var (gensym (symbol-name '#:alien))))
            `(with-alien ((,alien-var (array (unsigned 8) ,(eval size))))
-             (let ((,size-var ,(eval size))
+             (let ((,size-var ,size)
                    (,var (alien-sap ,alien-var)))
                (declare (ignorable ,size-var))
                ,@body))))
         (t
-         `(let* ((,size-var ,size)
-                 (,var (alien::make-local-bytes ,size-var)))
+         `(let ((,size-var ,size))
             (alien:with-bytes (,var ,size-var)
               ,@body)))))
 
@@ -185,26 +193,27 @@
   `(progn
     (defun %mem-ref (ptr type &optional (offset 0))
       (ecase type
-        ,@(loop for (keyword accessor) in pairs
-                collect `(,keyword (,accessor ptr offset)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (,fn ptr offset)))))
     (defun %mem-set (value ptr type &optional (offset 0))
       (ecase type
-        ,@(loop for (keyword accessor) in pairs
-                collect `(,keyword (setf (,accessor ptr offset) value)))))
+        ,@(loop for (keyword fn) in pairs
+                collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
       (if (constantp type)
           (ecase (eval type)
-            ,@(loop for (keyword accessor) in pairs
-                    collect `(,keyword `(,',accessor ,ptr ,offset))))
+            ,@(loop for (keyword fn) in pairs
+                    collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
       (if (constantp type)
-          (ecase (eval type)
-            ,@(loop for (keyword accessor) in pairs
-                    collect `(,keyword `(setf (,',accessor ,ptr ,offset)
-                                         ,value))))
+          (once-only (value)
+            (ecase (eval type)
+              ,@(loop for (keyword fn) in pairs
+                      collect `(,keyword `(setf (,',fn ,ptr ,offset)
+                                                ,value)))))
           form))))
 
 (define-mem-accessors
@@ -317,4 +326,5 @@
   "Returns a pointer to a foreign symbol 'name.  The 'kind is one of :code or
   :data, and is ignored on some platforms."
   (declare (ignore kind))
-  (prog1 (ignore-errors (sys:foreign-symbol-address name))))
+  (let ((sap (sys:foreign-symbol-address name)))
+    (if (zerop (sys:sap-int sap)) nil sap)))

@@ -44,6 +44,7 @@
 (defpackage #:cffi-sys
   (:use #:common-lisp)
   (:export
+   #:canonicalize-symbol-name-case
    #:pointerp
    #:%foreign-alloc
    #:foreign-free
@@ -67,6 +68,12 @@
 ;;;# Mis-*features*
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :cffi/no-foreign-funcall *features*))
+
+;;; Symbol case.
+
+(defun canonicalize-symbol-name-case (name)
+  (declare (string name))
+  (string-upcase name))
 
 ;;;# Allocation
 ;;;

@@ -143,3 +143,88 @@
 (deftest foreign-globals.get-var-pointer.2
     (mem-ref (get-var-pointer '*char-var*) :char)
   -127)
+
+;;; Symbol case.
+
+(defcvar "UPPERCASEINT1"     :int)
+(defcvar "UPPER_CASE_INT1"   :int)
+(defcvar "MiXeDCaSeInT1"     :int)
+(defcvar "MiXeD_CaSe_InT1"   :int)
+
+(deftest foreign-globals.ref.uppercaseint1
+    *uppercaseint1*
+  12345)
+
+(deftest foreign-globals.ref.upper-case-int1
+    *upper-case-int1*
+  23456)
+
+(deftest foreign-globals.ref.mixedcaseint1
+    *mixedcaseint1*
+  34567)
+
+(deftest foreign-globals.ref.mixed-case-int1
+    *mixed-case-int1*
+  45678)
+
+(when (string= (symbol-name 'nil) "NIL")
+  (let ((*readtable* (copy-readtable)))
+    (setf (readtable-case *readtable*) :invert)
+    (eval (read-from-string "(defcvar \"UPPERCASEINT2\"     :int)"))
+    (eval (read-from-string "(defcvar \"UPPER_CASE_INT2\"   :int)"))
+    (eval (read-from-string "(defcvar \"MiXeDCaSeInT2\"     :int)"))
+    (eval (read-from-string "(defcvar \"MiXeD_CaSe_InT2\"   :int)"))
+    (setf (readtable-case *readtable*) :preserve)
+    (eval (read-from-string "(DEFCVAR \"UPPERCASEINT3\"     :INT)"))
+    (eval (read-from-string "(DEFCVAR \"UPPER_CASE_INT3\"   :INT)"))
+    (eval (read-from-string "(DEFCVAR \"MiXeDCaSeInT3\"     :INT)"))
+    (eval (read-from-string "(DEFCVAR \"MiXeD_CaSe_InT3\"   :INT)"))))
+    
+
+(when (string= (symbol-name 'nil) "nil")
+  (let ((*readtable* (copy-readtable)))
+    (setf (readtable-case *readtable*) :invert)
+    (eval (read-from-string "(DEFCVAR \"UPPERCASEINT2\"     :INT)"))
+    (eval (read-from-string "(DEFCVAR \"UPPER_CASE_INT2\"   :INT)"))
+    (eval (read-from-string "(DEFCVAR \"MiXeDCaSeInT2\"     :INT)"))
+    (eval (read-from-string "(DEFCVAR \"MiXeD_CaSe_InT2\"   :INT)"))
+    (setf (readtable-case *readtable*) :downcase)
+    (eval (read-from-string "(defcvar \"UPPERCASEINT3\"     :int)"))
+    (eval (read-from-string "(defcvar \"UPPER_CASE_INT3\"   :int)"))
+    (eval (read-from-string "(defcvar \"MiXeDCaSeInT3\"     :int)"))
+    (eval (read-from-string "(defcvar \"MiXeD_CaSe_InT3\"   :int)"))))
+
+(deftest foreign-globals.ref.uppercaseint2
+    *uppercaseint2*
+  12345)
+
+(deftest foreign-globals.ref.upper-case-int2
+    *upper-case-int2*
+  23456)
+
+(deftest foreign-globals.ref.mixedcaseint2
+    *mixedcaseint2*
+  34567)
+
+(deftest foreign-globals.ref.mixed-case-int2
+    *mixed-case-int2*
+  45678)
+
+(deftest foreign-globals.ref.uppercaseint3
+    *uppercaseint3*
+  12345)
+
+(deftest foreign-globals.ref.upper-case-int3
+    *upper-case-int3*
+  23456)
+
+(deftest foreign-globals.ref.mixedcaseint3
+    *mixedcaseint3*
+  34567)
+
+(deftest foreign-globals.ref.mixed-case-int3
+    *mixed-case-int3*
+  45678)
+
+
+  
