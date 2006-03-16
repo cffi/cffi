@@ -445,14 +445,14 @@
 (defcfun "call_float26" :float (f :pointer))
 
 #+(and cffi-features:darwin (or lispworks openmcl))
-(pushnew 'callbacks.float26 rt::*expected-failures*)
+(pushnew 'callbacks.float26 regression-test::*expected-failures*)
 
 (deftest callbacks.float26
     (call-float26 (callback float26))
   130.0)
 
 #+(and cffi-features:darwin (or lispworks openmcl))
-(pushnew 'callbacks.float26.funcall rt::*expected-failures*)
+(pushnew 'callbacks.float26.funcall regression-test::*expected-failures*)
 
 #-cffi-features:no-foreign-funcall
 (deftest callbacks.float26.funcall
