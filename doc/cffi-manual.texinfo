@@ -161,6 +161,8 @@ software or the use or other dealings in the software.}
 
 Foreign Types
 
+* convert-from-foreign::        Outside interface to backward type translator.
+* convert-to-foreign::          Outside interface to forward type translator.
 * defbitfield::                 Defines a bitfield.
 * defcstruct::                  Defines a C structure type.
 * defcunion::                   Defines a C union type.
@@ -179,6 +181,7 @@ Foreign Types
 * foreign-slot-value::          Returns the value of a slot in a foreign struct.
 * foreign-type-alignment::      Returns the alignment of a foreign type.
 * foreign-type-size::           Returns the size of a foreign type.
+* free-converted-object::       Outside interface to typed object deallocators.
 * free-translated-object::      Free a type translated foreign object.
 * translate-from-foreign::      Translate a foreign object to a Lisp object.
 * translate-to-foreign::        Translate a Lisp object to a foreign object.
@@ -4596,7 +4599,7 @@ Dictionary
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
-@Macro{defcfun name return-type &body arguments [varargs-maker] => lisp-name}
+@Macro{defcfun name return-type &body arguments [varargs-marker] => lisp-name}
 
 name ::= lisp-name | foreign-name | (foreign-name lisp-name) @*
 arguments ::= @{ (arg-name arg-type) @}*
@@ -5110,6 +5113,11 @@ designator.  For example, on @sc{unix}, the name is suffixed with
 @end enumerate
 
 If the load fails, signal a @code{load-foreign-library-error}.
+
+@strong{Please note:} For system libraries, you should not need to
+specify the directory containing the library.  Each operating system
+has its own idea of a default search path, and you should rely on it
+when it is reasonable.
 
 @subheading Implementation-specific Notes
 On ECL platforms where its dynamic FFI is not supported (ie. when
