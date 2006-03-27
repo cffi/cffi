@@ -209,7 +209,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-to-foreign (value (type-name (eql 'expand-tracker)))
     (declare (ignore value))
-    *runtime-translator-form*))
+    (call-next-method)))
 
 (defcfun ("abs" ttracker-abs) :int
   (n translate-tracker))

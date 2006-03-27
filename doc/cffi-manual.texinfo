@@ -2027,10 +2027,10 @@ CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
 @noindent
 Much better.
 
-The third generic function in this interface is
-@code{expand-to-foreign-dyn} which can be used when it's necessary to
-allocate something with dynamic extent. Consider the following
-example:
+@code{expand-to-foreign-dyn}, the third generic function in this
+interface, is especially useful when you can allocate something much
+more efficiently if you know the object has dynamic extent.  Consider
+the following example:
 
 @lisp
 ;;; This type inherits :string's translators.
@@ -2042,23 +2042,42 @@ example:
      ,@@body))
 @end lisp
 
-To provide short-circuiting functionality similar to that provided by
-@code{define-compiler-macro}'s @code{&whole} argument, @cffi{} binds
-the special variable @strong{@code{*runtime-translator-form*}}.
-Return it instead in cases where your method cannot generate an
-appropriate replacement for it.
+To short-circuit expansion and use the @code{translate-*} functions
+instead, simply call the next method.  Return its result in cases
+where your method cannot generate an appropriate replacement for it.
 
 The @code{expand-*} methods have precedence over their
 @code{translate-*} counterparts and are guaranteed to be used in
 @code{defcfun}, @code{foreign-funcall}, @code{defcvar} and
-@code{defcallback}.  They may or may not be used in other @cffi{}
-operators that need to translate between Lisp and C data; you may only
-assume that @code{expand-*} methods will probably only be called
-during Lisp compilation.
+@code{defcallback}.  If you define a method on each of the
+@code{expand-*} generic functions, you are guaranteed to have full
+control over the expressions generated for type translation in these
+macros.
+
+They may or may not be used in other @cffi{} operators that need to
+translate between Lisp and C data; you may only assume that
+@code{expand-*} methods will probably only be called during Lisp
+compilation.
 
 @code{expand-to-foreign-dyn} has precedence over
 @code{expand-to-foreign} and is only used in @code{defcfun} and
-@code{foreign-funcall}, only making sense in those contexts.
+@code{foreign-funcall}, only making sense in those contexts.  If you
+do not define a method on @code{expand-to-foreign-dyn}, however,
+please note that this expand method for the hypothetical type
+@code{my-string} is not the same as defining no method at all:
+
+@lisp
+(defmethod expand-to-foreign (value-form (type-name (eql 'my-string)))
+  (call-next-method))
+@end lisp
+
+Without this method, your runtime @code{translate-to-foreign} method
+will be called, and its result will be passed to
+@code{free-translated-object}.  However, if you define this method,
+@code{translate-to-foreign} will still be called, but its result will
+not be passed to @code{free-translated-object}.  If you need to free
+values with this interface, you must define an
+@code{expand-to-foreign-dyn} method.
 
 @strong{Important note:} this set of generic functions is called at
 macroexpansion time.  Methods are defined when loaded or evaluated,

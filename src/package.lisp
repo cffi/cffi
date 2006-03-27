@@ -105,7 +105,6 @@
    #:expand-to-foreign-dyn
    #:expand-to-foreign
    #:expand-from-foreign
-   #:*runtime-translator-form*
 
    ;; Foreign globals.
    #:defcvar
