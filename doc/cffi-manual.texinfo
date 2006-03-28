@@ -1502,14 +1502,11 @@ differentiate between normal exits and error exits.
 @lisp
 (define-condition curl-code-error (error)
   (($code :initarg :curl-code :reader curl-error-code))
+  (:report (lambda (c stream)
+             (format stream "libcurl function returned error ~A"
+                            (curl-error-code c))))
   (:documentation "Signalled when a libcurl function answers
 a code other than CURLE_OK."))
-
-(defmethod print-object ((c curl-code-error) stream)
-  (if *print-escape*
-    (call-next-method)
-    (format stream "libcurl function returned error ~A"
-            (curl-error-code c))))
 
 (defmethod translate-from-foreign (value (name (eql 'curl-code)))
   "Raise a CURL-CODE-ERROR if VALUE, a curl-code, is non-zero."
@@ -1538,8 +1535,8 @@ As the result was @samp{0}, the new method returned @code{:curle-ok},
 just as specified.@footnote{It might be better to return
 @code{(values)} than @code{:curle-ok} in real code, but this is good
 for illustration.}  I will leave disjoining the separate
-@code{CURLcode}s into condition types and improving error reporting in
-@code{print-object} as an exercise for you.
+@code{CURLcode}s into condition types and improving the @code{:report}
+function as an exercise for you.
 
 The creation of @code{*easy-handle-cstrings*} and
 @code{*easy-handle-errorbuffers*} as properties of @code{easy-handle}s
