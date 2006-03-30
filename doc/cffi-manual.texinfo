@@ -1813,15 +1813,13 @@ defined in @code{stdint.h}.
 @ForeignType{:float}
 @ForeignType{:double}
 
-On most systems, the @code{:float} type represents a C @code{float}
-and a Lisp @code{single-float}. @code{:double} represents a C
-@code{double} and a Lisp @code{double-float}.  It is not so useful to
-consider the relationship between Lisp types and C types as
-isomorphic, as simply to recognize the relationship, and relative
+On all systems, the @code{:float} and @code{:double} types represent a
+C @code{float} and @code{double}, respectively. On most but not all
+systems, @code{:float} and @code{:double} represent a Lisp
+@code{single-float} and @code{double-float}, respectively. It is not
+so useful to consider the relationship between Lisp types and C types
+as isomorphic, as simply to recognize the relationship, and relative
 precision, among each respective category.
-
-@impnote{This is not true for Lispworks (on linux/x86 and win32 at
-least). --luis}
 
 @ForeignType{:long-double}
 
@@ -2287,7 +2285,7 @@ which is @code{:int} by default.
   (:rdonly   #x0000)
   (:wronly   #x0001)
   (:rdwr     #x0002)
-  (:nonblock $x0004)
+  (:nonblock #x0004)
   (:append   #x0008)
   (:creat    #x0200))
   ;; etc..
