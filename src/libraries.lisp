@@ -113,9 +113,8 @@
 (defmacro define-foreign-library (name &body pairs)
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
-  `(eval-when (#+(or cmu scl) :compile-toplevel :load-toplevel :execute)
-     (setf (get-foreign-library ',name) ',pairs)
-     ',name))
+  `(progn (setf (get-foreign-library ',name) ',pairs)
+          ',name))
 
 (defun cffi-feature-p (feature-expression)
   "Matches a FEATURE-EXPRESSION against the symbols in *FEATURES*
@@ -243,8 +242,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
        (:or (try-foreign-library-alternatives (rest library)))))))
 
 (defmacro use-foreign-library (name)
-  `(eval-when (:load-toplevel :execute #+(or cmu scl) :compile-toplevel)
-     (load-foreign-library ',name)))
+  `(load-foreign-library ',name))
 
 ;;;# Closing Foreign Libraries
 ;;;

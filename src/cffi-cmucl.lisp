@@ -320,12 +320,16 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Loading and Closing Foreign Libraries
 
+;;; Work-around for compiling ffi code without loading the
+;;; respective library at compile-time.
+(setf c::top-level-lambda-max 0)
+
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (sys::load-object-file name))
 
-;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
-;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
+;;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
+;;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
 (defun %close-foreign-library (name)
   "Closes the foreign library NAME."
   (let ((lib (find name sys::*global-table* :key #'cdr :test #'string=)))
