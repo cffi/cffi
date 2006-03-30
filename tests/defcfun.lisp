@@ -315,7 +315,7 @@
 ;;; regression test: defining an undefined foreign function should only
 ;;; throw some sort of warning, not signal an error.
 
-#+(or cmu (and sbcl (not linkage-table)))
+#+(or cmu (and sbcl (or (not linkage-table) win32)))
 (pushnew 'defcfun.undefined rt::*expected-failures*)
 
 (deftest defcfun.undefined
