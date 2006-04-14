@@ -55,6 +55,7 @@ This is a collection of TODO items and ideas in no particular order.
 -> Define a lisp type for pointers in the backends. Eg: for clisp:
      (deftype pointer-type (or ffi:foreign-address null))
    Useful for type declarations.
+-> Warn about :void in places where it doesn't make sense.
 
 ### Underspecified Semantics
 
