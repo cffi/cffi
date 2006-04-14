@@ -5307,6 +5307,9 @@ value will be converted to its C representation.
 This Lisp function can be accessed by the @code{callback} macro or the
 @code{get-callback} function.
 
+@strong{Portability note:} @code{defcallback} will not work correctly
+on some Lisps if it's not a top-level form.
+
 @subheading Examples
 
 @lisp

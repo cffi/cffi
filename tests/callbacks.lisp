@@ -465,3 +465,15 @@
                      :float 5.0 :float 5.0 :float 5.0 :float 5.0
                      :float)
   130.0)
+
+;;; Defining a callback as a non-toplevel form. Not portable. Doesn't
+;;; work for CMUCL or Allegro.
+#-(and)
+(let ((n 42))
+  (defcallback non-toplevel-cb :int ()
+    n))
+
+#-(and)
+(deftest callbacks.non-toplevel
+    (foreign-funcall (callback non-toplevel-cb) :int)
+  42)
