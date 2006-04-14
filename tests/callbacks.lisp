@@ -215,8 +215,13 @@
 
 (defcfun "pass_int_ref" :void (f :pointer))
 
+;;; CMUCL chokes on this one for some reason.
+#-(and cffi-features:darwin cmu)
 (defcallback read-int-from-pointer :void ((a :pointer))
   (setq *int* (mem-ref a :int)))
+
+#+(and cffi-features:darwin cmu)
+(pushnew 'callbacks.void rt::*expected-failures*)
 
 (deftest callbacks.void
     (progn
@@ -392,6 +397,9 @@
 ;;; Handling many arguments of type double. Many lisps (used to) fail
 ;;; this one on darwin/ppc. This test might be bogus due to floating
 ;;; point arithmetic rounding errors.
+;;;
+;;; CMUCL chokes on this one.
+#-(and cffi-features:darwin cmu)
 (defcallback double26 :double
     ((a1 :double) (a2 :double) (a3 :double) (a4 :double) (a5 :double)
      (a6 :double) (a7 :double) (a8 :double) (a9 :double) (a10 :double)
@@ -408,12 +416,15 @@
 
 (defcfun "call_double26" :double (f :pointer))
 
-#+(and cffi-features:darwin allegro)
+#+(and cffi-features:darwin (or allegro cmu))
 (pushnew 'callbacks.double26 rt::*expected-failures*)
 
 (deftest callbacks.double26
     (call-double26 (callback double26))
   81.64d0)
+
+#+(and cffi-features:darwin cmu)
+(pushnew 'callbacks.double26.funcall rt::*expected-failures*)
 
 #-cffi-features:no-foreign-funcall
 (deftest callbacks.double26.funcall
@@ -428,6 +439,7 @@
   81.64d0)
 
 ;;; Same as above, for floats.
+#-(and cffi-features:darwin cmu)
 (defcallback float26 :float
     ((a1 :float) (a2 :float) (a3 :float) (a4 :float) (a5 :float)
      (a6 :float) (a7 :float) (a8 :float) (a9 :float) (a10 :float)
@@ -444,14 +456,14 @@
 
 (defcfun "call_float26" :float (f :pointer))
 
-#+(and cffi-features:darwin (or lispworks openmcl))
+#+(and cffi-features:darwin (or lispworks openmcl cmu))
 (pushnew 'callbacks.float26 regression-test::*expected-failures*)
 
 (deftest callbacks.float26
     (call-float26 (callback float26))
   130.0)
 
-#+(and cffi-features:darwin (or lispworks openmcl))
+#+(and cffi-features:darwin (or lispworks openmcl cmu))
 (pushnew 'callbacks.float26.funcall regression-test::*expected-failures*)
 
 #-cffi-features:no-foreign-funcall

@@ -44,7 +44,7 @@
   (load-foreign-library 'libtest))
 
 ;;; check libtest version
-(defparameter *required-dll-version* "20060223")
+(defparameter *required-dll-version* "20060414")
 
 (defcvar "dll_version" :string)
 

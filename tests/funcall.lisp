@@ -154,7 +154,6 @@
                      :double 3.14d0 :double 3.14d0 :double)
   81.64d0)
 
-
 ;;; See DEFCFUN.FLOAT26.
 (deftest funcall.float26
     (foreign-funcall "sum_float26"
