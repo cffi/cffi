@@ -25,6 +25,8 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
+all: docs
+
 docs:
 	sh gendocs.sh -o manual --html "--css-include=style.css" cffi-manual "CFFI User Manual"
 	sh gendocs.sh -o spec --html "--css-include=style.css" cffi-sys-spec "CFFI-SYS Interface Specification"
