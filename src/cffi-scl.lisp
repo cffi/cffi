@@ -322,9 +322,7 @@
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol 'name.  The 'kind is one of :code or
-  :data, and is ignored on some platforms."
-  (declare (ignore kind))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol 'name."
   (let ((sap (sys:foreign-symbol-address name)))
     (if (zerop (sys:sap-int sap)) nil sap)))

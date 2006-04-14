@@ -293,8 +293,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (declare (ignore kind))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
   (foreign-symbol-address (convert-external-name name)))

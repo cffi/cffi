@@ -166,4 +166,9 @@
                      :float 5.0 :float)
   130.0)
 
+;;; Funcalling a pointer.
+(deftest funcall.f-s-p.1
+    (foreign-funcall (foreign-symbol-pointer "abs") :int -42 :int)
+  42)
+
 ) ;; #-cffi-features:no-foreign-funcall

@@ -409,8 +409,6 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx (concatenate 'string "_" name)
   #-macosx name)
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (declare (ignore kind))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
   (prog1 (ff:get-entry-point (convert-external-name name))))

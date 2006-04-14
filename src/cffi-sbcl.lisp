@@ -309,11 +309,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-;;; We return the address in the linkage-table (well, when there is one)
-;;; in case someone uses this to save addresses somewhere and then dump
-;;; an image. --luis
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (when (sb-sys:find-foreign-symbol-address name)
-    (sb-sys:foreign-symbol-sap name (ecase kind (:code nil) (:data t)))))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
+  (let-when (address (sb-sys:find-foreign-symbol-address name))
+    (sb-sys:int-sap address)))

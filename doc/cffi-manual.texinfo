@@ -3659,7 +3659,7 @@ CFFI> (progn
 @node foreign-symbol-pointer
 @unnumberedsec foreign-symbol-pointer
 @subheading Syntax
-@Function{foreign-symbol-pointer foreign-name kind => ptr}
+@Function{foreign-symbol-pointer foreign-name => pointer}
 
 @subheading Arguments and Values
 
@@ -3667,40 +3667,34 @@ CFFI> (progn
 @item foreign-name
 A string.
 
-@item kind
-Either @code{:code} or @code{:data}.
-
-@item ptr
+@item pointer
 A foreign pointer, or @code{nil}.
 @end table
 
 @subheading Description
 The function @code{foreign-symbol-pointer} will return a foreign
 pointer corresponding to the foreign symbol denoted by the string
-@var{foreign-name}. The @var{kind} argument specifies whether
-@var{foreign-name} is a function or a variable and should be
-respectively @code{:code} or @code{:data}. If a foreign symbol named
-@var{foreign-name} doesn't exist, @code{nil} is returned.
+@var{foreign-name}.  If a foreign symbol named @var{foreign-name}
+doesn't exist, @code{nil} is returned.
 
 ABI name manglings will be performed on @var{foreign-name} by
 @code{foreign-symbol-pointer} if necessary. (eg: adding a leading
 underscore on darwin/ppc)
 
-@strong{Warning:} the consequences of misspecifying the @var{kind}
-argument are, unfortunately, unspecified. Some implementations will
-silently ignore this, while others might return erroneous values.
+@strong{Important note:} do not keep these pointers across saved Lisp
+cores as the foreign-library may move across sessions.
 
 @subheading Examples
 
 @lisp
-CFFI> (foreign-symbol-pointer "errno" :data)
+CFFI> (foreign-symbol-pointer "errno")
 @result{} #<A Mac Pointer #xA0008130>
-CFFI> (foreign-symbol-pointer "strerror" :code)
+CFFI> (foreign-symbol-pointer "strerror")
 @result{} #<A Mac Pointer #x9002D0F8>
 CFFI> (foreign-funcall * :int (mem-ref ** :int) :string)
 @result{} "No such file or directory"
 
-CFFI> (foreign-symbol-pointer "unexistant symbol" :data)
+CFFI> (foreign-symbol-pointer "inexistent symbol")
 @result{} NIL
 @end lisp
 
@@ -3714,12 +3708,12 @@ CFFI> (foreign-symbol-pointer "unexistant symbol" :data)
 @node inc-pointer
 @unnumberedsec inc-pointer
 @subheading Syntax
-@Function{inc-pointer ptr offset => new-pointer}
+@Function{inc-pointer pointer offset => new-pointer}
 
 @subheading Arguments and Values
 
 @table @var
-@item ptr
+@item pointer
 @itemx new-pointer
 A foreign pointer.
 
@@ -3729,7 +3723,7 @@ An integer.
 
 @subheading Description
 The function @code{inc-pointer} will return a @var{new-pointer} pointing
-@var{offset} bytes past @var{ptr}.
+@var{offset} bytes past @var{pointer}.
 
 @subheading Examples
 

@@ -50,15 +50,12 @@
 
 (defun get-var-pointer (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
-  (foreign-symbol-pointer (get symbol 'foreign-var-name) :data))
+  (foreign-symbol-pointer (get symbol 'foreign-var-name)))
 
-;;; a) Should this be exported?
-;;; b) should we define a more specific condition?
-;;; --luis
 (defun foreign-symbol-pointer-or-lose (foreign-name)
   "Like foreign-symbol-ptr but throws an error instead of
 returning nil when foreign-name is not found."
-  (or (foreign-symbol-pointer foreign-name :data)
+  (or (foreign-symbol-pointer foreign-name)
       (error "Trying to access undefined foreign variable ~S." foreign-name)))
 
 (defmacro defcvar (name type &key read-only)
@@ -69,7 +66,7 @@ returning nil when foreign-name is not found."
     (when (aggregatep (parse-type type)) ; we can't really setf an aggregate
       (setq read-only t))                ; type, at least not yet...
     `(progn
-       ;; Save foreign-name for posterior access by get-var-ptr
+       ;; Save foreign-name for posterior access by get-var-pointer
        (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)
        ;; Getter
        (defun ,fn ()

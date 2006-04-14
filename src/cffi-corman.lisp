@@ -308,10 +308,8 @@ the DLL's name (a string), else returns NIL."
   :entry-name "GetProcAddress"
   :linkage-type :pascal)
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (declare (ignore kind))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
   (let ((str (lisp-string-to-c-string name)))
     (unwind-protect
          (dolist (dll ct::*dlls-loaded*)

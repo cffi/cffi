@@ -262,7 +262,5 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;;# Foreign Globals
 
 (defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (declare (ignore kind))
+  "Returns a pointer to a foreign symbol NAME."
   (si:find-foreign-symbol name :default :pointer-void 0))

@@ -325,19 +325,9 @@ the function call."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (ecase kind
-    (:data
-     (prog1 (ignore-errors
-              (ffi:foreign-address
-               (ffi::foreign-library-variable
-                name (ffi::foreign-library :default) nil nil)))))
-    (:code
-     (prog1 (ignore-errors
-              (ffi:foreign-address
-               (ffi::foreign-library-function
-                name (ffi::foreign-library :default)
-                nil (ffi:parse-c-type '(ffi:c-function
-                                        (:language :stdc))))))))))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
+  (prog1 (ignore-errors
+           (ffi:foreign-address
+            (ffi::foreign-library-variable
+             name (ffi::foreign-library :default) nil nil)))))

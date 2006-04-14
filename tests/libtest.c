@@ -754,5 +754,25 @@ DLLEXPORT int UPPER_CASE_INT3  = 23456;
 DLLEXPORT int MiXeDCaSeInT3    = 34567;
 DLLEXPORT int MiXeD_CaSe_InT3  = 45678;
 
+/*
+ * FOREIGN-SYMBOL-POINTER.1
+ */
+
+DLLEXPORT int compare_against_abs(void *p)
+{
+    return p == abs;
+}
+
+/*
+ * FOREIGN-SYMBOL-POINTER.2
+ */
+
+DLLEXPORT void xpto_fun() {}
+
+DLLEXPORT int compare_against_xpto_fun(void *p)
+{
+    return p == xpto_fun;
+}
+
 /* vim: ts=4 et
 */

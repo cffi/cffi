@@ -399,8 +399,6 @@ and caches it if necessary.  Finally calls it."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (declare (ignore kind))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
   (prog1 (ignore-errors (fli:make-pointer :symbol-name name :type :void))))

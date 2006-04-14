@@ -71,3 +71,19 @@
           when (featurep feature)
           sum 1)
   1)
+
+;;;; foreign-symbol-pointer tests
+
+;;; This might be useful for some libraries that compare function
+;;; pointers. http://thread.gmane.org/gmane.lisp.cffi.devel/694
+(defcfun "compare_against_abs" :boolean (p :pointer))
+
+(deftest foreign-symbol-pointer.1
+    (compare-against-abs (foreign-symbol-pointer "abs"))
+  t)
+
+(defcfun "compare_against_xpto_fun" :boolean (p :pointer))
+
+(deftest foreign-symbol-pointer.2
+    (compare-against-xpto-fun (foreign-symbol-pointer "xpto_fun"))
+  t)

@@ -338,7 +338,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name kind)
-  "Returns a pointer to a foreign symbol NAME. KIND is one of
-:CODE or :DATA, and is ignored on some platforms."
-  (prog1 (ignore-errors (sys:foreign-symbol-address name :flavor kind))))
+(defun foreign-symbol-pointer (name)
+  "Returns a pointer to a foreign symbol NAME."
+  (let ((address (sys:alternate-get-global-address
+                  (vm:extern-alien-name name))))
+    (if (zerop address)
+        nil
+        (sys:int-sap address))))
