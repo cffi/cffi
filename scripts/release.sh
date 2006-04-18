@@ -25,11 +25,11 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
-SNAPSHOT_DATE=`date +"%Y%m%d"`
-TARBALL_NAME="cffi_$SNAPSHOT_DATE"
+VERSION=${VERSION:=`date +"%Y%m%d"`}
+TARBALL_NAME="cffi_$VERSION"
 TARBALL="$TARBALL_NAME.tar.gz"
 SIGNATURE="$TARBALL.asc"
-RELEASE_DIR="/project/cffi/public_html/snapshots"
+RELEASE_DIR=${RELEASE_DIR:="/project/cffi/public_html/releases"}
 
 echo "Creating distribution..."
 darcs dist -d "$TARBALL_NAME"
