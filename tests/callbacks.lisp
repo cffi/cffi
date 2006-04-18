@@ -317,7 +317,7 @@
           (format t "a~A: ~A~%" i arg))
     (reduce #'+ args)))
 
-#+(or openmcl (and cffi-features:darwin (or allegro cmu lispworks)))
+#+(or openmcl cmu (and cffi-features:darwin (or allegro lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
 
 (deftest callbacks.bff.1
@@ -382,7 +382,7 @@
        (values (floor a108)) a109 a110 a111 a112 a113 a114 a115 a116 a117 a118
        a119 a120 a121 (values (floor a122)) a123 a124 a125 a126 a127))
 
-  #+(or openmcl (and cffi-features:darwin cmu))
+  #+(or openmcl cmu)
   (push 'callbacks.bff.2 rt::*expected-failures*)
   
   (deftest callbacks.bff.2

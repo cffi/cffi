@@ -758,9 +758,9 @@ DLLEXPORT int MiXeD_CaSe_InT3  = 45678;
  * FOREIGN-SYMBOL-POINTER.1
  */
 
-DLLEXPORT int compare_against_abs(void *p)
+DLLEXPORT int compare_against_abs(intptr_t p)
 {
-    return p == abs;
+    return p == (intptr_t) abs;
 }
 
 /*
@@ -769,9 +769,9 @@ DLLEXPORT int compare_against_abs(void *p)
 
 DLLEXPORT void xpto_fun() {}
 
-DLLEXPORT int compare_against_xpto_fun(void *p)
+DLLEXPORT int compare_against_xpto_fun(intptr_t p)
 {
-    return p == xpto_fun;
+    return p == (intptr_t) xpto_fun;
 }
 
 /* vim: ts=4 et

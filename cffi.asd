@@ -61,4 +61,8 @@
      (:file "functions")
      (:file "foreign-vars")))))
 
+(defmethod perform ((o test-op) (c (eql (find-system :cffi))))
+  (operate 'asdf:load-op :cffi-tests)
+  (operate 'asdf:test-op :cffi-tests))
+
 ;; vim: ft=lisp et
