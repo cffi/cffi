@@ -327,6 +327,8 @@ the DLL's name (a string), else returns NIL."
 (defvar *finalizers* '()
   "Weak alist that holds registered finalizers.")
 
+(defvar *finalizers-cs* (threads:allocate-critical-section))
+
 (defun finalize (object function)
   "Pushes a new FUNCTION to the OBJECT's list of
 finalizers. FUNCTION should take no arguments. Returns OBJECT.
@@ -337,16 +339,22 @@ already have been garbage collected and is therefore not
 accessible when FUNCTION is invoked."
   (flet ((get-finalizers (obj)
            (assoc obj *finalizers* :test #'eq :key #'ccl:weak-pointer-obj)))
-    (let ((pair (get-finalizers object)))
-      (if (null pair)
-          (push (list (ccl:make-weak-pointer object) function) *finalizers*)
-          (push function (cdr pair))))
+    (threads:with-synchronization *finalizers-cs*
+      (let ((pair (get-finalizers object)))
+        (if (null pair)
+            (push (list (ccl:make-weak-pointer object) function) *finalizers*)
+            (push function (cdr pair)))))
     (ccl:register-finalization
-     object (lambda (obj) (mapc #'funcall (cdr (get-finalizers obj))))))
+     object (lambda (obj)
+              (threads:with-synchronization *finalizers-cs*
+                (mapc #'funcall (cdr (get-finalizers obj)))
+                (setq *finalizers*
+                      (delete obj *finalizers*
+                              :test #'eq :key #'ccl:weak-pointer-obj))))))
   object)
 
 (defun cancel-finalization (object)
   "Cancels all of OBJECT's finalizers, if any."
-  (setq *finalizers*
-        (delete object *finalizers*
-                :test #'eq :key #'ccl:weak-pointer-obj)))
+  (threads:with-synchronization *finalizers-cs*
+    (setq *finalizers*
+          (delete object *finalizers* :test #'eq :key #'ccl:weak-pointer-obj))))
