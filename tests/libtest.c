@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+#include <stdint.h>
 
 /*
  * Some functions that aren't avaiable on WIN32
