@@ -38,6 +38,7 @@
    ;; the foreign-funcall primitive.
    #:no-long-long
    #:no-foreign-funcall
+   #:no-finalizers
 
    ;; Only SCL support long-double...
    ;;#:no-long-double

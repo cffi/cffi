@@ -54,7 +54,9 @@
    #:foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback
-   #:%callback))
+   #:%callback
+   #:finalize
+   #:cancel-finalization))
 
 (in-package #:cffi-sys)
 
@@ -402,3 +404,32 @@ and caches it if necessary.  Finally calls it."
 (defun foreign-symbol-pointer (name)
   "Returns a pointer to a foreign symbol NAME."
   (prog1 (ignore-errors (fli:make-pointer :symbol-name name :type :void))))
+
+;;;# Finalizers
+
+(defvar *finalizers* (make-hash-table :test 'eq :weak-kind :key)
+  "Weak hashtable that holds registered finalizers.")
+
+(hcl:add-special-free-action 'free-action)
+
+(defun free-action (object)
+  (let ((finalizers (gethash object *finalizers*)))
+    (unless (null finalizers)
+      (mapc #'funcall finalizers))))
+
+(defun finalize (object function)
+  "Pushes a new FUNCTION to the OBJECT's list of
+finalizers. FUNCTION should take no arguments. Returns OBJECT.
+
+For portability reasons, FUNCTION should not attempt to look at
+OBJECT by closing over it because, in some lisps, OBJECT will
+already have been garbage collected and is therefore not
+accessible when FUNCTION is invoked."
+  (push function (gethash object *finalizers*))
+  (hcl:flag-special-free-action object)
+  object)
+
+(defun cancel-finalization (object)
+  "Cancels all of OBJECT's finalizers, if any."
+  (remhash object *finalizers*)
+  (hcl:flag-not-special-free-action object))

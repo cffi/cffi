@@ -68,7 +68,9 @@
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:%defcallback
-   #:%callback))
+   #:%callback
+   #:finalize
+   #:cancel-finalization))
 
 (in-package #:cffi-sys)
 
@@ -326,3 +328,22 @@
   "Returns a pointer to a foreign symbol 'name."
   (let ((sap (sys:foreign-symbol-address name)))
     (if (zerop (sys:sap-int sap)) nil sap)))
+
+;;;# Finalizers
+;;;
+;;; TODO: confirm that SCL's finalizer API is the same as CMUCL's.
+;;;   -- LO 2006/04/24
+
+(defun finalize (object function)
+  "Pushes a new FUNCTION to the OBJECT's list of
+finalizers. FUNCTION should take no arguments. Returns OBJECT.
+
+For portability reasons, FUNCTION should not attempt to look at
+OBJECT by closing over it because, in some lisps, OBJECT will
+already have been garbage collected and is therefore not
+accessible when FUNCTION is invoked."
+  (ext:finalize object function))
+
+(defun cancel-finalization (object)
+  "Cancels all of OBJECT's finalizers, if any."
+  (ext:cancel-finalization object))

@@ -51,7 +51,9 @@
    #:with-pointer-to-vector-data
    #:%defcallback
    #:%callback
-   #:foreign-symbol-pointer))
+   #:foreign-symbol-pointer
+   #:finalize
+   #:cancel-finalization))
 
 (in-package #:cffi-sys)
 
@@ -61,6 +63,7 @@
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; Backend mis-features.
           cffi-features:no-long-long
+          cffi-features:no-finalizers
           ;; OS/CPU features.
           #+darwin       cffi-features:darwin 
           #+unix         cffi-features:unix
@@ -264,3 +267,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun foreign-symbol-pointer (name kind)
   "Returns a pointer to a foreign symbol NAME."
   (si:find-foreign-symbol name :default :pointer-void 0))
+
+;;;# Finalizers
+
+(defun finalize (object function)
+  (declare (ignore object function))
+  (error "ECL does not support finalizers."))
+
+(defun cancel-finalization (object)
+  (declare (ignore object))
+  (error "ECL does not support finalizers."))
