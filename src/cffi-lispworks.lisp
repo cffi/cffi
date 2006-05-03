@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-lispworks.lisp --- Lispworks CFFI-SYS implementation.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation

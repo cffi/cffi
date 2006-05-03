@@ -2,7 +2,7 @@
 ;;;
 ;;; libraries.lisp --- Finding and loading foreign libraries.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
 ;;; Copyright (C) 2006, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person

@@ -2,7 +2,7 @@
 ;;;
 ;;; foreign-vars.lisp --- High-level interface to foreign globals.
 ;;;
-;;; Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation

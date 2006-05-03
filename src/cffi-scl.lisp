@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-scl.lisp --- CFFI-SYS implementation for the Scieneer Common Lisp.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
 ;;; Copyright (C) 2006, Scieneer Pty Ltd.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person

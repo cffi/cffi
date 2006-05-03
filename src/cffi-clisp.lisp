@@ -2,8 +2,8 @@
 ;;;
 ;;; cffi-clisp.lisp --- CFFI-SYS implementation for CLISP.
 ;;;
-;;; Copyright (C) 2005, James Bielman  <jamesjb@jamesjb.com>
-;;;           (C) 2005, Joerg Hoehle  <hoehle@users.sourceforge.net>
+;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;;           (C) 2005-2006, Joerg Hoehle  <hoehle@users.sourceforge.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
