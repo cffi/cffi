@@ -40,7 +40,7 @@ shlibs:
 clean:
 	@$(MAKE) -wC tests clean
 	find . -name ".fasls" | xargs rm -rf
-	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.amd64f" -o -name "*.sparcf" -o -name "*.sparc64f" -o -name "*.hpf" -o -name "*.hp64f" -o -name "*.ppcf" -o -name "*.nfasl" -o -name "*.ufsl" -o -name "*.fsl" \) -exec rm {} \;
+	find . \( -name "*.dfsl" -o -name "*.fasl" -o -name "*.fas" -o -name "*.lib" -o -name "*.x86f" -o -name "*.amd64f" -o -name "*.sparcf" -o -name "*.sparc64f" -o -name "*.hpf" -o -name "*.hp64f" -o -name "*.ppcf" -o -name "*.nfasl" -o -name "*.ufsl" -o -name "*.fsl" -o -name "*.lx64fsl" \) -exec rm {} \;
 
 test-openmcl:
 	@-$(OPENMCL) --load tests/run-tests.lisp
