@@ -7,7 +7,7 @@
 @synindex tp fn
 
 @copying
-Copyright @copyright{} 2005, James Bielman  <jamesjb at jamesjb.com>
+Copyright @copyright{} 2005-2006, James Bielman  <jamesjb at jamesjb.com>
 
 @quotation
 Permission is hereby granted, free of charge, to any person
