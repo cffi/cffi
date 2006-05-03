@@ -27,12 +27,12 @@
 
 # This way you can easily run the tests for different versions
 # of each lisp with, e.g. ALLEGRO=/path/to/some/lisp make test-allegro
-CMUCL=lisp
-OPENMCL=openmcl
-SBCL=sbcl
-CLISP=clisp
-ALLEGRO=acl
-SCL=scl
+CMUCL    ?= lisp
+OPENMCL  ?= openmcl
+SBCL     ?= sbcl
+CLISP    ?= clisp
+ALLEGRO  ?= acl
+SCL      ?= scl
 
 shlibs:
 	@$(MAKE) -wC tests shlibs
