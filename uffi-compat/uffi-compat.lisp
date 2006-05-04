@@ -157,6 +157,9 @@
 (defmethod cffi:translate-from-foreign (obj (name (eql 'uffi-char)))
   (code-char obj))
 
+(defmethod cffi::unparse ((name (eql 'uffi-char)) type)
+  `(uffi-char ,(cffi::name (cffi::actual-type type))))
+
 (defmacro def-type (name type)
   "Define a Common Lisp type NAME for UFFI type TYPE."
   (declare (ignore type))
