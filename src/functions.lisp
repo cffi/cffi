@@ -162,7 +162,7 @@ and does type promotion for the variadic arguments."
          `(foreign-funcall-varargs
            ,',foreign-name
            ,,`(list ,@(loop for (name type) in args
-                            collect type collect name))
+                            collect `',type collect name))
            ,@,varargs
            ,',return-type)))))
 
