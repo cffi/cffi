@@ -201,6 +201,50 @@ Signals an error if the type cannot be resolved."
       (make-instance 'foreign-built-in-type :name ,keyword
                      :type-keyword ,keyword))))
 
+;;;# Foreign Pointer Types
+
+(defclass foreign-pointer-type (foreign-type)
+  ((pointer-type
+    ;; Type of object pointed at by this pointer, or nil for an
+    ;; untyped (void) pointer.
+    :initform nil
+    :initarg :pointer-type
+    :accessor pointer-type))
+  (:default-initargs :name :pointer))
+
+;;; Canonicalize foreign pointers to the primitive :POINTER type.
+(defmethod canonicalize ((type foreign-pointer-type))
+  :pointer)
+
+;;; Pointers are never aggregate types.
+(defmethod aggregatep ((type foreign-pointer-type))
+  nil)
+
+;;; Return the alignment of any foreign pointer type.
+(defmethod foreign-type-alignment ((type foreign-pointer-type))
+  (%foreign-type-alignment :pointer))
+
+;;; Return the size of any foreign pointer type.
+(defmethod foreign-type-size ((type foreign-pointer-type))
+  (%foreign-type-size :pointer))
+
+;;; Foreign pointer types are never translated.
+(defmethod translate-p ((type foreign-pointer-type))
+  nil)
+
+;;; Unparse a foreign pointer type when dumping to a fasl.
+(defmethod unparse (name (type foreign-pointer-type))
+  (declare (ignore name))
+  (with-slots (pointer-type) type
+    (if pointer-type
+        `(:pointer ,(unparse-type pointer-type))
+        :pointer)))
+
+;;; Print a foreign pointer type unreadably in unparsed form.
+(defmethod print-object ((type foreign-pointer-type) stream)
+  (print-unreadable-object (type stream :type t :identity nil)
+    (format stream "~S" (unparse-type type))))
+
 ;;;# Foreign Typedefs
 ;;;
 ;;; We have two classes: foreign-type-alias and foreign-typedef.

@@ -100,12 +100,12 @@
   5)
 
 
-(defcfun "strcpy" :pointer
-  (dest :pointer)
+(defcfun "strcpy" (:pointer :char)
+  (dest (:pointer :char))
   (src :string))
 
-(defcfun "strcat" :pointer
-  (dest :pointer)
+(defcfun "strcat" (:pointer :char)
+  (dest (:pointer :char))
   (src :string))
 
 (deftest defcfun.string.2
@@ -142,7 +142,7 @@
 ;;;# Calling varargs functions
 
 (defcfun "sprintf" :int
-  (str :pointer)
+  (str (:pointer :char))
   (control :string)
   &rest)
 

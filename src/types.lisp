@@ -39,13 +39,19 @@
 (define-built-in-foreign-type :unsigned-long)
 (define-built-in-foreign-type :float)
 (define-built-in-foreign-type :double)
-(define-built-in-foreign-type :pointer)
 (define-built-in-foreign-type :void)
 
 #-cffi-features:no-long-long
 (progn
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
+
+;;; Define the type parser for the :POINTER type.  If no type argument
+;;; is provided, a void pointer will be created.
+(define-type-spec-parser :pointer (&optional type)
+  (if type
+      (make-instance 'foreign-pointer-type :pointer-type (parse-type type))
+      (make-instance 'foreign-pointer-type :pointer-type nil)))
 
 ;;; When some lisp other than SCL supports :long-double we should
 ;;; use #-cffi-features:no-long-double here instead.
