@@ -147,7 +147,8 @@
                               (t (ash last-bit 1)))))
         ;; find the greatest single-bit int used so far, and use its
         ;; left-shift
-        (when (or (null last-bit) (and (> value last-bit) (single-bit-p value)))
+        (when (and (or (null last-bit) (> value last-bit))
+                   (single-bit-p value))
           (setf last-bit value))
         (if (gethash symbol (symbol-values type))
             (error "A foreign bitfield cannot contain duplicate symbols: ~S."

@@ -87,3 +87,20 @@
               (foreign-bitfield-value 'bf2 (list symbol)))
             '(zero one two four eight sixteen thirty-two))
   (0 1 2 4 8 16 32))
+
+(defbitfield bf3
+  (three 3)
+  zero
+  (seven 7)
+  one
+  (eight 8)
+  sixteen)
+
+;;; Non-single-bit numbers must not influence the progression of
+;;; implicit values.  Single bits larger than any before *must*
+;;; influence said progression.
+(deftest bitfield.3
+    (mapcar (lambda (symbol)
+              (foreign-bitfield-value 'bf3 (list symbol)))
+            '(zero one sixteen))
+  (0 1 16))
