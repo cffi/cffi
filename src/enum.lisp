@@ -134,11 +134,21 @@
 (defun make-foreign-bitfield (type-name base-type values)
   "Makes a new instance of the foreign-bitfield class."
   (let ((type (make-instance 'foreign-bitfield :name type-name
-                             :actual-type (parse-type base-type))))
+                             :actual-type (parse-type base-type)))
+        (last-bit nil))
     (dolist (pair values)
-      (destructuring-bind (symbol value) pair
-        (check-type value integer)
+      (destructuring-bind (symbol &optional (value nil value-p))
+          (mklist pair)
         (check-type symbol symbol)
+        (if value-p
+          (check-type value integer)
+          (setf value (cond ((null last-bit) (setf last-bit 0))
+                            ((zerop last-bit) 1)
+                            (t (ash last-bit 1)))))
+        ;; find the greatest single-bit int used so far, and use its
+        ;; left-shift
+        (when (and (> value last-bit) (single-bit-p value))
+          (setf last-bit value))
         (if (gethash symbol (symbol-values type))
             (error "A foreign bitfield cannot contain duplicate symbols: ~S."
                    symbol)
@@ -156,14 +166,12 @@
         (make-foreign-bitfield ',name ',base-type ',masks)))))
 
 (defun %foreign-bitfield-value (type symbols)
-  (let ((bitfield 0))
-    (dolist (symbol symbols)
-      (check-type symbol symbol)
-      (let ((value (or (gethash symbol (symbol-values type))
-                       (error "~S is not a valid symbol for bitfield type ~S."
-                              symbol type))))
-        (setq bitfield (logior bitfield value))))
-    bitfield))
+  (reduce #'logior symbols
+          :key (lambda (symbol)
+                 (check-type symbol symbol)
+                 (or (gethash symbol (symbol-values type))
+                     (error "~S is not a valid symbol for bitfield type ~S."
+                            symbol type)))))
 
 (defun foreign-bitfield-value (type symbols)
   "Convert a list of symbols into an integer according to the TYPE bitfield."

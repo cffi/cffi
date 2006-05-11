@@ -38,7 +38,8 @@
            #:symbolicate
            #:let-when
            #:bif
-           #:post-incf))
+           #:post-incf
+           #:single-bit-p))
 
 (in-package #:cffi-utils)
 
@@ -155,6 +156,15 @@ producing a symbol in the current package."
                (len (length x)))
           (replace name x :start1 index)
           (incf index len))))))
+
+(defun single-bit-p (integer)
+  "Answer whether INTEGER, which must be an integer, is a single
+set twos-complement bit."
+  (if (<= integer 0)
+    nil                       ;infinite set bits for negatives
+    (loop until (logbitp 0 integer)
+         do (setf integer (ash integer -1))
+         finally (return (zerop (ash integer -1))))))
 
 ;(defun deprecation-warning (bad-name &optional good-name)
 ;  (warn "using deprecated ~S~@[, should use ~S instead~]"

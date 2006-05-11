@@ -1850,13 +1850,13 @@ types.
 
 The @code{:string} type performs automatic conversion between Lisp and
 C strings. Note that, in the case of functions the converted C string
-will have dynamic extent (ie. it will be automatically freed after the
-foreign function returns).
+will have dynamic extent (i.e.@: it will be automatically freed after
+the foreign function returns).
 
 @lisp
-;;; :STRING example
+;;; @lispcmt{:STRING example}
 CFFI> (foreign-funcall "getenv" :string "SHELL" :string)
-"/bin/bash"
+@result{} "/bin/bash"
 @end lisp
 
 @ForeignType{:boolean &optional (base-type :int)}
@@ -1931,7 +1931,8 @@ non-zero).
 We created the @code{my-boolean} type in the previous section.  To
 tell @cffi{} how to automatically convert Lisp values to
 @code{my-boolean} values, specialize the generic function
-@code{translate-to-foreign} on the @code{my-boolean} type:
+@code{translate-to-foreign} using an @sc{eql}-specializer with the
+name of your type, in this case the symbol @code{my-boolean}:
 
 @lisp
 ;;; @lispcmt{Define a method that converts Lisp booleans to C booleans.}
@@ -1943,7 +1944,8 @@ Now, when an object is passed as a @code{my-boolean} to a foreign
 function, this method will be invoked to convert the Lisp value to an
 integer.  To perform the inverse operation, which is needed for
 functions that return a @code{my-boolean}, specialize the
-@code{translate-from-foreign} generic function:
+@code{translate-from-foreign} generic function in the same manner as
+above:
 
 @lisp
 ;;; @lispcmt{Define a method that converts C booleans to Lisp booleans.}
@@ -1952,9 +1954,9 @@ functions that return a @code{my-boolean}, specialize the
 @end lisp
 
 When a @code{translate-to-foreign} method requires allocation of
-foreign memory, the @code{free-translated-object} method can be
-specialized to free the memory once the foreign object is no longer
-needed.  This is called automatically by @cffi{} when passing objects to
+foreign memory, you may specialize the @code{free-translated-object}
+method to free the memory once the foreign object is no longer needed.
+This is called automatically by @cffi{} when passing objects to
 foreign functions.
 
 A type translator does not necessarily need to convert the value.  For
@@ -2033,10 +2035,13 @@ CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
 @noindent
 Much better.
 
+The expansion interface has no equivalent of
+@code{free-translated-object}; you must instead define a method on
 @code{expand-to-foreign-dyn}, the third generic function in this
-interface, is especially useful when you can allocate something much
-more efficiently if you know the object has dynamic extent.  Consider
-the following example:
+interface.  This is especially useful when you can allocate something
+much more efficiently if you know the object has dynamic extent, as is
+the case with function calls that don't save the relevant allocated
+arguments.  Consider the following example:
 
 @lisp
 ;;; This type inherits :string's translators.
@@ -2290,13 +2295,15 @@ An integer representing a bitmask.
 
 @subheading Description
 The @code{defbitfield} macro is used to define foreign types that map
-lists of lisp symbols to integer values.
+lists of symbols to integer values.
 
-If @var{value} is omitted its value will either be 0, if it's the
-first entry, or it it will continue the progression from the last
-specified value.
+If @var{value} is omitted its value will either be @code{0}, if it is
+the first entry, or it will be the result of left-shifting the largest
+@var{value} so far, specified or omitted, with a single 1-bit in its
+binary representation, by one; if there is no such value so far,
+@code{1} is used.
 
-Symbol lists will be automatically converted to values and vice-versa
+Symbol lists will be automatically converted to values and vice versa
 when being passed as arguments to or returned from foreign functions,
 respectively. The same applies to any other situations where an object
 of a bitfield type is expected.
@@ -2307,13 +2314,13 @@ which is @code{:int} by default.
 @subheading Examples
 @lisp
 (defbitfield open-flags
-  (:rdonly   #x0000)
-  (:wronly   #x0001)
-  (:rdwr     #x0002)
-  (:nonblock #x0004)
-  (:append   #x0008)
+  :rdonly               ;@lispcmt{#x0000}
+  :wronly               ;@lispcmt{#x0001}
+  :rdwr                 ;@lispcmt{@dots{}}
+  :nonblock
+  :append
   (:creat    #x0200))
-  ;; etc..
+  ;; @lispcmt{etc@dots{}}
 
 CFFI> (foreign-bitfield-symbols 'open-flags #b1101)
 @result{} (:RDONLY :WRONLY :NONBLOCK :APPEND)
@@ -2327,9 +2334,9 @@ CFFI> (foreign-bitfield-value 'open-flags '(:rdwr :creat))
   (mode :uint16)) ; unportable
 
 CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
-@result{} <an fd>
+@result{} #<an fd>
 
-;;; Consider also the following lispier wrapper around open()
+;;; @lispcmt{Consider also the following lispier wrapper around open()}
 (defun lispier-open (path mode &rest flags)
   (unix-open path flags mode))
 @end lisp
