@@ -141,13 +141,13 @@
           (mklist pair)
         (check-type symbol symbol)
         (if value-p
-          (check-type value integer)
-          (setf value (cond ((null last-bit) (setf last-bit 0))
-                            ((zerop last-bit) 1)
-                            (t (ash last-bit 1)))))
+            (check-type value integer)
+            (setf value (cond ((null last-bit) (setf last-bit 0))
+                              ((zerop last-bit) 1)
+                              (t (ash last-bit 1)))))
         ;; find the greatest single-bit int used so far, and use its
         ;; left-shift
-        (when (and (> value last-bit) (single-bit-p value))
+        (when (or (null last-bit) (and (> value last-bit) (single-bit-p value)))
           (setf last-bit value))
         (if (gethash symbol (symbol-values type))
             (error "A foreign bitfield cannot contain duplicate symbols: ~S."

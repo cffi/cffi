@@ -63,3 +63,27 @@
     (and (eq :false (return-enum2 :false))
          (eq :true (return-enum2 :true)))
   t)
+
+;;;# Bitfield tests
+
+;;; Regression test: defbitfield was misbehaving when the first value
+;;; was provided.
+(deftest bitfield.1
+    (eval '(defbitfield bf1
+             (:foo 0)))
+  bf1)
+
+(defbitfield bf2
+  zero
+  one
+  two
+  four
+  eight
+  sixteen
+  thirty-two)
+
+(deftest bitfield.2
+    (mapcar (lambda (symbol)
+              (foreign-bitfield-value 'bf2 (list symbol)))
+            '(zero one two four eight sixteen thirty-two))
+  (0 1 2 4 8 16 32))
