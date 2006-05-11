@@ -104,3 +104,12 @@
               (foreign-bitfield-value 'bf3 (list symbol)))
             '(zero one sixteen))
   (0 1 16))
+
+(defbitfield bf4
+  (zero 0)
+  one)
+
+;;; Yet another edge case with the 0...
+(deftest bitfield.4
+    (foreign-bitfield-value 'bf4 '(one))
+  1)
