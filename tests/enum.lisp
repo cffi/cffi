@@ -74,25 +74,25 @@
   bf1)
 
 (defbitfield bf2
-  zero
   one
   two
   four
   eight
   sixteen
-  thirty-two)
+  thirty-two
+  sixty-four)
 
 (deftest bitfield.2
     (mapcar (lambda (symbol)
               (foreign-bitfield-value 'bf2 (list symbol)))
-            '(zero one two four eight sixteen thirty-two))
-  (0 1 2 4 8 16 32))
+            '(one two four eight sixteen thirty-two sixty-four))
+  (1 2 4 8 16 32 64))
 
 (defbitfield bf3
   (three 3)
-  zero
-  (seven 7)
   one
+  (seven 7)
+  two
   (eight 8)
   sixteen)
 
@@ -102,8 +102,8 @@
 (deftest bitfield.3
     (mapcar (lambda (symbol)
               (foreign-bitfield-value 'bf3 (list symbol)))
-            '(zero one sixteen))
-  (0 1 16))
+            '(one two sixteen))
+  (1 2 16))
 
 (defbitfield bf4
   (zero 0)

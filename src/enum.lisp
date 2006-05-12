@@ -135,21 +135,20 @@
   "Makes a new instance of the foreign-bitfield class."
   (let ((type (make-instance 'foreign-bitfield :name type-name
                              :actual-type (parse-type base-type)))
-        (last-bit nil))
+        (bit-floor 1))
     (dolist (pair values)
-      (destructuring-bind (symbol &optional (value nil value-p))
+      ;; bit-floor rule: find the greatest single-bit int used so far,
+      ;; and store its left-shift
+      (destructuring-bind (symbol &optional
+                           (value (prog1 bit-floor
+                                    (setf bit-floor (ash bit-floor 1)))
+                                  value-p))
           (mklist pair)
         (check-type symbol symbol)
-        (if value-p
-            (check-type value integer)
-            (setf value (cond ((null last-bit) 0)
-                              ((zerop last-bit) 1)
-                              (t (ash last-bit 1)))))
-        ;; find the greatest single-bit int used so far, and use its
-        ;; left-shift
-        (when (and (or (null last-bit) (> value last-bit))
-                   (or (zerop value) (single-bit-p value)))
-          (setf last-bit value))
+        (when value-p
+          (check-type value integer)
+          (when (and (>= value bit-floor) (single-bit-p value))
+            (setf bit-floor (ash value 1))))
         (if (gethash symbol (symbol-values type))
             (error "A foreign bitfield cannot contain duplicate symbols: ~S."
                    symbol)

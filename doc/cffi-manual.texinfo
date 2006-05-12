@@ -2297,11 +2297,12 @@ An integer representing a bitmask.
 The @code{defbitfield} macro is used to define foreign types that map
 lists of symbols to integer values.
 
-If @var{value} is omitted its value will either be @code{0}, if it is
-the first entry, or it will be the result of left-shifting the largest
-@var{value} so far, specified or omitted, with a single 1-bit in its
-binary representation, by one; if there is no such value so far,
-@code{1} is used.
+If @var{value} is omitted, it will be computed as follows: find the
+greatest @var{value} previously used, including those so computed,
+with only a single 1-bit in its binary representation (that is, powers
+of two), and left-shift it by one.  This rule guarantees that a
+computed @var{value} cannot clash with previous values, but may clash
+with future explicitly specified values.
 
 Symbol lists will be automatically converted to values and vice versa
 when being passed as arguments to or returned from foreign functions,
@@ -2314,7 +2315,7 @@ which is @code{:int} by default.
 @subheading Examples
 @lisp
 (defbitfield open-flags
-  :rdonly               ;@lispcmt{#x0000}
+  (:rdonly #x0000)
   :wronly               ;@lispcmt{#x0001}
   :rdwr                 ;@lispcmt{@dots{}}
   :nonblock
