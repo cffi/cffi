@@ -180,25 +180,12 @@ and does type promotion for the variadic arguments."
 
 ;;;# Defining Callbacks
 
-(defun inverse-translate-objects (args ignored-args types rettype call)
-  "Helper function for DEFCALLBACK."
-  (labels ((rec (args types)
-             (cond ((null args)
-                    (expand-type-to-foreign call (parse-type rettype)))
-                   ;; Don't apply translations for arguments that were
-                   ;; declared ignored in order to avoid warnings.
-                   ((not (member (car args) ignored-args))
-                    `(let ((,(car args) ,(expand-type-from-foreign
-                                          (car args) (parse-type (car types)))))
-                       ,(rec (cdr args) (cdr types))))
-                   (t (rec (cdr args) (cdr types)))))) 
-    (rec args types)))
-
-(defun collect-ignored-args (declarations)
-  (loop for declaration in declarations
-        append (loop for decl in (cdr declaration)
-                     when (eq (car decl) 'cl:ignore)
-                     append (cdr decl))))
+(defun inverse-translate-objects (args types declarations rettype call)
+  `(let (,@(loop for arg in args and type in types
+                 collect (list arg (expand-type-from-foreign
+                                    arg (parse-type type)))))
+     ,@declarations
+     ,(expand-type-to-foreign call (parse-type rettype))))
 
 (defmacro defcallback (name return-type args &body body)
   (multiple-value-bind (body docstring declarations)
@@ -209,10 +196,9 @@ and does type promotion for the variadic arguments."
       `(progn
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
-           ,@declarations
            ,(inverse-translate-objects
-             arg-names (collect-ignored-args declarations) arg-types
-             return-type `(block ,name ,@body)))
+             arg-names arg-types declarations return-type
+             `(block ,name ,@body)))
          ',name))))
 
 (declaim (inline get-callback))
