@@ -477,7 +477,8 @@ library type if type is not specified."
   #+(or allegro mcl sbcl clisp) (declare (ignore module supporting-libraries))
   #+(or cmu scl sbcl) (declare (ignore module))
   
-  (when (and filename (probe-file filename))
+  (when (and filename (or (null (pathname-directory filename))
+                          (probe-file filename)))
     (if (pathnamep filename) ;; ensure filename is a string to check if
    (setq filename (namestring filename))) ; already loaded
 
@@ -485,6 +486,7 @@ library type if type is not specified."
         (find filename *loaded-libraries* :test #'string-equal))
         t ;; return T, but don't reload library
         (progn
+          
           #+cmu
           (let ((type (pathname-type (parse-namestring filename))))
             (if (string-equal type "so")
