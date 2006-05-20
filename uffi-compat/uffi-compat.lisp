@@ -135,7 +135,7 @@
   (:documentation "UFFI's :array type."))
 
 (defmethod initialize-instance :after ((self uffi-array-type) &key)
-  (setf (cffi::actual-type self) (cffi::find-type :pointer)))
+  (setf (cffi::actual-type self) (cffi::parse-type :pointer)))
 
 (defmethod cffi:foreign-type-size ((type uffi-array-type))
   (* (cffi:foreign-type-size (element-type type)) (nelems type)))
@@ -235,7 +235,7 @@ field-name"
 
 (defmacro def-array-pointer (name type)
   "Define a foreign array type."
-  `(cffi:defctype ,name (uffi-array ,(convert-uffi-type type))))
+  `(cffi:defctype ,name (uffi-array ,(convert-uffi-type type) 1)))
 
 (defmacro deref-array (array type position)
   "Dereference an array."
