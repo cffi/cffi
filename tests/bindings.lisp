@@ -49,10 +49,9 @@
 (defcvar "dll_version" :string)
 
 (unless (string= *dll-version* *required-dll-version*)
-  (error (format nil
-                 "version check failed: expected ~s but libtest reports ~s"
-                 *required-dll-version*
-                 *dll-version*)))
+  (error "version check failed: expected ~s but libtest reports ~s"
+         *required-dll-version*
+         *dll-version*))
 
 ;;; The maximum and minimum values for single and double precision C
 ;;; floating point values, which may be quite different from the
