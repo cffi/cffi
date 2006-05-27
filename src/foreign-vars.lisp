@@ -34,19 +34,17 @@
   (etypecase name
     (list (second name))
     (string (intern (format nil "*~A*" (canonicalize-symbol-name-case
-                                        (substitute #\- #\_ name)))))))
+                                        (substitute #\- #\_ name)))))
+    (symbol name)))
 
 (defun foreign-var-name (name)
   "Return the foreign var name of NAME."
   (etypecase name
     (list (first name))
     (string name)
-    (symbol
-     (let ((sn (substitute #\_ #\- (string-downcase (symbol-name name)))))
-       (if (eql (char sn 0) #\*)
-           ;; remove asterisks around the var name
-           (subseq sn 1 (1- (length sn)))
-           sn)))))
+    (symbol (string-trim '(#\*)
+                         (substitute #\_ #\-
+                                     (string-downcase (symbol-name name)))))))
 
 (defun get-var-pointer (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."

@@ -226,5 +226,12 @@
     *mixed-case-int3*
   45678)
 
+;;; regression test:
+;;; gracefully accept symbols in defcvar
 
-  
+(defcvar *var-char* :char)
+(defcvar var-char :char)
+
+(deftest foreign-globals.symbol-name
+    (values *var-char* var-char)
+  -127 -127)
