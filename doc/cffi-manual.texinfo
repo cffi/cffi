@@ -4509,7 +4509,7 @@ A boolean.
 @end table
 
 @subheading Description
-The @code{defcvar} macro 
+The @code{defcvar} macro  @c TODO: finish this sentence.
 
 When one of @var{lisp-name} or @var{foreign-name} is omitted, the
 other is automatically derived using the following rules:
