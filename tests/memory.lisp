@@ -511,3 +511,26 @@
         (setf (mem-ref p type) *double-min*)
         (mem-ref p type)))
   #.*double-min*)
+
+;;; regression tests: lispworks's %mem-ref and %mem-set compiler
+;;; macros were misbehaving.
+
+(defun mem-ref-rt-1 ()
+  (with-foreign-object (a :int 2)
+    (setf (mem-aref a :int 0) 123
+          (mem-aref a :int 1) 456)
+    (values (mem-aref a :int 0) (mem-aref a :int 1))))
+
+(deftest mem-ref.rt.1
+    (mem-ref-rt-1)
+  123 456)
+
+(defun mem-ref-rt-2 ()
+  (with-foreign-object (a :double 2)
+    (setf (mem-aref a :double 0) 123.0d0
+          (mem-aref a :double 1) 456.0d0)
+    (values (mem-aref a :double 0) (mem-aref a :double 1))))
+
+(deftest mem-ref.rt.2
+    (mem-ref-rt-2)
+  123.0d0 456.0d0)

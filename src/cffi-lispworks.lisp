@@ -182,22 +182,6 @@ be stack allocated if supported by the implementation."
     (setf ptr (inc-pointer ptr offset)))
   (fli:dereference ptr :type (convert-foreign-type type)))
 
-;;; Determine the most efficient way to increment PTR by OFFSET bytes
-;;; for use in a call to FLI:FOREIGN-TYPED-AREF.  Returns a form to
-;;; use as the pointer in the call and a second value to pass as the
-;;; index.  If OFFSET is constant and a multiple of the size of TYPE,
-;;; convert it to an array index, otherwise use INC-POINTER.
-#+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
-(defun pointer-and-index (ptr type offset)
-  (if (constantp offset)
-      (let ((offset (eval offset))
-            (size (%foreign-type-size type)))
-        (multiple-value-bind (q r) (truncate offset size)
-          (if (zerop r)
-              (values ptr q)
-              (values `(inc-pointer ,ptr ,offset) 0))))
-      (values `(inc-pointer ,ptr ,offset) 0)))
-
 ;;; In LispWorks versions where FLI:FOREIGN-TYPED-AREF is fbound, use
 ;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-REF.
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
@@ -208,12 +192,10 @@ be stack allocated if supported by the implementation."
             (let ((fli-type (convert-foreign-type type))
                   (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
               `(fli:dereference ,ptr-form :type ',fli-type))
-            (let ((lisp-type (convert-foreign-typed-aref-type type)))
-              (multiple-value-bind (ptr-form index)
-                  (pointer-and-index ptr type off)
-                `(locally
+            (let ((lisp-type (convert-foreign-typed-aref-type type))) 
+              `(locally
                    (declare (optimize (speed 3) (safety 0)))
-                   (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index))))))
+                 (fli:foreign-typed-aref ',lisp-type ,ptr (the fixnum ,off))))))
       form))
 
 ;;; Open-code the call to FLI:DEREFERENCE when TYPE is constant at
@@ -244,11 +226,11 @@ be stack allocated if supported by the implementation."
                     (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
                 `(setf (fli:dereference ,ptr-form :type ',fli-type) ,val))
               (let ((lisp-type (convert-foreign-typed-aref-type type)))
-                (multiple-value-bind (ptr-form index)
-                    (pointer-and-index ptr type off)
-                  `(locally
-                       (declare (optimize (speed 3) (safety 0)))
-                     (setf (fli:foreign-typed-aref ',lisp-type ,ptr-form ,index) ,val)))))))
+                `(locally
+                     (declare (optimize (speed 3) (safety 0)))
+                   (setf (fli:foreign-typed-aref ',lisp-type ,ptr
+                                                 (the fixnum ,off))
+                         ,val))))))
       form))
 
 ;;; Open-code the call to (SETF FLI:DEREFERENCE) when TYPE is constant
