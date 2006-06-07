@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(format t "~&-------- Running tests in ~A --------~%"
+(format t "~&;;; -------- Running tests in ~A --------~%"
         (lisp-implementation-type))
 
 (setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
@@ -35,16 +35,7 @@
 (require "asdf")
 
 (asdf:operate 'asdf:load-op 'cffi-tests :verbose nil)
-(in-package #:cffi-tests)
-(do-tests)
-
-(defparameter *repeat* 0)
-(format t "~2&How many times shall we repeat the tests? [~D]: " *repeat*)
-(force-output *standard-output*)
-(let ((ntimes (or (ignore-errors (parse-integer (read-line))) *repeat*)))
-  (unless (eql ntimes 0)
-    (loop repeat ntimes do (do-tests))
-    (format t "~&Finished running tests ~D times." ntimes)))
+(asdf:operate 'asdf:test-op 'cffi-tests)
 
 (in-package #:cl-user)
 (terpri)

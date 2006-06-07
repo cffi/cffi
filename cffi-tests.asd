@@ -70,8 +70,13 @@
      (:file "misc-types")
      (:file "misc")))))
 
+(defun run-cffi-tests (&key (compiled nil))
+  (funcall (intern (symbol-name '#:run-cffi-tests) '#:cffi-tests)
+           :compiled compiled))
+
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
-  (or (funcall (intern (symbol-name '#:do-tests) '#:regression-test))
-      (error "test-op failed.")))
+  (unless (and (run-cffi-tests :compiled nil)
+               (run-cffi-tests :compiled t))
+    (error "test-op failed.")))
 
 ;;; vim: ft=lisp et
