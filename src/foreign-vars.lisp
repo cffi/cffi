@@ -42,9 +42,8 @@
   (etypecase name
     (list (first name))
     (string name)
-    (symbol (string-trim '(#\*)
-                         (substitute #\_ #\-
-                                     (string-downcase (symbol-name name)))))))
+    (symbol (let ((dname (string-downcase (symbol-name name))))
+              (string-trim '(#\*) (substitute #\_ #\- dname))))))
 
 (defun get-var-pointer (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
