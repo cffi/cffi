@@ -155,6 +155,7 @@ software or the use or other dealings in the software.}
 * Finalizers::                  
 * Limitations::                 
 * Platform-specific features::  Details about the underlying system.
+* Glossary::                    List of CFFI-specific terms and meanings.
 * Comprehensive Index::                       
 
 @detailmenu
@@ -2369,7 +2370,8 @@ The name of new structure type.
 A documentation string, ignored.
 
 @item slot-name
-A symbol naming the slot.
+A symbol naming the slot.  It must be unique among slot names in this
+structure.
 
 @item size
 Use this option to override the size (in bytes) of the struct.
@@ -2379,22 +2381,44 @@ The type specifier for the slot.
 
 @item count
 Used to declare an array of size @var{count} inside the
-structure.
+structure.  Defaults to @code{1} as such an array and a single element
+are semantically equivalent.
 
 @item offset
-Overrides the slot's offset. The next slot's offset is calcultated
+Overrides the slot's offset. The next slot's offset is calculated
 based on this one.
 @end table
 
 @subheading Description
-A structure slot is either simple or aggregate.
+This defines a new @cffi{} aggregate type akin to C @code{struct}s.
+In other words, it specifies that foreign objects of the type
+@var{structure-name} are groups of different pieces of data, or
+``slots'', of the @var{slot-type}s, distinguished from each other by
+the @var{slot-name}s.  Each structure is located in memory at a
+position, and the slots are allocated sequentially beginning at that
+point in memory (with some padding allowances as defined by the C
+@acronym{ABI}, unless otherwise requested by specifying an
+@var{offset} from the beginning of the structure (offset 0).
 
-Simple structure slots contain a single instance of a type that
-canonicalizes to a built-in type, such as @code{:long} or
-@code{:pointer}.
+In other words, it is isomorphic to the C @code{struct}, giving
+several extra features.
 
-Aggregate slots contain an embedded structure or union, or an array
-of objects.
+There are two kinds of slots, for the two kinds of @cffi{} types:
+
+@table @dfn
+@item Simple
+Contain a single instance of a type that canonicalizes to a built-in
+type, such as @code{:long} or @code{:pointer}.  Used for simple
+@cffi{} types.
+
+@item Aggregate
+Contain an embedded structure or union, or an array of objects.  Used
+for aggregate @cffi{} types.
+@end table
+
+The use of @acronym{CLOS} terminology for the structure-related
+features is intentional; structure definitions are very much like
+classes with (far) fewer features.
 
 @subheading Examples
 @lisp
@@ -2469,9 +2493,9 @@ structure.
 @end table
 
 @subheading Description
-A union is a structure in which all slots have an offset of
-zero. Therefore, you should use the usual foreign structure operations
-for accessing a union's slots.
+A union is a structure in which all slots have an offset of zero.  It
+is isomorphic to the C @code{union}.  Therefore, you should use the
+usual foreign structure operations for accessing a union's slots.
 
 @subheading Examples
 @lisp
@@ -2727,19 +2751,19 @@ yet.
 
 @table @var
 @item type
-A @code{bitfield} type.
+A bitfield type.
 
 @item value
 An integer.
 
 @item symbols
-A list of symbols.
+A potentially shared list of symbols.
 @code{nil}.
 @end table
 
 @subheading Description
-The function @code{foreign-bitfield-symbols} returns the Lisp symbol
-that corresponds to @var{value} in @var{type}.
+The function @code{foreign-bitfield-symbols} returns a possibly shared
+list of symbols that correspond to @var{value} in @var{type}.
 
 @subheading Examples
 @lisp
@@ -2913,8 +2937,9 @@ A list.
 @end table
 
 @subheading Description
-The function @code{foreign-slot-names} returns a list of symbols that denote
-the foreign slots of a struct type. This list has no particular order.
+The function @code{foreign-slot-names} returns a potentially shared
+list of slot @var{names} for the given structure @var{type}. This list
+has no particular order.
 
 @subheading Examples
 @lisp
@@ -2983,7 +3008,7 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @node foreign-slot-pointer
 @unnumberedsec foreign-slot-pointer
 @subheading Syntax
-@Function{foreign-slot-pointer ptr type &rest slot-names => pointer}
+@Function{foreign-slot-pointer ptr type slot-name => pointer}
 
 @subheading Arguments and Values
 
@@ -2995,17 +3020,17 @@ A pointer to a structure.
 A foreign structure type.
 
 @item slot-names
-One or more slot names.
+A slot name in the @var{type}.
 
 @item pointer
-A pointer to the slot specified in @var{slot-names}.
+A pointer to the slot @var{slot-name}.
 @end table
 
 @subheading Description
-Returns a pointer to a slot referred by @var{slot-names} in a foreign
-object of type @var{type} at @var{ptr}. The returned pointer points
-inside the structure. Both the pointer and the memory it points to
-have the same extent as @var{ptr}.
+Returns a pointer to the location of the slot @var{slot-name} in a
+foreign object of type @var{type} at @var{ptr}. The returned pointer
+points inside the structure. Both the pointer and the memory it points
+to have the same extent as @var{ptr}.
 
 For aggregate slots, this is the same value returned by
 @code{foreign-slot-value}.
@@ -3159,7 +3184,9 @@ An integer.
 
 @subheading Description
 The function @code{foreign-type-size} return the @var{size} of
-@var{type} in bytes.
+@var{type} in bytes.  This includes any padding within and following
+the in-memory representation as needed to create an array of
+@var{type} objects.
 
 @subheading Examples
 @lisp
@@ -3296,13 +3323,13 @@ a Lisp value, such as when returning from a foreign function, passing
 arguments to a callback function, or accessing a foreign variable.
 
 To extend the @cffi{} type system by performing custom translations, this
-method may be specialized by EQL-specializing @code{type-name} on a
+method may be specialized by @sc{eql}-specializing @code{type-name} on a
 symbol naming a foreign type defined with @code{defctype}.  This
 method should return the appropriate Lisp value to use in place of the
 foreign value.
 
 The results are undefined if the @code{type-name} parameter is
-specialized in any way except an EQL specializer on a foreign type
+specialized in any way except an @sc{eql} specializer on a foreign type
 defined with @code{defctype}.  Specifically, translations may not be
 defined for built-in types.
 
@@ -3325,7 +3352,7 @@ defined for built-in types.
 
 @table @var
 @item lisp-value
-The lisp value to convert to foreign representation.
+The Lisp value to convert to foreign representation.
 
 @item type-name
 A symbol naming a foreign type defined by @code{defctype}.
@@ -3341,10 +3368,13 @@ If present, this value will be passed to
 @subheading Description
 This generic function is invoked by @cffi{} to convert a Lisp value to a
 foreign value, such as when passing arguments to a foreign function,
-returning a value from a callback, or setting a foreign variable.
+returning a value from a callback, or setting a foreign variable.  A
+``foreign value'' is one appropriate for passing to the next-lowest
+translator, including the low-level translators that are ultimately
+invoked invisibly with @cffi{}.
 
 To extend the @cffi{} type system by performing custom translations, this
-method may be specialized by EQL-specializing @code{type-name} on a
+method may be specialized by @sc{eql}-specializing @code{type-name} on a
 symbol naming a foreign type defined with @code{defctype}.  This
 method should return the appropriate foreign value to use in place of
 the Lisp value.
@@ -3358,7 +3388,7 @@ can be used to establish communication between the allocation and
 deallocation methods.
 
 The results are undefined if the @code{type-name} parameter is
-specialized in any way except an EQL specializer on a foreign type
+specialized in any way except an @sc{eql} specializer on a foreign type
 defined with @code{defctype}.  Specifically, translations may not be
 defined for built-in types.
 
@@ -3395,7 +3425,7 @@ A list of forms to be executed.
 @subheading Description
 The @code{with-foreign-slots} macro creates local symbol macros for
 each var in @var{vars} to reference foreign slots in @var{ptr} of
-@var{type}. It is similar to Common Lisp's @code{with-slots} macro.
+@var{type}.  It is similar to Common Lisp's @code{with-slots} macro.
 
 @subheading Examples
 @lisp
@@ -3418,7 +3448,8 @@ CFFI> (with-foreign-object (time :int)
         (foreign-funcall "gmtime" :pointer time tm))
 @result{} #<A Mac Pointer #x102A30>
 CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
-        (format nil "~A:~A:~A, ~A/~A/~A" hour min sec (+ 1900 year) mon mday))
+        (format nil "~A:~A:~A, ~A/~A/~A"
+                hour min sec (+ 1900 year) mon mday))
 @result{} "7:22:47, 2005/8/2"
 @end lisp
 
@@ -5562,6 +5593,38 @@ The underlying @acronym{CPU} architecture is x86, such as on
 processors from Intel or @acronym{AMD}.
 @end table
 
+
+@node Glossary
+@appendix Glossary
+
+@table @dfn
+@item aggregate type
+A @cffi{} type for C data defined as an organization of data of simple
+type; in structures and unions, which are themselves aggregate types,
+they are represented by value.
+
+@item foreign value
+This has two meanings; in any context, only one makes sense.
+
+When using type translators, the foreign value is the lower-level Lisp
+value derived from the object passed to @code{translate-to-foreign}
+(@pxref{translate-to-foreign}).  This value should be a Lisp number or
+a pointer (satisfies @code{pointerp}), and it can be treated like any
+general Lisp object; it only completes the transformation to a true
+foreign value when passed through low-level code in the Lisp
+implementation, such as the foreign function caller or indirect memory
+addressing combined with a data move.
+
+In other contexts, this refers to a value accessible by C, but which
+may only be accessed through @cffi{} functions.  The closest you can
+get to such a foreign value is through a pointer Lisp object, which
+itself counts as a foreign value in only the previous sense.
+
+@item simple type
+A @cffi{} type that is ultimately represented as a builtin type;
+@cffi{} only provides extra semantics for Lisp that are invisible to C
+code or data.
+@end table
 
 @node Comprehensive Index
 @unnumbered Index
