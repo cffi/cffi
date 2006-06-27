@@ -64,12 +64,10 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; Backend mis-features.
-          cffi-features:no-long-long
-          ;; OS/CPU features.
-          #+macos  cffi-features:darwin
-          #+unix   cffi-features:unix
-          #+win32  cffi-features:windows
+        '(;; OS/CPU features.
+          #+:macos  cffi-features:darwin
+          #+:unix   cffi-features:unix
+          #+:win32  cffi-features:windows
           ))
   (cond ((string-equal (machine-type) "X86_64")
          (pushnew 'cffi-features:x86-64 *features*))
@@ -98,6 +96,8 @@
     (:unsigned-int 'ffi:uint)
     (:long 'ffi:long)
     (:unsigned-long 'ffi:ulong)
+    (:long-long 'ffi:sint64)
+    (:unsigned-long-long 'ffi:uint64)
     (:float 'ffi:single-float)
     (:double 'ffi:double-float)
     ;; Clisp's FFI:C-POINTER converts NULL to NIL. For now
