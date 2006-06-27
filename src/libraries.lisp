@@ -210,10 +210,8 @@ none of alternatives were successfully loaded."
   "Return a string to use as default library suffix based on the
 operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
-  (loop for (feature . suffix) in *cffi-feature-suffix-map*
-        when (cffi-feature-p feature)
-        do (return-from default-library-suffix suffix))
-  (error "Unable to determine the default library suffix on this OS."))
+  (or (cdr (assoc-if #'cffi-feature-p *cffi-feature-suffix-map*))
+      (error "Unable to determine the default library suffix on this OS.")))
 
 (defun load-foreign-library (library)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined

@@ -77,5 +77,8 @@ returning nil when foreign-name is not found."
               `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
                               ',type)
                      value)))
-       ;; Symbol macro
-       (define-symbol-macro ,lisp-name (,fn)))))
+       ;; While most Lisps already expand DEFINE-SYMBOL-MACRO to an
+       ;; EVAL-WHEN form like this, that is not required by the
+       ;; standard so we do it ourselves.
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (define-symbol-macro ,lisp-name (,fn))))))

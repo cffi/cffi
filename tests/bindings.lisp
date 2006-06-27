@@ -40,8 +40,14 @@
   (let ((here #.(or *compile-file-truename* *load-truename*)))
     (make-pathname :directory (pathname-directory here))))
 
+#-(:and :ecl (:not :dffi))
 (let ((*foreign-library-directories* (list (load-directory))))
   (load-foreign-library 'libtest))
+
+#+(:and :ecl (:not :dffi))
+(ffi:load-foreign-library
+ #.(make-pathname :name "libtest" :type "o"
+                  :defaults (or *compile-file-truename* *load-truename*)))
 
 ;;; check libtest version
 (defparameter *required-dll-version* "20060414")

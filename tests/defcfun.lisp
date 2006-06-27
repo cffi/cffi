@@ -193,64 +193,68 @@
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-(defcfun "sum_127_no_ll" :long
-  (a1 :long) (a2 :unsigned-long) (a3 :short) (a4 :unsigned-short) (a5 :float)
-  (a6 :double) (a7 :unsigned-long) (a8 :float) (a9 :unsigned-char)
-  (a10 :unsigned-short) (a11 :short) (a12 :unsigned-long) (a13 :double)
-  (a14 :long) (a15 :unsigned-int) (a16 :pointer) (a17 :unsigned-int)
-  (a18 :unsigned-short) (a19 :long) (a20 :float) (a21 :pointer) (a22 :float)
-  (a23 :int) (a24 :int) (a25 :unsigned-short) (a26 :long) (a27 :long)
-  (a28 :double) (a29 :unsigned-char) (a30 :unsigned-int) (a31 :unsigned-int)
-  (a32 :int) (a33 :unsigned-short) (a34 :unsigned-int) (a35 :pointer)
-  (a36 :double) (a37 :double) (a38 :long) (a39 :short) (a40 :unsigned-short)
-  (a41 :long) (a42 :char) (a43 :long) (a44 :unsigned-short) (a45 :pointer)
-  (a46 :int) (a47 :unsigned-int) (a48 :double) (a49 :unsigned-char)
-  (a50 :unsigned-char) (a51 :float) (a52 :int) (a53 :unsigned-short)
-  (a54 :double) (a55 :short) (a56 :unsigned-char) (a57 :unsigned-long)
-  (a58 :float) (a59 :float) (a60 :float) (a61 :pointer) (a62 :pointer)
-  (a63 :unsigned-int) (a64 :unsigned-long) (a65 :char) (a66 :short)
-  (a67 :unsigned-short) (a68 :unsigned-long) (a69 :pointer) (a70 :float)
-  (a71 :double) (a72 :long) (a73 :unsigned-long) (a74 :short)
-  (a75 :unsigned-int) (a76 :unsigned-short) (a77 :int) (a78 :unsigned-short)
-  (a79 :char) (a80 :double) (a81 :short) (a82 :unsigned-char) (a83 :float)
-  (a84 :char) (a85 :int) (a86 :double) (a87 :unsigned-char) (a88 :int)
-  (a89 :unsigned-long) (a90 :double) (a91 :short) (a92 :short)
-  (a93 :unsigned-int) (a94 :unsigned-char) (a95 :float) (a96 :long) (a97 :float)
-  (a98 :long) (a99 :long) (a100 :int) (a101 :int) (a102 :unsigned-int)
-  (a103 :char) (a104 :char) (a105 :unsigned-short) (a106 :unsigned-int)
-  (a107 :unsigned-short) (a108 :unsigned-short) (a109 :int) (a110 :long)
-  (a111 :char) (a112 :double) (a113 :unsigned-int) (a114 :char) (a115 :short)
-  (a116 :unsigned-long) (a117 :unsigned-int) (a118 :short) (a119 :unsigned-char)
-  (a120 :float) (a121 :pointer) (a122 :double) (a123 :int) (a124 :long)
-  (a125 :char) (a126 :unsigned-short) (a127 :float))
+#+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
+(progn
+  (defcfun "sum_127_no_ll" :long
+    (a1 :long) (a2 :unsigned-long) (a3 :short) (a4 :unsigned-short) (a5 :float)
+    (a6 :double) (a7 :unsigned-long) (a8 :float) (a9 :unsigned-char)
+    (a10 :unsigned-short) (a11 :short) (a12 :unsigned-long) (a13 :double)
+    (a14 :long) (a15 :unsigned-int) (a16 :pointer) (a17 :unsigned-int)
+    (a18 :unsigned-short) (a19 :long) (a20 :float) (a21 :pointer) (a22 :float)
+    (a23 :int) (a24 :int) (a25 :unsigned-short) (a26 :long) (a27 :long)
+    (a28 :double) (a29 :unsigned-char) (a30 :unsigned-int) (a31 :unsigned-int)
+    (a32 :int) (a33 :unsigned-short) (a34 :unsigned-int) (a35 :pointer)
+    (a36 :double) (a37 :double) (a38 :long) (a39 :short) (a40 :unsigned-short)
+    (a41 :long) (a42 :char) (a43 :long) (a44 :unsigned-short) (a45 :pointer)
+    (a46 :int) (a47 :unsigned-int) (a48 :double) (a49 :unsigned-char)
+    (a50 :unsigned-char) (a51 :float) (a52 :int) (a53 :unsigned-short)
+    (a54 :double) (a55 :short) (a56 :unsigned-char) (a57 :unsigned-long)
+    (a58 :float) (a59 :float) (a60 :float) (a61 :pointer) (a62 :pointer)
+    (a63 :unsigned-int) (a64 :unsigned-long) (a65 :char) (a66 :short)
+    (a67 :unsigned-short) (a68 :unsigned-long) (a69 :pointer) (a70 :float)
+    (a71 :double) (a72 :long) (a73 :unsigned-long) (a74 :short)
+    (a75 :unsigned-int) (a76 :unsigned-short) (a77 :int) (a78 :unsigned-short)
+    (a79 :char) (a80 :double) (a81 :short) (a82 :unsigned-char) (a83 :float)
+    (a84 :char) (a85 :int) (a86 :double) (a87 :unsigned-char) (a88 :int)
+    (a89 :unsigned-long) (a90 :double) (a91 :short) (a92 :short)
+    (a93 :unsigned-int) (a94 :unsigned-char) (a95 :float) (a96 :long)
+    (a97 :float) (a98 :long) (a99 :long) (a100 :int) (a101 :int)
+    (a102 :unsigned-int) (a103 :char) (a104 :char) (a105 :unsigned-short)
+    (a106 :unsigned-int) (a107 :unsigned-short) (a108 :unsigned-short)
+    (a109 :int) (a110 :long) (a111 :char) (a112 :double) (a113 :unsigned-int)
+    (a114 :char) (a115 :short) (a116 :unsigned-long) (a117 :unsigned-int)
+    (a118 :short) (a119 :unsigned-char) (a120 :float) (a121 :pointer)
+    (a122 :double) (a123 :int) (a124 :long) (a125 :char) (a126 :unsigned-short)
+    (a127 :float))
 
-(deftest defcfun.bff.1
-    (sum-127-no-ll
-     1442906394 520035521 -4715 50335 -13557.0 -30892.0d0 24061483 -23737.0 22
-     2348 4986 104895680 8073.0d0 -571698147 102484400 (make-pointer 507907275)
-     12733353 7824 -1275845284 13602.0 (make-pointer 286958390) -8042.0
-     -773681663 -1289932452 31199 -154985357 -170994216 16845.0d0 177
-     218969221 2794350893 6068863 26327 127699339 (make-pointer 184352771)
-     18512.0d0 -12345.0d0 -179853040 -19981 37268 -792845398 116 -1084653028
-     50494 (make-pointer 2105239646) -1710519651 1557813312 2839.0d0 90 180
-     30580.0 -532698978 8623 9537.0d0 -10882 54 184357206 14929.0 -8190.0
-     -25615.0 (make-pointer 235310526) (make-pointer 220476977) 7476055 1576685
-     -117 -11781 31479 23282640 (make-pointer 8627281) -17834.0 10391.0d0
-     -1904504370 114393659 -17062 637873619 16078 -891210259 8107 0 760.0d0
-     -21268 104 14133.0 10 588598141 310.0d0 20 1351785456 16159552 -10121.0d0
-     -25866 24821 68232851 60 -24132.0 -1660411658 13387.0 -786516668 -499825680
-     -1128144619 111849719 2746091587 -2 95 14488 326328135 64781 18204
-     150716680 -703859275 103 16809.0d0 852235610 -43 21088 242356110 324325428
-     -22380 23 24814.0 (make-pointer 40362014) -14322.0d0 -1864262539 523684371
-     -21 49995 -29175.0)
-  796447501)
+  (deftest defcfun.bff.1
+      (sum-127-no-ll
+       1442906394 520035521 -4715 50335 -13557.0 -30892.0d0 24061483 -23737.0
+       22 2348 4986 104895680 8073.0d0 -571698147 102484400
+       (make-pointer 507907275) 12733353 7824 -1275845284 13602.0
+       (make-pointer 286958390) -8042.0 -773681663 -1289932452 31199 -154985357
+       -170994216 16845.0d0 177 218969221 2794350893 6068863 26327 127699339
+       (make-pointer 184352771) 18512.0d0 -12345.0d0 -179853040 -19981 37268
+       -792845398 116 -1084653028 50494 (make-pointer 2105239646) -1710519651
+       1557813312 2839.0d0 90 180 30580.0 -532698978 8623 9537.0d0 -10882 54
+       184357206 14929.0 -8190.0 -25615.0 (make-pointer 235310526)
+       (make-pointer 220476977) 7476055 1576685 -117 -11781 31479 23282640
+       (make-pointer 8627281) -17834.0 10391.0d0 -1904504370 114393659 -17062
+       637873619 16078 -891210259 8107 0 760.0d0 -21268 104 14133.0 10
+       588598141 310.0d0 20 1351785456 16159552 -10121.0d0 -25866 24821
+       68232851 60 -24132.0 -1660411658 13387.0 -786516668 -499825680
+       -1128144619 111849719 2746091587 -2 95 14488 326328135 64781 18204
+       150716680 -703859275 103 16809.0d0 852235610 -43 21088 242356110
+       324325428 -22380 23 24814.0 (make-pointer 40362014) -14322.0d0
+       -1864262539 523684371 -21 49995 -29175.0) 796447501))
 
 ;;; (let ((rettype (find-type :long-long))
 ;;;       (arg-types (n-random-types 127)))
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-#-cffi-features:no-long-long
+#-(:or cffi-features:no-long-long
+       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (progn
   (defcfun "sum_127" :long-long
     (a1 :pointer) (a2 :pointer) (a3 :float) (a4 :unsigned-long) (a5 :pointer)

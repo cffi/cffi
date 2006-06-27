@@ -65,12 +65,13 @@
           cffi-features:no-long-long
           cffi-features:no-finalizers
           ;; OS/CPU features.
-          #+darwin       cffi-features:darwin 
-          #+unix         cffi-features:unix
-          #+win32        cffi-features:windows
+          #+:darwin       cffi-features:darwin
+          #+:darwin       cffi-features:unix
+          #+:unix         cffi-features:unix
+          #+:win32        cffi-features:windows
           ;; XXX: figure out a way to get a X86 feature
-          ;;#+athlon       cffi-features:x86
-          #+powerpc7450  cffi-features:ppc32 
+          ;;#+:athlon       cffi-features:x86
+          #+:powerpc7450  cffi-features:ppc32 
           )))
 
 ;;; Symbol case.
@@ -227,7 +228,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Load a foreign library from NAME."
   #-dffi (error "LOAD-FOREIGN-LIBRARY requires ECL's DFFI support. Use ~
                  FFI:LOAD-FOREIGN-LIBRARY with a constant argument instead.")
-  #+dffi (ffi:load-foreign-library name))
+  #+dffi (si:load-foreign-module name))
 
 ;;;# Callbacks
 
@@ -266,9 +267,15 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Foreign Globals
 
+(defun convert-external-name (name)
+  "Add an underscore to NAME if necessary for the ABI."
+  #+:darwin (concatenate 'string "_" name)
+  #-:darwin name)
+
 (defun foreign-symbol-pointer (name)
   "Returns a pointer to a foreign symbol NAME."
-  (si:find-foreign-symbol name :default :pointer-void 0))
+  (si:find-foreign-symbol (convert-external-name name)
+                          :default :pointer-void 0))
 
 ;;;# Finalizers
 

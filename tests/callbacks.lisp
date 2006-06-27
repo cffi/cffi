@@ -261,7 +261,7 @@
 (defcfun "call_sum_127_no_ll" :long (cb :pointer))
 
 ;;; CMUCL chokes on this one.
-#-cmu
+#-(:or :cmu #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (defcallback sum-127-no-ll :long
     ((a1 :unsigned-long) (a2 :pointer) (a3 :long) (a4 :double)
      (a5 :unsigned-long) (a6 :float) (a7 :float) (a8 :int) (a9 :unsigned-int)
@@ -320,13 +320,15 @@
 #+(or openmcl cmu (and cffi-features:darwin (or allegro lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
 
+#+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
 (deftest callbacks.bff.1
     (call-sum-127-no-ll (callback sum-127-no-ll))
   2008547941)
 
 ;;; (cb-test)
 
-#-cffi-features:no-long-long
+#-(:or cffi-features:no-long-long
+       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (progn
   (defcfun "call_sum_127" :long-long (cb :pointer))
 

@@ -18,7 +18,8 @@ This is a collection of TODO items and ideas in no particular order.
 ### Ports
 
 -> Finish GCL port.
--> Fix the ECL port.
+-> As of 2006-06-27, CVS ECL fails 31 tests on linux/x86 and 35 tests
+   on darwin/ppc. Need to look into this.
 -> Fix bugs in the Corman port.
 -> Port to MCL.
 
@@ -99,6 +100,8 @@ This is a collection of TODO items and ideas in no particular order.
    to be recompiled everytime. Figure that out.
 -> The (if (constantp foo) (do-something-with (eval foo)) ...) pattern
    used in many places throughout the code is apparently not 100% safe.
+-> On ECL platforms without DFFI we need to build a non-linked version
+   of libtest.
 
 ### Documentation
 
