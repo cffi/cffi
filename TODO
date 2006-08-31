@@ -102,6 +102,9 @@ This is a collection of TODO items and ideas in no particular order.
    used in many places throughout the code is apparently not 100% safe.
 -> On ECL platforms without DFFI we need to build a non-linked version
    of libtest.
+-> LOAD-FOREIGN-LIBRARY should give better errors. On ECL with DFFI
+   it should show the error that %LOAD-FOREIGN-LIBRARY is signalling.
+-> LOAD-FOREIGN-LIBRARY's USE restart is somewhat broken.
 
 ### Documentation
 
