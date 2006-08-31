@@ -414,16 +414,16 @@ field-name"
 
 (defun default-foreign-library-type ()
   "Returns string naming default library type for platform"
-  #+(or win32 mswindows) "dll"
+  #+(or win32 cygwin mswindows) "dll"
   #+(or macos macosx darwin ccl-5.0) "dylib"
-  #-(or win32 mswindows macos macosx darwin ccl-5.0) "so")
+  #-(or win32 cygwin mswindows macos macosx darwin ccl-5.0) "so")
 
 (defun foreign-library-types ()
   "Returns list of string naming possible library types for platform,
 sorted by preference"
-  #+(or win32 mswindows) '("dll" "lib")
+  #+(or win32 cygwin mswindows) '("dll" "lib" "so")
   #+(or macos macosx darwin ccl-5.0) '("dylib" "bundle")
-  #-(or win32 mswindows macos macosx darwin ccl-5.0) '("so" "a" "o"))
+  #-(or win32 cygwin mswindows macos macosx darwin ccl-5.0) '("so" "a" "o"))
 
 (defun find-foreign-library (names directories &key types drive-letters)  
   "Looks for a foreign library. directories can be a single
