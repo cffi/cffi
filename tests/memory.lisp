@@ -534,3 +534,15 @@
 (deftest mem-ref.rt.2
     (mem-ref-rt-2)
   123.0d0 456.0d0)
+
+(deftest incf-pointer.1
+    (let ((ptr (null-pointer)))
+      (incf-pointer ptr)
+      (pointer-address ptr))
+  1)
+
+(deftest incf-pointer.2
+    (let ((ptr (null-pointer)))
+      (incf-pointer ptr 42)
+      (pointer-address ptr))
+  42)

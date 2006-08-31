@@ -40,6 +40,7 @@
    #:null-pointer
    #:null-pointer-p
    #:inc-pointer
+   #:incf-pointer
    #:with-foreign-pointer
    #:make-pointer
    #:pointer-address

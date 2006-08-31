@@ -40,7 +40,7 @@
 #include <stdint.h>
 
 /*
- * Some functions that aren't avaiable on WIN32
+ * Some functions that aren't available on WIN32
  */
 
 DLLEXPORT

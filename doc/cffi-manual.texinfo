@@ -196,6 +196,7 @@ Pointers
 * foreign-alloc::               Allocates memory.
 * foreign-symbol-pointer::      Returns a pointer to a foreign symbol.
 * inc-pointer::                 Increments the address held by a pointer.
+* incf-pointer::                Increments the pointer address in a place.
 * make-pointer::                Returns a pointer to a given address.
 * mem-aref::                    Accesses the value of an index in an array.
 * mem-ref::                     Dereferences a pointer.
@@ -3497,6 +3498,7 @@ Dictionary
 * foreign-alloc::               
 * foreign-symbol-pointer::      
 * inc-pointer::                 
+* incf-pointer::                
 * make-pointer::                
 * mem-aref::                    
 * mem-ref::                     
@@ -3784,6 +3786,56 @@ CFFI> (foreign-string-to-lisp *)
 @end lisp
 
 @subheading See Also
+@seealso{incf-pointer} @*
+@seealso{make-pointer} @*
+@seealso{pointerp} @*
+@seealso{null-pointer} @*
+@seealso{null-pointer-p}
+
+
+@c ===================================================================
+@c INCF-POINTER
+
+@node incf-pointer
+@unnumberedsec inc-pointer
+@subheading Syntax
+@Macro{incf-pointer place &optional (offset 1) @result{} new-pointer}
+
+@subheading Arguments and Values
+
+@table @var
+@item place
+A @code{setf} place.
+
+@item new-pointer
+A foreign pointer.
+
+@item offset
+An integer.
+@end table
+
+@subheading Description
+The @code{incf-pointer} macro takes the foreign pointer from
+@var{place} and creates a @var{new-pointer} incremented by
+@var{offset} bytes and which is stored in @var{place}.
+
+@subheading Examples
+
+@lisp
+CFFI> (defparameter *two-words* (foreign-string-alloc "Common Lisp"))
+@result{} *TWO-WORDS*
+CFFI> (defparameter *one-word* *two-words*)
+@result{} *ONE-WORD*
+CFFI> (incf-pointer *one-word* 7)
+@result{} #.(SB-SYS:INT-SAP #X00600457)
+CFFI> (foreign-string-to-lisp *one-word*)
+@result{} "Lisp"
+CFFI> (foreign-string-to-lisp *two-words*)
+@result{} "Common Lisp"
+@end lisp
+
+@subheading See Also
+@seealso{inc-pointer} @*
 @seealso{make-pointer} @*
 @seealso{pointerp} @*
 @seealso{null-pointer} @*

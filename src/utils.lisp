@@ -102,21 +102,21 @@ string and the only element."
            (side-effect-free? (third exp)))))
 
 (defmacro once-only (variables &rest body)
-    "Returns the code built by BODY.  If any of VARIABLES
+  "Returns the code built by BODY.  If any of VARIABLES
   might have side effects, they are evaluated once and stored
   in temporary variables that are then passed to BODY."
-    (assert (every #'symbolp variables))
-    (let ((temps nil))
-      (dotimes (i (length variables)) (push (gensym "ONCE") temps))
-      `(if (every #'side-effect-free? (list .,variables))
-   (progn .,body)
-   (list 'let
-    ,`(list ,@(mapcar #'(lambda (tmp var)
-                `(list ',tmp ,var))
-            temps variables))
-    (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
-             variables temps)
-      .,body)))))
+  (assert (every #'symbolp variables))
+  (let ((temps nil))
+    (dotimes (i (length variables)) (push (gensym "ONCE") temps))
+    `(if (every #'side-effect-free? (list .,variables))
+         (progn .,body)
+         (list 'let
+               ,`(list ,@(mapcar #'(lambda (tmp var)
+                                     `(list ',tmp ,var))
+                                 temps variables))
+               (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
+                             variables temps)
+                 .,body)))))
 
 ;;;; The following utils were taken from SBCL's
 ;;;; src/code/*-extensions.lisp

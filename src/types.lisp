@@ -57,7 +57,9 @@
 ;;; use #-cffi-features:no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
 
-;;;# Dereferencing Foreign Pointers
+;;;# Foreign Pointers
+
+(define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
 
 (defun mem-ref (ptr type &optional (offset 0))
   "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
