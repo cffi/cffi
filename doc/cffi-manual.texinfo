@@ -2354,7 +2354,7 @@ CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
 @node defcstruct
 @unnumberedsec defcstruct
 @subheading Syntax
-@Macro{defcstruct name-and-options &body doc-and-slots => name}
+@Macro{defcstruct name-and-options &body doc-and-slots @result{} name}
 
 name-and-options ::= structure-name | (structure-name &key size)
 
@@ -2468,7 +2468,7 @@ CFFI> (foreign-type-size 'foo)
 @node defcunion
 @unnumberedsec defcunion
 @subheading Syntax
-@Macro{defcunion name &body doc-and-slots => name}
+@Macro{defcunion name &body doc-and-slots @result{} name}
 
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count) @}*
 
@@ -2635,7 +2635,8 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @node define-foreign-type
 @unnumberedsec define-foreign-type
 @subheading Syntax
-@Macro{define-foreign-type type-name lambda-list &body body => type-name}
+@Macro{define-foreign-type type-name lambda-list &body body @
+                           @result{} type-name}
 
 @subheading Arguments and Values
 
@@ -2745,7 +2746,7 @@ yet.
 @node foreign-bitfield-symbols
 @unnumberedsec foreign-bitfield-symbols
 @subheading Syntax
-@Function{foreign-bitfield-symbols type value => symbols}
+@Function{foreign-bitfield-symbols type value @result{} symbols}
 
 @subheading Arguments and Values
 
@@ -2787,7 +2788,7 @@ CFFI> (foreign-bitfield-symbols 'boolean #b101)
 @node foreign-bitfield-value
 @unnumberedsec foreign-bitfield-value
 @subheading Syntax
-@Function{foreign-bitfield-value type symbols => value}
+@Function{foreign-bitfield-value type symbols @result{} value}
 
 @subheading Arguments and Values
 
@@ -2828,7 +2829,7 @@ CFFI> (foreign-bitfield-value 'flags '(flag-a flag-c))
 @node foreign-enum-keyword
 @unnumberedsec foreign-enum-keyword
 @subheading Syntax
-@Function{foreign-enum-keyword type value &key errorp => keyword}
+@Function{foreign-enum-keyword type value &key errorp @result{} keyword}
 
 @subheading Arguments and Values
 
@@ -2876,7 +2877,7 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @node foreign-enum-value
 @unnumberedsec foreign-enum-value
 @subheading Syntax
-@Function{foreign-enum-value type keyword &key errorp => value}
+@Function{foreign-enum-value type keyword &key errorp @result{} value}
 
 @subheading Arguments and Values
 
@@ -2924,7 +2925,7 @@ CFFI> (foreign-enum-value 'boolean :yes)
 @node foreign-slot-names
 @unnumberedsec foreign-slot-names
 @subheading Syntax
-@Function{foreign-slot-names type => names}
+@Function{foreign-slot-names type @result{} names}
 
 @subheading Arguments and Values
 
@@ -2964,7 +2965,7 @@ CFFI> (foreign-slot-names 'timeval)
 @node foreign-slot-offset
 @unnumberedsec foreign-slot-offset
 @subheading Syntax
-@Function{foreign-slot-offset type slot-name => offset}
+@Function{foreign-slot-offset type slot-name @result{} offset}
 
 @subheading Arguments and Values
 
@@ -3008,7 +3009,7 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @node foreign-slot-pointer
 @unnumberedsec foreign-slot-pointer
 @subheading Syntax
-@Function{foreign-slot-pointer ptr type slot-name => pointer}
+@Function{foreign-slot-pointer ptr type slot-name @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -3061,7 +3062,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @node foreign-slot-value
 @unnumberedsec foreign-slot-value
 @subheading Syntax
-@Accessor{foreign-slot-value ptr type slot-name => object}
+@Accessor{foreign-slot-value ptr type slot-name @result{} object}
 
 @subheading Arguments and Values
 
@@ -3125,7 +3126,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @unnumberedsec foreign-type-alignment
 @subheading Syntax
 @c XXX: This is actually a generic function.
-@Function{foreign-type-alignment type => alignment}
+@Function{foreign-type-alignment type @result{} alignment}
 
 @subheading Arguments and Values
 
@@ -3170,7 +3171,7 @@ CFFI> (foreign-type-alignment 'foo)
 @unnumberedsec foreign-type-size
 @subheading Syntax
 @c XXX: this is actually a generic function.
-@Function{foreign-type-size type => size}
+@Function{foreign-type-size type @result{} size}
 
 @subheading Arguments and Values
 
@@ -3301,8 +3302,8 @@ the @code{defctype} macro.
 @node translate-from-foreign
 @unnumberedsec translate-from-foreign
 @subheading Syntax
-@GenericFunction{translate-from-foreign foreign-value type-name
-                                        => lisp-value}
+@GenericFunction{translate-from-foreign foreign-value type-name @
+                                        @result{} lisp-value}
 
 @subheading Arguments and Values
 
@@ -3345,8 +3346,8 @@ defined for built-in types.
 @node translate-to-foreign
 @unnumberedsec translate-to-foreign
 @subheading Syntax
-@GenericFunction{translate-to-foreign lisp-value type-name 
-                                      => foreign-value, alloc-param}
+@GenericFunction{translate-to-foreign lisp-value type-name @
+                                      @result{} foreign-value, alloc-param}
 
 @subheading Arguments and Values
 
@@ -3559,7 +3560,7 @@ dereference @code{*} in C; use @code{mem-aref} for array indexing and
 @node foreign-free
 @unnumberedsec foreign-free
 @subheading Syntax
-@Function{foreign-free ptr => undefined}
+@Function{foreign-free ptr @result{} undefined}
 
 @subheading Arguments and Values
 
@@ -3593,7 +3594,8 @@ CFFI> (foreign-free *)
 @node foreign-alloc
 @unnumberedsec foreign-alloc
 @subheading Syntax
-@Function{foreign-alloc type &key initial-element initial-contents (count 1) null-terminated-p => pointer}
+@Function{foreign-alloc type &key initial-element initial-contents (count 1) @
+                        null-terminated-p @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -3704,7 +3706,7 @@ CFFI> (progn
 @node foreign-symbol-pointer
 @unnumberedsec foreign-symbol-pointer
 @subheading Syntax
-@Function{foreign-symbol-pointer foreign-name => pointer}
+@Function{foreign-symbol-pointer foreign-name @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -3753,7 +3755,7 @@ CFFI> (foreign-symbol-pointer "inexistent symbol")
 @node inc-pointer
 @unnumberedsec inc-pointer
 @subheading Syntax
-@Function{inc-pointer pointer offset => new-pointer}
+@Function{inc-pointer pointer offset @result{} new-pointer}
 
 @subheading Arguments and Values
 
@@ -3794,7 +3796,7 @@ CFFI> (foreign-string-to-lisp *)
 @node make-pointer
 @unnumberedsec make-pointer
 @subheading Syntax
-@Function{make-pointer address => ptr}
+@Function{make-pointer address @result{} ptr}
 
 @subheading Arguments and Values
 
@@ -3899,7 +3901,7 @@ CFFI> (with-foreign-object (array :int 10)
 @node mem-ref
 @unnumberedsec mem-ref
 @subheading Syntax
-@Accessor{mem-ref ptr type &optional offset => object}
+@Accessor{mem-ref ptr type &optional offset @result{} object}
 
 @subheading Arguments and Values
 
@@ -3946,7 +3948,7 @@ CFFI> (mem-ref ptr-to-int :int)
 @node null-pointer
 @unnumberedsec null-pointer
 @subheading Syntax
-@Function{null-pointer => pointer}
+@Function{null-pointer @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -3978,7 +3980,7 @@ CFFI> (pointerp *)
 @node null-pointer-p
 @unnumberedsec null-pointer-p
 @subheading Syntax
-@Function{null-pointer-p ptr => boolean}
+@Function{null-pointer-p ptr @result{} boolean}
 
 @subheading Arguments and Values
 
@@ -4023,7 +4025,7 @@ CFFI> (contains-str-p "Popcorns" "salt")
 @node pointerp
 @unnumberedsec pointerp
 @subheading Syntax
-@Function{pointerp ptr => boolean}
+@Function{pointerp ptr @result{} boolean}
 
 @subheading Arguments and Values
 
@@ -4065,7 +4067,7 @@ CFFI> (pointerp "this is not a pointer")
 @node pointer-address
 @unnumberedsec pointer-address
 @subheading Syntax
-@Function{pointer-address ptr => address}
+@Function{pointer-address ptr @result{} address}
 
 @subheading Arguments and Values
 
@@ -4106,7 +4108,7 @@ CFFI> (pointer-address (make-pointer 123))
 @node pointer-eq
 @unnumberedsec pointer-eq
 @subheading Syntax
-@Function{pointer-eq ptr1 ptr2 => boolean}
+@Function{pointer-eq ptr1 ptr2 @result{} boolean}
 
 @subheading Arguments and Values
 
@@ -4133,8 +4135,8 @@ some will return false using any of these predicates. Therefore, for
 portability, you should use @code{POINTER-EQ}.
 
 @subheading Examples
-This is an example using SBCL, see the implementation-specific notes
-above.
+This is an example using @acronym{SBCL}, see the
+implementation-specific notes above.
 
 @lisp
 CFFI> (eql (null-pointer) (null-pointer))
@@ -4274,7 +4276,7 @@ Dictionary
 @node foreign-string-alloc
 @unnumberedsec foreign-string-alloc
 @subheading Syntax
-@Function{foreign-string-alloc string => pointer}
+@Function{foreign-string-alloc string @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -4338,7 +4340,8 @@ allocated by @code{foreign-string-alloc}.
 @node foreign-string-to-lisp
 @unnumberedsec foreign-string-to-lisp
 @subheading Syntax
-@Function{foreign-string-to-lisp ptr &optional size null-terminated-p => string}
+@Function{foreign-string-to-lisp ptr &optional size null-terminated-p @
+                                 @result{} string}
 
 @subheading Arguments and Values
 
@@ -4519,7 +4522,7 @@ Dictionary
 @node defcvar
 @unnumberedsec defcvar
 @subheading Syntax
-@Macro{defcvar name type &key read-only => lisp-name}
+@Macro{defcvar name type &key read-only @result{} lisp-name}
 
 name ::= lisp-name | foreign-name | (foreign-name lisp-name)
 
@@ -4589,7 +4592,7 @@ C standard library.}
 @node get-var-pointer
 @unnumberedsec get-var-pointer
 @subheading Syntax
-@Function{get-var-pointer symbol => pointer}
+@Function{get-var-pointer symbol @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -4652,11 +4655,14 @@ Dictionary
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
-@Macro{defcfun name return-type &body arguments [varargs-marker] => lisp-name}
+@Macro{defcfun name return-type &body arguments [varargs-marker] @
+               @result{} lisp-name}
 
-name ::= lisp-name | foreign-name | (foreign-name lisp-name) @*
-arguments ::= @{ (arg-name arg-type) @}*
-varargs-marker ::= &rest
+@table @asis
+@item @var{name} ::= @var{lisp-name} | @var{foreign-name} | (@var{foreign-name} @var{lisp-name})
+@item @var{arguments} ::= @{ (arg-name arg-type) @}*
+@item @var{varargs-marker} ::= &rest
+@end table
 
 @subheading Arguments and Values
 
@@ -4742,7 +4748,7 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @node foreign-funcall
 @unnumberedsec foreign-funcall
 @subheading Syntax
-@Macro{foreign-funcall name-or-pointer &rest arguments => return-value}
+@Macro{foreign-funcall name-or-pointer &rest arguments @result{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type] 
 
@@ -5284,7 +5290,7 @@ Dictionary
 @node callback
 @unnumberedsec callback
 @subheading Syntax
-@Macro{callback symbol => pointer}
+@Macro{callback symbol @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -5323,7 +5329,7 @@ CFFI> (callback sum)
 @node defcallback
 @unnumberedsec defcallback
 @subheading Syntax
-@Macro{defcallback name return-type arguments &body body => name}
+@Macro{defcallback name return-type arguments &body body @result{} name}
 
 arguments ::= (@{ (arg-name arg-type) @}*)
 
@@ -5394,7 +5400,7 @@ CFFI> (with-foreign-object (array :int 10)
 @node get-callback
 @unnumberedsec get-callback
 @subheading Syntax
-@Accessor{get-callback symbol => pointer}
+@Accessor{get-callback symbol @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -5451,7 +5457,7 @@ Dictionary
 @node finalize
 @unnumberedsec finalize
 @subheading Syntax
-@Function{finalize object function => object}
+@Function{finalize object function @result{} object}
 
 @subheading Arguments and Values
 
@@ -5497,7 +5503,7 @@ accessible when @var{function} is invoked.
 @node cancel-finalization
 @unnumberedsec cancel-finalization
 @subheading Syntax
-@Function{cancel-finalization object => undefined}
+@Function{cancel-finalization object @result{} undefined}
 
 @subheading Arguments and Values
 

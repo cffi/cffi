@@ -278,7 +278,7 @@ string @var{name}.
   (%foreign-funcall "gethostname" :pointer buf :size buf-size :int)
   ;; Convert buf to a Lisp string using MAKE-STRING and %MEM-REF or
   ;; a portable CFFI function such as CFFI:FOREIGN-STRING-TO-LISP.
-)
+  )
 @end lisp
 
 
@@ -298,11 +298,9 @@ LD_LIBRARY_PATH from the environment) as necessary.}
 @node Foreign Globals
 @chapter Foreign Globals
 
-@defun foreign-symbol-pointer name kind @result{} pointer
-Return a pointer to a foreign symbol @var{name}. @var{kind} is one of
-@code{:code} or @code{:data}, and is ignored on some platforms.
+@defun foreign-symbol-pointer name @result{} pointer
+Return a pointer to a foreign symbol @var{name}.
 @end defun
-
 
 @node Symbol Index
 @unnumbered Symbol Index
