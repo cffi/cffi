@@ -235,7 +235,7 @@ the function call."
              (ignore-errors
                (ffi::foreign-library-function
                 ,name (ffi::foreign-library :default)
-                nil (ffi:parse-c-type ',ctype)))
+                nil nil (ffi:parse-c-type ',ctype)))
            (or ff
                (warn (format nil "~?"
                              (simple-condition-format-control error)
