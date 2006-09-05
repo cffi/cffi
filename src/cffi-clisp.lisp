@@ -114,8 +114,9 @@
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign TYPE."
   #+(and cffi-features:darwin cffi-features:ppc32)
-  (when (eq type :double)
-    (return-from %foreign-type-alignment 8))
+  (case type
+    ((:double :long-long :unsigned-long-long)
+     (return-from %foreign-type-alignment 8)))
   ;; Override not necessary for the remaining types...
   (nth-value 1 (ffi:sizeof (convert-foreign-type type))))
 

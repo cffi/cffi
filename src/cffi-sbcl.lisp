@@ -239,8 +239,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %foreign-type-alignment (type-keyword)
   "Return the alignment in bytes of a foreign type."
   #+(and darwin ppc (not ppc64))
-  (when (member type-keyword '(:double :long-long))
-    (return-from %foreign-type-alignment 8))
+  (case type-keyword
+    ((:double :long-long :unsigned-long-long)
+     (return-from %foreign-type-alignment 8)))
   ;; No override necessary for other types...
   (/ (sb-alien-internals:alien-type-alignment
       (sb-alien-internals:parse-alien-type

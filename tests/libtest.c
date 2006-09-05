@@ -420,6 +420,30 @@ struct s_s_s_double3 {
 DLLEXPORT
 struct s_s_s_double3 the_s_s_s_double3 = { { { 1.0, 2 }, 3 }, 4 };
 
+/*
+ * STRUCT.ALIGNMENT.8
+ */
+
+/* Same as STRUCT.ALIGNMENT.[56] but with unsigned long long. */
+
+struct s_unsigned_long_long {
+    unsigned long long an_unsigned_long_long; /* 8 bytes (alignment 8) */
+    short a_short;                            /* 2 bytes */
+                                              /* 6 bytes padding */
+};                                            /* total size: 16 */
+
+struct s_s_unsigned_long_long {
+    char a_char;                                         /* 1 byte */
+                                                         /* 3 bytes padding */
+    struct s_unsigned_long_long a_s_unsigned_long_long;  /* 16 bytes, align 4 */
+    short a_short;                                       /* 2 bytes */
+                                                         /* 2 bytes padding */
+};                                           /* total size: 24 bytes */
+                                             /*  alignment: 4 */
+
+DLLEXPORT
+struct s_s_unsigned_long_long the_s_s_unsigned_long_long = { 3, { 1, 2 }, 4 };
+
 /* STRUCT.ALIGNMENT.x */
 
 /* commented this test out because this is not standard C

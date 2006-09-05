@@ -294,3 +294,31 @@
       (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
                           's1 'an-int))
   1984)
+
+;; regression test, some Lisps were returning 4 instead of 8 for
+;; (foreign-type-alignment :unsigned-long-long) on darwin/ppc32
+
+#-cffi-features:no-long-long
+(progn
+  (defcstruct s-unsigned-long-long
+    (an-unsigned-long-long :unsigned-long-long)
+    (a-short               :short))
+
+  (defcstruct s-s-unsigned-long-long
+    (a-char                 :char)
+    (a-s-unsigned-long-long s-unsigned-long-long)
+    (another-short          :short))
+
+  (defcvar "the_s_s_unsigned_long_long" s-s-unsigned-long-long)
+
+  (deftest struct.alignment.8
+      (with-foreign-slots
+          ((a-char a-s-unsigned-long-long another-short)
+           *the-s-s-unsigned-long-long* s-s-unsigned-long-long)
+        (with-foreign-slots ((an-unsigned-long-long a-short)
+                             a-s-unsigned-long-long s-unsigned-long-long)
+          (list 'an-unsigned-long-long  an-unsigned-long-long
+                'a-short                a-short
+                'a-char                 a-char
+                'another-short          another-short)))
+    (an-unsigned-long-long 1 a-short 2 a-char 3 another-short 4)))
