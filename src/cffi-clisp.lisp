@@ -235,7 +235,15 @@ the function call."
              (ignore-errors
                (ffi::foreign-library-function
                 ,name (ffi::foreign-library :default)
-                nil nil (ffi:parse-c-type ',ctype)))
+                nil
+                ;; As of version 2.40 (CVS 2006-09-03, to be more precise),
+                ;; FFI::FOREIGN-LIBRARY-FUNCTION takes an additional
+                ;; 'PROPERTIES' argument.
+                #+#.(cl:if (cl:= (cl:length (ext:arglist
+                                             'ffi::foreign-library-function)) 5)
+                           '(and) '(or))
+                nil
+                (ffi:parse-c-type ',ctype)))
            (or ff
                (warn (format nil "~?"
                              (simple-condition-format-control error)
