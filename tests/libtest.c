@@ -69,7 +69,7 @@ long long my_llabs(long long n)
  * (var_int is used in MISC-TYPES.EXPAND.3 as well)
  */
 
-DLLEXPORT char *         dll_version        = "20060414";
+DLLEXPORT char *         dll_version        = "20060907";
 
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;
