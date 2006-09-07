@@ -42,7 +42,7 @@ The foreign string will be null-terminated."
         do (%mem-set (char-code char) ptr :unsigned-char (post-incf i))
         finally (%mem-set 0 ptr :unsigned-char i)))
 
-(defun foreign-string-to-lisp (ptr &optional (size most-positive-fixnum)
+(defun foreign-string-to-lisp (ptr &optional (size array-total-size-limit)
                                (null-terminated-p t))
   "Copy at most SIZE characters from PTR into a Lisp string.
 If PTR is a null pointer, returns nil."
