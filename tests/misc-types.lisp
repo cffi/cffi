@@ -36,13 +36,6 @@
       string)
   "foo")
 
-(deftest misc-types.string+ptr.ub8
-    (destructuring-bind (string pointer)
-        (strdup (make-array 3 :element-type '(unsigned-byte 8) :initial-contents (map 'list #'char-code "foo")))
-      (foreign-free pointer)
-      string)
-  "foo")
-
 (defcfun "equalequal" :boolean
   (a (:boolean :int))
   (b (:boolean :unsigned-int)))
