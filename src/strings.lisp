@@ -72,8 +72,9 @@ The string must be freed with FOREIGN-STRING-FREE."
   "Bind VAR to a foreign string containing LISP-STRING in BODY."
   (with-unique-names (str length)
     `(let* ((,str ,lisp-string)
-            (,length (progn (check-type ,str string)
-                            (1+ (length ,str)))))
+            (,length (progn
+                       (check-type ,str (or string (array (unsigned-byte 8))))
+                       (1+ (length ,str)))))
        (with-foreign-pointer (,var ,length)
          (lisp-string-to-foreign ,str ,var ,length)
          ,@body))))
