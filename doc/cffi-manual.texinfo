@@ -1855,10 +1855,37 @@ C strings. Note that, in the case of functions the converted C string
 will have dynamic extent (i.e.@: it will be automatically freed after
 the foreign function returns).
 
+In addition to Lisp strings, this type will also convert
+Lisp arrays of element type @code{(unsigned-byte 8)} and will pass
+foreign pointers unmodified.
+
+A method for @ref{free-translated-object} is specialized for this
+type. So, for example, foreign strings allocated by this type and
+passed to a foreign function will be freed after the function
+returns.
+
 @lisp
-;;; @lispcmt{:STRING example}
 CFFI> (foreign-funcall "getenv" :string "SHELL" :string)
 @result{} "/bin/bash"
+
+CFFI> (with-foreign-string (str "abcdef")
+        (foreign-funcall "strlen" :string str :int))
+@result{} 6
+
+CFFI> (let ((str (make-array 4 :element-type '(unsigned-byte 8)
+                             :initial-element 65)))
+        (foreign-funcall "strlen" :string str :int))
+@result{} 4
+@end lisp
+
+@ForeignType{:string+ptr}
+
+Like @code{:string} but returns a list with two values when convert
+from C to Lisp: a Lisp string and the C string's foreign pointer.
+
+@lisp
+CFFI> (foreign-funcall "getenv" :string "SHELL" :string+ptr)
+@result{} ("/bin/bash" #.(SB-SYS:INT-SAP #XBFFFFC6F))
 @end lisp
 
 @ForeignType{:boolean &optional (base-type :int)}
@@ -4328,21 +4355,21 @@ Dictionary
 @node foreign-string-alloc
 @unnumberedsec foreign-string-alloc
 @subheading Syntax
-@Function{foreign-string-alloc string @result{} pointer}
+@Function{foreign-string-alloc string-or-ub8-array @result{} pointer}
 
 @subheading Arguments and Values
 
 @table @var
-@item string
-A Lisp string.
+@item string-or-ub8-array
+A Lisp string or a Lisp array with element-type @code{(unsigned-byte 8)}.
 
 @item pointer
-A pointer to the newly allocated foreign string containg @var{string}.
+A pointer to the newly allocated foreign string.
 @end table
 
 @subheading Description
 The @code{foreign-string-alloc} function allocates a foreign string
-containing a Lisp @var{string}.
+containing a Lisp string or @code{(unsigned-byte 8)} array.
 
 This string must be freed with @code{foreign-string-free}.
 
@@ -4402,7 +4429,7 @@ allocated by @code{foreign-string-alloc}.
 A pointer.
 
 @item size
-The maximum string size. @code{most-positive-fixnum}, by default.
+The maximum string size. @code{array-total-size-limit}, by default.
 
 @item null-terminated-p
 Specifies if the string @var{ptr} points to is null terminated. True,
@@ -4443,13 +4470,13 @@ CFFI> (foreign-string-to-lisp *)
 @node lisp-string-to-foreign
 @unnumberedsec lisp-string-to-foreign
 @subheading Syntax
-@Function{lisp-string-to-foreign string ptr size}
+@Function{lisp-string-to-foreign string-or-ub8-array ptr size}
 
 @subheading Arguments and Values
 
 @table @var
-@item string
-A Lisp string.
+@item string-or-ub8-array
+A Lisp string or a Lisp @code{(unsigned-byte 8)} array.
 
 @item ptr
 A foreign pointer.
@@ -4459,9 +4486,9 @@ An integer.
 @end table
 
 @subheading Description
-The @code{lisp-string-to-foreign} function copies at most
-@var{size}-1 characters from a Lisp @var{string} to @var{ptr}. The
-foreign string will be null-terminated.
+The @code{lisp-string-to-foreign} function copies at most @var{size}-1
+characters from a Lisp string or @code{(unsigned-byte 8)} arrayto
+@var{ptr}. The foreign string will be null-terminated.
 
 @subheading Examples
 
@@ -4469,6 +4496,13 @@ foreign string will be null-terminated.
 CFFI> (with-foreign-pointer-as-string (str 255)
         (lisp-string-to-foreign "Hello, foreign world!" str 6))
 @result{} "Hello"
+
+CFFI> (with-foreign-pointer-as-string (str 255)
+        (lisp-string-to-foreign
+         (make-array 6 :element-type '(unsigned-byte 8)
+                     :initial-contents '(65 66 67 68 69 60))
+         str 4))
+@result{} "ABC"
 @end lisp
 
 @subheading See Also
@@ -4483,7 +4517,7 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @node with-foreign-string
 @unnumberedsec with-foreign-string
 @subheading Syntax
-@Macro{with-foreign-string (var lisp-string) &body body}
+@Macro{with-foreign-string (var lisp-string-or-ub8-array) &body body}
 
 @subheading Arguments and Values
 
@@ -4491,8 +4525,8 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @item var
 A symbol.
 
-@item lisp-string
-A Lisp string.
+@item lisp-string-or-ub8-array
+A Lisp string or a Lisp array with element type @code{(unsigned-byte 8)}.
 
 @item body
 A list of forms to be executed.
@@ -4500,7 +4534,7 @@ A list of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-string} macro will bind @var{var} to a newly
-allocated foreign string containing @var{lisp-string}.
+allocated foreign string containing @var{lisp-string-or-ub8-array}.
 
 @subheading Examples
 
@@ -4508,6 +4542,12 @@ allocated foreign string containing @var{lisp-string}.
 CFFI> (with-foreign-string (foo "12345")
         (foreign-funcall "strlen" :pointer foo :int))
 @result{} 5
+
+CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
+                           '(array (unsigned-byte 8)))))
+        (with-foreign-string (foreign-string array)
+          (foreign-string-to-lisp foreign-string)))
+@result{} "Turanga"
 @end lisp
 
 @subheading See Also
@@ -5068,6 +5108,10 @@ is true.
 @item :not
 The feature expression @code{(second @var{feature})} is not true.
 @end table
+
+@item
+Finally, if @var{feature} is @code{t}, this @var{load-clause} is
+picked unconditionally.
 @end enumerate
 
 Upon finding the first true @var{feature}, the library loader then
