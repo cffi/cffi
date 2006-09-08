@@ -37,10 +37,17 @@
   "Copy at most SIZE-1 characters from a Lisp STRING to PTR.
 The foreign string will be null-terminated."
   (decf size)
-  (loop with i = 0 for char across string
-        while (< i size)
-        do (%mem-set (char-code char) ptr :unsigned-char (post-incf i))
-        finally (%mem-set 0 ptr :unsigned-char i)))
+  (etypecase string
+    (string
+     (loop with i = 0 for char across string
+           while (< i size)
+           do (%mem-set (char-code char) ptr :unsigned-char (post-incf i))
+           finally (%mem-set 0 ptr :unsigned-char i)))
+    ((array (unsigned-byte 8))
+     (loop with i = 0 for elt across string
+           while (< i size)
+           do (%mem-set elt ptr :unsigned-char (post-incf i))
+           finally (%mem-set 0 ptr :unsigned-char i)))))
 
 (defun foreign-string-to-lisp (ptr &optional (size array-total-size-limit)
                                (null-terminated-p t))
@@ -58,7 +65,7 @@ If PTR is a null pointer, returns nil."
 (defun foreign-string-alloc (string)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
-  (check-type string string)
+  (check-type string (or string (array (unsigned-byte 8))))
   (let* ((length (1+ (length string)))
          (ptr (foreign-alloc :char :count length)))
     (lisp-string-to-foreign string ptr length)
@@ -96,9 +103,13 @@ the return value of an implicit PROGN around BODY."
   (values (foreign-string-alloc s) t))
 
 (defmethod translate-to-foreign (obj (name (eql :string)))
-  (if (pointerp obj)
-      (values obj nil)
-      (error "~A is not a Lisp string or pointer." obj)))
+  (cond
+    ((pointerp obj)
+     (values obj nil))
+    ((typep obj '(array (unsigned-byte 8)))
+     (values (foreign-string-alloc obj) t))
+    (t (error "~A is not a Lisp string, (array (unsigned-byte 8) or pointer."
+              obj))))
 
 (defmethod translate-from-foreign (ptr (name (eql :string)))
   (foreign-string-to-lisp ptr))
@@ -128,9 +139,13 @@ the return value of an implicit PROGN around BODY."
   (values (foreign-string-alloc s) t))
 
 (defmethod translate-to-foreign (obj (name (eql :string+ptr)))
-  (if (pointerp obj)
-      (values obj nil)
-      (error "~A is not a Lisp string or pointer." obj)))
+  (cond
+    ((pointerp obj)
+     (values obj nil))
+    ((typep obj '(array (unsigned-byte 8)))
+     (values (foreign-string-alloc obj) t))
+    (t (error "~A is not a Lisp string, (array (unsigned-byte 8) or pointer."
+              obj))))
 
 (defmethod translate-from-foreign (value (name (eql :string+ptr)))
   (list (foreign-string-to-lisp value) value))
@@ -138,4 +153,3 @@ the return value of an implicit PROGN around BODY."
 (defmethod free-translated-object (value (name (eql :string+ptr)) free-p)
   (when free-p
     (foreign-string-free value)))
-

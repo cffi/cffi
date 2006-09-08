@@ -36,6 +36,29 @@
       string)
   "foo")
 
+(deftest misc-types.string+ptr.ub8
+    (destructuring-bind (string pointer)
+        (strdup (make-array 3 :element-type '(unsigned-byte 8)
+                            :initial-contents (map 'list #'char-code "foo")))
+      (foreign-free pointer)
+      string)
+  "foo")
+
+(deftest misc-types.string.ub8.1
+    (let ((array (make-array 7 :element-type '(unsigned-byte 8)
+                             :initial-contents '(84 117 114 97 110 103 97))))
+      (with-foreign-string (foreign-string array)
+        (foreign-string-to-lisp foreign-string)))
+  "Turanga")
+
+(deftest misc-types.string.ub8.2
+    (let ((str (foreign-string-alloc
+                (make-array 7 :element-type '(unsigned-byte 8)
+                            :initial-contents '(84 117 114 97 110 103 97)))))
+      (prog1 (foreign-string-to-lisp str)
+        (foreign-string-free str)))
+  "Turanga")
+
 (defcfun "equalequal" :boolean
   (a (:boolean :int))
   (b (:boolean :unsigned-int)))
