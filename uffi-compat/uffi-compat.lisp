@@ -66,6 +66,7 @@
    #:with-cast-pointer
    #:def-foreign-var
    #:convert-from-foreign-usb8
+   #:def-pointer-var
 
    ;; string functions
    #:convert-from-cstring
@@ -361,6 +362,10 @@ field-name"
                         name
                         (list name (lisp-name name)))
          ,(convert-uffi-type type))))
+
+(defmacro def-pointer-var (name value &optional doc)
+  #-openmcl `(defvar ,name ,value ,@(if doc (list doc)))
+  #+openmcl `(ccl::defloadvar ,name ,value ,doc))
 
 (defmacro convert-from-cstring (s)
   "Convert a cstring to a Lisp string."
