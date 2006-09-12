@@ -263,7 +263,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
       (gethash name *callbacks*)
     (unless winp
       (error "Undefined callback: ~S" name))
-    (ffi:callback name)))
+    (ffi:callback symbol)))
 
 ;;;# Foreign Globals
 
