@@ -48,7 +48,7 @@
 
 #+(:and :ecl (:not :dffi))
 (ffi:load-foreign-library
- #.(make-pathname :name "libtest" :type "o"
+ #.(make-pathname :name "libtest" :type "so"
                   :defaults (or *compile-file-truename* *load-truename*)))
 
 ;;; check libtest version

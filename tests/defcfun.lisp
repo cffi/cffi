@@ -193,7 +193,7 @@
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-#+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
+#+(:and (:not :ecl) #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or)))
 (progn
   (defcfun "sum_127_no_ll" :long
     (a1 :long) (a2 :unsigned-long) (a3 :short) (a4 :unsigned-short) (a5 :float)
@@ -253,7 +253,7 @@
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-#-(:or cffi-features:no-long-long
+#-(:or :ecl cffi-features:no-long-long
        #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (progn
   (defcfun "sum_127" :long-long

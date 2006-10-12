@@ -44,6 +44,7 @@
    #:%mem-ref
    #:%mem-set
    #:%foreign-funcall
+   #:%foreign-funcall-pointer
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -137,14 +138,14 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (let* ((type (convert-foreign-type type))
+  (let* ((type (cffi-type->ecl-type type))
          (type-size (ffi:size-of-foreign-type type)))
     (si:foreign-data-ref-elt
      (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
 
 (defun %mem-set (value ptr type &optional (offset 0))
   "Set an object of TYPE at OFFSET bytes from PTR."
-  (let* ((type (convert-foreign-type type))
+  (let* ((type (cffi-type->ecl-type type))
          (type-size (ffi:size-of-foreign-type type)))
     (si:foreign-data-set-elt
      (si:foreign-data-recast ptr (+ offset type-size) :void)
@@ -152,75 +153,85 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Type Operations
 
-(defun convert-foreign-type (type-keyword)
+(defconstant +translation-table+
+  '((:char            :byte		"char")
+    (:unsigned-char   :unsigned-byte	"unsigned char")
+    (:short           :short		"short")
+    (:unsigned-short  :unsigned-short	"unsigned short")
+    (:int             :int		"int")
+    (:unsigned-int    :unsigned-int	"unsigned int")
+    (:long            :long		"long")
+    (:unsigned-long   :unsigned-long	"unsigned long")
+    (:float           :float		"float")
+    (:double          :double		"double")
+    (:pointer         :pointer-void	"void*")
+    (:void            :void		"void")))
+
+(defun cffi-type->ecl-type (type-keyword)
   "Convert a CFFI type keyword to an ECL type keyword."
-  (ecase type-keyword
-    (:char            :byte)
-    (:unsigned-char   :unsigned-byte)
-    (:short           :short)
-    (:unsigned-short  :unsigned-short)
-    (:int             :int)
-    (:unsigned-int    :unsigned-int)
-    (:long            :long)
-    (:unsigned-long   :unsigned-long)
-    (:float           :float)
-    (:double          :double)
-    (:pointer         :pointer-void)
-    (:void            :void)))
+  (or (second (find type-keyword +translation-table+ :key #'first))
+      (error "~S is not a valid CFFI type" type-keyword)))
+
+(defun ecl-type->c-type (type-keyword)
+  "Convert a CFFI type keyword to an valid C type keyword."
+  (or (third (find type-keyword +translation-table+ :key #'second))
+      (error "~S is not a valid CFFI type" type-keyword)))
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
   (nth-value 0 (ffi:size-of-foreign-type
-                (convert-foreign-type type-keyword))))
+                (cffi-type->ecl-type type-keyword))))
 
 (defun %foreign-type-alignment (type-keyword)
   "Return the alignment in bytes of a foreign type."
   (nth-value 1 (ffi:size-of-foreign-type
-                (convert-foreign-type type-keyword))))
+                (cffi-type->ecl-type type-keyword))))
 
 ;;;# Calling Foreign Functions
 
-(defun produce-function-call (c-name nargs)
-  (format nil "~a(~a)" c-name
-          (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
-                  0 (max 0 (1- (* nargs 3))))))
+(defconstant +ecl-inline-codes+ "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z")
 
-#-dffi
-(defun foreign-function-inline-form (name arg-types arg-values return-type)
-  "Generate a C-INLINE form for a foreign function call."
-  `(ffi:c-inline
-    ,arg-values ,arg-types ,return-type
-    ,(produce-function-call name (length arg-values))
-    :one-liner t :side-effects t))
+(defun produce-function-pointer-call (pointer types values return-type)
+  #-dffi
+  (if (stringp pointer)
+;;       `(ffi:c-inline ,values ,types ,return-type
+;;         ,(format nil "~A(~A)" pointer
+;;                  (subseq +ecl-inline-codes+ 0 (max 0 (1- (* (length values) 3)))))
+;;         :one-liner t :side-effects t)
+      (produce-function-pointer-call `(foreign-symbol-pointer ,pointer) types values return-type)
+      `(ffi:c-inline ,(list* pointer values) ,(list* :pointer-void types) ,return-type
+        ,(with-output-to-string (s)
+          (let ((types (mapcar #'ecl-type->c-type types)))
+            ;; On AMD64, the following code only works with the extra argument ",..."
+            ;; If this is not present, functions like sprintf do not work
+            (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
+                    (ecl-type->c-type return-type) types
+                    (subseq +ecl-inline-codes+ 3 (max 3 (+ 2 (* (length values) 3)))))))
+        :one-liner t :side-effects t))
+  #+dffi
+  `(si:call-cfun ,pointer ,return-type (list ,@arg-types) (list ,@arg-values)))
 
-#+dffi
-(defun foreign-function-dynamic-form (name arg-types arg-values return-type)
-  "Generate a dynamic FFI form for a foreign function call."
-  `(si:call-cfun (si:find-foreign-symbol ,name :default :pointer-void 0)
-                 ,return-type (list ,@arg-types) (list ,@arg-values)))
 
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
   (let ((return-type :void))
     (loop for (type arg) on args by #'cddr
-          if arg collect (convert-foreign-type type) into types
+          if arg collect (cffi-type->ecl-type type) into types
           and collect arg into values
-          else do (setf return-type (convert-foreign-type type))
+          else do (setf return-type (cffi-type->ecl-type type))
           finally (return (values types values return-type)))))
 
 (defmacro %foreign-funcall (name &rest args)
   "Call a foreign function."
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
-    #-dffi (foreign-function-inline-form name types values return-type)
-    #+dffi (foreign-function-dynamic-form name types values return-type)))
+    (produce-function-pointer-call name types values return-type)))
 
-#+dffi
 (defmacro %foreign-funcall-pointer (ptr &rest args)
   "Funcall a pointer to a foreign function."
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
-    `(si:call-cfun ,ptr ,return-type (list ,@arg-types) (list ,@arg-values))))
+    (produce-function-pointer-call ptr types values return-type)))
 
 ;;;# Foreign Libraries
 
@@ -252,9 +263,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (let ((cb-name (intern-callback name)))
     `(progn
        (ffi:defcallback (,cb-name :cdecl)
-           ,(convert-foreign-type rettype)
+           ,(cffi-type->ecl-type rettype)
            ,(mapcar #'list arg-names
-                    (mapcar #'convert-foreign-type arg-types))
+                    (mapcar #'cffi-type->ecl-type arg-types))
          ,@body)
        (setf (gethash ',name *callbacks*) ',cb-name))))
 
