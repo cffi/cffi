@@ -74,38 +74,52 @@
 
 ;;; Symbol case.
 
+(declaim (inline canonicalize-symbol-name-case))
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))
   (string-upcase name))
 
 ;;;# Basic Pointer Operations
 
+(declaim (inline pointerp))
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   (sb-sys:system-area-pointer-p ptr))
 
+(declaim (inline pointer-eq))
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
+  (declare (type system-area-pointer ptr1 ptr2))
   (sb-sys:sap= ptr1 ptr2))
 
+(declaim (inline null-pointer))
 (defun null-pointer ()
   "Construct and return a null pointer."
   (sb-sys:int-sap 0))
 
+(declaim (inline null-pointer-p))
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
+  (declare (type system-area-pointer ptr))
   (zerop (sb-sys:sap-int ptr)))
 
+(declaim (inline inc-pointer))
 (defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
+  (declare (type system-area-pointer ptr)
+           (type integer offset))
   (sb-sys:sap+ ptr offset))
 
+(declaim (inline make-pointer))
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
+  (declare (type (unsigned-byte 32) address))
   (sb-sys:int-sap address))
 
+(declaim (inline pointer-address))
 (defun pointer-address (ptr)
   "Return the address pointed to by PTR."
+  (declare (type system-area-pointer ptr))
   (sb-sys:sap-int ptr))
 
 ;;;# Allocation
@@ -115,12 +129,16 @@
 ;;; FOREIGN-ALLOC and FOREIGN-FREE in UNWIND-PROTECT for the common usage
 ;;; when the memory has dynamic extent.
 
+(declaim (inline %foreign-alloc))
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
+  (declare (type (unsigned-byte 32) size))
   (alien-sap (make-alien (unsigned 8) size)))
 
+(declaim (inline foreign-free))
 (defun foreign-free (ptr)
   "Free a PTR allocated by FOREIGN-ALLOC."
+  (declare (type system-area-pointer ptr))
   (free-alien (sap-alien ptr (* (unsigned 8)))))
 
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
@@ -150,15 +168,18 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;; should be defined to perform a copy-in/copy-out if the Lisp
 ;;; implementation can't do this.
 
+(declaim (inline make-shareable-byte-vector))
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes can passed to
 WITH-POINTER-TO-VECTOR-DATA."
+  ; (declare (type sb-int:index size))
   (make-array size :element-type '(unsigned-byte 8)))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
   (let ((vector-var (gensym "VECTOR")))
     `(let ((,vector-var ,vector))
+       (declare (type (simple-unboxed-array (*)) ,vector-var))
        (sb-sys:with-pinned-objects (,vector-var)
          (let ((,ptr-var (sb-sys:vector-sap ,vector-var)))
            ,@body)))))
@@ -299,6 +320,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Loading and Closing Foreign Libraries
 
+(declaim (inline %load-foreign-library))
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
   (load-shared-object name))
@@ -319,6 +341,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Finalizers
 
+(declaim (inline finalize))
 (defun finalize (object function)
   "Pushes a new FUNCTION to the OBJECT's list of
 finalizers. FUNCTION should take no arguments. Returns OBJECT.
@@ -329,6 +352,7 @@ already have been garbage collected and is therefore not
 accessible when FUNCTION is invoked."
   (sb-ext:finalize object function))
 
+(declaim (inline cancel-finalization))
 (defun cancel-finalization (object)
   "Cancels all of OBJECT's finalizers, if any."
   (sb-ext:cancel-finalization object))
