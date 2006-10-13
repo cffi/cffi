@@ -73,7 +73,7 @@
 (defparameter *repeat* 1)
 
 (defun run-cffi-tests (&key (compiled nil))
-  (let ((rtest::*compile-tests* compiled)
+  (let ((regression-test::*compile-tests* compiled)
         (*package* (find-package '#:cffi-tests)))
     (format t "~2&How many times shall we run the tests (~Acompiled)? [~D]: "
             (if compiled "" "un") *repeat*)

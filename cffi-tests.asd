@@ -49,9 +49,12 @@
                                               :directory *tests-dir*))))
     (error 'operation-error :component c :operation o)))
 
+;; For the convenience of ECL users.
+#+ecl (require 'rt)
+
 (defsystem cffi-tests
   :description "Unit tests for CFFI."
-  :depends-on (cffi rt)
+  :depends-on (cffi #-ecl rt)
   :components
   ((:module "tests"
     :serial t
