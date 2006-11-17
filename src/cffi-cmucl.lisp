@@ -47,6 +47,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    #:make-shareable-byte-vector
@@ -349,6 +350,9 @@ WITH-POINTER-TO-VECTOR-DATA."
   (let ((lib (find name sys::*global-table* :key #'cdr :test #'string=)))
     (sys::dlclose (car lib))
     (setf (car lib) (sys:int-sap 0))))
+
+(defun native-namestring (pathname)
+  (ext:unix-namestring pathname))
 
 ;;;# Foreign Globals
 

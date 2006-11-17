@@ -48,6 +48,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:native-namestring
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:%defcallback
@@ -240,6 +241,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #-dffi (error "LOAD-FOREIGN-LIBRARY requires ECL's DFFI support. Use ~
                  FFI:LOAD-FOREIGN-LIBRARY with a constant argument instead.")
   #+dffi (si:load-foreign-module name))
+
+(defun native-namestring (pathname)
+  (namestring pathname))
 
 ;;;# Callbacks
 

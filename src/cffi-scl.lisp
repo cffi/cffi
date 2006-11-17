@@ -62,6 +62,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    #:make-shareable-byte-vector
@@ -321,6 +322,9 @@
 (defun %close-foreign-library (name)
   "Closes the foreign library 'name."
   (ext:close-dynamic-object name))
+
+(defun native-namestring (pathname)
+  (ext:unix-namestring pathname))
 
 ;;;# Foreign Globals
 

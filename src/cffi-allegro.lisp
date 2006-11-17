@@ -47,6 +47,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    ;#:make-shareable-byte-vector
@@ -403,6 +404,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
   (ff:unload-foreign-library name))
+
+(defun native-namestring (pathname)
+  (namestring pathname))
 
 ;;;# Foreign Globals
 

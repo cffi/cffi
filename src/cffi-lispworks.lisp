@@ -47,6 +47,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    #:make-shareable-byte-vector
@@ -380,6 +381,9 @@ and caches it if necessary.  Finally calls it."
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
   (fli:disconnect-module name :remove t))
+
+(defun native-namestring (pathname)
+  (namestring pathname))
 
 ;;;# Foreign Globals
 

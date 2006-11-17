@@ -45,6 +45,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    ;#:make-shareable-byte-vector
@@ -296,6 +297,9 @@ the DLL's name (a string), else returns NIL."
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
   (error "Not implemented."))
+
+(defun native-namestring (pathname)
+  (namestring pathname)) ; TODO: confirm
 
 ;;;# Foreign Globals
 

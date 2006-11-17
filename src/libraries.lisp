@@ -186,7 +186,7 @@ ourselves."
   (or (ignore-errors (%load-foreign-library name))
       (let ((file (find-file name *foreign-library-directories*)))
         (when file
-          (%load-foreign-library (namestring file))))
+          (%load-foreign-library (native-namestring file))))
       ;; couldn't load it directly or find it...
       (handle-load-foreign-library-error
        name "Unable to load foreign library: ~A" name)))

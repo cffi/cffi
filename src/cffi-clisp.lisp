@@ -48,6 +48,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    #:foreign-symbol-pointer
@@ -333,6 +334,9 @@ the function call."
 (defun %close-foreign-library (name)
   "Close a foreign library NAME."
   (ffi:close-foreign-library name))
+
+(defun native-namestring (pathname)
+  (namestring pathname))
 
 ;;;# Foreign Globals
 

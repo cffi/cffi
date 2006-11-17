@@ -49,6 +49,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
@@ -293,6 +294,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
   (close-shared-library name)) ; :completely t ?
+
+(defun native-namestring (pathname)
+  (ccl::native-translated-namestring pathname))
 
 ;;;# Foreign Globals
 

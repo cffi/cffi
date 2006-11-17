@@ -47,6 +47,7 @@
    #:%foreign-type-size
    #:%load-foreign-library
    #:%close-foreign-library
+   #:native-namestring
    #:%mem-ref
    #:%mem-set
    #:make-shareable-byte-vector
@@ -331,6 +332,9 @@ WITH-POINTER-TO-VECTOR-DATA."
    (find name sb-alien::*shared-objects*
          :key #'sb-alien::shared-object-file
          :test #'string=)))
+
+(defun native-namestring (pathname)
+  (sb-ext:native-namestring pathname))
 
 ;;;# Foreign Globals
 
