@@ -320,6 +320,18 @@ WITH-POINTER-TO-VECTOR-DATA."
       (error "Undefined callback: ~S" name))
     pointer))
 
+;;; CMUCL makes new callback trampolines when it reloads, so we need
+;;; to update CFFI's copies.
+(defun reset-callbacks ()
+  (loop for k being the hash-keys of *callbacks*
+        do (setf (gethash k *callbacks*)
+                 (alien::symbol-trampoline (intern-callback k)))))
+
+;; Needs to be after cmucl's restore-callbacks, so put at the end...
+(unless (member 'reset-callbacks ext:*after-save-initializations*)
+  (setf ext:*after-save-initializations*
+        (append ext:*after-save-initializations* (list 'reset-callbacks))))
+
 ;;;# Loading and Closing Foreign Libraries
 
 ;;; Work-around for compiling ffi code without loading the
