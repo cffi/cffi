@@ -108,7 +108,7 @@ the return value of an implicit PROGN around BODY."
      (values obj nil))
     ((typep obj '(array (unsigned-byte 8)))
      (values (foreign-string-alloc obj) t))
-    (t (error "~A is not a Lisp string, (array (unsigned-byte 8) or pointer."
+    (t (error "~A is not a Lisp string, (array (unsigned-byte 8)) or pointer."
               obj))))
 
 (defmethod translate-from-foreign (ptr (name (eql :string)))
