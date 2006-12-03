@@ -210,7 +210,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                     (subseq +ecl-inline-codes+ 3 (max 3 (+ 2 (* (length values) 3)))))))
         :one-liner t :side-effects t))
   #+dffi
-  `(si:call-cfun ,pointer ,return-type (list ,@arg-types) (list ,@arg-values)))
+  (progn
+    (when (stringp pointer)
+      (setf pointer `(foreign-symbol-pointer ,pointer)))
+    `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values))))
 
 
 (defun foreign-funcall-parse-args (args)
@@ -284,8 +287,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun convert-external-name (name)
   "Add an underscore to NAME if necessary for the ABI."
-  #+:darwin (concatenate 'string "_" name)
-  #-:darwin name)
+  name)
 
 (defun foreign-symbol-pointer (name)
   "Returns a pointer to a foreign symbol NAME."
