@@ -180,7 +180,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
   (let ((vector-var (gensym "VECTOR")))
     `(let ((,vector-var ,vector))
-       (declare (type (simple-unboxed-array (*)) ,vector-var))
+       (declare (type (sb-kernel:simple-unboxed-array (*)) ,vector-var))
        (sb-sys:with-pinned-objects (,vector-var)
          (let ((,ptr-var (sb-sys:vector-sap ,vector-var)))
            ,@body)))))
