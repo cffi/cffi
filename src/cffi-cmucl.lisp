@@ -341,13 +341,30 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun %load-foreign-library (name)
   "Load the foreign library NAME."
-  (sys::load-object-file name))
+  ;; On some platforms SYS::LOAD-OBJECT-FILE signals an error when
+  ;; loading fails, but on others(Linux for instance) it returns
+  ;; two values: NIL and an error string.
+  (handler-case
+      (multiple-value-bind (ret message)
+          (sys::load-object-file name)
+        (cond
+          ;; Loading failed.
+          ((stringp message) nil)
+          ;; The library was already loaded.
+          ((null ret) (rassoc name sys::*global-table* :test #'string=))
+          ;; The library has been loaded, but since SYS::LOAD-OBJECT-FILE
+          ;; returns an alist of *all* loaded libraries along with their addresses
+          ;; we return only the handler associated with the library just loaded.
+          (t (rassoc name ret :test #'string=))))
+    (error (err)
+      (declare (ignore err))
+      nil)))
 
 ;;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
 ;;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
 (defun %close-foreign-library (name)
   "Closes the foreign library NAME."
-  (let ((lib (find name sys::*global-table* :key #'cdr :test #'string=)))
+  (let ((lib (rassoc name sys::*global-table* :test #'string=)))
     (sys::dlclose (car lib))
     (setf (car lib) (sys:int-sap 0))))
 
