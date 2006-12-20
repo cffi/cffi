@@ -51,6 +51,8 @@
    #:native-namestring
    #:%mem-ref
    #:%mem-set
+   #:make-shareable-byte-vector
+   #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:%defcallback
    #:%callback
@@ -207,6 +209,36 @@ foreign TYPE to VALUE."
       ;; w.r.t. the left to right evaluation rule
       `(ffi::write-memory-as ,value ,ptr ',(convert-foreign-type (eval type)) ,offset)
       form))
+
+;;;# Shareable Vectors
+;;;
+;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
+;;; should be defined to perform a copy-in/copy-out if the Lisp
+;;; implementation can't do this.
+
+(declaim (inline make-shareable-byte-vector))
+(defun make-shareable-byte-vector (size)
+  "Create a Lisp vector of SIZE bytes can passed to
+WITH-POINTER-TO-VECTOR-DATA."
+  (make-array size :element-type '(unsigned-byte 8)))
+
+(deftype shareable-byte-vector ()
+  `(vector (unsigned-byte 8)))
+
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
+  (with-unique-names (vector-var size-var)
+    `(let ((,vector-var ,vector))
+       (check-type ,vector-var shareable-byte-vector)
+       (with-foreign-pointer (,ptr-var (length ,vector-var) ,size-var)
+         ;; copy-in
+         (loop for i below ,size-var do
+               (%mem-set (aref ,vector-var i) ,ptr-var :unsigned-char i))
+         ,@body
+         ;; copy-out
+         (loop for i below ,size-var do
+               (setf (aref ,vector-var i)
+                     (%mem-ref ,ptr-var :unsigned-char i)))))))
 
 ;;;# Foreign Function Calling
 
