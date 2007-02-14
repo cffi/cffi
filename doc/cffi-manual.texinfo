@@ -224,9 +224,11 @@ Functions
 
 * defcfun::                     Defines a foreign function.
 * foreign-funcall::             Performs a call to a foreign function.
+* foreign-funcall-pointer::     Performs a call through a foreign pointer.
 
 Libraries
 
+* close-foreign-library::       Closes a foreign library.
 * *darwin-framework-directories*::  Search path for Darwin frameworks.
 * define-foreign-library::      Explain how to load a foreign library.
 * *foreign-library-directories*::  Search path for shared libraries.
@@ -3729,7 +3731,7 @@ CFFI> (progn
 @node foreign-symbol-pointer
 @unnumberedsec foreign-symbol-pointer
 @subheading Syntax
-@Function{foreign-symbol-pointer foreign-name @result{} pointer}
+@Function{foreign-symbol-pointer foreign-name &key library @result{} pointer}
 
 @subheading Arguments and Values
 
@@ -3739,6 +3741,9 @@ A string.
 
 @item pointer
 A foreign pointer, or @code{nil}.
+
+@item library
+A Lisp symbol or an instance of @code{foreign-library}.
 @end table
 
 @subheading Description
@@ -3751,6 +3756,11 @@ ABI name manglings will be performed on @var{foreign-name} by
 @code{foreign-symbol-pointer} if necessary. (eg: adding a leading
 underscore on darwin/ppc)
 
+@var{library} should name a foreign library as defined by
+@code{define-foreign-library}, @code{:default} (which is the default)
+or an instance of @code{foreign-library} as returned by
+@code{load-foreign-library}.
+
 @strong{Important note:} do not keep these pointers across saved Lisp
 cores as the foreign-library may move across sessions.
 
@@ -3761,7 +3771,7 @@ CFFI> (foreign-symbol-pointer "errno")
 @result{} #<A Mac Pointer #xA0008130>
 CFFI> (foreign-symbol-pointer "strerror")
 @result{} #<A Mac Pointer #x9002D0F8>
-CFFI> (foreign-funcall * :int (mem-ref ** :int) :string)
+CFFI> (foreign-funcall-pointer * () :int (mem-ref ** :int) :string)
 @result{} "No such file or directory"
 
 CFFI> (foreign-symbol-pointer "inexistent symbol")
@@ -4608,9 +4618,10 @@ Dictionary
 @node defcvar
 @unnumberedsec defcvar
 @subheading Syntax
-@Macro{defcvar name type &key read-only @result{} lisp-name}
+@Macro{defcvar name-and-options type documentation @result{} lisp-name}
 
-name ::= lisp-name | foreign-name | (foreign-name lisp-name)
+name-and-options ::= name | (name &key read-only (library :default))
+name ::= lisp-name [foreign-name] | foreign-name [lisp-name]
 
 @subheading Arguments and Values
 
@@ -4626,10 +4637,16 @@ A foreign type.
 
 @item read-only
 A boolean.
+
+@item documentation
+A Lisp string; not evaluated.
 @end table
 
 @subheading Description
-The @code{defcvar} macro  @c TODO: finish this sentence.
+The @code{defcvar} macro defines a symbol macro @var{lisp-name} that looks
+up @var{foreign-name} and dereferences it acording to @var{type}.  It
+can also be @code{setf}ed, unless @var{read-only} is true, in which
+case an error will be signaled.
 
 When one of @var{lisp-name} or @var{foreign-name} is omitted, the
 other is automatically derived using the following rules:
@@ -4726,6 +4743,7 @@ Dictionary
 
 * defcfun::                     
 * foreign-funcall::             
+* foreign-funcall-pointer::     
 @end menu
 
 @node Calling Foreign Functions
@@ -4741,13 +4759,13 @@ Dictionary
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
-@Macro{defcfun name return-type &body arguments [varargs-marker] @
+@Macro{defcfun name-and-options return-type &body arguments [&rest] @
                @result{} lisp-name}
 
 @table @asis
-@item @var{name} ::= @var{lisp-name} | @var{foreign-name} | (@var{foreign-name} @var{lisp-name})
+@item @var{name-and-options} name | (name &key library calling-convention cconv)
+@item @var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}]
 @item @var{arguments} ::= @{ (arg-name arg-type) @}*
-@item @var{varargs-marker} ::= &rest
 @end table
 
 @subheading Arguments and Values
@@ -4765,6 +4783,13 @@ A symbol.
 @item return-type
 @itemx arg-type
 A foreign type.
+
+@item calling-convention
+@itemx cconv
+One of @code{:cdecl} (default) or @code{stdcall}.
+
+@item library
+A symbol designating a foreign library.
 @end table
 
 @subheading Description
@@ -4825,7 +4850,8 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @end lisp
 
 @subheading See Also
-@seealso{foreign-funcall}
+@seealso{foreign-funcall} @*
+@seealso{foreign-funcall-pointer}
 
 
 @c ===================================================================
@@ -4834,15 +4860,16 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @node foreign-funcall
 @unnumberedsec foreign-funcall
 @subheading Syntax
-@Macro{foreign-funcall name-or-pointer &rest arguments @result{} return-value}
+@Macro{foreign-funcall name-and-options &rest arguments @result{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type] 
+name-and-options ::= name | ( name &key library calling-convention cconv)
 
 @subheading Arguments and Values
 
 @table @var
-@item name-or-pointer
-Either a string or a pointer.
+@item name
+A Lisp string.
 
 @item arg-type
 A foreign type.
@@ -4855,6 +4882,13 @@ A foreign type, @code{:void} by default.
 
 @item return-value
 A lisp object.
+
+@item library
+A lisp symbol; not evaluated.
+
+@item calling-convention
+@itemx cconv
+One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
 @subheading Description
@@ -4914,7 +4948,72 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @end lisp
 
 @subheading See Also
-@seealso{defcfun}
+@seealso{defcfun} @*
+@seealso{foreign-funcall-pointer}
+
+
+@c ===================================================================
+@c FOREIGN-FUNCALL-POINTER
+
+@node foreign-funcall-pointer
+@unnumberedsec foreign-funcall-pointer
+@subheading Syntax
+@Macro{foreign-funcall pointer options &rest arguments @result{} return-value}
+
+arguments ::= @{ arg-type arg @}* [return-type] 
+options ::= ( &key calling-convention cconv )
+
+@subheading Arguments and Values
+
+@table @var
+@item pointer
+A foreign pointer.
+
+@item arg-type
+A foreign type.
+
+@item arg
+An argument of type @var{arg-type}.
+
+@item return-type
+A foreign type, @code{:void} by default.
+
+@item return-value
+A lisp object.
+
+@item calling-convention
+@itemx cconv
+One of @code{:cdecl} (default) or @code{:stdcall}.
+@end table
+
+@subheading Description
+The @code{foreign-funcall} macro is the main primitive for calling
+foreign functions.
+
+@emph{Note: The return value of foreign-funcall on functions with a
+:void return type is still undefined.}
+
+@subheading Implementation-specific Notes
+@itemize
+@item
+Corman Lisp does not support @code{foreign-funcall}. On
+implementations that @strong{don't} support @code{foreign-funcall}
+@code{cffi-features:no-foreign-funcall} will be present in
+@code{*features*}. Note: in these Lisps you can still use the
+@code{defcfun} interface. 
+@end itemize
+
+@subheading Examples
+
+@lisp
+CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs")
+                               :int -42 :int)
+@result{} 42
+@end lisp
+
+@subheading See Also
+@seealso{defcfun} @*
+@seealso{foreign-funcall}
 
 
 @c ===================================================================
@@ -4929,6 +5028,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 
 Dictionary
 
+* close-foreign-library::       Close a foreign library.
 * *darwin-framework-directories*::  Search path for Darwin frameworks.
 * define-foreign-library::      Explain how to load a foreign library.
 * *foreign-library-directories*::  Search path for shared libraries.
@@ -5003,6 +5103,40 @@ little about.  --stephen}
 
 
 @c ===================================================================
+@c CLOSE-FOREIGN-LIBRARY
+
+@node close-foreign-library
+@unnumberedsec close-foreign-library
+@subheading Syntax
+@Function{close-foreign-library library @result{} success}
+
+@subheading Arguments and Values
+
+@table @var
+@item library
+A symbol or an instance of @code{foreign-library}.
+
+@item success
+A Lisp boolean.
+@end table
+
+@subheading Description
+
+Closes @var{library} which can be a symbol designating a library
+define through @code{define-foreign-library} or an instance of
+@code{foreign-library} as returned by @code{load-foreign-library}.
+
+@c @subheading Examples
+@c @xref{Tutorial-Loading,, Loading foreign libraries}.
+
+@subheading See Also
+
+@seealso{define-foreign-library} @*
+@seealso{load-foreign-library} @*
+@seealso{use-foreign-library}
+
+
+@c ===================================================================
 @c *DARWIN-FRAMEWORK-DIRECTORIES*
 
 @node *darwin-framework-directories*
@@ -5051,9 +5185,10 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 
 @subheading Syntax
 
-@Macro{define-foreign-library name @{ load-clause @}* @result{} name}
+@Macro{define-foreign-library name-and-options @{ load-clause @}* @result{} name}
 
-load-clause ::= (feature @{ library @}*)
+name-and-options ::= name | (name &key calling-convention cconv)
+load-clause ::= (feature library &key calling-convention cconv)
 
 @subheading Arguments and Values
 
@@ -5066,6 +5201,10 @@ A feature expression.
 
 @item library
 A library designator.
+
+@item calling-convention
+@itemx cconv
+One of @code{:cdecl} (default) or @code{:stdcall}
 @end table
 
 @subheading Description
@@ -5109,8 +5248,24 @@ picked unconditionally.
 @end enumerate
 
 Upon finding the first true @var{feature}, the library loader then
-loads each @var{library}.  The meaning of ``library designator'' is
+loads the @var{library}.  The meaning of ``library designator'' is
 described in @ref{load-foreign-library}.
+
+Functions associated to a library defined by
+@code{define-foreign-library} (e.g. through @code{defcfun}'s
+@code{:library} option, will inherit the library's options.  The
+precedence is as follows:
+
+@enumerate 1
+@item
+@code{defcfun}/@code{foreign-funcall} specific options;
+
+@item
+@var{load-clause} options;
+
+@item
+global library options (the @var{name-and-options} argument)
+@end enumerate
 
 
 @subheading Examples
@@ -5120,6 +5275,7 @@ described in @ref{load-foreign-library}.
 
 @subheading See Also
 
+@seealso{close-foreign-library} @*
 @seealso{load-foreign-library}
 
 
@@ -5214,13 +5370,16 @@ In @file{libli.lisp}:
 @node load-foreign-library
 @unnumberedsec load-foreign-library
 @subheading Syntax
-@Function{load-foreign-library library}
+@Function{load-foreign-library library @result{} handler}
 
 @subheading Arguments and Values
 
 @table @var
 @item library
 A library designator.
+
+@item handler
+An instance of @code{foreign-library}.
 @end table
 
 @subheading Description
@@ -5280,6 +5439,7 @@ own @code{ffi:load-foreign-library} with a constant string argument.
 
 @subheading See Also
 
+@seealso{close-foreign-library} @*
 @seealso{*darwin-framework-directories*} @*
 @seealso{define-foreign-library} @*
 @seealso{*foreign-library-directories*} @*
@@ -5419,8 +5579,9 @@ CFFI> (callback sum)
 @node defcallback
 @unnumberedsec defcallback
 @subheading Syntax
-@Macro{defcallback name return-type arguments &body body @result{} name}
+@Macro{defcallback name-and-options return-type arguments &body body @result{} name}
 
+name-and-options ::= name | (name &key calling-convention cconv)
 arguments ::= (@{ (arg-name arg-type) @}*)
 
 @subheading Arguments and Values
@@ -5437,6 +5598,10 @@ A symbol.
 
 @item arg-type
 A foreign type.
+
+@item calling-convention
+@itemx cconv
+One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
 @subheading Description
@@ -5559,6 +5724,12 @@ refer to these symbols as keywords, @cffi{} internally views them in
 the package @code{cffi-features}.
 
 @table @code
+@item flat-namespace
+This Lisp has a flat namespace for foreign symbols meaning that you
+won't be able to load two different libraries with homograph functions
+and successfully differentiate them through the @code{:library}
+option to @code{defcfun}, @code{defcvar}, etc@dots{}
+
 @item darwin
 This operating system is Darwin or a derivative thereof, such as
 Mac @acronym{OS X}.
@@ -5571,6 +5742,11 @@ platforms, the only way to call a foreign function is through
 @item no-long-long
 The C @code{long long} type is @strong{not} available as a foreign
 type.
+
+@item no-stdcall
+This Lisp doesn't support the @code{stdcall} calling convention.  Note
+that it only makes sense to support @code{stdcall} on (32-bit) x86
+platforms.
 
 @item ppc32
 The underlying @acronym{CPU} architecture is 32-bit PowerPC.
