@@ -53,7 +53,7 @@
    #:with-pointer-to-vector-data
    #:%defcallback
    #:%callback
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:finalize
    #:cancel-finalization))
 
@@ -66,6 +66,7 @@
         '(;; Backend mis-features.
           cffi-features:no-long-long
           cffi-features:no-finalizers
+          cffi-features:flat-namespace
           ;; OS/CPU features.
           #+:darwin       cffi-features:darwin
           #+:darwin       cffi-features:unix
@@ -73,7 +74,7 @@
           #+:win32        cffi-features:windows
           ;; XXX: figure out a way to get a X86 feature
           ;;#+:athlon       cffi-features:x86
-          #+:powerpc7450  cffi-features:ppc32 
+          #+:powerpc7450  cffi-features:ppc32
           )))
 
 ;;; Symbol case.
@@ -225,25 +226,31 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
           else do (setf return-type (cffi-type->ecl-type type))
           finally (return (values types values return-type)))))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Call a foreign function."
+  (declare (ignore library calling-convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
     (produce-function-pointer-call name types values return-type)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Funcall a pointer to a foreign function."
+  (declare (ignore calling-convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
     (produce-function-pointer-call ptr types values return-type)))
 
 ;;;# Foreign Libraries
 
-(defun %load-foreign-library (name)
-  "Load a foreign library from NAME."
+(defun %load-foreign-library (name path)
+  "Load a foreign library."
+  (declare (ignore name))
   #-dffi (error "LOAD-FOREIGN-LIBRARY requires ECL's DFFI support. Use ~
                  FFI:LOAD-FOREIGN-LIBRARY with a constant argument instead.")
-  #+dffi (si:load-foreign-module name))
+  #+dffi (si:load-foreign-module path))
+
+(defun %close-foreign-library (handle)
+  (error "%CLOSE-FOREIGN-LIBRARY unimplemented."))
 
 (defun native-namestring (pathname)
   (namestring pathname))
@@ -266,14 +273,16 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                     (symbol-name name))
             '#:cffi-callbacks)))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
+  (declare (ignore calling-convention))
   (let ((cb-name (intern-callback name)))
     `(progn
        (ffi:defcallback (,cb-name :cdecl)
            ,(cffi-type->ecl-type rettype)
            ,(mapcar #'list arg-names
                     (mapcar #'cffi-type->ecl-type arg-types))
-         ,@body)
+         ,body)
        (setf (gethash ',name *callbacks*) ',cb-name))))
 
 (defun %callback (name)
@@ -289,8 +298,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Add an underscore to NAME if necessary for the ABI."
   name)
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
+  (declare (ignore library))
   (si:find-foreign-symbol (convert-external-name name)
                           :default :pointer-void 0))
 

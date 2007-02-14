@@ -2,7 +2,7 @@
 ;;;
 ;;; foreign-globals.lisp --- Tests on foreign globals.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -179,7 +179,7 @@
     (eval (read-from-string "(DEFCVAR \"UPPER_CASE_INT3\"   :INT)"))
     (eval (read-from-string "(DEFCVAR \"MiXeDCaSeInT3\"     :INT)"))
     (eval (read-from-string "(DEFCVAR \"MiXeD_CaSe_InT3\"   :INT)"))))
-    
+
 
 (when (string= (symbol-name 'nil) "nil")
   (let ((*readtable* (copy-readtable)))
@@ -235,3 +235,49 @@
 (deftest foreign-globals.symbol-name
     (values *var-char* var-char)
   -127 -127)
+
+;;;# Namespace
+
+#-cffi-features:flat-namespace
+(progn
+  (deftest foreign-globals.namespace.1
+      (values
+       (mem-ref (foreign-symbol-pointer "var_char" :library 'libtest) :char)
+       (foreign-symbol-pointer "var_char" :library 'libtest2))
+    -127 nil)
+
+  (deftest foreign-globals.namespace.2
+      (values
+       (mem-ref (foreign-symbol-pointer "ns_var" :library 'libtest) :boolean)
+       (mem-ref (foreign-symbol-pointer "ns_var" :library 'libtest2) :boolean))
+    t nil)
+
+  ;; For its "default" module, Lispworks seems to cache lookups from
+  ;; the newest module tried.  If a lookup happens to have failed
+  ;; subsequent lookups will fail even the symbol exists in other
+  ;; modules.  So this test fails.
+  #+lispworks
+  (pushnew 'foreign-globals.namespace.3 regression-test::*expected-failures*)
+
+  (deftest foreign-globals.namespace.3
+      (values
+       (foreign-symbol-pointer "var_char" :library 'libtest2)
+       (mem-ref (foreign-symbol-pointer "var_char") :char))
+    nil -127)
+
+  (defcvar ("ns_var" *ns-var1* :library libtest) :boolean)
+  (defcvar ("ns_var" *ns-var2* :library libtest2) :boolean)
+
+  (deftest foreign-globals.namespace.4
+      (values *ns-var1* *ns-var2*)
+    t nil))
+
+;;;# Read-only
+
+(defcvar ("var_char" *var-char-ro* :read-only t) :char
+  "Testing the docstring too.")
+
+(deftest foreign-globals.read-only.1
+    (values *var-char-ro*
+            (ignore-errors (setf *var-char-ro* 12)))
+  -127 nil)

@@ -52,7 +52,7 @@
    #:%mem-set
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:%defcallback
    #:%callback
    #:finalize
@@ -71,6 +71,8 @@
           #+x86     cffi-features:x86
           #+x86-64  cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
+          ;; Misfeatures
+          cffi-features:flat-namespace
           )))
 
 ;;; Symbol case.
@@ -284,14 +286,16 @@ WITH-POINTER-TO-VECTOR-DATA."
     (extern-alien ,name (function ,rettype ,@types))
     ,@fargs))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Perform a foreign function call, document it more later."
+  (declare (ignore library calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Funcall a pointer to a foreign function."
+  (declare (ignore calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (function)
@@ -306,14 +310,16 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; images, so it is safe to store the pointers directly.
 (defvar *callbacks* (make-hash-table))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
+  (declare (ignore calling-convention))
   `(setf (gethash ',name *callbacks*)
          (alien-sap
           (sb-alien::alien-lambda ,(convert-foreign-type rettype)
               ,(mapcar (lambda (sym type)
                          (list sym (convert-foreign-type type)))
                        arg-names arg-types)
-            ,@body))))
+            ,body))))
 
 (defun %callback (name)
   (or (gethash name *callbacks*)
@@ -322,14 +328,15 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;;# Loading and Closing Foreign Libraries
 
 (declaim (inline %load-foreign-library))
-(defun %load-foreign-library (name)
-  "Load the foreign library NAME."
-  (load-shared-object name))
+(defun %load-foreign-library (name path)
+  "Load a foreign library."
+  (declare (ignore name))
+  (load-shared-object path))
 
-(defun %close-foreign-library (name)
-  "Closes the foreign library NAME."
+(defun %close-foreign-library (handle)
+  "Closes a foreign library."
   (sb-alien::dlclose-or-lose
-   (find name sb-alien::*shared-objects*
+   (find (sb-ext:native-namestring handle) sb-alien::*shared-objects*
          :key #'sb-alien::shared-object-file
          :test #'string=)))
 
@@ -338,8 +345,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
+  (declare (ignore library))
   (let-when (address (sb-sys:find-foreign-symbol-address name))
     (sb-sys:int-sap address)))
 

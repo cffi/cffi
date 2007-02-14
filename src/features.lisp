@@ -2,7 +2,7 @@
 ;;;
 ;;; features.lisp --- CFFI-specific features.
 ;;;
-;;; Copyright (C) 2006, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2006-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -30,28 +30,57 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :cffi *features*))
 
+;;; CFFI-SYS backends take care of pushing the appropriate features to
+;;; *features*.  See each cffi-*.lisp file.
+
 (defpackage #:cffi-features
+  (:use #:cl)
   (:export
-   ;; Features related to the CFFI-SYS backend.
-   ;; Why no-*? This reflects the hope that these symbols will
-   ;; go away completely and all lisps support long-long's and
-   ;; the foreign-funcall primitive.
+   #:cffi-feature-p
+
+   ;; Features related to the CFFI-SYS backend.  Why no-*?  This
+   ;; reflects the hope that these symbols will go away completely
+   ;; meaning that at some point all lisps will support long-longs,
+   ;; the foreign-funcall primitive, etc...
    #:no-long-long
    #:no-foreign-funcall
    #:no-finalizers
+   #:no-stdcall
+   #:flat-namespace
 
-   ;; Only SCL support long-double...
+   ;; Only SCL supports long-double...
    ;;#:no-long-double
-   
+
    ;; Features related to the operating system.
-   ;; Currently only these are pushed to *features*, more should be added.
+   ;; More should be added.
    #:darwin
    #:unix
    #:windows
 
    ;; Features related to the processor.
-   ;; Currently only these are pushed to *features*, more should be added.
+   ;; More should be added.
    #:ppc32
    #:x86
    #:x86-64
    ))
+
+(in-package #:cffi-features)
+
+(defun cffi-feature-p (feature-expression)
+  "Matches a FEATURE-EXPRESSION against those symbols in *FEATURES*
+that belong to the CFFI-FEATURES package."
+  (when (eql feature-expression t)
+    (return-from cffi-feature-p t))
+  (let ((features-package (find-package '#:cffi-features)))
+    (flet ((cffi-feature-eq (name feature-symbol)
+             (and (eq (symbol-package feature-symbol) features-package)
+                  (string= name (symbol-name feature-symbol)))))
+      (etypecase feature-expression
+        (symbol
+         (not (null (member (symbol-name feature-expression) *features*
+                            :test #'cffi-feature-eq))))
+        (cons
+         (ecase (first feature-expression)
+           (:and (every #'cffi-feature-p (rest feature-expression)))
+           (:or  (some #'cffi-feature-p (rest feature-expression)))
+           (:not (not (cffi-feature-p (cadr feature-expression))))))))))

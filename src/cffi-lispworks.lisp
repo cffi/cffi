@@ -52,7 +52,7 @@
    #:%mem-set
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback
    #:%callback
@@ -193,7 +193,7 @@ be stack allocated if supported by the implementation."
             (let ((fli-type (convert-foreign-type type))
                   (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
               `(fli:dereference ,ptr-form :type ',fli-type))
-            (let ((lisp-type (convert-foreign-typed-aref-type type))) 
+            (let ((lisp-type (convert-foreign-typed-aref-type type)))
               `(locally
                    (declare (optimize (speed 3) (safety 0)))
                  (fli:foreign-typed-aref ',lisp-type ,ptr (the fixnum ,off))))))
@@ -275,7 +275,7 @@ signature.")
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defun create-foreign-funcallable (types rettype)
+(defun create-foreign-funcallable (types rettype cconv)
   "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
   (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
           types rettype)
@@ -290,36 +290,40 @@ signature.")
                    :result-type ,rettype
                    :language :ansi-c
                    ;; avoid warning about cdecl not being supported on mac
-                   #-mac ,@'(:calling-convention :cdecl)))))
+                   #-mac ,@(list :calling-convention cconv)))))
     internal-name))
 
-(defun get-foreign-funcallable (types rettype)
+(defun get-foreign-funcallable (types rettype cconv)
   "Returns a foreign funcallable for the signature TYPES -> RETTYPE -
 either from the cache or newly created."
   (let ((signature (cons rettype types)))
     (or (gethash signature *foreign-funcallable-cache*)
         ;; (SETF GETHASH) is supposed to be thread-safe
         (setf (gethash signature *foreign-funcallable-cache*)
-              (create-foreign-funcallable types rettype)))))
+              (create-foreign-funcallable types rettype cconv)))))
 
-(defmacro %%foreign-funcall (foreign-function &rest args)
+(defmacro %%foreign-funcall (foreign-function args cconv)
   "Does the actual work for %FOREIGN-FUNCALL-POINTER and %FOREIGN-FUNCALL.
 Checks if a foreign funcallable which fits ARGS already exists and creates
 and caches it if necessary.  Finally calls it."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(funcall (load-time-value (get-foreign-funcallable ',types ',rettype))
+    `(funcall (load-time-value
+               (get-foreign-funcallable ',types ',rettype ',cconv))
               ,foreign-function ,@fargs)))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Calls a foreign function named NAME passing arguments ARGS."
-  `(%%foreign-funcall (fli:make-pointer :symbol-name ,name) ,@args))
+  `(%%foreign-funcall
+    (fli:make-pointer :symbol-name ,name
+                      :module ',(if (eq library :default) nil library))
+    ,args ,calling-convention))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Calls a foreign function pointed at by PTR passing arguments ARGS."
-  `(%%foreign-funcall ,ptr ,@args))
+  `(%%foreign-funcall ,ptr ,args ,calling-convention))
 
-(defun defcfun-helper-forms (name lisp-name rettype args types)
+(defun defcfun-helper-forms (name lisp-name rettype args types options)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
   (let ((ff-name (intern (format nil "%cffi-foreign-function/~A"  lisp-name))))
     (values
@@ -328,8 +332,10 @@ and caches it if necessary.  Finally calls it."
                    types)
         :result-type ,(convert-foreign-type rettype)
         :language :ansi-c
+        :module ',(let ((lib (getf options :library)))
+                    (if (eq lib :default) nil lib))
         ;; avoid warning about cdecl not being supported on mac platforms
-        #-mac ,@'(:calling-convention :cdecl))
+        #-mac ,@(list :calling-convention (getf options :calling-convention)))
      `(,ff-name ,@args))))
 
 ;;;# Callbacks
@@ -350,19 +356,20 @@ and caches it if necessary.  Finally calls it."
                     (symbol-name name))
             '#:cffi-callbacks)))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
   (let ((cb-name (intern-callback name)))
     `(progn
        (fli:define-foreign-callable
            (,cb-name :encode :lisp
                      :result-type ,(convert-foreign-type rettype)
-                     :calling-convention :cdecl
+                     :calling-convention ,calling-convention
                      :language :ansi-c
                      :no-check nil)
            ,(mapcar (lambda (sym type)
                       (list sym (convert-foreign-type type)))
                     arg-names arg-types)
-         ,@body)
+         ,body)
        (setf (gethash ',name *callbacks*) ',cb-name))))
 
 (defun %callback (name)
@@ -374,9 +381,10 @@ and caches it if necessary.  Finally calls it."
 
 ;;;# Loading Foreign Libraries
 
-(defun %load-foreign-library (name)
+(defun %load-foreign-library (name path)
   "Load the foreign library NAME."
-  (fli:register-module name :connection-style :immediate))
+  (fli:register-module name :connection-style :immediate
+                       :real-name path))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
@@ -387,9 +395,12 @@ and caches it if necessary.  Finally calls it."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
-  (prog1 (ignore-errors (fli:make-pointer :symbol-name name :type :void))))
+  (values
+   (ignore-errors
+     (fli:make-pointer :symbol-name name :type :void
+                       :module (if (eq library :default) nil library)))))
 
 ;;;# Finalizers
 

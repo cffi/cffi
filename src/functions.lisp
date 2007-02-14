@@ -3,6 +3,7 @@
 ;;; functions.lisp --- High-level interface to foreign functions.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -59,18 +60,45 @@
           else do (setf return-type type)
           finally (return (values types ctypes fargs return-type)))))
 
-(defmacro foreign-funcall (name-or-pointer &rest args)
-  "Wrapper around %FOREIGN-FUNCALL(-POINTER) that translates its arguments."
+;;; While the options passed directly to DEFCFUN/FOREIGN-FUNCALL have
+;;; precedence, we also grab its library's options, if possible.
+(defun parse-function-options (options &key pointer)
+  (destructuring-bind (&key (library :default libraryp) calling-convention
+                            (cconv calling-convention))
+      options
+    (list* :calling-convention
+           (or cconv
+               (when libraryp
+                 (let ((lib-options (foreign-library-options
+                                     (get-foreign-library library))))
+                   (getf lib-options :cconv
+                         (getf lib-options :calling-convention))))
+               :cdecl)
+           ;; Don't pass the library option if we're dealing with
+           ;; FOREIGN-FUNCALL-POINTER.
+           (unless pointer
+             (list :library library)))))
+
+(defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs))))
       (translate-objects
        syms fargs types rettype
-       `(,(if (stringp name-or-pointer)
-              '%foreign-funcall
-              '%foreign-funcall-pointer)
-          ,name-or-pointer ,@(mapcan #'list ctypes syms)
-          ,(canonicalize-foreign-type rettype))))))
+       `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+         ,thing
+         (,@(mapcan #'list ctypes syms)
+            ,(canonicalize-foreign-type rettype))
+         ,@(parse-function-options options :pointer pointerp))))))
+
+(defmacro foreign-funcall (name-and-options &rest args)
+  "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
+  (let ((name (car (mklist name-and-options)))
+        (options (cdr (mklist name-and-options))))
+    (foreign-funcall-form name options args nil)))
+
+(defmacro foreign-funcall-pointer (pointer options &rest args)
+  (foreign-funcall-form pointer options args t))
 
 (defun promote-varargs-type (builtin-type)
   "Default argument promotions."
@@ -80,14 +108,7 @@
     ((:unsigned-char :unsigned-short) :unsigned-int)
     (t builtin-type)))
 
-;;; ATM, the only difference between this macro and FOREIGN-FUNCALL is that
-;;; it does argument promotion for that variadic argument. This could be useful
-;;; to call an hypothetical %foreign-funcall-varargs on some hypothetical lisp
-;;; on an hypothetical platform that has different calling conventions for
-;;; varargs functions. :-)
-(defmacro foreign-funcall-varargs (name-or-pointer fixed-args &rest varargs)
-  "Wrapper around %FOREIGN-FUNCALL(-POINTER) that translates its arguments
-and does type promotion for the variadic arguments."
+(defun foreign-funcall-varargs-form (thing options fixed-args varargs pointerp)
   (multiple-value-bind (fixed-types fixed-ctypes fixed-fargs)
       (parse-args-and-types fixed-args)
     (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
@@ -95,13 +116,14 @@ and does type promotion for the variadic arguments."
       (let ((fixed-syms (make-gensym-list (length fixed-fargs)))
             (varargs-syms (make-gensym-list (length varargs-fargs))))
         (translate-objects
-         (append fixed-syms varargs-syms) (append fixed-fargs varargs-fargs)
-         (append fixed-types varargs-types) rettype
-         `(,(if (stringp name-or-pointer)
-                '%foreign-funcall
-                '%foreign-funcall-pointer)
-            ,name-or-pointer
-            ,@(mapcan #'list
+         (append fixed-syms varargs-syms)
+         (append fixed-fargs varargs-fargs)
+         (append fixed-types varargs-types)
+         rettype
+         `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+            ,thing
+            ,(append
+              (mapcan #'list
                       (nconc fixed-ctypes
                              (mapcar #'promote-varargs-type varargs-ctypes))
                       (append fixed-syms
@@ -110,73 +132,137 @@ and does type promotion for the variadic arguments."
                                     if (eq type :float)
                                     collect `(float ,sym 1.0d0)
                                     else collect sym)))
-            ,(canonicalize-foreign-type rettype)))))))
+              (list (canonicalize-foreign-type rettype)))
+            ,@options))))))
+
+;;; For now, the only difference between this macro and
+;;; FOREIGN-FUNCALL is that it does argument promotion for that
+;;; variadic argument. This could be useful to call an hypothetical
+;;; %foreign-funcall-varargs on some hypothetical lisp on an
+;;; hypothetical platform that has different calling conventions for
+;;; varargs functions. :-)
+(defmacro foreign-funcall-varargs (name-and-options fixed-args
+                                   &rest varargs)
+  "Wrapper around %FOREIGN-FUNCALL that translates its arguments
+and does type promotion for the variadic arguments."
+  (let ((name (car (mklist name-and-options)))
+        (options (cdr (mklist name-and-options))))
+    (foreign-funcall-varargs-form name options fixed-args varargs nil)))
+
+(defmacro foreign-funcall-pointer-varargs (pointer options fixed-args
+                                           &rest varargs)
+  "Wrapper around %FOREIGN-FUNCALL-POINTER that translates its
+arguments and does type promotion for the variadic arguments."
+  (foreign-funcall-varargs-form pointer options fixed-args varargs t))
 
 ;;;# Defining Foreign Functions
 ;;;
 ;;; The DEFCFUN macro provides a declarative interface for defining
 ;;; Lisp functions that call foreign functions.
 
-(defun lisp-function-name (name)
-  "Return the Lisp function name for foreign function NAME."
-  (etypecase name
-    (list (second name))
-    (string (intern (canonicalize-symbol-name-case (substitute #\- #\_ name))))
-    (symbol name)))
-
-(defun foreign-function-name (name)
-  "Return the foreign function name of NAME."
-  (etypecase name
-    (list (first name))
-    (string name)
-    (symbol (substitute #\_ #\- (string-downcase (symbol-name name))))))
-
 ;; If cffi-sys doesn't provide a defcfun-helper-forms,
 ;; we define one that uses %foreign-funcall.
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (fboundp 'defcfun-helper-forms)
-    (defun defcfun-helper-forms (name lisp-name rettype args types)
+    (defun defcfun-helper-forms (name lisp-name rettype args types options)
       (declare (ignore lisp-name))
       (values
        '()
-       `(%foreign-funcall ,name ,@(mapcan #'list types args) ,rettype)))))
+       `(%foreign-funcall ,name ,(append (mapcan #'list types args)
+                                         (list rettype))
+                          ,@options)))))
 
-(defun %defcfun (lisp-name foreign-name return-type args)
+(defun %defcfun (lisp-name foreign-name return-type args options)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args))
         (syms (make-gensym-list (length args))))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
           foreign-name lisp-name (canonicalize-foreign-type return-type)
-          syms (mapcar #'canonicalize-foreign-type arg-types))
+          syms (mapcar #'canonicalize-foreign-type arg-types) options)
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
            ,(translate-objects
              syms arg-names arg-types return-type caller))))))
 
-(defun %defcfun-varargs (lisp-name foreign-name return-type args)
+(defun %defcfun-varargs (lisp-name foreign-name return-type args options)
   (with-unique-names (varargs)
     (let ((arg-names (mapcar #'car args)))
       `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
          `(foreign-funcall-varargs
-           ,',foreign-name
+           ,'(,foreign-name ,@options)
            ,,`(list ,@(loop for (name type) in args
                             collect `',type collect name))
            ,@,varargs
            ,',return-type)))))
 
-;;; If we find a &REST token at the end of ARGS, it's a varargs function
-;;; therefore we define a lisp macro using %DEFCFUN-VARARGS instead of a
-;;; lisp macro with %DEFCFUN as we would otherwise do.
-(defmacro defcfun (name return-type &body args)
+;;; The following four functions take care of parsing DEFCFUN's first
+;;; argument whose syntax can be one of:
+;;;
+;;;     1.  string
+;;;     2.  symbol
+;;;     3.  \( string [symbol] options* )
+;;;     4.  \( symbol [string] options* )
+;;;
+;;; The string argument denotes the foreign function's name. The
+;;; symbol argument is used to name the Lisp function. If one isn't
+;;; present, its name is derived from the other. See the user
+;;; documentation for an explanation of the derivation rules.
+
+(defun lisp-name (spec &optional varp)
+  (etypecase spec
+    (list (if (keywordp (second spec))
+              (lisp-name (first spec) varp)
+              (if (symbolp (first spec))
+                  (first spec)
+                  (lisp-name (second spec) varp))))
+    (string (intern
+             (format nil (if varp "*~A*" "~A")
+                     (canonicalize-symbol-name-case
+                      (substitute #\- #\_ spec)))))
+    (symbol spec)))
+
+(defun foreign-name (spec &optional varp)
+  (etypecase spec
+    (list (if (stringp (second spec))
+              (second spec)
+              (foreign-name (first spec) varp)))
+    (string spec)
+    (symbol (let ((name (substitute #\_ #\-
+                                    (string-downcase (symbol-name spec)))))
+              (if varp
+                  (string-trim '(#\*) name)
+                  name)))))
+
+(defun foreign-options (spec varp)
+  (let ((opts (if (listp spec)
+                  (if (keywordp (second spec))
+                      (cdr spec)
+                      (cddr spec))
+                  nil)))
+    (if varp
+        (funcall 'parse-defcvar-options opts)
+        (parse-function-options opts))))
+
+(defun parse-name-and-options (spec &optional varp)
+  (values (lisp-name spec varp)
+          (foreign-name spec varp)
+          (foreign-options spec varp)))
+
+;;; If we find a &REST token at the end of ARGS, it means this is a
+;;; varargs foreign function therefore we define a lisp macro using
+;;; %DEFCFUN-VARARGS. Otherwise, a lisp function is defined with
+;;; %DEFCFUN.
+(defmacro defcfun (name-and-options return-type &body args)
   "Defines a Lisp function that calls a foreign function."
   (discard-docstring args)
-  (let ((lisp-name (lisp-function-name name))
-        (foreign-name (foreign-function-name name)))
-    (if (eq (car (last args)) '&rest)   ; probably should use STRING=
-        (%defcfun-varargs lisp-name foreign-name return-type (butlast args))
-        (%defcfun lisp-name foreign-name return-type args))))
+  (multiple-value-bind (lisp-name foreign-name options)
+      (parse-name-and-options name-and-options)
+    (if (eq (car (last args)) '&rest)
+        (%defcfun-varargs lisp-name foreign-name return-type
+                          (butlast args) options)
+        (%defcfun lisp-name foreign-name return-type args options))))
 
 ;;;# Defining Callbacks
 
@@ -187,18 +273,27 @@ and does type promotion for the variadic arguments."
      ,@declarations
      ,(expand-type-to-foreign call (parse-type rettype))))
 
-(defmacro defcallback (name return-type args &body body)
+(defun parse-defcallback-options (options)
+  (destructuring-bind (&key (calling-convention :cdecl)
+                            (cconv calling-convention))
+      options
+    (list :calling-convention cconv)))
+
+(defmacro defcallback (name-and-options return-type args &body body)
   (multiple-value-bind (body docstring declarations)
       (parse-body body)
     (declare (ignore docstring))
     (let ((arg-names (mapcar #'car args))
-          (arg-types (mapcar #'cadr args)))
+          (arg-types (mapcar #'cadr args))
+          (name (car (mklist name-and-options)))
+          (options (cdr (mklist name-and-options))))
       `(progn
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
            ,(inverse-translate-objects
              arg-names arg-types declarations return-type
-             `(block ,name ,@body)))
+             `(block ,name ,@body))
+           ,@(parse-defcallback-options options))
          ',name))))
 
 (declaim (inline get-callback))

@@ -65,7 +65,7 @@
   "Searches for PATH in a list of DIRECTORIES and returns the first it finds."
   (some (lambda (directory) (probe-file (merge-pathnames path directory)))
         directories))
-  
+
 (defun find-darwin-framework (framework-name)
   "Searches for FRAMEWORK-NAME in *DARWIN-FRAMEWORK-DIRECTORIES*."
   (dolist (framework-directory *darwin-framework-directories*)
@@ -84,63 +84,74 @@
 ;;;
 ;;; (define-foreign-library opengl
 ;;;   (:darwin  (:framework "OpenGL"))
-;;;   (:unix    (:alternatives "libGL.so" "libGL.so.1"
-;;;                            #p"/myhome/mylibGL.so"))
+;;;   (:unix    (:or "libGL.so" "libGL.so.1"
+;;;                  #p"/myhome/mylibGL.so"))
 ;;;   (:windows "opengl32.dll")
-;;;   ;; a hypothetical example of a particular platform
-;;;   ;; where the OpenGL library is split in two.
-;;;   ((:and :some-system :some-cpu) "libGL-support.lib" "libGL-main.lib")
+;;;   ;; an hypothetical example of a particular platform
+;;;   ((:and :some-system :some-cpu) "libGL-support.lib")
 ;;;   ;; if no other clauses apply, this one will and a type will be
 ;;;   ;; automagically appended to the name passed to :default
 ;;;   (t (:default "libGL")))
 ;;;
 ;;; This information is stored in the *FOREIGN-LIBRARIES* hashtable
-;;; and when the library is loaded through LOAD-FOREIGN-LIBRARY (usually
-;;; indirectly through the USE-FOREIGN-LIBRARY macro) the first clause
-;;; that returns true when passed to CFFI-FEATURE-P is processed.
+;;; and when the library is loaded through LOAD-FOREIGN-LIBRARY (or
+;;; USE-FOREIGN-LIBRARY) the first clause matched by CFFI-FEATURE-P is
+;;; processed.
 
 (defvar *foreign-libraries* (make-hash-table :test 'eq)
   "Hashtable of defined libraries.")
 
-(defun get-foreign-library (name)
+(defun get-foreign-library (lib)
   "Look up a library by NAME, signalling an error if not found."
-  (or (gethash name *foreign-libraries*)
-      (error "Undefined foreign library: ~S" name)))
+  (if (typep lib 'foreign-library)
+      lib
+      (or (gethash lib *foreign-libraries*)
+          (error "Undefined foreign library: ~S" lib))))
 
 (defun (setf get-foreign-library) (value name)
   (setf (gethash name *foreign-libraries*) value))
 
-(defmacro define-foreign-library (name &body pairs)
+(defclass foreign-library ()
+  ((spec :initarg :spec)
+   (options :initform nil :initarg :options)
+   (handle :initarg :handle :accessor foreign-library-handle)))
+
+(defun %foreign-library-spec (lib)
+  (assoc-if #'cffi-feature-p (slot-value lib 'spec)))
+
+(defun foreign-library-spec (lib)
+  (second (%foreign-library-spec lib)))
+
+(defun foreign-library-options (lib)
+  (append (cddr (%foreign-library-spec lib))
+          (slot-value lib 'options)))
+
+;;; Warn about unkown options.
+(defmethod initialize-instance :after ((lib foreign-library) &key)
+  (loop for (opt nil)
+        on (append (slot-value lib 'options)
+                   (mapcan (lambda (x) (copy-list (cddr x)))
+                           (slot-value lib 'spec)))
+        by #'cddr
+        when (not (member opt '(:cconv :calling-convention)))
+        do (warn "Unkown option: ~A" opt)))
+
+(defmacro define-foreign-library (name-and-options &body pairs)
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
-  `(progn (setf (get-foreign-library ',name) ',pairs)
-          ',name))
-
-(defun cffi-feature-p (feature-expression)
-  "Matches a FEATURE-EXPRESSION against the symbols in *FEATURES*
-that belong to the CFFI-FEATURES package only."
-  (when (eql feature-expression t)
-    (return-from cffi-feature-p t))
-  (let ((features-package (find-package '#:cffi-features)))
-    (flet ((cffi-feature-eq (name feature-symbol)
-             (and (eq (symbol-package feature-symbol) features-package)
-                  (string= name (symbol-name feature-symbol)))))
-      (etypecase feature-expression
-        (symbol
-         (not (null (member (symbol-name feature-expression) *features*
-                            :test #'cffi-feature-eq))))
-        (cons
-         (ecase (first feature-expression)
-           (:and (every #'cffi-feature-p (rest feature-expression)))
-           (:or  (some #'cffi-feature-p (rest feature-expression)))
-           (:not (not (cffi-feature-p (cadr feature-expression))))))))))
+  (destructuring-bind (name . options)
+      (mklist name-and-options)
+    `(progn
+       (setf (get-foreign-library ',name)
+             (make-instance 'foreign-library
+                            :spec ',pairs :options ',options))
+       ',name)))
 
 ;;;# LOAD-FOREIGN-LIBRARY-ERROR condition
 ;;;
-;;; The various helper functions that load foreign libraries
-;;; can signal this error when something goes wrong. We ignore
-;;; the host's error. We should probably reuse its error message
-;;; but they're usually meaningless.
+;;; The various helper functions that load foreign libraries can
+;;; signal this error when something goes wrong. We ignore the host's
+;;; error. We should probably reuse its error message.
 
 (define-condition load-foreign-library-error (error)
   ((text :initarg :text :reader text))
@@ -152,53 +163,39 @@ that belong to the CFFI-FEATURES package only."
   (force-output)
   (read))
 
-;;; The helper library loading functions will use this function
-;;; to signal a LOAD-FOREIGN-LIBRARY-ERROR and offer the user a
-;;; couple of restarts.
-(defun handle-load-foreign-library-error (argument control &rest arguments)
-  (restart-case (error 'load-foreign-library-error
-                       :text (format nil "~?" control arguments))
-    (retry ()
-      :report "Try loading the foreign library again."
-      (load-foreign-library argument))
-    (use-value (new-library)
-      :report "Use another library instead."
-      :interactive read-new-value
-      (load-foreign-library new-library))))
+(defun fl-error (control &rest arguments)
+  (error 'load-foreign-library-error
+         :text (format nil "~?" control arguments)))
 
 ;;;# Loading Foreign Libraries
 
-(defun load-darwin-framework (framework-name)
+(defun load-darwin-framework (name framework-name)
   "Tries to find and load a darwin framework in one of the directories
 in *DARWIN-FRAMEWORK-DIRECTORIES*. If unable to find FRAMEWORK-NAME,
 it signals a LOAD-FOREIGN-LIBRARY-ERROR."
   (let ((framework (find-darwin-framework framework-name)))
     (if framework
-        (load-foreign-library framework)
-        (handle-load-foreign-library-error
-         (cons :framework framework-name)
-         "Unable to find framework: ~A" framework-name))))
+        (load-foreign-library-path name (native-namestring framework))
+        (fl-error "Unable to find framework ~A" framework-name))))
 
-(defun load-foreign-library-name (name)
+(defun load-foreign-library-path (name path)
   "Tries to load NAME using %LOAD-FOREIGN-LIBRARY which should try and
 find it using the OS's usual methods. If that fails we try to find it
 ourselves."
-  (or (ignore-errors (%load-foreign-library name))
-      (let ((file (find-file name *foreign-library-directories*)))
+  (or (ignore-errors (%load-foreign-library name path))
+      (let ((file (find-file path *foreign-library-directories*)))
         (when file
-          (%load-foreign-library (native-namestring file))))
+          (%load-foreign-library name (native-namestring file))))
       ;; couldn't load it directly or find it...
-      (handle-load-foreign-library-error
-       name "Unable to load foreign library: ~A" name)))
+      (fl-error "Unable to load foreign library: ~A" path)))
 
-(defun try-foreign-library-alternatives (library-list)
+(defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
-  (or (some (lambda (lib) (ignore-errors (load-foreign-library lib)))
-            library-list)
-      (handle-load-foreign-library-error
-       (cons :or library-list)
-       "Unable to load any of the alternatives:~%   ~S" library-list)))
+  (dolist (lib library-list)
+    (let-when (handle (ignore-errors (load-foreign-library-helper name lib)))
+      (return-from try-foreign-library-alternatives handle)))
+  (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
 
 (defparameter *cffi-feature-suffix-map*
   '((cffi-features:windows . ".dll")
@@ -211,45 +208,60 @@ none of alternatives were successfully loaded."
 operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
   (or (cdr (assoc-if #'cffi-feature-p *cffi-feature-suffix-map*))
-      (error "Unable to determine the default library suffix on this OS.")))
+      (fl-error "Unable to determine the default library suffix on this OS.")))
+
+(defun load-foreign-library-helper (name thing)
+  (etypecase thing
+    (string
+     (load-foreign-library-path name thing))
+    (pathname
+     (load-foreign-library-path name (namestring thing)))
+    (cons
+     (ecase (first thing)
+       (:framework (load-darwin-framework name (second thing)))
+       (:default
+        (unless (stringp (second thing))
+          (fl-error "Argument to :DEFAULT must be a string."))
+        (load-foreign-library-path
+         name (concatenate 'string (second thing) (default-library-suffix))))
+       (:or (try-foreign-library-alternatives name (rest thing)))))))
 
 (defun load-foreign-library (library)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
 load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
-  (etypecase library
-    (symbol
-     (dolist (library-description (get-foreign-library library))
-       (when (cffi-feature-p (first library-description))
-         (dolist (lib (rest library-description))
-           (load-foreign-library lib))
-         (return-from load-foreign-library t))))
-    (string
-     (load-foreign-library-name library))
-    (pathname
-     (load-foreign-library-name (namestring library)))
-    (cons
-     (ecase (first library)
-       (:framework (load-darwin-framework (second library)))
-       (:default
-        (unless (stringp (second library))
-          (error "Argument to :DEFAULT must be a string."))
-        (load-foreign-library
-         (concatenate 'string (second library) (default-library-suffix))))
-       (:or (try-foreign-library-alternatives (rest library)))))))
+  (restart-case
+      (typecase library
+        (symbol
+         (let* ((lib (get-foreign-library library))
+                (spec (foreign-library-spec lib)))
+           (when spec
+             (setf (foreign-library-handle lib)
+                   (load-foreign-library-helper library spec))
+             lib)))
+        (t
+         (make-instance 'foreign-library :spec (list library)
+                        :handle (load-foreign-library-helper nil library))))
+    ;; Offer these restarts that will retry the call to
+    ;; LOAD-FOREIGN-LIBRARY.
+    (retry ()
+      :report "Try loading the foreign library again."
+      (load-foreign-library library))
+    (use-value (new-library)
+      :report "Use another library instead."
+      :interactive read-new-value
+      (load-foreign-library new-library))))
 
 (defmacro use-foreign-library (name)
   `(load-foreign-library ',name))
 
 ;;;# Closing Foreign Libraries
-;;;
-;;; FIXME: LOAD-FOREIGN-LIBRARY should probably keep track of what
-;;; libraries it managed to open and CLOSE-FOREIGN-LIBRARY would then
-;;; take a look at that. So, for now, this function is unexported.
 
-(defun close-foreign-library (name)
-  "Closes a foreign library NAME."
-  (%close-foreign-library (etypecase name
-                            (pathname (namestring name))
-                            (string name))))
+(defun close-foreign-library (library)
+  "Closes a foreign library."
+  (let ((lib (get-foreign-library library)))
+    (when (foreign-library-handle lib)
+      (%close-foreign-library (foreign-library-handle lib))
+      (setf (foreign-library-handle lib) nil)
+      t)))

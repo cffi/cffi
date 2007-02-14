@@ -2,7 +2,7 @@
 ;;;
 ;;; foreign-vars.lisp --- High-level interface to foreign globals.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -29,56 +29,60 @@
 
 ;;;# Accessing Foreign Globals
 
-(defun lisp-var-name (name)
-  "Return the Lisp symbol for foreign var NAME."
-  (etypecase name
-    (list (second name))
-    (string (intern (format nil "*~A*" (canonicalize-symbol-name-case
-                                        (substitute #\- #\_ name)))))
-    (symbol name)))
-
-(defun foreign-var-name (name)
-  "Return the foreign var name of NAME."
-  (etypecase name
-    (list (first name))
-    (string name)
-    (symbol (let ((dname (string-downcase (symbol-name name))))
-              (string-trim '(#\*) (substitute #\_ #\- dname))))))
+;;; Called by FOREIGN-OPTIONS in functions.lisp.
+(defun parse-defcvar-options (options)
+  (destructuring-bind (&key (library :default) read-only) options
+    (list :library library :read-only read-only)))
 
 (defun get-var-pointer (symbol)
   "Return a pointer to the foreign global variable relative to SYMBOL."
-  (foreign-symbol-pointer (get symbol 'foreign-var-name)))
+  (foreign-symbol-pointer (get symbol 'foreign-var-name)
+                          :library (get symbol 'foreign-var-library)))
 
-(defun foreign-symbol-pointer-or-lose (foreign-name)
+;;; Note: this will lookup not only variables but also functions.
+(defun foreign-symbol-pointer (name &key (library :default))
+  (%foreign-symbol-pointer
+   name (if (eq library :default)
+            :default
+            (foreign-library-handle
+             (get-foreign-library library)))))
+
+(defun fs-pointer-or-lose (foreign-name library)
   "Like foreign-symbol-ptr but throws an error instead of
 returning nil when foreign-name is not found."
-  (or (foreign-symbol-pointer foreign-name)
+  (or (foreign-symbol-pointer foreign-name :library library)
       (error "Trying to access undefined foreign variable ~S." foreign-name)))
 
-(defmacro defcvar (name type &key read-only)
+(defmacro defcvar (name-and-options type &optional documentation)
   "Define a foreign global variable."
-  (let* ((lisp-name (lisp-var-name name))
-         (foreign-name (foreign-var-name name))
-         (fn (symbolicate '#:%var-accessor- lisp-name)))
-    (when (aggregatep (parse-type type)) ; we can't really setf an aggregate
-      (setq read-only t))                ; type, at least not yet...
-    `(progn
-       ;; Save foreign-name for posterior access by get-var-pointer
-       (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)
-       ;; Getter
-       (defun ,fn ()
-         (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name) ',type)) 
-       ;; Setter
-       (defun (setf ,fn) (value)
-         ,(if read-only '(declare (ignore value)) (values))
-         ,(if read-only
-              `(error ,(format nil "Trying to modify read-only foreign var: ~A."
-                               lisp-name))
-              `(setf (mem-ref (foreign-symbol-pointer-or-lose ,foreign-name)
-                              ',type)
-                     value)))
-       ;; While most Lisps already expand DEFINE-SYMBOL-MACRO to an
-       ;; EVAL-WHEN form like this, that is not required by the
-       ;; standard so we do it ourselves.
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (define-symbol-macro ,lisp-name (,fn))))))
+  (declare (ignore documentation))
+  (multiple-value-bind (lisp-name foreign-name options)
+      (parse-name-and-options name-and-options t)
+    (let ((fn (symbolicate '#:%var-accessor- lisp-name))
+          (read-only (getf options :read-only))
+          (library (getf options :library)))
+      ;; We can't really setf an aggregate type.
+      (when (aggregatep (parse-type type))
+        (setq read-only t))
+      `(progn
+         ;; Save foreign-name and library for posterior access by
+         ;; GET-VAR-POINTER.
+         (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)
+         (setf (get ',lisp-name 'foreign-var-library) ',library)
+         ;; Getter
+         (defun ,fn ()
+           (mem-ref (fs-pointer-or-lose ,foreign-name ',library) ',type))
+         ;; Setter
+         (defun (setf ,fn) (value)
+           ,(if read-only '(declare (ignore value)) (values))
+           ,(if read-only
+                `(error ,(format nil "Trying to modify read-only foreign var: ~A."
+                                 lisp-name))
+                `(setf (mem-ref (fs-pointer-or-lose ,foreign-name ',library)
+                                ',type)
+                       value)))
+         ;; While most Lisps already expand DEFINE-SYMBOL-MACRO to an
+         ;; EVAL-WHEN form like this, that is not required by the
+         ;; standard so we do it ourselves.
+         (eval-when (:compile-toplevel :load-toplevel :execute)
+           (define-symbol-macro ,lisp-name (,fn)))))))

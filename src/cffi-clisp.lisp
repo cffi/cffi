@@ -51,8 +51,6 @@
    #:native-namestring
    #:%mem-ref
    #:%mem-set
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
    #:foreign-symbol-pointer
    #:%defcallback
    #:%callback
@@ -207,7 +205,8 @@ foreign TYPE to VALUE."
   (if (constantp type)
       ;; (setf (ffi:memory-as) value) is exported, but not so nice
       ;; w.r.t. the left to right evaluation rule
-      `(ffi::write-memory-as ,value ,ptr ',(convert-foreign-type (eval type)) ,offset)
+      `(ffi::write-memory-as
+        ,value ,ptr ',(convert-foreign-type (eval type)) ,offset)
       form))
 
 ;;;# Shareable Vectors
@@ -243,8 +242,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;;# Foreign Function Calling
 
 (defun parse-foreign-funcall-args (args)
-  "Return three values, a list of CLisp FFI types, a list of
-values to pass to the function, and the CLisp FFI return type."
+  "Return three values, a list of CLISP FFI types, a list of
+values to pass to the function, and the CLISP FFI return type."
   (let ((return-type nil))
     (loop for (type arg) on args by #'cddr
           if arg collect (list (gensym) (convert-foreign-type type)) into types
@@ -252,48 +251,64 @@ values to pass to the function, and the CLisp FFI return type."
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (name &rest args)
+(defun convert-cconv (calling-convention)
+  (ecase calling-convention
+    (:stdcall :stdc-stdcall)
+    (:cdecl :stdc)))
+
+(defun c-function-type (arg-types rettype calling-convention)
+  "Generate the apropriate CLISP foreign type specification. Also
+takes care of converting the calling convention names."
+  `(ffi:c-function (:arguments ,@arg-types)
+                   (:return-type ,rettype)
+                   (:language ,(convert-cconv calling-convention))))
+
+;;; Quick hack around the fact that the CFFI package is not yet
+;;; defined when this file is loaded.  I suppose we could arrange for
+;;; the CFFI package to be defined a bit earlier, though.
+(defun library-handle-form (name)
+  (flet ((find-cffi-symbol (symbol)
+           (find-symbol (symbol-name symbol) '#:cffi)))
+    `(,(find-cffi-symbol '#:foreign-library-handle)
+       (,(find-cffi-symbol '#:get-foreign-library) ',name))))
+
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Invoke a foreign function called NAME, taking pairs of
 foreign-type/value pairs from ARGS.  If a single element is left
 over at the end of ARGS, it specifies the foreign return type of
 the function call."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
-    (let ((ctype `(ffi:c-function (:arguments ,@types)
-                                  (:return-type ,rettype)
-                                  (:language :stdc))))
-      `(funcall
-        (load-time-value
-         (multiple-value-bind (ff error)
-             (ignore-errors
-               (ffi::foreign-library-function
-                ,name (ffi::foreign-library :default)
-                nil
-                ;; As of version 2.40 (CVS 2006-09-03, to be more precise),
-                ;; FFI::FOREIGN-LIBRARY-FUNCTION takes an additional
-                ;; 'PROPERTIES' argument.
-                #+#.(cl:if (cl:= (cl:length (ext:arglist
-                                             'ffi::foreign-library-function)) 5)
-                           '(and) '(or))
-                nil
-                (ffi:parse-c-type ',ctype)))
-           (or ff
-               (warn (format nil "~?"
-                             (simple-condition-format-control error)
-                             (simple-condition-format-arguments error)))))) 
-        ,@fargs))))
+    `(funcall
+      (load-time-value
+       (handler-case
+           (ffi::foreign-library-function
+            ,name
+            ,(if (eq library :default)
+                 :default
+                 (library-handle-form library))
+            nil
+            ;; As of version 2.40 (CVS 2006-09-03, to be more precise),
+            ;; FFI::FOREIGN-LIBRARY-FUNCTION takes an additional
+            ;; 'PROPERTIES' argument.
+            #+#.(cl:if (cl:= (cl:length (ext:arglist
+                                         'ffi::foreign-library-function)) 5)
+                       '(and) '(or))
+            nil
+            (ffi:parse-c-type ',(c-function-type
+                                 types rettype calling-convention)))
+         (error (err)
+           (warn "~A" err))))
+      ,@fargs)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Similar to %foreign-funcall but takes a pointer instead of a string."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
-    `(funcall (ffi:foreign-function ,ptr
-                                    (load-time-value
-                                     (ffi:parse-c-type
-                                      '(ffi:c-function
-                                        (:arguments ,@types)
-                                        (:return-type ,rettype)
-                                        (:language :stdc)))))
+    `(funcall (ffi:foreign-function
+               ,ptr (load-time-value
+                     (ffi:parse-c-type ',(c-function-type
+                                          types rettype calling-convention))))
               ,@fargs)))
 
 ;;;# Callbacks
@@ -308,14 +323,14 @@ the function call."
 ;;; Return a CLISP FFI function type for a CFFI callback function
 ;;; given a return type and list of argument names and types.
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun callback-type (rettype arg-names arg-types)
+  (defun callback-type (rettype arg-names arg-types calling-convention)
     (ffi:parse-c-type
      `(ffi:c-function
        (:arguments ,@(mapcar (lambda (sym type)
                                (list sym (convert-foreign-type type)))
                              arg-names arg-types))
        (:return-type ,(convert-foreign-type rettype))
-       (:language :stdc)))))
+       (:language ,(convert-cconv calling-convention))))))
 
 ;;; Register and create a callback function.
 (defun register-callback (name function parsed-type)
@@ -344,9 +359,11 @@ the function call."
 ;;; ARG-NAMES translated according to ARG-TYPES and the return type
 ;;; translated according to RETTYPE.  Obtain a pointer that can be
 ;;; passed to C code for this callback by calling %CALLBACK.
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
-  `(register-callback ',name (lambda ,arg-names ,@body)
-                      ,(callback-type rettype arg-names arg-types)))
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
+  `(register-callback ',name (lambda ,arg-names ,body)
+                      ,(callback-type rettype arg-names arg-types
+                                      calling-convention)))
 
 ;;; Look up the name of a callback and return a pointer that can be
 ;;; passed to a C function.  Signals an error if no callback is
@@ -359,25 +376,26 @@ the function call."
 
 ;;;# Loading and Closing Foreign Libraries
 
-(defun %load-foreign-library (name)
-  "Load a foreign library from NAME."
-  (ffi::foreign-library name))
+(defun %load-foreign-library (name path)
+  "Load a foreign library from PATH."
+  (declare (ignore name))
+  (ffi::foreign-library path))
 
-(defun %close-foreign-library (name)
-  "Close a foreign library NAME."
-  (ffi:close-foreign-library name))
+(defun %close-foreign-library (handle)
+  "Close a foreign library."
+  (ffi:close-foreign-library handle))
 
 (defun native-namestring (pathname)
   (namestring pathname))
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
   (prog1 (ignore-errors
            (ffi:foreign-address
             (ffi::foreign-library-variable
-             name (ffi::foreign-library :default) nil nil)))))
+             name library nil nil)))))
 
 ;;;# Finalizers
 

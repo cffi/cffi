@@ -99,7 +99,7 @@ to open-code (SETF MEM-REF) forms."
       (get-setf-expansion ptr env)
     (declare (ignore setter newval))
     ;; if either TYPE or OFFSET are constant, we avoid rebinding them
-    ;; so that the compiler macros on MEM-SET and %MEM-SET work. 
+    ;; so that the compiler macros on MEM-SET and %MEM-SET work.
     (with-unique-names (store type-tmp offset-tmp)
       (values
        (append (unless (constantp type)   (list type-tmp))
@@ -596,7 +596,7 @@ obtained using define-foreign-type."
   (:documentation "Class for the wrapper type."))
 
 (define-type-spec-parser :wrapper (base-type &key to-c from-c)
-  (make-instance 'foreign-type-wrapper 
+  (make-instance 'foreign-type-wrapper
                  :actual-type (parse-type base-type)
                  :to-c (or to-c 'identity)
                  :from-c (or from-c 'identity)))

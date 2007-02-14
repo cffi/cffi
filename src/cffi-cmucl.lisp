@@ -52,7 +52,7 @@
    #:%mem-set
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:%defcallback
    #:%callback
    #:finalize
@@ -69,6 +69,8 @@
           #+unix    cffi-features:unix
           #+x86     cffi-features:x86
           #+(and ppc (not ppc64)) cffi-features:ppc32
+          ;; Misfeatures
+          cffi-features:flat-namespace
           )))
 
 ;;; Symbol case.
@@ -104,7 +106,7 @@
   "Return a pointer pointing OFFSET bytes past PTR."
   (sys:sap+ ptr offset))
 
-(declaim (inline make-pointer)) 
+(declaim (inline make-pointer))
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
   (sys:int-sap address))
@@ -271,14 +273,16 @@ WITH-POINTER-TO-VECTOR-DATA."
     (extern-alien ,name (function ,rettype ,@types))
     ,@fargs))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Perform a foreign function call, document it more later."
+  (declare (ignore library calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Funcall a pointer to a foreign function."
+  (declare (ignore calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (function)
@@ -303,7 +307,9 @@ WITH-POINTER-TO-VECTOR-DATA."
                     (symbol-name name))
             '#:cffi-callbacks)))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
+  (declare (ignore calling-convention))
   (let ((cb-name (intern-callback name)))
     `(progn
        (def-callback ,cb-name
@@ -311,7 +317,7 @@ WITH-POINTER-TO-VECTOR-DATA."
              ,@(mapcar (lambda (sym type)
                          (list sym (convert-foreign-type type)))
                        arg-names arg-types))
-         ,@body)
+         ,body)
        (setf (gethash ',name *callbacks*) (callback ,cb-name)))))
 
 (defun %callback (name)
@@ -339,32 +345,30 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; respective library at compile-time.
 (setf c::top-level-lambda-max 0)
 
-(defun %load-foreign-library (name)
+(defun %load-foreign-library (name path)
   "Load the foreign library NAME."
   ;; On some platforms SYS::LOAD-OBJECT-FILE signals an error when
   ;; loading fails, but on others(Linux for instance) it returns
   ;; two values: NIL and an error string.
-  (handler-case
-      (multiple-value-bind (ret message)
-          (sys::load-object-file name)
-        (cond
-          ;; Loading failed.
-          ((stringp message) nil)
-          ;; The library was already loaded.
-          ((null ret) (rassoc name sys::*global-table* :test #'string=))
-          ;; The library has been loaded, but since SYS::LOAD-OBJECT-FILE
-          ;; returns an alist of *all* loaded libraries along with their addresses
-          ;; we return only the handler associated with the library just loaded.
-          (t (rassoc name ret :test #'string=))))
-    (error (err)
-      (declare (ignore err))
-      nil)))
+  (declare (ignore name))
+  (multiple-value-bind (ret message)
+      (sys::load-object-file path)
+    (cond
+      ;; Loading failed.
+      ((stringp message) nil)
+      ;; The library was already loaded.
+      ((null ret) (cdr (rassoc path sys::*global-table* :test #'string=)))
+      ;; The library has been loaded, but since SYS::LOAD-OBJECT-FILE
+      ;; returns an alist of *all* loaded libraries along with their addresses
+      ;; we return only the handler associated with the library just loaded.
+      (t (cdr (rassoc path ret :test #'string=))))))
 
 ;;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
 ;;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
-(defun %close-foreign-library (name)
-  "Closes the foreign library NAME."
-  (let ((lib (rassoc name sys::*global-table* :test #'string=)))
+(defun %close-foreign-library (handler)
+  "Closes a foreign library."
+  (let ((lib (rassoc (ext:unix-namestring handler) sys::*global-table*
+                     :test #'string=)))
     (sys::dlclose (car lib))
     (setf (car lib) (sys:int-sap 0))))
 
@@ -373,8 +377,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
+  (declare (ignore library))
   (let ((address (sys:alternate-get-global-address
                   (vm:extern-alien-name name))))
     (if (zerop address)

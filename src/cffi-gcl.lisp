@@ -62,7 +62,7 @@
    ;#:with-pointer-to-vector-data
    #:foreign-var-ptr
    #:make-callback))
- 
+
 (in-package #:cffi-sys)
 
 ;;;# Mis-*features*
@@ -292,7 +292,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
      `(defentry ,ff-name ,(mapcar #'convert-foreign-type types)
         (,(convert-foreign-type rettype) ,name))
      `(,ff-name ,@args))))
-    
+
 ;;;# Callbacks
 
 ;;; XXX unimplemented

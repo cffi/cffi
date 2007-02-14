@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-allegro.lisp --- CFFI-SYS implementation for Allegro CL.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -52,7 +52,7 @@
    #:%mem-set
    ;#:make-shareable-byte-vector
    ;#:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback
    #:%callback
@@ -67,6 +67,7 @@
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; Backend mis-features.
           cffi-features:no-long-long
+          cffi-features:flat-namespace
           ;; OS/CPU features.
           #+macosx     cffi-features:darwin
           #+unix       cffi-features:unix
@@ -140,7 +141,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
      (declare (ignorable ,size-var))
      (ff:with-stack-fobject (,var :char :c ,size-var)
        ,@body)))
-     
+
 ;;;# Shareable Vectors
 ;;;
 ;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
@@ -280,7 +281,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                  nil ; arg-checking
                  ff::ep-flag-never-release))))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key calling-convention library)
+  (declare (ignore calling-convention library))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(system::ff-funcall
@@ -296,12 +298,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
       ;; return type '(:c-type lisp-type)
       ',(allegro-type-pair rettype))))
 
-(defun defcfun-helper-forms (name lisp-name rettype args types)
+(defun defcfun-helper-forms (name lisp-name rettype args types options)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
+  (declare (ignore options))
   (let ((ff-name (intern (format nil "%cffi-foreign-function/~A" lisp-name))))
     (values
      `(ff:def-foreign-call (,ff-name ,name)
-          ,(mapcar (lambda (ty) 
+          ,(mapcar (lambda (ty)
                      (let ((allegro-type (convert-foreign-type ty)))
                        (list (gensym) allegro-type
                              (convert-to-lisp-type allegro-type))))
@@ -315,7 +318,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
      `(,ff-name ,@args))))
 
 ;;; See doc/allegro-internals.txt for a clue about entry-vec.
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+  (declare (ignore calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (entry-vec)
@@ -328,7 +332,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                       `(',(allegro-type-pair type) ,arg))
                     types fargs)
           ;; return type '(:c-type lisp-type)
-          ',(allegro-type-pair rettype)))))) 
+          ',(allegro-type-pair rettype))))))
 
 ;;;# Callbacks
 
@@ -360,7 +364,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;; CFFI is restarted.
 (eval-when (:load-toplevel :execute)
   (pushnew 'restore-callbacks excl:*restart-actions*))
-  
+
 ;;; Create a package to contain the symbols for callback functions.
 (defpackage #:cffi-callbacks
   (:use))
@@ -370,15 +374,21 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                   (symbol-name name))
           '#:cffi-callbacks))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defun convert-cconv (cconv)
+  (ecase cconv
+    (:cdecl :c)
+    (:stdcall :stdcall)))
+
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
   (declare (ignore rettype))
   (let ((cb-name (intern-callback name)))
     `(progn
        (ff:defun-foreign-callable ,cb-name
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
-         (declare (:convention :c))
-         ,@body)
+         (declare (:convention ,(convert-cconv calling-convention)))
+         ,body)
        (register-callback ',name ',cb-name))))
 
 ;;; Return the saved Lisp callback pointer from *CALLBACKS* for the
@@ -389,17 +399,20 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Loading and Closing Foreign Libraries
 
-(defun %load-foreign-library (name)
-  "Load the foreign library NAME."
+(defun %load-foreign-library (name path)
+  "Load a foreign library."
   ;; ACL 8.0 honors the :FOREIGN option and always tries to foreign load
   ;; the argument. However, previous versions do not and will only
   ;; foreign load the argument if its type is a member of the
   ;; EXCL::*LOAD-FOREIGN-TYPES* list. Therefore, we bind that special
   ;; to a list containing whatever type NAME has.
+  (declare (ignore name))
   (let ((excl::*load-foreign-types*
-         (list (pathname-type (parse-namestring name)))))
-    (ignore-errors #+(version>= 7) (load name :foreign t)
-                   #-(version>= 7) (load name))))
+         (list (pathname-type (parse-namestring path)))))
+    (ignore-errors
+      #+(version>= 7) (load path :foreign t)
+      #-(version>= 7) (load path)
+      path)))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
@@ -415,8 +428,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+macosx (concatenate 'string "_" name)
   #-macosx name)
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
+  (declare (ignore library))
   (prog1 (ff:get-entry-point (convert-external-name name))))
 
 ;;;# Finalizers

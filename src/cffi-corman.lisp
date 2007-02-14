@@ -137,7 +137,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
      (unwind-protect
           (progn ,@body)
        (free ,var))))
-     
+
 ;;;# Shareable Vectors
 ;;;
 ;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
@@ -235,16 +235,20 @@ the DLL's name (a string), else returns NIL."
       (return (ct::dll-record-name dll)))))
 
 ;; This won't work at all...
-;(defmacro %foreign-funcall (name &rest args)
-;  (let ((sym (gensym)))
-;    `(let (,sym)
-;       (ct::install-dll-function ,(find-dll-containing-function name)
-;                                 ,name ,sym)
-;       (funcall ,sym ,@(loop for (type arg) on args by #'cddr
-;                             if arg collect arg)))))
+#||
+(defmacro %foreign-funcall (name &rest args)
+  (let ((sym (gensym)))
+    `(let (,sym)
+       (ct::install-dll-function ,(find-dll-containing-function name)
+                                 ,name ,sym)
+       (funcall ,sym ,@(loop for (type arg) on args by #'cddr
+                             if arg collect arg)))))
+||#
 
-;; It *might* be possible to implement by copying
-;; most of the code from Corman's DEFUN-DLL.
+;; It *might* be possible to implement by copying most of the code
+;; from Corman's DEFUN-DLL.  Alternatively, it could implemented the
+;; same way as Lispworks' foreign-funcall.  In practice, nobody uses
+;; Corman with CFFI, apparently. :)
 (defmacro %foreign-funcall (name &rest args)
   "Call a foreign function NAME passing arguments ARGS."
   `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))

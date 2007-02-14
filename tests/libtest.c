@@ -2,7 +2,7 @@
  *
  * libtest.c --- auxiliary C lib for testing purposes
  *
- * Copyright (C) 2005, Luis Oliveira  <loliveira(@)common-lisp.net>
+ * Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -279,7 +279,7 @@ struct s_ch {
 /* This struct's size should be 2 bytes */
 struct s_s_ch {
     char another_char;
-    struct s_ch a_s_ch; 
+    struct s_ch a_s_ch;
 };
 
 DLLEXPORT
@@ -794,10 +794,64 @@ DLLEXPORT int compare_against_abs(intptr_t p)
 
 DLLEXPORT void xpto_fun() {}
 
-DLLEXPORT int compare_against_xpto_fun(intptr_t p)
+DLLEXPORT
+int compare_against_xpto_fun(intptr_t p)
 {
     return p == (intptr_t) xpto_fun;
 }
+
+/*
+ * [DEFCFUN|FUNCALL].NAMESPACE.1
+ */
+
+DLLEXPORT
+int ns_function()
+{
+    return 1;
+}
+
+/*
+ * FOREIGN-GLOBALS.NAMESPACE.*
+ */
+
+DLLEXPORT int ns_var = 1;
+
+/*
+ * DEFCFUN.STDCALL.1
+ */
+
+DLLEXPORT __attribute__((stdcall))
+int stdcall_fun(int a, int b, int c)
+{
+    return a + b + c;
+}
+
+/*
+ * CALLBACKS.STDCALL.1
+ */
+
+DLLEXPORT
+int call_stdcall_fun(int __attribute__((stdcall)) (*f)(int, int, int))
+{
+    int a = 42;
+    f(1, 2, 3);
+    return a;
+}
+
+/* Unlike the one above, this commented test below actually
+ * works. But, alas, it doesn't compile with -std=c99. */
+
+/*
+DLLEXPORT
+int call_stdcall_fun(int __attribute__((stdcall)) (*f)(int, int, int))
+{
+    asm("pushl $42");
+    register int ebx asm("%ebx");
+    f(1, 2, 3);
+    asm("popl %ebx");
+    return ebx;
+}
+*/
 
 /* vim: ts=4 et
 */

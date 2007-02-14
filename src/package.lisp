@@ -29,6 +29,7 @@
 
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys #:cffi-utils)
+  (:import-from #:cffi-features #:cffi-feature-p)
   (:export
    ;; Primitive pointer operations.
    #:foreign-free
@@ -44,7 +45,7 @@
    #:with-foreign-pointer
    #:make-pointer
    #:pointer-address
-   
+
    ;; Shareable vectors.
    #:make-shareable-vector
    #:with-pointer-to-vector-data
@@ -60,6 +61,7 @@
    ;; Foreign function operations.
    #:defcfun
    #:foreign-funcall
+   #:foreign-funcall-pointer
 
    ;; Foreign library operations.
    #:*foreign-library-directories*
@@ -68,7 +70,7 @@
    #:load-foreign-library
    #:load-foreign-library-error
    #:use-foreign-library
-   ;#:close-foreign-library 
+   #:close-foreign-library
 
    ;; Callbacks.
    #:callback

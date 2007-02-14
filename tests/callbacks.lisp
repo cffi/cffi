@@ -86,7 +86,7 @@
   (defcallback sum-long-long :long-long
       ((a :long-long) (b :long-long))
     (+ a b))
-  
+
   (defcallback sum-unsigned-long-long :unsigned-long-long
       ((a :unsigned-long-long) (b :unsigned-long-long))
     (+ a b)))
@@ -149,7 +149,7 @@
   (deftest callbacks.long-long
       (expect-long-long-sum (callback sum-long-long))
     1)
-  
+
   (deftest callbacks.unsigned-long-long
       (expect-unsigned-long-long-sum (callback sum-unsigned-long-long))
     1))
@@ -181,7 +181,7 @@
 
 #-cffi-features:no-foreign-funcall
 (deftest callbacks.string-not-docstring
-    (foreign-funcall (callback return-a-string-not-nil) :string)
+    (foreign-funcall-pointer (callback return-a-string-not-nil) () :string)
   "abc")
 
 ;;; This one tests mem-aref too.
@@ -239,7 +239,7 @@
     (+ a b))
 
   (deftest callbacks.funcall.1
-      (foreign-funcall (callback sum-2) :int 2 :int 3 :int 1 :int)
+      (foreign-funcall-pointer (callback sum-2) () :int 2 :int 3 :int 1 :int)
     5)
 
   (defctype foo-float :float)
@@ -252,8 +252,9 @@
     (+ a e))
 
   (deftest callbacks.funcall.2
-      (foreign-funcall (callback sum-2f) foo-float 1.0 foo-float 2.0
-                       foo-float 3.0 foo-float 4.0 foo-float 5.0 foo-float)
+      (foreign-funcall-pointer (callback sum-2f) () foo-float 1.0 foo-float 2.0
+                               foo-float 3.0 foo-float 4.0 foo-float 5.0
+                               foo-float)
     6.0))
 
 ;;; (cb-test :no-long-long t)
@@ -386,7 +387,7 @@
 
   #+(or openmcl cmu ecl)
   (push 'callbacks.bff.2 rt::*expected-failures*)
-  
+
   (deftest callbacks.bff.2
       (call-sum-127 (callback sum-127))
     8166570665645582011))
@@ -430,14 +431,15 @@
 
 #-cffi-features:no-foreign-funcall
 (deftest callbacks.double26.funcall
-    (foreign-funcall (callback double26) :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
-                     :double)
+    (foreign-funcall-pointer
+     (callback double26) () :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double)
   81.64d0)
 
 ;;; Same as above, for floats.
@@ -470,14 +472,15 @@
 
 #-cffi-features:no-foreign-funcall
 (deftest callbacks.float26.funcall
-    (foreign-funcall (callback float26) :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float 5.0 :float 5.0 :float 5.0 :float 5.0
-                     :float)
+    (foreign-funcall-pointer
+     (callback float26) () :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float 5.0 :float 5.0 :float 5.0 :float 5.0
+     :float)
   130.0)
 
 ;;; Defining a callback as a non-toplevel form. Not portable. Doesn't
@@ -491,3 +494,18 @@
 (deftest callbacks.non-toplevel
     (foreign-funcall (callback non-toplevel-cb) :int)
   42)
+
+;;;# Stdcall
+
+#+(and cffi-features:x86 (not cffi-features:no-stdcall))
+(progn
+  (defcallback (stdcall-cb :cconv :stdcall) :int
+      ((a :int) (b :int) (c :int))
+    (+ a b c))
+
+  (defcfun "call_stdcall_fun" :int
+    (f :pointer))
+
+  (deftest callbacks.stdcall.1
+      (call-stdcall-fun (callback stdcall-cb))
+    42))

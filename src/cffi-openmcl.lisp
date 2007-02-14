@@ -52,12 +52,12 @@
    #:native-namestring
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:%defcallback
    #:%callback
    #:finalize
    #:cancel-finalization))
- 
+
 (in-package #:cffi-sys)
 
 ;;;# Features
@@ -69,6 +69,8 @@
           #+unix              cffi-features:unix
           #+ppc32-target      cffi-features:ppc32
           #+x8664-target      cffi-features:x86-64
+          ;; Misfeatures.
+          cffi-features:flat-namespace
           )))
 
 ;;; Symbol case.
@@ -240,13 +242,15 @@ WITH-POINTER-TO-VECTOR-DATA."
   #+darwinppc-target (concatenate 'string "_" name)
   #-darwinppc-target name)
 
-(defmacro %foreign-funcall (function-name &rest args)
+(defmacro %foreign-funcall (function-name args &key library calling-convention)
   "Perform a foreign function call, document it more later."
+  (declare (ignore library calling-convention))
   `(external-call
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+  (declare (ignore calling-convention))
   `(ff-call ,ptr ,@(convert-foreign-funcall-types args)))
 
 ;;;# Callbacks
@@ -270,15 +274,17 @@ WITH-POINTER-TO-VECTOR-DATA."
                   (symbol-name name))
           '#:cffi-callbacks))
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
+  (declare (ignore calling-convention))
   (let ((cb-name (intern-callback name)))
     `(progn
-       (defcallback ,cb-name 
+       (defcallback ,cb-name
            (,@(mapcan (lambda (sym type)
                         (list (convert-foreign-type type) sym))
                       arg-names arg-types)
             ,(convert-foreign-type rettype))
-         ,@body)
+         ,body)
        (setf (gethash ',name *callbacks*) (symbol-value ',cb-name)))))
 
 (defun %callback (name)
@@ -287,9 +293,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Loading Foreign Libraries
 
-(defun %load-foreign-library (name)
+(defun %load-foreign-library (name path)
   "Load the foreign library NAME."
-  (open-shared-library name))
+  (declare (ignore name))
+  (open-shared-library path))
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
@@ -300,8 +307,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
+  (declare (ignore library))
   (foreign-symbol-address (convert-external-name name)))
 
 ;;;# Finalizers

@@ -67,7 +67,7 @@
    #:%mem-set
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
+   #:%foreign-symbol-pointer
    #:%defcallback
    #:%callback
    #:finalize
@@ -84,6 +84,8 @@
           #+x86     cffi-features:x86
           #+amd64   cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
+          ;; Misfeatures
+          cffi-features:flat-namespace
           )))
 
 ;;; Symbol case.
@@ -121,7 +123,7 @@
   "Return a pointer pointing 'offset bytes past 'ptr."
   (sys:sap+ ptr offset))
 
-(declaim (inline make-pointer)) 
+(declaim (inline make-pointer))
 (defun make-pointer (address)
   "Return a pointer pointing to 'address."
   (sys:int-sap address))
@@ -285,14 +287,16 @@
   `(alien-funcall (extern-alien ,name (function ,rettype ,@types))
                   ,@fargs))
 
-(defmacro %foreign-funcall (name &rest args)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   "Perform a foreign function call, document it more later."
+  (declare (ignore library calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr &rest args)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Funcall a pointer to a foreign function."
+  (declare (ignore calling-convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (function)
@@ -301,13 +305,14 @@
 
 ;;; Callbacks
 
-(defmacro %defcallback (name rettype arg-names arg-types &body body)
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key calling-convention)
    `(alien:defcallback ,name
        (,(convert-foreign-type rettype)
          ,@(mapcar (lambda (sym type)
                      (list sym (convert-foreign-type type)))
                    arg-names arg-types))
-     ,@body))
+     ,body))
 
 (declaim (inline %callback))
 (defun %callback (name)
@@ -315,9 +320,10 @@
 
 ;;;# Loading and Closing Foreign Libraries
 
-(defun %load-foreign-library (name)
+(defun %load-foreign-library (name path)
   "Load the foreign library 'name."
-  (ext:load-dynamic-object name))
+  (declare (ignore name))
+  (ext:load-dynamic-object path))
 
 (defun %close-foreign-library (name)
   "Closes the foreign library 'name."
@@ -328,8 +334,9 @@
 
 ;;;# Foreign Globals
 
-(defun foreign-symbol-pointer (name)
+(defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol 'name."
+  (declare (ignore library))
   (let ((sap (sys:foreign-symbol-address name)))
     (if (zerop (sys:sap-int sap)) nil sap)))
 

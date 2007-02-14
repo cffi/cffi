@@ -37,7 +37,7 @@
        (:or  (some #'featurep (rest feature-expression)))
        (:not (not (featurep (cadr feature-expression))))))))
 
-;;; Test relations between OS features.
+;;;# Test relations between OS features.
 
 (deftest features.os.1
     (if (featurep 'cffi-features:windows)
@@ -59,7 +59,7 @@
         t)
   t)
 
-;;; Test mutual exclusiveness of CPU features.
+;;;# Test mutual exclusiveness of CPU features.
 
 (defparameter *cpu-features*
   '(cffi-features:x86
@@ -72,7 +72,7 @@
           sum 1)
   1)
 
-;;;; foreign-symbol-pointer tests
+;;;# foreign-symbol-pointer tests
 
 ;;; This might be useful for some libraries that compare function
 ;;; pointers. http://thread.gmane.org/gmane.lisp.cffi.devel/694
@@ -87,3 +87,38 @@
 (deftest foreign-symbol-pointer.2
     (compare-against-xpto-fun (foreign-symbol-pointer "xpto_fun"))
   t)
+
+;;;# Library tests
+;;;
+;;; Need to figure out a way to test this.  CLISP, for instance, will
+;;; automatically reopen the foreign-library when we call a foreign
+;;; function so we can't test CLOSE-FOREIGN-LIBRARY this way.
+;;;
+;;; IIRC, GCC has some extensions to have code run when a library is
+;;; loaded and stuff like that.  That could work.
+
+#||
+#-(and :ecl (not :dffi))
+(deftest library.close.2
+    (unwind-protect
+         (progn
+           (close-foreign-library 'libtest)
+           (ignore-errors (my-sqrtf 16.0)))
+      (load-test-libraries))
+  nil)
+
+#-(or (and :ecl (not :dffi))
+      cffi-features:flat-namespace
+      cffi-features:no-foreign-funcall)
+(deftest library.close.2
+    (unwind-protect
+         (values
+          (foreign-funcall ("ns_function" :library libtest) :boolean)
+          (close-foreign-library 'libtest)
+          (foreign-funcall "ns_function" :boolean)
+          (close-foreign-library 'libtest2)
+          (close-foreign-library 'libtest2)
+          (ignore-errors (foreign-funcall "ns_function" :boolean)))
+      (load-test-libraries))
+  t t nil t nil nil)
+||#

@@ -2,7 +2,7 @@
 ;;;
 ;;; libtest.lisp --- Setup CFFI bindings for libtest.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -29,8 +29,15 @@
 
 (define-foreign-library libtest
   (:unix (:or "libtest.so" "libtest32.so"))
-  (:darwin "libtest.so")
-  (:windows "libtest.dll" "msvcrt.dll"))
+  (:windows "libtest.dll")
+  (t (:default "libtest")))
+
+(define-foreign-library libtest2
+  (:darwin "libtest2.so")
+  (t (:default "libtest2")))
+
+(define-foreign-library libc
+  (:windows "msvcrt.dll"))
 
 ;;; Return the directory containing the source when compiling or
 ;;; loading this file.  We don't use *LOAD-TRUENAME* because the fasl
@@ -42,9 +49,14 @@
                    :device (pathname-device here)
                    :host (pathname-host here))))
 
+(defun load-test-libraries ()
+  (let ((*foreign-library-directories* (list (load-directory))))
+    (load-foreign-library 'libtest)
+    (load-foreign-library 'libtest2)
+    (load-foreign-library 'libc)))
+
 #-(:and :ecl (:not :dffi))
-(let ((*foreign-library-directories* (list (load-directory))))
-  (load-foreign-library 'libtest))
+(load-test-libraries)
 
 #+(:and :ecl (:not :dffi))
 (ffi:load-foreign-library

@@ -2,7 +2,7 @@
 ;;;
 ;;; defcfun.lisp --- Tests function definition and calling.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -170,7 +170,7 @@
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :float (float pi)))
   "3.14")
-    
+
 (deftest defcfun.varargs.double
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :double (float pi 1.0d0)))
@@ -246,7 +246,8 @@
        -1128144619 111849719 2746091587 -2 95 14488 326328135 64781 18204
        150716680 -703859275 103 16809.0d0 852235610 -43 21088 242356110
        324325428 -22380 23 24814.0 (make-pointer 40362014) -14322.0d0
-       -1864262539 523684371 -21 49995 -29175.0) 796447501))
+       -1864262539 523684371 -21 49995 -29175.0)
+    796447501))
 
 ;;; (let ((rettype (find-type :long-long))
 ;;;       (arg-types (n-random-types 127)))
@@ -288,7 +289,7 @@
     (a121 :int) (a122 :float) (a123 :unsigned-char) (a124 :unsigned-char)
     (a125 :double) (a126 :unsigned-long-long) (a127 :char))
 
-  (deftest defcfun.bff.2 
+  (deftest defcfun.bff.2
       (sum-127
        (make-pointer 2746181372) (make-pointer 177623060) -32334.0 3158055028
        (make-pointer 242315091) 4288001754991016425 -21047.0d0 287.0d0 18722
@@ -359,3 +360,28 @@
     (sum-float26 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0
                  5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0)
   130.0)
+
+;;;# Namespaces
+
+#-cffi-features:flat-namespace
+(progn
+  (defcfun ("ns_function" ns-fun1 :library libtest) :boolean)
+  (defcfun ("ns_function" ns-fun2 :library libtest2) :boolean)
+
+  (deftest defcfun.namespace.1
+      (values (ns-fun1) (ns-fun2))
+    t nil))
+
+;;;# stdcall
+
+#+(and cffi-features:x86 (not cffi-features:no-stdcall))
+(progn
+  (defcfun ("stdcall_fun" :cconv :stdcall) :int
+    (a :int)
+    (b :int)
+    (c :int))
+
+  (deftest defcfun.stdcall.1
+      (loop repeat 100 do (stdcall-fun 1 2 3)
+            finally (return (stdcall-fun 1 2 3)))
+    6))

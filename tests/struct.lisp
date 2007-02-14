@@ -287,7 +287,7 @@
   (an-s1 s1))
 
 (deftest struct.nested-setf
-    (with-foreign-object (an-s2 's2) 
+    (with-foreign-object (an-s2 's2)
       (setf (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
                                 's1 'an-int)
             1984)

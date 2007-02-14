@@ -3,6 +3,7 @@
 ;;; funcall.lisp --- Tests function calling.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -34,7 +35,7 @@
 
 ;;; Don't run these tests if the implementation does not support
 ;;; foreign-funcall.
-#-cffi-features:no-foreign-funcall 
+#-cffi-features:no-foreign-funcall
 (progn
 
 (deftest funcall.char
@@ -49,7 +50,7 @@
   (foreign-funcall "abs" :int n :int))
 
 ;;; regression test: lispworks's %foreign-funcall based on creating
-;;; and chaching foreign-funcallables at macro-expansion time.
+;;; and caching foreign-funcallables at macro-expansion time.
 (deftest funcall.int.2
     (funcall-abs -42)
   42)
@@ -167,7 +168,26 @@
 
 ;;; Funcalling a pointer.
 (deftest funcall.f-s-p.1
-    (foreign-funcall (foreign-symbol-pointer "abs") :int -42 :int)
+    (foreign-funcall-pointer (foreign-symbol-pointer "abs") nil :int -42 :int)
   42)
+
+;;;# Namespaces
+
+#-cffi-features:flat-namespace
+(deftest funcall.namespace.1
+    (values (foreign-funcall ("ns_function" :library libtest) :boolean)
+            (foreign-funcall ("ns_function" :library libtest2) :boolean))
+  t nil)
+
+;;;# stdcall
+
+#+(and cffi-features:x86 (not cffi-features:no-stdcall))
+(deftest funcall.stdcall.1
+    (flet ((fun ()
+             (foreign-funcall ("stdcall_fun" :cconv :stdcall)
+                              :int 1 :int 2 :int 3 :int)))
+      (loop repeat 100 do (fun)
+            finally (return (fun))))
+  6)
 
 ) ;; #-cffi-features:no-foreign-funcall

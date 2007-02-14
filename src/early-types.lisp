@@ -41,7 +41,7 @@
 (defun find-type (name)
   "Return the foreign type instance for NAME or nil."
   (gethash name *foreign-types*))
-  
+
 (defun find-type-or-lose (name)
   "Return the foreign type instance for NAME or signal an error."
   (or (find-type name)
@@ -463,7 +463,7 @@ Signals an error if the type cannot be resolved."
   (:method :around (value var body type)
     (let ((*runtime-translator-form*
            (%expand-type-to-foreign-dyn value var body type)))
-      (call-next-method)))  
+      (call-next-method)))
   (:method (value var body type)
     ;; If COMPUTE-APPLICABLE-METHODS only finds one method it's
     ;; the default one meaning that there is no to-foreign expander

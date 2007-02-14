@@ -72,7 +72,7 @@
   (b (:boolean :unsigned-long)))
 
 (deftest misc-types.boolean.1
-    (list (equalequal nil nil) 
+    (list (equalequal nil nil)
           (equalequal t t)
           (equalequal t 23)
           (bool-and 'a 'b)
@@ -158,7 +158,7 @@
   (defcallback untranslated-callback untranslated-int ((x untranslated-int))
     x)
   (deftest misc-types.untranslated-callback
-      (foreign-funcall (callback untranslated-callback) :int 1 :int)
+      (foreign-funcall-pointer (callback untranslated-callback) () :int 1 :int)
     1))
 
 (defctype error-error :int)
