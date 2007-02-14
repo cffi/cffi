@@ -51,7 +51,9 @@
    #:native-namestring
    #:%mem-ref
    #:%mem-set
-   #:foreign-symbol-pointer
+   #:make-shareable-byte-vector
+   #:with-pointer-to-vector-data
+   #:%foreign-symbol-pointer
    #:%defcallback
    #:%callback))
 
