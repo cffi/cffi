@@ -110,11 +110,11 @@
 
 (defmethod translate-type-to-foreign (value (type foreign-enum))
   (if (keywordp value)
-      (%foreign-enum-value type value)
+      (%foreign-enum-value type value :errorp t)
       value))
 
 (defmethod translate-type-from-foreign (value (type foreign-enum))
-  (%foreign-enum-keyword type value))
+  (%foreign-enum-keyword type value :errorp t))
 
 ;;;# Foreign Bitfields as Lisp keywords
 ;;;

@@ -105,6 +105,7 @@ This is a collection of TODO items and ideas in no particular order.
 -> LOAD-FOREIGN-LIBRARY should give better errors. On ECL with DFFI
    it should show the error that %LOAD-FOREIGN-LIBRARY is signalling.
 -> LOAD-FOREIGN-LIBRARY's USE restart is somewhat broken.
+-> http://article.gmane.org/gmane.lisp.cffi.devel/975
 
 ### Documentation
 
