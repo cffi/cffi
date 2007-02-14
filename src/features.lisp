@@ -44,7 +44,6 @@
    ;; the foreign-funcall primitive, etc...
    #:no-long-long
    #:no-foreign-funcall
-   #:no-finalizers
    #:no-stdcall
    #:flat-namespace
 

@@ -152,7 +152,6 @@ software or the use or other dealings in the software.}
 * Functions::                   
 * Libraries::                   
 * Callbacks::                   
-* Finalizers::                  
 * Limitations::                 
 * Platform-specific features::  Details about the underlying system.
 * Glossary::                    List of CFFI-specific terms and meanings.
@@ -240,11 +239,6 @@ Callbacks
 * callback::                    Returns a pointer to a defined callback.
 * defcallback::                 Defines a Lisp callback.
 * get-callback::                Returns a pointer to a defined callback.
-
-Finalizers
-
-* finalize::                    Register a finalizers.
-* cancel-finalization::         Cancel finalization.
 
 @end detailmenu
 @end menu
@@ -5527,104 +5521,6 @@ CFFI> (get-callback 'sum)
 @seealso{callback} @*
 @seealso{defcallback}
 
-
-@c ===================================================================
-@c CHAPTER: Finalizers
-
-@node Finalizers
-@chapter Finalizers
-
-Although object ``finalization'' is orthogonal to FFI, it often is a
-useful feature to have when implementing wrapper objects, for example.
-Therefore, @cffi{} provides a portable API for registering and
-canceling finalizers.
-
-@menu
-Dictionary
-
-* finalize::                    
-* cancel-finalization::                                 
-@end menu
-
-
-@c ===================================================================
-@c FINALIZE
-
-@node finalize
-@unnumberedsec finalize
-@subheading Syntax
-@Function{finalize object function @result{} object}
-
-@subheading Arguments and Values
-
-@table @var
-@item object
-A Lisp object.
-
-@item function
-A Lisp function.
-@end table
-
-@subheading Description
-The function @code{finalize} pushes @var{function} to @var{object}'s
-list of finalizers, which will be invoked when @var{object} is
-garbage-collected.
-
-@var{function} should take no arguments.
-
-For portability reasons, @var{function} should not attempt to look at
-@var{object} by closing over it because, in some lisps, @var{object}
-will already have been garbage-collected and is therefore not
-accessible when @var{function} is invoked.
-
-@subheading Examples
-
-@lisp
-(defclass wrapper-object ()
-  ...)
-
-(defmethod initialize-instance :after ((self wrapper-object) &key)
-  (let ((foreign-pointer ...))
-    ...
-    (finalize self (lambda () (foreign-free foreign-pointer)))))
-@end lisp
-
-@subheading See Also
-@seealso{cancel-finalization}
-
-
-@c ===================================================================
-@c CANCEL-FINALIZATION
-
-@node cancel-finalization
-@unnumberedsec cancel-finalization
-@subheading Syntax
-@Function{cancel-finalization object @result{} undefined}
-
-@subheading Arguments and Values
-
-@table @var
-@item object
-A Lisp object.
-@end table
-
-@subheading Description
-The @code{cancel-finalization} function cancels all of @var{object}'s
-finalizers, if any.
-
-For example: use this when you want to free a wrapper object's
-resources immediately in order to avoid a double free when the
-finalizer is invoked (see the example for @ref{finalize}).
-
-@c @subheading Examples
-
-@c @lisp
-@c @end lisp
-
-@subheading See Also
-@seealso{finalize}
-
-
 @c ===================================================================
 @c CHAPTER: Limitations
 
@@ -5675,9 +5571,6 @@ platforms, the only way to call a foreign function is through
 @item no-long-long
 The C @code{long long} type is @strong{not} available as a foreign
 type.
-
-@item no-finalizers
-This platform does not support finalizers.
 
 @item ppc32
 The underlying @acronym{CPU} architecture is 32-bit PowerPC.

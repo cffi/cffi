@@ -113,8 +113,4 @@
    #:defcvar
    #:get-var-pointer
    #:foreign-symbol-pointer
-
-   ;; Finalizers.
-   #:finalize
-   #:cancel-finalization
    ))

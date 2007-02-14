@@ -54,9 +54,7 @@
    #:with-pointer-to-vector-data
    #:%foreign-symbol-pointer
    #:%defcallback
-   #:%callback
-   #:finalize
-   #:cancel-finalization))
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -350,21 +348,3 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore library))
   (let-when (address (sb-sys:find-foreign-symbol-address name))
     (sb-sys:int-sap address)))
-
-;;;# Finalizers
-
-(declaim (inline finalize))
-(defun finalize (object function)
-  "Pushes a new FUNCTION to the OBJECT's list of
-finalizers. FUNCTION should take no arguments. Returns OBJECT.
-
-For portability reasons, FUNCTION should not attempt to look at
-OBJECT by closing over it because, in some lisps, OBJECT will
-already have been garbage collected and is therefore not
-accessible when FUNCTION is invoked."
-  (sb-ext:finalize object function))
-
-(declaim (inline cancel-finalization))
-(defun cancel-finalization (object)
-  "Cancels all of OBJECT's finalizers, if any."
-  (sb-ext:cancel-finalization object))

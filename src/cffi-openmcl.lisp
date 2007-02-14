@@ -54,9 +54,7 @@
    #:with-pointer-to-vector-data
    #:%foreign-symbol-pointer
    #:%defcallback
-   #:%callback
-   #:finalize
-   #:cancel-finalization))
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -311,31 +309,3 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
   (foreign-symbol-address (convert-external-name name)))
-
-;;;# Finalizers
-
-(defvar *finalizers* (make-hash-table :test 'eq :weak :key)
-  "Weak hashtable that holds registered finalizers.")
-
-(defun finalize (object function)
-  "Pushes a new FUNCTION to the OBJECT's list of
-finalizers. FUNCTION should take no arguments. Returns OBJECT.
-
-For portability reasons, FUNCTION should not attempt to look at
-OBJECT by closing over it because, in some lisps, OBJECT will
-already have been garbage collected and is therefore not
-accessible when FUNCTION is invoked."
-  (ccl:terminate-when-unreachable
-   object (lambda (obj) (declare (ignore obj)) (funcall function)))
-  ;; store number of finalizers
-  (if (gethash object *finalizers*)
-      (incf (gethash object *finalizers*))
-      (setf (gethash object *finalizers*) 1))
-  object)
-
-(defun cancel-finalization (object)
-  "Cancels all of OBJECT's finalizers, if any."
-  (let ((count (gethash object *finalizers*)))
-    (unless (null count)
-      (dotimes (i count)
-        (ccl:cancel-terminate-when-unreachable object)))))

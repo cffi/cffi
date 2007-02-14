@@ -55,9 +55,7 @@
    #:%foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback
-   #:%callback
-   #:finalize
-   #:cancel-finalization))
+   #:%callback))
 
 (in-package #:cffi-sys)
 
@@ -432,27 +430,3 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
   (prog1 (ff:get-entry-point (convert-external-name name))))
-
-;;;# Finalizers
-
-(defvar *finalizers* (make-hash-table :test 'eq :weak-keys t)
-  "Weak hashtable that holds registered finalizers.")
-
-(defun finalize (object function)
-  "Pushes a new FUNCTION to the OBJECT's list of
-finalizers. FUNCTION should take no arguments. Returns OBJECT.
-
-For portability reasons, FUNCTION should not attempt to look at
-OBJECT by closing over it because, in some lisps, OBJECT will
-already have been garbage collected and is therefore not
-accessible when FUNCTION is invoked."
-  (push (excl:schedule-finalization
-         object (lambda (obj) (declare (ignore obj)) (funcall function)))
-        (gethash object *finalizers*))
-  object)
-
-(defun cancel-finalization (object)
-  "Cancels all of OBJECT's finalizers, if any."
-  (mapc #'excl:unschedule-finalization
-        (gethash object *finalizers*))
-  (remhash object *finalizers*))
