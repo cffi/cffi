@@ -241,7 +241,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
                    (load-foreign-library-helper library spec))
              lib)))
         (t
-         (make-instance 'foreign-library :spec (list library)
+         (make-instance 'foreign-library :spec (list (list library))
                         :handle (load-foreign-library-helper nil library))))
     ;; Offer these restarts that will retry the call to
     ;; LOAD-FOREIGN-LIBRARY.
