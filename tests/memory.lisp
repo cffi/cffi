@@ -352,9 +352,12 @@
 
 ;;; Regression test: FOREIGN-ALLOC shouldn't actually perform translation
 ;;; on initial-element/initial-contents since MEM-AREF will do that already.
-(defctype not-an-int :int)
+(define-foreign-type not-an-int ()
+  ()
+  (:actual-type :int)
+  (:simple-parser not-an-int))
 
-(defmethod translate-to-foreign (value (name (eql 'not-an-int)))
+(defmethod translate-to-foreign (value (type not-an-int))
   (assert (not (integerp value)))
   0)
 

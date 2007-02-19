@@ -3,7 +3,7 @@
 ;;; libraries.lisp --- Finding and loading foreign libraries.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
-;;; Copyright (C) 2006, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2006-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -140,7 +140,7 @@
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
   (destructuring-bind (name . options)
-      (mklist name-and-options)
+      (ensure-list name-and-options)
     `(progn
        (setf (get-foreign-library ',name)
              (make-instance 'foreign-library

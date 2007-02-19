@@ -49,7 +49,7 @@
   (with-foreign-pointer-as-string (buf 255 buf-size)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
-     :string "%d %f #x%x!" :int 666 
+     :string "%d %f #x%x!" :int 666
      :double (coerce pi 'double-float)
      :unsigned-int #xcafebabe
      :void)))

@@ -37,7 +37,7 @@
 ;;; constant for the type by a type translator when passed as
 ;;; arguments or a return value to a foreign function.
 
-(defclass foreign-enum (foreign-type-alias)
+(defclass foreign-enum (foreign-typedef enhanced-foreign-type)
   ((keyword-values
     :initform (make-hash-table :test 'eq)
     :reader keyword-values)
@@ -53,7 +53,7 @@
         (default-value 0))
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value))
-          (mklist pair)
+          (ensure-list pair)
         (check-type keyword keyword)
         (check-type value integer)
         (if (gethash keyword (keyword-values type))
@@ -72,10 +72,10 @@
   "Define an foreign enumerated type."
   (discard-docstring enum-list)
   (destructuring-bind (name &optional (base-type :int))
-      (mklist name-and-options)
+      (ensure-list name-and-options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
-        (make-foreign-enum ',name ',base-type ',enum-list)))))
+        ',name (make-foreign-enum ',name ',base-type ',enum-list)))))
 
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
@@ -108,12 +108,12 @@
         (error "~S is not a foreign enum type." type)
         (%foreign-enum-keyword type-obj value :errorp errorp))))
 
-(defmethod translate-type-to-foreign (value (type foreign-enum))
+(defmethod translate-to-foreign (value (type foreign-enum))
   (if (keywordp value)
       (%foreign-enum-value type value :errorp t)
       value))
 
-(defmethod translate-type-from-foreign (value (type foreign-enum))
+(defmethod translate-from-foreign (value (type foreign-enum))
   (%foreign-enum-keyword type value :errorp t))
 
 ;;;# Foreign Bitfields as Lisp keywords
@@ -122,7 +122,7 @@
 ;;; With some changes to DEFCENUM, this could certainly be implemented on
 ;;; top of it.
 
-(defclass foreign-bitfield (foreign-type-alias)
+(defclass foreign-bitfield (foreign-typedef enhanced-foreign-type)
   ((symbol-values
     :initform (make-hash-table :test 'eq)
     :reader symbol-values)
@@ -143,7 +143,7 @@
                            (value (prog1 bit-floor
                                     (setf bit-floor (ash bit-floor 1)))
                                   value-p))
-          (mklist pair)
+          (ensure-list pair)
         (check-type symbol symbol)
         (when value-p
           (check-type value integer)
@@ -160,10 +160,10 @@
   "Define an foreign enumerated type."
   (discard-docstring masks)
   (destructuring-bind (name &optional (base-type :int))
-      (mklist name-and-options)
+      (ensure-list name-and-options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
-        (make-foreign-bitfield ',name ',base-type ',masks)))))
+        ',name (make-foreign-bitfield ',name ',base-type ',masks)))))
 
 (defun %foreign-bitfield-value (type symbols)
   (reduce #'logior symbols
@@ -195,10 +195,10 @@ the bitfield TYPE."
         (error "~S is not a foreign bitfield type." type)
         (%foreign-bitfield-symbols type-obj value))))
 
-(defmethod translate-type-to-foreign (value (type foreign-bitfield))
+(defmethod translate-to-foreign (value (type foreign-bitfield))
   (if (integerp value)
       value
-      (%foreign-bitfield-value type (mklist value))))
+      (%foreign-bitfield-value type (ensure-list value))))
 
-(defmethod translate-type-from-foreign (value (type foreign-bitfield))
+(defmethod translate-from-foreign (value (type foreign-bitfield))
   (%foreign-bitfield-symbols type value))

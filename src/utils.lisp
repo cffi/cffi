@@ -33,7 +33,7 @@
            #:parse-body
            #:with-unique-names
            #:once-only
-           #:mklist
+           #:ensure-list
            #:make-gensym-list
            #:symbolicate
            #:let-when
@@ -55,12 +55,10 @@
          (setq ,(car new) (+ ,(car new) ,delta))
          ,setter))))
 
-;;; On Lisp, IIRC.
-(defun mklist (x)
+(defun ensure-list (x)
   "Make into list if atom."
   (if (listp x) x (list x)))
 
-;;; My own, hah!
 (defmacro discard-docstring (body-var)
   "Discards the first element of the list in body-var if it's a
 string and the only element."

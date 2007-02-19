@@ -36,15 +36,15 @@
 ;;; CFFI-SYS:%FOREIGN-FUNCALL.
 ;;;
 ;;; For implementation-specific reasons, DEFCFUN doesn't use
-;;; FOREIGN-FUNCALL directly and might use something else
-;;; (passed to TRANSLATE-OBJECTS as the CALL argument) instead
-;;; of CFFI-SYS:%FOREIGN-FUNCALL to call the foreign-function.
+;;; FOREIGN-FUNCALL directly and might use something else (passed to
+;;; TRANSLATE-OBJECTS as the CALL-FORM argument) instead of
+;;; CFFI-SYS:%FOREIGN-FUNCALL to call the foreign-function.
 
 (defun translate-objects (syms args types rettype call-form)
   "Helper function for FOREIGN-FUNCALL and DEFCFUN."
   (if (null args)
-      (expand-type-from-foreign call-form (parse-type rettype))
-      (expand-type-to-foreign-dyn
+      (expand-from-foreign call-form (parse-type rettype))
+      (expand-to-foreign-dyn
        (car args) (car syms)
        (list (translate-objects (cdr syms) (cdr args)
                                 (cdr types) rettype call-form))
@@ -93,8 +93,8 @@
 
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
-  (let ((name (car (mklist name-and-options)))
-        (options (cdr (mklist name-and-options))))
+  (let ((name (car (ensure-list name-and-options)))
+        (options (cdr (ensure-list name-and-options))))
     (foreign-funcall-form name options args nil)))
 
 (defmacro foreign-funcall-pointer (pointer options &rest args)
@@ -145,8 +145,8 @@
                                    &rest varargs)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments
 and does type promotion for the variadic arguments."
-  (let ((name (car (mklist name-and-options)))
-        (options (cdr (mklist name-and-options))))
+  (let ((name (car (ensure-list name-and-options)))
+        (options (cdr (ensure-list name-and-options))))
     (foreign-funcall-varargs-form name options fixed-args varargs nil)))
 
 (defmacro foreign-funcall-pointer-varargs (pointer options fixed-args
@@ -268,10 +268,10 @@ arguments and does type promotion for the variadic arguments."
 
 (defun inverse-translate-objects (args types declarations rettype call)
   `(let (,@(loop for arg in args and type in types
-                 collect (list arg (expand-type-from-foreign
+                 collect (list arg (expand-from-foreign
                                     arg (parse-type type)))))
      ,@declarations
-     ,(expand-type-to-foreign call (parse-type rettype))))
+     ,(expand-to-foreign call (parse-type rettype))))
 
 (defun parse-defcallback-options (options)
   (destructuring-bind (&key (calling-convention :cdecl)
@@ -285,8 +285,8 @@ arguments and does type promotion for the variadic arguments."
     (declare (ignore docstring))
     (let ((arg-names (mapcar #'car args))
           (arg-types (mapcar #'cadr args))
-          (name (car (mklist name-and-options)))
-          (options (cdr (mklist name-and-options))))
+          (name (car (ensure-list name-and-options)))
+          (options (cdr (ensure-list name-and-options))))
       `(progn
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)

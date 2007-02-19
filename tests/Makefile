@@ -40,7 +40,7 @@ ifeq ($(OSTYPE), SunOS)
 CFLAGS         := -c -Wall -std=c99 -pedantic
 else
 # Let's assume this is win32
-SHLIB_EXT      := .dll 
+SHLIB_EXT      := .dll
 endif
 endif
 endif

@@ -3,6 +3,7 @@
 ;;; types.lisp --- User-defined CFFI types.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -46,13 +47,6 @@
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
 
-;;; Define the type parser for the :POINTER type.  If no type argument
-;;; is provided, a void pointer will be created.
-(define-type-spec-parser :pointer (&optional type)
-  (if type
-      (make-instance 'foreign-pointer-type :pointer-type (parse-type type))
-      (make-instance 'foreign-pointer-type :pointer-type nil)))
-
 ;;; When some lisp other than SCL supports :long-double we should
 ;;; use #-cffi-features:no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
@@ -68,9 +62,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
     (if (aggregatep ptype)
         (inc-pointer ptr offset)
         (let ((raw-value (%mem-ref ptr (canonicalize ptype) offset)))
-          (if (translate-p ptype)
-              (translate-type-from-foreign raw-value ptype)
-              raw-value)))))
+          (translate-from-foreign raw-value ptype)))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
@@ -78,7 +70,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
       (let ((parsed-type (parse-type (eval type))))
         (if (aggregatep parsed-type)
             `(inc-pointer ,ptr ,offset)
-            (expand-type-from-foreign
+            (expand-from-foreign
              `(%mem-ref ,ptr ,(canonicalize parsed-type) ,offset)
              parsed-type)))
       form))
@@ -86,9 +78,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
 (defun mem-set (value ptr type &optional (offset 0))
   "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
   (let ((ptype (parse-type type)))
-    (%mem-set (if (translate-p ptype)
-                  (translate-type-to-foreign value ptype)
-                  value)
+    (%mem-set (translate-to-foreign value ptype)
               ptr (canonicalize ptype) offset)))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
@@ -123,7 +113,7 @@ to open-code (SETF MEM-REF) forms."
   "Compiler macro to open-code (SETF MEM-REF) when type is constant."
   (if (constantp type)
       (let ((parsed-type (parse-type (eval type))))
-        `(%mem-set ,(expand-type-to-foreign value parsed-type) ,ptr
+        `(%mem-set ,(expand-to-foreign value parsed-type) ,ptr
                    ,(canonicalize parsed-type) ,offset))
       form))
 
@@ -305,23 +295,27 @@ to open-code (SETF MEM-REF) forms."
 ;;;
 ;;; Rules used here:
 ;;;
-;;;   1. "An entire structure or union object is aligned on the same boundary
-;;;       as its most strictly aligned member."
-;;;   2. "Each member is assigned to the lowest available offset with the
-;;;       appropriate alignment. This may require internal padding, depending
-;;;       on the previous member."
-;;;   3. "A structure's size is increased, if necessary, to make it a multiple
-;;;       of the alignment. This may require tail padding, depending on the last
-;;;       member."
+;;;   1. "An entire structure or union object is aligned on the same
+;;;       boundary as its most strictly aligned member."
+;;;
+;;;   2. "Each member is assigned to the lowest available offset with
+;;;       the appropriate alignment. This may require internal
+;;;       padding, depending on the previous member."
+;;;
+;;;   3. "A structure's size is increased, if necessary, to make it a
+;;;       multiple of the alignment. This may require tail padding,
+;;;       depending on the last member."
 ;;;
 ;;; Special case from darwin/ppc32's ABI:
 ;;; http://developer.apple.com/documentation/DeveloperTools/Conceptual/LowLevelABI/index.html
 ;;;
-;;;   1. "The embedding alignment of the first element in a data structure is
-;;;       equal to the element's natural alignment."
-;;;   2. "For subsequent elements that have a natural alignment greater than 4
-;;;       bytes, the embedding alignment is 4, unless the element is a vector."
-;;;       (note: this applies for structures too)
+;;;   1. "The embedding alignment of the first element in a data
+;;;       structure is equal to the element's natural alignment."
+;;;
+;;;   2. "For subsequent elements that have a natural alignment
+;;;       greater than 4 bytes, the embedding alignment is 4, unless
+;;;       the element is a vector."  (note: this applies for
+;;;       structures too)
 
 ;; FIXME: get a better name for this. --luis
 (defun get-alignment (type alignment-type firstp)
@@ -346,7 +340,7 @@ to open-code (SETF MEM-REF) forms."
 (defun notice-foreign-struct-definition (name-and-options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (name &key size #+nil alignment)
-      (mklist name-and-options)
+      (ensure-list name-and-options)
     (let ((struct (make-instance 'foreign-struct-type :name name))
           (current-offset 0)
           (max-align 1)
@@ -372,7 +366,7 @@ to open-code (SETF MEM-REF) forms."
         (unless (= tail-padding max-align) ; See point 3 above.
           (incf current-offset tail-padding)))
       (setf (size struct) (or size current-offset))
-      (notice-foreign-type struct))))
+      (notice-foreign-type name struct))))
 
 (defmacro defcstruct (name &body fields)
   "Define the layout of a foreign structure."
@@ -469,7 +463,7 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
 (defun notice-foreign-union-definition (name-and-options slots)
   "Parse and install a foreign union definition."
   (destructuring-bind (name &key size)
-      (mklist name-and-options)
+      (ensure-list name-and-options)
     (let ((struct (make-instance 'foreign-struct-type :name name))
           (max-size 0)
           (max-align 0))
@@ -487,7 +481,7 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
               (setf max-align align)))))
       (setf (size struct) (or size max-size))
       (setf (alignment struct) max-align)
-      (notice-foreign-type struct))))
+      (notice-foreign-type name struct))))
 
 (defmacro defcunion (name &body fields)
   "Define the layout of a foreign union."
@@ -564,24 +558,32 @@ The buffer has dynamic extent and may be stack allocated."
 
 ;;;# User-defined Types and Translations.
 
-(defmacro define-foreign-type (type lambda-list &body body)
-  "Define a parameterized type."
-  (discard-docstring body)
-  `(progn
-     (define-type-spec-parser ,type ,lambda-list
-       (make-instance 'foreign-typedef :name ',type
-                      :actual-type (parse-type (progn ,@body))))
-     ',type))
+(defmacro define-foreign-type (name supers slots &rest options)
+  (multiple-value-bind (new-options simple-parser actual-type initargs)
+      (let ((keywords '(:simple-parser :actual-type :default-initargs)))
+        (apply #'values
+               (remove-if (lambda (opt) (member (car opt) keywords)) options)
+               (mapcar (lambda (kw) (cdr (assoc kw options))) keywords)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (defclass ,name ,(or supers '(enhanced-foreign-type))
+         ,slots
+         (:default-initargs ,@(when actual-type `(:actual-type ',actual-type))
+             ,@initargs)
+         ,@new-options)
+       ,(when simple-parser
+          `(notice-foreign-type ',(car simple-parser) (make-instance ',name)))
+       ',name)))
 
-(defmacro defctype (name base-type &key (translate-p t) documentation)
-  "Utility macro for simple C-like typedefs. A similar effect could be
-obtained using define-foreign-type."
+(defmacro defctype (name base-type &optional documentation)
+  "Utility macro for simple C-like typedefs."
   (declare (ignore documentation))
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-foreign-type
-      (make-instance 'foreign-typedef :name ',name
-                     :actual-type (parse-type ',base-type)
-                     :translate-p ,translate-p))))
+  (let* ((btype (parse-type base-type))
+         (dtype (if (typep btype 'enhanced-foreign-type)
+                    'enhanced-typedef
+                    'foreign-typedef)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-type
+        ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
 
 ;;;## Anonymous Type Translators
 ;;;
@@ -590,62 +592,52 @@ obtained using define-foreign-type."
 ;;; TODO: We will need to add a FREE function to this as well I think.
 ;;; --james
 
-(defclass foreign-type-wrapper (foreign-typedef)
-  ((to-c   :initarg :to-c)
-   (from-c :initarg :from-c))
-  (:documentation "Class for the wrapper type."))
+(define-foreign-type foreign-type-wrapper ()
+  ((to-c   :initarg :to-c   :reader wrapper-to-c)
+   (from-c :initarg :from-c :reader wrapper-from-c))
+  (:documentation "Wrapper type."))
 
-(define-type-spec-parser :wrapper (base-type &key to-c from-c)
+(define-parse-method :wrapper (base-type &key to-c from-c)
   (make-instance 'foreign-type-wrapper
                  :actual-type (parse-type base-type)
                  :to-c (or to-c 'identity)
                  :from-c (or from-c 'identity)))
 
-(defmethod unparse (name (type foreign-type-wrapper))
-  (declare (ignore name))
-  `(:wrapper ,(name (actual-type type))
-             :to-c ,(slot-value type 'to-c)
-             :from-c ,(slot-value type 'from-c)))
+(defmethod translate-to-foreign (value (type foreign-type-wrapper))
+  (translate-to-foreign
+   (funcall (slot-value type 'to-c) value) (actual-type type)))
 
-(defmethod translate-type-to-foreign (value (type foreign-type-wrapper))
-  (let ((actual-type (actual-type type)))
-    (translate-type-to-foreign
-     (funcall (slot-value type 'to-c) value) actual-type)))
-
-(defmethod translate-type-from-foreign (value (type foreign-type-wrapper))
-  (let ((actual-type (actual-type type)))
-    (funcall (slot-value type 'from-c)
-             (translate-type-from-foreign value actual-type))))
+(defmethod translate-from-foreign (value (type foreign-type-wrapper))
+  (funcall (slot-value type 'from-c)
+           (translate-from-foreign value (actual-type type))))
 
 ;;;# Other types
 
-(define-foreign-type :boolean (&optional (base-type :int))
-  "Boolean type. Maps to an :int by default. Only accepts integer types."
-  (ecase (canonicalize-foreign-type base-type)
-    ((:char
-      :unsigned-char
-      :int
-      :unsigned-int
-      :long
-      :unsigned-long) base-type)))
+;;; Boolean type. Maps to an :int by default. Only accepts integer types.
+(define-foreign-type foreign-boolean-type ()
+  ())
 
-(defmethod unparse ((name (eql :boolean)) type)
-  "Unparser for the :BOOLEAN type."
-  `(:boolean ,(name (actual-type type))))
+(define-parse-method :boolean (&optional (base-type :int))
+  (make-instance
+   'foreign-boolean-type :actual-type
+   (ecase (canonicalize-foreign-type base-type)
+     ((:char :unsigned-char :int :unsigned-int :long :unsigned-long
+       #-cffi-features:no-long-long :long-long
+       #-cffi-features:no-long-long :unsigned-long-long) base-type))))
 
-(defmethod translate-to-foreign (value (name (eql :boolean)))
+(defmethod translate-to-foreign (value (type foreign-boolean-type))
   (if value 1 0))
 
-(defmethod translate-from-foreign (value (name (eql :boolean)))
+(defmethod translate-from-foreign (value (type foreign-boolean-type))
   (not (zerop value)))
 
-(defmethod expand-to-foreign (value (name (eql :boolean)))
+(defmethod expand-to-foreign (value (type foreign-boolean-type))
   "Optimization for the :boolean type."
   (if (constantp value)
       (if (eval value) 1 0)
       `(if ,value 1 0)))
 
-(defmethod expand-from-foreign (value (name (eql :boolean)))
+(defmethod expand-from-foreign (value (type foreign-boolean-type))
   "Optimization for the :boolean type."
   (if (constantp value) ; very unlikely, heh
       (not (zerop (eval value)))
@@ -653,36 +645,30 @@ obtained using define-foreign-type."
 
 ;;;# Typedefs for built-in types.
 
-(defctype :uchar  :unsigned-char :translate-p nil)
-(defctype :ushort :unsigned-short :translate-p nil)
-(defctype :uint   :unsigned-int :translate-p nil)
-(defctype :ulong  :unsigned-long :translate-p nil)
+(defctype :uchar  :unsigned-char)
+(defctype :ushort :unsigned-short)
+(defctype :uint   :unsigned-int)
+(defctype :ulong  :unsigned-long)
 
 #-cffi-features:no-long-long
 (progn
-  (defctype :llong  :long-long :translate-p nil)
-  (defctype :ullong :unsigned-long-long :translate-p nil))
+  (defctype :llong  :long-long)
+  (defctype :ullong :unsigned-long-long))
 
 ;;; We try to define the :[u]int{8,16,32,64} types by looking at
 ;;; the sizes of the built-in integer types and defining typedefs.
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (labels ((find-matching-size (size types)
-             (car (member size types :key #'foreign-type-size)))
-           (notice-foreign-typedef (type actual-type)
-             (notice-foreign-type
-              (make-instance 'foreign-typedef :name type
-                             :actual-type (find-type actual-type)
-                             :translate-p nil)))
-           (match-types (sized-types builtin-types)
-             (loop for (type . size) in sized-types do
-                   (let ((match (find-matching-size size builtin-types)))
-                     (when match
-                       (notice-foreign-typedef type match))))))
+  (macrolet
+      ((match-types (sized-types mtypes)
+         `(progn
+            ,@(loop for (type . size) in sized-types
+                    for m = (car (member size mtypes :key #'foreign-type-size))
+                    when m collect `(defctype ,type ,m)))))
     ;; signed
-    (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
-                 '(:char :short :int :long
-                   #-cffi-features:no-long-long :long-long))
+    (match-types ((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
+                 (:char :short :int :long
+                  #-cffi-features:no-long-long :long-long))
     ;; unsigned
-    (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
-                 '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
-                   #-cffi-features:no-long-long :unsigned-long-long))))
+    (match-types ((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
+                 (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
+                  #-cffi-features:no-long-long :unsigned-long-long))))

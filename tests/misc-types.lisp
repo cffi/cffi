@@ -133,49 +133,24 @@
    #-cffi-features:no-long-long 8
    #-cffi-features:no-long-long 8))
 
-(defctype untranslated-int :int :translate-p nil)
+(define-foreign-type error-error ()
+  ()
+  (:actual-type :int)
+  (:simple-parser error-error))
 
-(defmethod translate-to-foreign (value (type (eql 'untranslated-int)))
-  (+ value 42))
-
-(defmethod translate-from-foreign (value (type (eql 'untranslated-int)))
-  (+ value 666))
-
-(defcfun ("abs" untranslated-abs) untranslated-int
-  (value untranslated-int))
-
-;;; Ensure that type translators are not called on non-translatable
-;;; typedefs when passing arguments or returning values to foreign
-;;; functions.
-(deftest misc-types.untranslated-typedef
-    (untranslated-abs 1)
-  1)
-
-;;; Ensure that type translators are not called on non-translatable
-;;; typedefs when passing values or returning from a callback.
-#-cffi-features:no-foreign-funcall
-(progn
-  (defcallback untranslated-callback untranslated-int ((x untranslated-int))
-    x)
-  (deftest misc-types.untranslated-callback
-      (foreign-funcall-pointer (callback untranslated-callback) () :int 1 :int)
-    1))
-
-(defctype error-error :int)
-
-(defmethod translate-to-foreign (value (name (eql 'error-error)))
+(defmethod translate-to-foreign (value (type error-error))
   (declare (ignore value))
   (error "translate-to-foreign invoked."))
 
-(defmethod translate-from-foreign (value (name (eql 'error-error)))
+(defmethod translate-from-foreign (value (type error-error))
   (declare (ignore value))
   (error "translate-from-foreign invoked."))
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
-  (defmethod expand-to-foreign (value (name (eql 'error-error)))
+  (defmethod expand-to-foreign (value (type error-error))
     value)
 
-  (defmethod expand-from-foreign (value (name (eql 'error-error)))
+  (defmethod expand-from-foreign (value (type error-error))
     value))
 
 (defcfun ("abs" expand-abs) error-error
@@ -213,24 +188,28 @@
     (expand-expect-int-sum (callback expand-int-sum))
   t)
 
-(defctype translate-tracker :int)
+(define-foreign-type translate-tracker ()
+  ()
+  (:actual-type :int)
+  (:simple-parser translate-tracker))
 
 (declaim (special .fto-called.))
 
-(defmethod free-translated-object (value (type-name (eql 'translate-tracker))
-                                   param)
+(defmethod free-translated-object (value (type translate-tracker) param)
   (declare (ignore value param))
   (setf .fto-called. t))
 
-(defctype expand-tracker :int)
+(define-foreign-type expand-tracker ()
+  ()
+  (:actual-type :int)
+  (:simple-parser expand-tracker))
 
-(defmethod free-translated-object (value (type-name (eql 'expand-tracker))
-                                   param)
+(defmethod free-translated-object (value (type expand-tracker) param)
   (declare (ignore value param))
   (setf .fto-called. t))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod expand-to-foreign (value (type-name (eql 'expand-tracker)))
+  (defmethod expand-to-foreign (value (type expand-tracker))
     (declare (ignore value))
     (call-next-method)))
 
@@ -247,10 +226,10 @@
       .fto-called.)
   t)
 
-;; free-translated-object must not be called when there is an etf, but
+;; free-translated-object must be called when there is an etf, but
 ;; they answer *runtime-translator-form*
 (deftest misc-types.expand.6
     (let ((.fto-called. nil))
       (etracker-abs -1)
       .fto-called.)
-  nil)
+  t)

@@ -3,6 +3,7 @@
 ;;; uffi-compat.lisp --- UFFI compatibility layer for CFFI.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -37,7 +38,7 @@
    #:def-foreign-type
    #:def-type
    #:null-char-p
-   
+
    ;; aggregate types
    #:def-enum
    #:def-struct
@@ -80,7 +81,7 @@
    #:with-foreign-string
    #:with-foreign-strings
    #:foreign-string-length              ; not implemented
-   
+
    ;; function call
    #:def-function
 
@@ -127,16 +128,18 @@
            (:struct-pointer :pointer))
          uffi-type))))
 
-(defclass uffi-array-type (cffi::foreign-typedef)
+(cffi:define-foreign-type uffi-array-type ()
   ;; ELEMENT-TYPE should be /unparsed/, suitable for passing to mem-aref.
   ((element-type :initform (error "An element-type is required.")
                  :accessor element-type :initarg :element-type)
    (nelems :initform (error "nelems is required.")
            :accessor nelems :initarg :nelems))
+  (:actual-type :pointer)
   (:documentation "UFFI's :array type."))
 
-(defmethod initialize-instance :after ((self uffi-array-type) &key)
-  (setf (cffi::actual-type self) (cffi::parse-type :pointer)))
+(cffi:define-parse-method uffi-array (element-type count)
+  (make-instance 'uffi-array-type :element-type element-type
+                 :nelems (or count 1)))
 
 (defmethod cffi:foreign-type-size ((type uffi-array-type))
   (* (cffi:foreign-type-size (element-type type)) (nelems type)))
@@ -144,22 +147,18 @@
 (defmethod cffi::aggregatep ((type uffi-array-type))
   t)
 
-(cffi::define-type-spec-parser uffi-array (element-type count)
-  (make-instance 'uffi-array-type :element-type element-type
-                 :nelems (or count 1)))
-
 ;; UFFI's :(unsigned-)char
-(cffi:define-foreign-type uffi-char (base-type)
-  base-type)
+(cffi:define-foreign-type uffi-char ()
+  ())
 
-(defmethod cffi:translate-to-foreign ((value character) (name (eql 'uffi-char)))
+(cffi:define-parse-method uffi-char (base-type)
+  (make-instance 'uffi-char :actual-type base-type))
+
+(defmethod cffi:translate-to-foreign ((value character) (type uffi-char))
   (char-code value))
 
-(defmethod cffi:translate-from-foreign (obj (name (eql 'uffi-char)))
+(defmethod cffi:translate-from-foreign (obj (type uffi-char))
   (code-char obj))
-
-(defmethod cffi::unparse ((name (eql 'uffi-char)) type)
-  `(uffi-char ,(cffi::name (cffi::actual-type type))))
 
 (defmacro def-type (name type)
   "Define a Common Lisp type NAME for UFFI type TYPE."
@@ -192,11 +191,11 @@ field-name"
     (declare (fixnum counter))
     (dolist (arg args)
       (let ((name (if (listp arg) (car arg) arg))
-            (value (if (listp arg) 
+            (value (if (listp arg)
                        (prog1
                            (setq counter (cadr arg))
                          (incf counter))
-                       (prog1 
+                       (prog1
                            counter
                          (incf counter)))))
         (setq name (intern (concatenate 'string
@@ -222,7 +221,7 @@ field-name"
 
 (defun (setf %foreign-slot-value) (value obj type field)
   (setf (cffi:foreign-slot-value obj type field) value))
-             
+
 (defmacro get-slot-value (obj type field)
   "Access a slot value from a structure."
   `(%foreign-slot-value ,obj ,type ,field))
@@ -245,7 +244,7 @@ field-name"
                        `',(element-type (cffi::parse-type
                                          (convert-uffi-type (eval type))))
                        `(element-type (cffi::parse-type
-                                       (convert-uffi-type ,type)))) 
+                                       (convert-uffi-type ,type))))
                   ,position))
 
 ;; UFFI's documentation on DEF-UNION is a bit scarce, I'm not sure
@@ -430,7 +429,7 @@ sorted by preference"
   #+(or macos macosx darwin ccl-5.0) '("dylib" "bundle")
   #-(or win32 cygwin mswindows macos macosx darwin ccl-5.0) '("so" "a" "o"))
 
-(defun find-foreign-library (names directories &key types drive-letters)  
+(defun find-foreign-library (names directories &key types drive-letters)
   "Looks for a foreign library. directories can be a single
 string or a list of strings of candidate directories. Use default
 library type if type is not specified."
@@ -451,21 +450,21 @@ library type if type is not specified."
     (dolist (name names)
       (dolist (dir directories)
    (dolist (type types)
-     (let ((path (make-pathname 
+     (let ((path (make-pathname
              #+lispworks :host
              #+lispworks (when drive-letter drive-letter)
              #-lispworks :device
              #-lispworks (when drive-letter drive-letter)
-             :name name 
+             :name name
              :type type
-             :directory 
+             :directory
              (etypecase dir
           (pathname
            (pathname-directory dir))
           (list
            dir)
           (string
-           (pathname-directory 
+           (pathname-directory
             (parse-namestring dir)))))))
        (when (probe-file path)
          (return-from find-foreign-library path)))))))
@@ -481,7 +480,7 @@ library type if type is not specified."
                              force-load)
   #+(or allegro mcl sbcl clisp) (declare (ignore module supporting-libraries))
   #+(or cmu scl sbcl) (declare (ignore module))
-  
+
   (when (and filename (or (null (pathname-directory filename))
                           (probe-file filename)))
     (if (pathnamep filename) ;; ensure filename is a string to check if
@@ -491,12 +490,12 @@ library type if type is not specified."
         (find filename *loaded-libraries* :test #'string-equal))
         t ;; return T, but don't reload library
         (progn
-          
+
           #+cmu
           (let ((type (pathname-type (parse-namestring filename))))
             (if (string-equal type "so")
                 (sys::load-object-file filename)
-                (alien:load-foreign filename 
+                (alien:load-foreign filename
                                     :libraries
                                     (convert-supporting-libraries-to-string
                                      supporting-libraries))))
@@ -504,14 +503,14 @@ library type if type is not specified."
           (let ((type (pathname-type (parse-namestring filename))))
             (if (string-equal type "so")
                 (sys::load-dynamic-object filename)
-                (alien:load-foreign filename 
+                (alien:load-foreign filename
                                     :libraries
                                     (convert-supporting-libraries-to-string
                                      supporting-libraries))))
 
           #-cmu
           (cffi:load-foreign-library filename)
-          
+
           (push filename *loaded-libraries*)
           t))))
 

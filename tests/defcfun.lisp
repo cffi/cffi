@@ -137,7 +137,7 @@
 
 (deftest defcfun.noop
     (noop)
-  nil)
+  #|no values|#)
 
 ;;;# Calling varargs functions
 

@@ -47,11 +47,14 @@
 ;;; A NULL-POINTER is a foreign :POINTER that must always be NULL.
 ;;; Both a NULL pointer and NIL are legal values---any others will
 ;;; result in a runtime error.
-(defctype null-pointer :pointer)
+(define-foreign-type null-pointer-type ()
+  ()
+  (:actual-type :pointer)
+  (:simple-parser null-pointer))
 
 ;;; This type translator is used to ensure that a NULL-POINTER has a
 ;;; null value.  It also converts NIL to a null pointer.
-(defmethod translate-to-foreign (value (name (eql 'null-pointer)))
+(defmethod translate-to-foreign (value (type null-pointer-type))
   (cond
     ((null value) (null-pointer))
     ((null-pointer-p value) value)
@@ -61,11 +64,14 @@
 ;;; value of C functions that return -1 and set errno on errors.
 ;;; Someday when CFFI has a portable interface for dealing with
 ;;; 'errno', this error reporting can be more useful.
-(defctype syscall-result :int)
+(define-foreign-type syscall-result-type ()
+  ()
+  (:actual-type :int)
+  (:simple-parser syscall-result))
 
 ;;; Type translator to check a SYSCALL-RESULT and signal a Lisp error
 ;;; if the value is negative.
-(defmethod translate-from-foreign (value (name (eql 'syscall-result)))
+(defmethod translate-from-foreign (value (type syscall-result-type))
   (if (minusp value)
       (error "System call failed with return value ~D." value)
       value))

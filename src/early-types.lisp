@@ -3,6 +3,7 @@
 ;;; early-types.lisp --- Low-level foreign type operations.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -34,66 +35,48 @@
 (in-package #:cffi)
 
 ;;;# Foreign Types
-
-(defvar *foreign-types* (make-hash-table)
-  "Hash table of all user-defined foreign types.")
-
-(defun find-type (name)
-  "Return the foreign type instance for NAME or nil."
-  (gethash name *foreign-types*))
-
-(defun find-type-or-lose (name)
-  "Return the foreign type instance for NAME or signal an error."
-  (or (find-type name)
-      (error "Undefined foreign type: ~S" name)))
-
-(defun notice-foreign-type (type)
-  "Inserts TYPE in the *FOREIGN-TYPES* hashtable."
-  (setf (gethash (name type) *foreign-types*) type)
-  (name type))
-
-;;;# Parsing Type Specifications
 ;;;
-;;; Type specifications are of the form (type {args}*). The
-;;; type parser can specify how its arguments should look like
-;;; through a lambda list.
+;;; Type specifications are of the form (type {args}*). The type
+;;; parser can specify how its arguments should look like through a
+;;; lambda list.
 ;;;
 ;;; "type" is a shortcut for "(type)", ie, no args were specified.
 ;;;
-;;; Examples of such types: boolean, (boolean), (boolean :int)
-;;; If the boolean type parser specifies the lambda list:
-;;; &optional (base-type :int), then all of the above three
-;;; type specs would be parsed to an identical type.
+;;; Examples of such types: boolean, (boolean), (boolean :int) If the
+;;; boolean type parser specifies the lambda list: &optional
+;;; (base-type :int), then all of the above three type specs would be
+;;; parsed to an identical type.
 ;;;
-;;; Type parsers, defined with DEFINE-TYPE-SPEC-PARSER should
-;;; return a subtype of the foreign-type class.
+;;; Type parsers, defined with DEFINE-PARSE-METHOD should return a
+;;; subtype of the foreign-type class.
 
 (defvar *type-parsers* (make-hash-table)
   "Hash table of defined type parsers.")
 
 (defun find-type-parser (symbol)
   "Return the type parser for SYMBOL."
-  (gethash symbol *type-parsers*))
+  (or (gethash symbol *type-parsers*)
+      (error "Unknown CFFI type: ~S." symbol)))
 
 (defun (setf find-type-parser) (func symbol)
   "Set the type parser for SYMBOL."
   (setf (gethash symbol *type-parsers*) func))
 
-(defmacro define-type-spec-parser (symbol lambda-list &body body)
-  "Define a type parser on SYMBOL and lists whose CAR is SYMBOL."
-  (when (stringp (car body)) ; discard-docstring
-    (setq body (cdr body)))
+;;; Using a generic function would have been nicer but generates lots
+;;; of style warnings in SBCL.  (Silly reason, yes.)
+(defmacro define-parse-method (name lambda-list &body body)
+  "Define a type parser on NAME and lists whose CAR is NAME."
+  (discard-docstring body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (setf (find-type-parser ',symbol)
-           (lambda ,lambda-list ,@body))))
+     (setf (find-type-parser ',name)
+           (lambda ,lambda-list ,@body))
+     ',name))
 
-(defun parse-type (type-spec-or-name)
-  (or (find-type type-spec-or-name)
-      (let* ((type-spec (mklist type-spec-or-name))
-             (parser (find-type-parser (car type-spec))))
-        (if parser
-            (apply parser (cdr type-spec))
-            (error "Unknown CFFI type: ~S." type-spec-or-name)))))
+;;; Utility function for the simple case where the type takes no
+;;; arguments.
+(defun notice-foreign-type (name type)
+  (setf (find-type-parser name) (lambda () type))
+  name)
 
 ;;;# Generic Functions on Types
 
@@ -114,55 +97,42 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (:documentation
    "Return the size in bytes of a foreign type."))
 
-(defgeneric unparse (type-name type-class)
+(defgeneric unparse-type (foreign-type)
   (:documentation
    "Unparse FOREIGN-TYPE to a type specification (symbol or list)."))
-
-(defgeneric translate-p (foreign-type)
-  (:documentation
-   "Return true if type translators should run on FOREIGN-TYPE."))
 
 ;;;# Foreign Types
 
 (defclass foreign-type ()
-  ((name
-    ;; Name of this foreign type, a symbol.
-    :initform (gensym "ANONYMOUS-CFFI-TYPE")
-    :initarg :name
-    :accessor name))
-  (:documentation "Contains information about a basic foreign type."))
-
-(defmethod print-object ((type foreign-type) stream)
-  "Print a FOREIGN-TYPE instance to STREAM unreadably."
-  (print-unreadable-object (type stream :type t :identity nil)
-    (format stream "~S" (name type))))
+  ()
+  (:documentation "Base class for all foreign types."))
 
 (defmethod make-load-form ((type foreign-type) &optional env)
   "Return the form used to dump types to a FASL file."
   (declare (ignore env))
   `(parse-type ',(unparse-type type)))
 
-(defun canonicalize-foreign-type (type)
-  "Convert TYPE to a built-in type by following aliases.
-Signals an error if the type cannot be resolved."
-  (canonicalize (parse-type type)))
-
-(defmethod unparse (name (type foreign-type))
-  "Default method to unparse TYPE to its name."
-  (declare (ignore name))
-  (name type))
-
-(defun unparse-type (type)
-  "Unparse a foreign type to a symbol or list type spec."
-  (unparse (name type) type))
-
 (defmethod foreign-type-size (type)
   "Return the size in bytes of a foreign type."
   (foreign-type-size (parse-type type)))
 
-(defmethod translate-p ((type foreign-type))
-  "By default, types will be translated."
-  t)
+(defclass named-foreign-type (foreign-type)
+  ((name
+    ;; Name of this foreign type, a symbol.
+    :initform (error "Must specify a NAME.")
+    :initarg :name
+    :accessor name)))
+
+(defmethod print-object ((type named-foreign-type) stream)
+  "Print a FOREIGN-TYPEDEF instance to STREAM unreadably."
+  (print-unreadable-object (type stream :type t :identity nil)
+    (format stream "~S" (name type))))
+
+;;; Return the type's name which can be passed to PARSE-TYPE.  If
+;;; that's not the case for some subclass of NAMED-FOREIGN-TYPE then
+;;; it should specialize UNPARSE-TYPE.
+(defmethod unparse-type ((type named-foreign-type))
+  (name type))
 
 ;;;# Built-In Foreign Types
 
@@ -190,110 +160,55 @@ Signals an error if the type cannot be resolved."
   "Return the size of a built-in type."
   (%foreign-type-size (type-keyword type)))
 
-(defmethod translate-p ((type foreign-built-in-type))
-  "Built-in types are never translated."
-  nil)
+(defmethod unparse-type ((type foreign-built-in-type))
+  "Returns the symbolic representation of a built-in type."
+  (type-keyword type))
+
+(defmethod print-object ((type foreign-built-in-type) stream)
+  "Print a FOREIGN-TYPE instance to STREAM unreadably."
+  (print-unreadable-object (type stream :type t :identity nil)
+    (format stream "~S" (type-keyword type))))
 
 (defmacro define-built-in-foreign-type (keyword)
   "Defines a built-in foreign-type."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (notice-foreign-type
-      (make-instance 'foreign-built-in-type :name ,keyword
-                     :type-keyword ,keyword))))
+      ,keyword (make-instance 'foreign-built-in-type :type-keyword ,keyword))))
 
 ;;;# Foreign Pointer Types
 
-(defclass foreign-pointer-type (foreign-type)
+(defclass foreign-pointer-type (foreign-built-in-type)
   ((pointer-type
     ;; Type of object pointed at by this pointer, or nil for an
     ;; untyped (void) pointer.
     :initform nil
     :initarg :pointer-type
     :accessor pointer-type))
-  (:default-initargs :name :pointer))
+  (:default-initargs :type-keyword :pointer))
 
-;;; Canonicalize foreign pointers to the primitive :POINTER type.
-(defmethod canonicalize ((type foreign-pointer-type))
-  :pointer)
-
-;;; Pointers are never aggregate types.
-(defmethod aggregatep ((type foreign-pointer-type))
-  nil)
-
-;;; Return the alignment of any foreign pointer type.
-(defmethod foreign-type-alignment ((type foreign-pointer-type))
-  (%foreign-type-alignment :pointer))
-
-;;; Return the size of any foreign pointer type.
-(defmethod foreign-type-size ((type foreign-pointer-type))
-  (%foreign-type-size :pointer))
-
-;;; Foreign pointer types are never translated.
-(defmethod translate-p ((type foreign-pointer-type))
-  nil)
+;;; Define the type parser for the :POINTER type.  If no type argument
+;;; is provided, a void pointer will be created.
+(let ((void-pointer (make-instance 'foreign-pointer-type)))
+  (define-parse-method :pointer (&optional type)
+    (if type
+        (make-instance 'foreign-pointer-type :pointer-type (parse-type type))
+        ;; A bit of premature optimization here.
+        void-pointer)))
 
 ;;; Unparse a foreign pointer type when dumping to a fasl.
-(defmethod unparse (name (type foreign-pointer-type))
-  (declare (ignore name))
-  (with-slots (pointer-type) type
-    (if pointer-type
-        `(:pointer ,(unparse-type pointer-type))
-        :pointer)))
+(defmethod unparse-type ((type foreign-pointer-type))
+  (if (pointer-type type)
+      `(:pointer ,(unparse-type (pointer-type type)))
+      :pointer))
 
 ;;; Print a foreign pointer type unreadably in unparsed form.
 (defmethod print-object ((type foreign-pointer-type) stream)
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (unparse-type type))))
 
-;;;# Foreign Typedefs
-;;;
-;;; We have two classes: foreign-type-alias and foreign-typedef.
-;;; The former is a direct super-class of the latter. The only
-;;; difference between the two is that foreign-typedef has different
-;;; behaviour wrt type translations. (see types.lisp)
-
-(defclass foreign-type-alias (foreign-type)
-  ((actual-type
-    ;; The FOREIGN-TYPE instance this type is an alias for.
-    :initarg :actual-type
-    :accessor actual-type)
-   (translate-p
-    ;; If true, this type should be translated (the default).
-    :initform t
-    :initarg :translate-p
-    :accessor translate-p))
-  (:documentation "A type that aliases another type."))
-
-(defmethod canonicalize ((type foreign-type-alias))
-  "Return the built-in type keyword for TYPE."
-  (canonicalize (actual-type type)))
-
-(defmethod aggregatep ((type foreign-type-alias))
-  "Return true if TYPE's actual type is aggregate."
-  (aggregatep (actual-type type)))
-
-(defmethod foreign-type-alignment ((type foreign-type-alias))
-  "Return the alignment of a foreign typedef."
-  (foreign-type-alignment (actual-type type)))
-
-(defmethod foreign-type-size ((type foreign-type-alias))
-  "Return the size in bytes of a foreign typedef."
-  (foreign-type-size (actual-type type)))
-
-(defclass foreign-typedef (foreign-type-alias)
-  ())
-
-;;; This should probably be an argument to parse-type.
-;;; So we'd have: (parse-type foo :follow-typedefs t)
-;;; instead of (follow-typedefs (parse-type foo)) ? --luis
-(defun follow-typedefs (type)
-  (if (eq (type-of type) 'foreign-typedef)
-      (follow-typedefs (actual-type type))
-      type))
-
 ;;;# Structure Type
 
-(defclass foreign-struct-type (foreign-type)
+(defclass foreign-struct-type (named-foreign-type)
   ((slots
     ;; Hash table of slots in this structure, keyed by name.
     :initform (make-hash-table)
@@ -325,128 +240,107 @@ Signals an error if the type cannot be resolved."
   "Return the alignment requirements for this struct."
   (alignment type))
 
+;;;# Foreign Typedefs
+
+(defclass foreign-type-alias (foreign-type)
+  ((actual-type
+    ;; The FOREIGN-TYPE instance this type is an alias for.
+    :initarg :actual-type
+    :accessor actual-type
+    :initform (error "Must specify an ACTUAL-TYPE.")))
+  (:documentation "A type that aliases another type."))
+
+(defmethod canonicalize ((type foreign-type-alias))
+  "Return the built-in type keyword for TYPE."
+  (canonicalize (actual-type type)))
+
+(defmethod aggregatep ((type foreign-type-alias))
+  "Return true if TYPE's actual type is aggregate."
+  (aggregatep (actual-type type)))
+
+(defmethod foreign-type-alignment ((type foreign-type-alias))
+  "Return the alignment of a foreign typedef."
+  (foreign-type-alignment (actual-type type)))
+
+(defmethod foreign-type-size ((type foreign-type-alias))
+  "Return the size in bytes of a foreign typedef."
+  (foreign-type-size (actual-type type)))
+
+(defclass foreign-typedef (foreign-type-alias named-foreign-type)
+  ())
+
+(defun follow-typedefs (type)
+  (if (eq (type-of type) 'foreign-typedef)
+      (follow-typedefs (actual-type type))
+      type))
+
 ;;;# Type Translators
 ;;;
-;;; Type translation is now done with generic functions at runtime.
+;;; Type translation is done with generic functions at runtime for
+;;; subclasses of ENHANCED-FOREIGN-TYPE/
 ;;;
-;;; The main internal interface to type translation is through the
-;;; generic functions TRANSLATE-TYPE-{TO,FROM}-FOREIGN and
-;;; FREE-TYPE-TRANSLATED-OBJECT.  These should be specialized for
-;;; subclasses of FOREIGN-TYPE requiring translation.
-;;;
-;;; User-defined type translators are defined by specializing
-;;; additional methods that are called by the internal methods
-;;; specialized on FOREIGN-TYPEDEF.  These methods dispatch on the
-;;; name of the type.
+;;; The main interface for defining type translations is through the
+;;; generic functions TRANSLATE-{TO,FROM}-FOREIGN and
+;;; FREE-TRANSLATED-OBJECT.
+
+(defclass enhanced-foreign-type (foreign-type-alias)
+  ((unparsed-type :accessor unparsed-type)))
+
+;;; If actual-type isn't parsed already, let's parse it.  This way we
+;;; don't have to export PARSE-TYPE and users don't have to worry
+;;; about this in DEFINE-FOREIGN-TYPE or DEFINE-PARSE-METHOD.
+(defmethod initialize-instance :after ((type enhanced-foreign-type) &key)
+  (unless (typep (actual-type type) 'foreign-type)
+    (setf (actual-type type) (parse-type (actual-type type)))))
+
+(defmethod unparse-type ((type enhanced-foreign-type))
+  (unparsed-type type))
+
+;;; Only now we define PARSE-TYPE because it needs to do some extra
+;;; work for ENHANCED-FOREIGN-TYPES.
+(defun parse-type (type)
+  (let* ((spec (ensure-list type))
+         (ptype (apply (find-type-parser (car spec)) (cdr spec))))
+    (when (typep ptype 'enhanced-foreign-type)
+      (setf (unparsed-type ptype) type))
+    ptype))
+
+(defun canonicalize-foreign-type (type)
+  "Convert TYPE to a built-in type by following aliases.
+Signals an error if the type cannot be resolved."
+  (canonicalize (parse-type type)))
 
 ;;; Translate VALUE to a foreign object of the type represented by
-;;; TYPE, which will be a subclass of FOREIGN-TYPE.  Returns the
-;;; foreign value and an optional second value which will be passed to
-;;; FREE-TYPE-TRANSLATED-OBJECT as the PARAM argument.
-(defgeneric translate-type-to-foreign (value type)
+;;; TYPE, which will be a subclass of ENHANCED-FOREIGN-TYPE.  Returns
+;;; the foreign value and an optional second value which will be
+;;; passed to FREE-TRANSLATED-OBJECT as the PARAM argument.
+(defgeneric translate-to-foreign (value type)
   (:method (value type)
     (declare (ignore type))
     value))
 
 ;;; Translate the foreign object VALUE from the type repsented by
-;;; TYPE, which will be a subclass of FOREIGN-TYPE.  Returns the
-;;; converted Lisp value.
-(defgeneric translate-type-from-foreign (value type)
+;;; TYPE, which will be a subclass of ENHANCED-FOREIGN-TYPE.  Returns
+;;; the converted Lisp value.
+(defgeneric translate-from-foreign (value type)
   (:method (value type)
     (declare (ignore type))
     value))
 
-;;; Free an object allocated by TRANSLATE-TYPE-TO-FOREIGN.  VALUE is a
+;;; Free an object allocated by TRANSLATE-TO-FOREIGN.  VALUE is a
 ;;; foreign object of the type represented by TYPE, which will be a
-;;; FOREIGN-TYPE subclass.  PARAM, if present, contains the second
-;;; value returned by TRANSLATE-TYPE-TO-FOREIGN, and is used to
+;;; ENHANCED-FOREIGN-TYPE subclass.  PARAM, if present, contains the
+;;; second value returned by TRANSLATE-TO-FOREIGN, and is used to
 ;;; communicate between the two functions.
-(defgeneric free-type-translated-object (value type param)
+(defgeneric free-translated-object (value type param)
   (:method (value type param)
     (declare (ignore value type param))))
 
-;;;## Translations for Typedefs
-;;;
-;;; By default, the translation methods for type definitions delegate
-;;; to the translation methods for the ACTUAL-TYPE of the typedef.
-;;;
-;;; The user is allowed to intervene in this process by specializing
-;;; TRANSLATE-TO-FOREIGN, TRANSLATE-FROM-FOREIGN, and
-;;; FREE-TRANSLATED-OBJECT on the name of the typedef.
-
-;;; Exported hook method allowing specific typedefs to define custom
-;;; translators to convert VALUE to the foreign type named by NAME.
-(defgeneric translate-to-foreign (value name)
-  (:method (value name)
-    (declare (ignore name))
-    value))
-
-;;; Exported hook method allowing specific typedefs to define custom
-;;; translators to convert VALUE from the foreign type named by NAME.
-(defgeneric translate-from-foreign (value name)
-  (:method (value name)
-    (declare (ignore name))
-    value))
-
-;;; Exported hook method allowing specific typedefs to free objects of
-;;; type NAME allocated by TRANSLATE-TO-FOREIGN.
-(defgeneric free-translated-object (value name param)
-  (:method (value name param)
-    (declare (ignore value name param))))
-
-;;; Default translator to foreign for typedefs.  We build a list out
-;;; of the second value returned from each translator so we can pass
-;;; each parameter to the appropriate free method when freeing the
-;;; object.
-(defmethod translate-type-to-foreign (value (type foreign-typedef))
-  (multiple-value-bind (value param)
-      (translate-to-foreign value (name type))
-    (multiple-value-bind (new-value new-param)
-        (translate-type-to-foreign value (actual-type type))
-      (values new-value (cons param new-param)))))
-
-;;; Default translator from foreign for typedefs.
-(defmethod translate-type-from-foreign (value (type foreign-typedef))
-  (translate-from-foreign
-   (translate-type-from-foreign value (actual-type type))
-   (name type)))
-
-;;; Default method for freeing translated foreign typedefs.  PARAM
-;;; will actually be a list of parameters to pass to each translator
-;;; method as returned by TRANSLATE-TYPE-TO-FOREIGN.
-(defmethod free-type-translated-object (value (type foreign-typedef) param)
-  (free-translated-object value (name type) (car param))
-  (free-type-translated-object value (actual-type type) (cdr param)))
-
 ;;;## Macroexpansion Time Translation
 ;;;
-;;; The following expand-* generic functions are similar to their
-;;; translate-* counterparts but are usually called at macroexpansion
+;;; The following EXPAND-* generic functions are similar to their
+;;; TRANSLATE-* counterparts but are usually called at macroexpansion
 ;;; time. They offer a way to optimize the runtime translators.
-;;;
-;;; The default methods expand to forms calling the runtime translators
-;;; unless TRANSLATE-P returns NIL for the type.
-
-(defun %expand-type-to-foreign-dyn (value var body type)
-  (with-unique-names (param)
-    (if (translate-p type)
-        `(multiple-value-bind (,var ,param)
-             (translate-type-to-foreign ,value ,type)
-           (unwind-protect
-                (progn ,@body)
-             (free-type-translated-object ,var ,type ,param)))
-        `(let ((,var ,value))
-           ,@body))))
-
-(defun %expand-type-to-foreign (value type)
-  (if (translate-p type)
-      `(values (translate-type-to-foreign ,value ,type))
-      value))
-
-(defun %expand-type-from-foreign (value type)
-  (if (translate-p type)
-      `(translate-type-from-foreign ,value ,type)
-      `(values ,value)))
 
 ;;; This special variable is bound by the various :around methods
 ;;; below to the respective form generated by the above %EXPAND-*
@@ -455,88 +349,121 @@ Signals an error if the type cannot be resolved."
 ;;; that simply answers the rtf bound by the default :around method.
 (defvar *runtime-translator-form*)
 
-(defun specializedp (gf &rest args)
-  "Answer whether GF has more than one applicable method for ARGS."
-  (typep (compute-applicable-methods gf args) '(cons t cons)))
+;;; EXPAND-FROM-FOREIGN
 
-(defgeneric expand-type-to-foreign-dyn (value var body type)
-  (:method :around (value var body type)
-    (let ((*runtime-translator-form*
-           (%expand-type-to-foreign-dyn value var body type)))
-      (call-next-method)))
-  (:method (value var body type)
-    ;; If COMPUTE-APPLICABLE-METHODS only finds one method it's
-    ;; the default one meaning that there is no to-foreign expander
-    ;; therefore we return *RUNTIME-TRANSLATOR-FORM* instead.
-    (if (specializedp #'expand-type-to-foreign value type)
-        `(let ((,var ,(expand-type-to-foreign value type)))
-           ,@body)
-        *runtime-translator-form*)))
-
-(defgeneric expand-type-to-foreign (value type)
-  (:method :around (value type)
-    (let ((*runtime-translator-form* (%expand-type-to-foreign value type)))
-      (call-next-method)))
+(defgeneric expand-from-foreign (value type)
   (:method (value type)
-    (declare (ignore value type))
-    *runtime-translator-form*))
+    (declare (ignore type))
+    value))
 
-(defgeneric expand-type-from-foreign (value type)
-  (:method :around (value type)
-    (let ((*runtime-translator-form* (%expand-type-from-foreign value type)))
-      (call-next-method)))
+(defmethod expand-from-foreign :around (value (type enhanced-foreign-type))
+  (let ((*runtime-translator-form* `(translate-from-foreign ,value ,type)))
+    (call-next-method)))
+
+(defmethod expand-from-foreign (value (type enhanced-foreign-type))
+  (declare (ignore value type))
+  *runtime-translator-form*)
+
+;;; EXPAND-TO-FOREIGN
+
+;; The second return value is used to tell EXPAND-TO-FOREIGN-DYN that
+;; an unspecialized method was called.
+(defgeneric expand-to-foreign (value type)
   (:method (value type)
-    (declare (ignore value type))
-    *runtime-translator-form*))
+    (declare (ignore type))
+    (values value t)))
+
+(defmethod expand-to-foreign :around (value (type enhanced-foreign-type))
+  (let ((*runtime-translator-form*
+         `(values (translate-to-foreign ,value ,type))))
+    (call-next-method)))
+
+(defmethod expand-to-foreign (value (type enhanced-foreign-type))
+  (declare (ignore value type))
+  (values *runtime-translator-form* t))
+
+;;; EXPAND-TO-FOREIGN-DYN
 
 (defgeneric expand-to-foreign-dyn (value var body type)
   (:method (value var body type)
-    (declare (ignore value var body type))
-    *runtime-translator-form*))
-(defgeneric expand-to-foreign (value type)
-  (:method (value type)
-    (declare (ignore value type))
-    *runtime-translator-form*))
-(defgeneric expand-from-foreign (value type)
-  (:method (value type)
-    (declare (ignore value type))
-    *runtime-translator-form*))
+    (declare (ignore type))
+    `(let ((,var ,value)) ,@body)))
 
-(defmethod expand-type-to-foreign-dyn (value var body (type foreign-typedef))
-  (if (or (specializedp #'expand-to-foreign-dyn
-                        value var body (name type))
-          (not (specializedp #'expand-to-foreign value (name type))))
-      (expand-to-foreign-dyn value var body (name type))
-      ;; If there is to-foreign _expansion_, but not to-foreign-dyn
-      ;; expansion, we use that.
-      `(let ((,var ,(expand-type-to-foreign value type)))
-        ,@body)))
+(defmethod expand-to-foreign-dyn :around
+    (value var body (type enhanced-foreign-type))
+  (let ((*runtime-translator-form*
+         (with-unique-names (param)
+           `(multiple-value-bind (,var ,param)
+                (translate-to-foreign ,value ,type)
+              (unwind-protect
+                   (progn ,@body)
+                (free-translated-object ,var ,type ,param))))))
+    (call-next-method)))
 
-(defmethod expand-type-to-foreign (value (type foreign-typedef))
-  (expand-to-foreign value (name type)))
+;;; If this method is called it means the user hasn't defined a
+;;; to-foreign-dyn expansion, so we use the to-foreign expansion.
+;;;
+;;; However, we do so *only* if there's a specialized
+;;; EXPAND-TO-FOREIGN for TYPE because otherwise we want to use the
+;;; above *RUNTIME-TRANSLATOR-FORM* which includes a call to
+;;; FREE-TRANSLATED-OBJECT.  (Or else there would occur no translation
+;;; at all.)
+(defmethod expand-to-foreign-dyn (value var body (type enhanced-foreign-type))
+  (multiple-value-bind (expansion default-etp-p)
+      (expand-to-foreign value type)
+    (if default-etp-p
+        *runtime-translator-form*
+        `(let ((,var ,expansion))
+           ,@body))))
 
-(defmethod expand-type-from-foreign (value (type foreign-typedef))
-  (expand-from-foreign value (name type)))
+#- (and)
+  (if (specializedp #'expand-to-foreign value type)
+      `(let ((,var ,(expand-to-foreign value type)))
+         ,@body)
+      *runtime-translator-form*)
 
 ;;; User interface for converting values from/to foreign using the
-;;; type translators. Something doesn't feel right about this, makes
-;;; me want to just export PARSE-TYPE...
+;;; type translators.  The compiler macros use the expanders when
+;;; possible.
 
 (defun convert-to-foreign (value type)
-  (translate-type-to-foreign value (parse-type type)))
+  (translate-to-foreign value (parse-type type)))
 
 (define-compiler-macro convert-to-foreign (value type)
   (if (constantp type)
-      (expand-type-to-foreign value (parse-type (eval type)))
-      `(translate-type-to-foreign ,value (parse-type ,type))))
+      (expand-to-foreign value (parse-type (eval type)))
+      `(translate-to-foreign ,value (parse-type ,type))))
 
 (defun convert-from-foreign (value type)
-  (translate-type-from-foreign value (parse-type type)))
+  (translate-from-foreign value (parse-type type)))
 
 (define-compiler-macro convert-from-foreign (value type)
   (if (constantp type)
-      (expand-type-from-foreign value (parse-type (eval type)))
-      `(translate-type-from-foreign ,value (parse-type ,type))))
+      (expand-from-foreign value (parse-type (eval type)))
+      `(translate-from-foreign ,value (parse-type ,type))))
 
 (defun free-converted-object (value type param)
-  (free-type-translated-object value type param))
+  (free-translated-object value (parse-type type) param))
+
+;;;# Enhanced typedefs
+
+(defclass enhanced-typedef (foreign-typedef)
+  ())
+
+(defmethod translate-to-foreign (value (type enhanced-typedef))
+  (translate-to-foreign value (actual-type type)))
+
+(defmethod translate-from-foreign (value (type enhanced-typedef))
+  (translate-from-foreign value (actual-type type)))
+
+(defmethod free-translated-object (value (type enhanced-typedef) param)
+  (free-translated-object value (actual-type type) param))
+
+(defmethod expand-from-foreign (value (type enhanced-typedef))
+  (expand-from-foreign value (actual-type type)))
+
+(defmethod expand-to-foreign (value (type enhanced-typedef))
+  (expand-to-foreign value (actual-type type)))
+
+(defmethod expand-to-foreign-dyn (value var body (type enhanced-typedef))
+  (expand-to-foreign-dyn value var body (actual-type type)))

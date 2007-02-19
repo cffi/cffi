@@ -97,12 +97,15 @@ the return value of an implicit PROGN around BODY."
 
 ;;;# Automatic Conversion of Foreign Strings
 
-(defctype :string :pointer)
+(define-foreign-type foreign-string-type ()
+  ()
+  (:actual-type :pointer)
+  (:simple-parser :string))
 
-(defmethod translate-to-foreign ((s string) (name (eql :string)))
+(defmethod translate-to-foreign ((s string) (type foreign-string-type))
   (values (foreign-string-alloc s) t))
 
-(defmethod translate-to-foreign (obj (name (eql :string)))
+(defmethod translate-to-foreign (obj (type foreign-string-type))
   (cond
     ((pointerp obj)
      (values obj nil))
@@ -111,45 +114,18 @@ the return value of an implicit PROGN around BODY."
     (t (error "~A is not a Lisp string, (array (unsigned-byte 8)) or pointer."
               obj))))
 
-(defmethod translate-from-foreign (ptr (name (eql :string)))
+(defmethod translate-from-foreign (ptr (type foreign-string-type))
   (foreign-string-to-lisp ptr))
 
-(defmethod free-translated-object (ptr (name (eql :string)) free-p)
+(defmethod free-translated-object (ptr (type foreign-string-type) free-p)
   (when free-p
     (foreign-string-free ptr)))
 
-;;; It'd be pretty nice if returning multiple values from translators
-;;; worked as expected:
-;;;
-;;; (define-type-translator :string :from-c (type value)
-;;;  "Type translator for string arguments."
-;;;  (once-only (value)
-;;;    `(values (foreign-string-to-lisp ,value) ,value)))
-;;;
-;;; For now we'll just define a new type.
-;;;
-;;; Also as this examples shows, it'd be nice to specify
-;;; that we don't want to inherit the from-c translators.
-;;; So we could use (defctype :string+ptr :string) and
-;;; just add the new :from-c translator.
+;;; STRING+PTR
 
-(defctype :string+ptr :pointer)
+(define-foreign-type foreign-string+ptr-type (foreign-string-type)
+  ()
+  (:simple-parser :string+ptr))
 
-(defmethod translate-to-foreign ((s string) (name (eql :string+ptr)))
-  (values (foreign-string-alloc s) t))
-
-(defmethod translate-to-foreign (obj (name (eql :string+ptr)))
-  (cond
-    ((pointerp obj)
-     (values obj nil))
-    ((typep obj '(array (unsigned-byte 8)))
-     (values (foreign-string-alloc obj) t))
-    (t (error "~A is not a Lisp string, (array (unsigned-byte 8) or pointer."
-              obj))))
-
-(defmethod translate-from-foreign (value (name (eql :string+ptr)))
+(defmethod translate-from-foreign (value (type foreign-string+ptr-type))
   (list (foreign-string-to-lisp value) value))
-
-(defmethod free-translated-object (value (name (eql :string+ptr)) free-p)
-  (when free-p
-    (foreign-string-free value)))
