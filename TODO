@@ -11,30 +11,22 @@ This is a collection of TODO items and ideas in no particular order.
    performance of each platform.
 -> Write more STRUCT.ALIGNMENT.* tests (namely involving the :LONG-LONG
    and :UNSIGNED-LONG-LONG types) and test them in more ABIs.
--> Run tests both interpreted (where it makes sense) and compiled.
 -> Run tests with the different kinds of shared libraries available on
    MacOS X.
 
 ### Ports
 
--> Finish GCL port.
--> As of 2006-06-27, CVS ECL fails 31 tests on linux/x86 and 35 tests
-   on darwin/ppc. Need to look into this.
--> Fix bugs in the Corman port.
--> Port to MCL.
+-> Finish GCL port, port to MCL.
+-> Update Corman port. [2007-02-22 LO]
 
 ### Features
 
--> Implement CFFI-SYS:%CLOSE-FOREIGN-LIBRARY for all supported Lisps and
-   implement a higher-level CFFI:CLOSE-FOREIGN-LIBRARY.
 -> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
    DEFCUN/FOREIGN-FUNCALL.
 -> Figure out how to portably define types like: time_t, size_t, wchar_t, 
    etc... Likely to involve something like SB-GROVEL and possibly avoiding
    this step on known platforms?
--> [Lost Idea] Something involving finalizers?
 -> Implement the proposed interfaces (see doc/).
--> Add the ability to specify the calling convention to the interface.
 -> Implement CFFI-SYS:ERRNO-VALUE (name?).
 -> Extend FOREIGN-SLOT-VALUE and make it accept multiple "indices" for
    directly accessing structs inside structs, arrays inside structs, etc...
@@ -49,8 +41,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> [Lost Idea] Implement UB8-REF?
 -> [Lost Idea] Something about MEM-READ-C-STRING returning multiple value?
 -> Implement an array type? Useful when we're working with ranks >= 2?
--> Implement bitfields. To read: get the word, LDB it. To write: get the
-   word, PDB it, put the word.
 -> External encodings for the :STRING type. See:
    <http://article.gmane.org/gmane.lisp.cffi.devel/292>
 -> Define a lisp type for pointers in the backends. Eg: for clisp:
@@ -104,14 +94,13 @@ This is a collection of TODO items and ideas in no particular order.
    of libtest.
 -> LOAD-FOREIGN-LIBRARY should give better errors. On ECL with DFFI
    it should show the error that %LOAD-FOREIGN-LIBRARY is signalling.
--> LOAD-FOREIGN-LIBRARY's USE restart is somewhat broken.
--> http://article.gmane.org/gmane.lisp.cffi.devel/975
+-> foreign-enum-keyword/value should have their own error condition?
+   <http://article.gmane.org/gmane.lisp.cffi.devel/975> [2007-02-22 LO]
 
 ### Documentation
 
 -> Fill the missing sections in the CFFI User Manual.
 -> Update the CFFI-SYS Specification.
--> Generally improve the reference docs and examples.
 
 ### Other
 
