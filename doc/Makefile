@@ -2,7 +2,7 @@
 #
 # Makefile --- Make targets for generating the documentation.
 #
-# Copyright (C) 2005-2006, Luis Oliveira  <loliveira at common-lisp.net>
+# Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -25,10 +25,12 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
-all: docs
+all: manual spec
 
-docs:
+manual: cffi-manual.texinfo style.css
 	sh gendocs.sh -o manual --html "--css-include=style.css" cffi-manual "CFFI User Manual"
+
+spec: cffi-sys-spec.texinfo style.css
 	sh gendocs.sh -o spec --html "--css-include=style.css" cffi-sys-spec "CFFI-SYS Interface Specification"
 
 clean:

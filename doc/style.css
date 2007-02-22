@@ -5,7 +5,7 @@ body {font-family: century schoolbook, serif;
 table {border-collapse: collapse}
 span.roman { font-family: century schoolbook, serif; font-weight: normal; }
 h1, h2, h3, h4, h5, h6 {font-family:  Helvetica, sans-serif}
-/*h4 {padding-top: 0.75em;}*/
+h4 { margin-top: 2.5em; }
 dfn {font-family: inherit; font-variant: italic; font-weight: bolder }
 kbd {font-family: monospace; text-decoration: underline}
 /*var {font-family: Helvetica, sans-serif; font-variant: slanted}*/

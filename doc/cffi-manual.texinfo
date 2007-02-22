@@ -155,7 +155,7 @@ software or the use or other dealings in the software.}
 * Limitations::                 
 * Platform-specific features::  Details about the underlying system.
 * Glossary::                    List of CFFI-specific terms and meanings.
-* Comprehensive Index::                       
+* Comprehensive Index::         
 
 @detailmenu
  --- Dictionary ---
@@ -169,8 +169,8 @@ Foreign Types
 * defcunion::                   Defines a C union type.
 * defctype::                    Defines a foreign typedef.
 * defcenum::                    Defines a C enumeration.
-@c * define-type-spec-parser::     <should be exported?>
 * define-foreign-type::         Defines a foreign type specifier.
+* define-parse-method::         Specifies how a type should be parsed.
 @c * explain-foreign-slot-value::  <unimplemented>
 * foreign-bitfield-symbols::    Returns a list of symbols for a bitfield type.
 * foreign-bitfield-value::      Calculates a value for a bitfield type.
@@ -560,6 +560,9 @@ a pure Lisp struct definition is always preferred.  In fact, many
 prefer to stay in Lisp and break the encapsulation anyway, placing the
 burden of correct library interface definition on the library.}
 
+@impnote{cffi-grovel, a project not yet part of @cffi{}, automates
+this and other processes.}
+
 Another disadvantage appears when you would rather use the foreign
 language than Lisp.  However, someone who prefers C to Lisp is not a
 likely candidate for developing a Lisp interface to a C library.
@@ -922,7 +925,7 @@ call @code{curl_easy_setopt}.  However, we can encapsulate some of the
 necessary information with the following.
 
 @lisp
-;;; @lispcmt{We will use this typedef later in a more creative way.  For}
+;;; @lispcmt{We will use this type later in a more creative way.  For}
 ;;; @lispcmt{now, just consider it a marker that this isn't just any}
 ;;; @lispcmt{pointer.}
 (defctype easy-handle :pointer)
@@ -1498,6 +1501,24 @@ defined the new type @code{curl-code} to use as the return type for
 various @code{libcurl} functions, we can use that to directly convert
 c@acronym{URL} errors to Lisp errors.
 
+@code{defctype}'s purpose is to define simple @code{typedef}-like
+aliases.  In order to use @dfn{type translators} we must use the
+@code{define-foreign-type} macro.  So let's redefine @code{curl-code}
+using it.
+
+@lisp
+(define-foreign-type curl-code-type ()
+  ()
+  (:actual-type :int)
+  (:simple-parser curl-code))
+@end lisp
+
+@code{define-foreign-type} is a thin wrapper around @code{defclass}.
+For now, all you need to know in the context of this example is that
+it does what @code{(defctype curl-code :int)} would do and,
+additionally, defines a new class @code{curl-code-type} which we will
+take advantage of shortly.
+
 The @code{CURLcode} enumeration seems to follow the typical error code
 convention of @samp{0} meaning all is well, and each non-zero integer
 indicating a different kind of error.  We can apply that trivially to
@@ -1512,22 +1533,24 @@ differentiate between normal exits and error exits.
   (:documentation "Signalled when a libcurl function answers
 a code other than CURLE_OK."))
 
-(defmethod translate-from-foreign (value (name (eql 'curl-code)))
+(defmethod translate-from-foreign (value (type curl-code-type))
   "Raise a CURL-CODE-ERROR if VALUE, a curl-code, is non-zero."
   (if (zerop value)
-    :curle-ok
-    (error 'curl-code-error :curl-code value)))
+      :curle-ok
+      (error 'curl-code-error :curl-code value)))
 @end lisp
 
 @noindent
 The heart of this translator is new method
-@code{translate-from-foreign}.  By specializing the @var{name}
-parameter on @code{(eql '@var{type-name})}, we immediately modify the
-behavior of every function that returns a @code{curl-code} to pass the
-result through this new method.
+@code{translate-from-foreign}.  By specializing the @var{type}
+parameter on @code{curl-code-type}, we immediately modify the behavior
+of every function that returns a @code{curl-code} to pass the result
+through this new method.
 
 To see the translator in action, try invoking a function that returns
-a @code{curl-code}.
+a @code{curl-code}.  You need to reevaluate the respective
+@code{defcfun} form so that it picks up the new @code{curl-code}
+definition.
 
 @example
 @sc{cffi-user>} (set-curl-option-nosignal *easy-handle* 1)
@@ -1592,7 +1615,12 @@ be its options."
     (foreign-free error-buffer)
     (mapc #'foreign-string-free c-strings)))
 
-(defmethod translate-to-foreign (handle (name (eql 'easy-handle)))
+(define-foreign-type easy-handle-type ()
+  ()
+  (:actual-type :pointer)
+  (:simple-parser easy-handle))
+
+(defmethod translate-to-foreign (handle (type easy-handle-type))
   "Extract the pointer from an easy-HANDLE."
   (slot-value handle 'pointer))
 @end smalllisp
@@ -1710,7 +1738,7 @@ define new types.
 @menu
 * Built-In Types::              
 * Other Types::                 
-* Defining Typedefs::           
+* Defining Foreign Types::      
 * Foreign Type Translators::    
 * Optimizing Type Translators:: 
 * Foreign Structure Types::     
@@ -1726,9 +1754,10 @@ Dictionary
 * defcunion::                   
 * defctype::                    
 * defcenum::                    
-@c * define-type-spec-parser::     
+@c * define-type-spec-parser::  
 * define-foreign-type::         
-@c * explain-foreign-slot-value::        
+* define-parse-method::         
+@c * explain-foreign-slot-value:
 * foreign-bitfield-symbols::    
 * foreign-bitfield-value::      
 * foreign-enum-keyword::        
@@ -1740,19 +1769,11 @@ Dictionary
 * foreign-type-alignment::      
 * foreign-type-size::           
 * free-converted-object::       
-* free-translated-object::
-* translate-from-foreign::
-* translate-to-foreign::
+* free-translated-object::      
+* translate-from-foreign::      
+* translate-to-foreign::        
 * with-foreign-slots::          
 @end menu
-
-@c @menu
-@c Dictionary
-@c 
-@c * defctype::
-@c * define-foreign-type::
-@c * define-type-translator::
-@c @end menu
 
 @node Built-In Types
 @section Built-In Types
@@ -1830,9 +1851,12 @@ precision, among each respective category.
 This type is only supported on SCL.
 
 @ForeignType{:pointer}
+@ForeignType{(:pointer &optional type)}
 
 A foreign pointer to an object of any type, corresponding to
-@code{void *}.
+@code{void *}.  You can optionally specify type of pointer
+(e.g. @code{(:pointer :char)}).  Although @cffi{} won't do anything
+with that information yet, it is useful for documentation purposes.
 
 @ForeignType{:void}
 
@@ -1923,84 +1947,125 @@ terms of @code{:wrapper}.
 (convert-from-foreign 1 'my-bool) @result{} t
 @end lisp
 
-@node Defining Typedefs
-@section Defining Typedefs
+@node Defining Foreign Types
+@section Defining Foreign Types
 
-Typedefs are similar to @code{typedef}s in C, except they are more
-like ``type wrappers'' than aliases, for reasons that will become
-clear in the next section.
-
-Defining a typedef is as simple as giving @code{defctype} a new name
-and the name of the type to be wrapped.  Here is how a simpler version
-of the built-in @code{:boolean} type could be defined:
+You can define simple C-like @code{typedef}s through the
+@code{defctype} macro. Defining a typedef is as simple as giving
+@code{defctype} a new name and the name of the type to be wrapped.
 
 @lisp
-;;; @lispcmt{Define MY-BOOLEAN as an alias for the built-in type :INT.}
-(defctype my-boolean :int)
+;;; @lispcmt{Define MY-INT as an alias for the built-in type :INT.}
+(defctype my-int :int)
 @end lisp
 
-With this type definition, one can declare arguments to foreign
-functions as having the type @code{my-boolean}, and they will be
-passed as integers.  No conversion is taking place---if @code{nil} is
-passed as a @code{my-boolean}, a type error will be signalled.
+With this type definition, one can, for instance, declare arguments to
+foreign functions as having the type @code{my-int}, and they will be
+passed as integers.
+
+@subheading More complex types
+
+@cffi{} offers another way to define types through
+@code{define-foreign-type}, a thin wrapper macro around
+@code{defclass}. As an example, let's go through the steps needed to
+define a @code{(my-string &key encoding)} type. First, we need to
+define our type class:
+
+@lisp
+(define-foreign-type my-string-type ()
+  ((encoding :reader string-type-encoding :initarg :encoding))
+  (:actual-type :pointer))
+@end lisp
+
+The @code{:actual-type} class option tells CFFI that this type will
+ultimately be passed to and received from foreign code as a
+@code{:pointer}. Now you need to tell CFFI how to parse a type
+specification such as @code{(my-string :encoding :utf8)} into an
+instance of @code{my-string-type}.  We do that with
+@code{define-parse-method}:
+
+@lisp
+(define-parse-method my-string (&key (encoding :utf-8))
+  (make-instance 'my-string-type :encoding encoding))
+@end lisp
+
+The next section describes how make this type actually translate
+between C and Lisp strings.
 
 @node Foreign Type Translators
 @section Foreign Type Translators
 
 Type translators are used to automatically convert Lisp values to or
 from foreign values.  For example, using type translators, one can
-define a boolean type which converts a Lisp generalized boolean
-(@code{nil} vs.@: non-@code{nil}) to a C boolean (zero vs.@:
-non-zero).
+take the @code{my-string} type defined in the previous section and
+specify that it should:
 
-We created the @code{my-boolean} type in the previous section.  To
-tell @cffi{} how to automatically convert Lisp values to
-@code{my-boolean} values, specialize the generic function
-@code{translate-to-foreign} using an @sc{eql}-specializer with the
-name of your type, in this case the symbol @code{my-boolean}:
+@itemize
+@item
+convert C strings to Lisp strings;
+@item
+convert Lisp strings to newly allocated C strings;
+@item
+free said C strings when they are no longer needed.
+@end itemize
 
-@lisp
-;;; @lispcmt{Define a method that converts Lisp booleans to C booleans.}
-(defmethod translate-to-foreign (value (type (eql 'my-boolean)))
-  (if value 1 0))
-@end lisp
-
-Now, when an object is passed as a @code{my-boolean} to a foreign
-function, this method will be invoked to convert the Lisp value to an
-integer.  To perform the inverse operation, which is needed for
-functions that return a @code{my-boolean}, specialize the
-@code{translate-from-foreign} generic function in the same manner as
-above:
+In order to tell @cffi{} how to automatically convert Lisp values to
+foreign values, define a specialized method for the
+@code{translate-to-foreign} generic function:
 
 @lisp
-;;; @lispcmt{Define a method that converts C booleans to Lisp booleans.}
-(defmethod translate-from-foreign (value (type (eql 'my-boolean)))
-  (not (zerop value)))
+;;; @lispcmt{Define a method that converts Lisp strings to C strings.}
+(defmethod translate-to-foreign (string (type my-string-type))
+  (foreign-string-alloc string :encoding (string-type-encoding type)))
 @end lisp
 
+@noindent
+From now on, whenever an object is passed as a @code{my-string} to a
+foreign function, this method will be invoked to convert the Lisp
+value. To perform the inverse operation, which is needed for functions
+that return a @code{my-string}, specialize the
+@code{translate-from-foreign} generic function in the same manner:
+
+@lisp
+;;; @lispcmt{Define a method that converts C strings to Lisp strings.}
+(defmethod translate-from-foreign (pointer (type my-string-type))
+  (foreign-string-to-lisp pointer :encoding (string-type-encoding type)))
+@end lisp
+
+@noindent
 When a @code{translate-to-foreign} method requires allocation of
-foreign memory, you may specialize the @code{free-translated-object}
-method to free the memory once the foreign object is no longer needed.
-This is called automatically by @cffi{} when passing objects to
-foreign functions.
+foreign memory, you must also define a @code{free-translated-object}
+method to free the memory once the foreign object is no longer needed,
+otherwise you'll be faced with memory leaks.  This generic function is
+called automatically by @cffi{} when passing objects to foreign
+functions. Let's do that:
+
+@lisp
+;;; @lispcmt{Free strings allocated by translate-to-foreign.}
+(defmethod free-translated-object (pointer (type my-string-type) param)
+  (declare (ignore param))
+  (foreign-string-free pointer))
+@end lisp
+
+@noindent
+In this specific example, we don't need the @var{param} argument, so
+we ignore it. See @ref{free-translated-object}, for an explanation of
+its purpose and how you can use it.
 
 A type translator does not necessarily need to convert the value.  For
 example, one could define a typedef for @code{:pointer} that ensures,
 in the @code{translate-to-foreign} method, that the value is not a
 null pointer, signalling an error if a null pointer is passed.  This
-will prevent some pointer errors when calling foreign functions that
+would prevent some pointer errors when calling foreign functions that
 cannot handle null pointers.
 
 @strong{Please note:} these methods are meant as extensible hooks
 only, and you should not call them directly.  Use
 @code{convert-to-foreign}, @code{convert-from-foreign} and
-@code{free-converted-object} instead.  These will take care of
-following the typedef chain, for example, calling all the applicable
-translators.  They will also work for @cffi{}'s built-in types, such
-as enums.
+@code{free-converted-object} instead.
 
-@xref{Tutorial-Types,, Defining new types}, for a more involved
-tutorial example of type translators.
+@xref{Tutorial-Types,, Defining new types}, for another example of
+type translators.
 
 @node Optimizing Type Translators
 @section Optimizing Type Translators
@@ -2014,73 +2079,101 @@ significant, but we nevertheless provide a way of getting rid of the
 overhead for the cases where it matters.
 
 A good way to understand this issue is to look at the code generated
-by @code{defcfun}. Consider the following example using the
-@code{my-boolean} type defined above:
+by @code{defcfun}. Consider the following example using the previously
+defined @code{my-string} type:
 
 @lisp
-CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
-(DEFUN FOO (X)
-  (MULTIPLE-VALUE-BIND (#:G3148 #:PARAM3149)
-      (TRANSLATE-TYPE-TO-FOREIGN X #<FOREIGN-TYPEDEF MY-BOOLEAN>)
-    (UNWIND-PROTECT
-        (PROGN
-          (TRANSLATE-TYPE-FROM-FOREIGN
-           (%FOREIGN-FUNCALL "foo" :INT #:G3148 :INT)
-           #<FOREIGN-TYPEDEF MY-BOOLEAN>))
-      (FREE-TYPE-TRANSLATED-OBJECT #:G3148
-                                   #<FOREIGN-TYPEDEF MY-BOOLEAN>
-                                   #:PARAM3149))))
+CFFI> (macroexpand-1 '(defcfun foo my-string (x my-string)))
+;; (simplified, downcased, etc...)
+(defun foo (x)
+  (multiple-value-bind (#:G2019 #:PARAM3149)
+      (translate-to-foreign x #<MY-STRING-TYPE @{11ED5A79@}>)
+    (unwind-protect
+        (translate-from-foreign
+         (foreign-funcall "foo" :pointer #:G2019 :pointer)
+         #<MY-STRING-TYPE @{11ED5659@}>)
+      (free-translated-object #:G2019 #<MY-STRING-TYPE @{11ED51A79@}>
+                              #:PARAM3149))))
 @end lisp
 
+@noindent
 In order to get rid of those generic function calls, @cffi{} has
 another set of extensible generic functions that provide functionality
 similar to @acronym{CL}'s compiler macros:
 @code{expand-to-foreign-dyn}, @code{expand-to-foreign} and
-@code{expand-from-foreign}. Here's how one could define
+@code{expand-from-foreign}. Here's how one could define a
 @code{my-boolean} with them:
 
 @lisp
-(defmethod expand-to-foreign (value (type (eql 'my-boolean)))
+(define-foreign-type my-boolean-type ()
+  ()
+  (:actual-type :int)
+  (:simple-parser my-boolean))
+
+(defmethod expand-to-foreign (value (type my-boolean-type))
   `(if ,value 1 0))
 
-(defmethod expand-from-foreign (value (type (eql 'my-boolean)))
+(defmethod expand-from-foreign (value (type my-boolean-type))
   `(not (zerop ,value)))
 @end lisp
 
 @noindent
-And here's what the macroexpansion of @code{foo} now looks like:
+And here's what the macroexpansion of a function using this type would
+look like:
 
 @lisp
-CFFI> (macroexpand-1 '(defcfun foo my-boolean (x my-boolean)))
-(DEFUN FOO (X)
-  (LET ((#:G3182 (IF X 1 0)))
-    (NOT (ZEROP (%FOREIGN-FUNCALL "foo" :INT #:G3182 :INT)))))
+CFFI> (macroexpand-1 '(defcfun bar my-boolean (x my-boolean)))
+;; (simplified, downcased, etc...)
+(defun bar (x)
+  (let ((#:g3182 (if x 1 0)))
+    (not (zerop (foreign-funcall "bar" :int #:g3182 :int)))))
 @end lisp
 
 @noindent
-Much better.
+No generic function overhead.
 
-The expansion interface has no equivalent of
-@code{free-translated-object}; you must instead define a method on
-@code{expand-to-foreign-dyn}, the third generic function in this
-interface.  This is especially useful when you can allocate something
-much more efficiently if you know the object has dynamic extent, as is
-the case with function calls that don't save the relevant allocated
-arguments.  Consider the following example:
+Let's go back to our @code{my-string} type.  The expansion interface
+has no equivalent of @code{free-translated-object}; you must instead
+define a method on @code{expand-to-foreign-dyn}, the third generic
+function in this interface.  This is especially useful when you can
+allocate something much more efficiently if you know the object has
+dynamic extent, as is the case with function calls that don't save the
+relevant allocated arguments.
+
+This exactly what we need for the @code{my-string} type:
 
 @lisp
-;;; This type inherits :string's translators.
-(defctype stack-allocated-string :string)
+(defmethod expand-from-foreign (form (type my-string-type))
+  `(foreign-string-to-lisp ,form))
 
-(defmethod expand-to-foreign-dyn
-    (value var body (type (eql 'stack-allocated-string)))
-  `(with-foreign-string (,var ,value)
-     ,@@body))
+(defmethod expand-to-foreign-dyn (value var body (type my-string-type))
+  (let ((encoding (string-type-encoding type)))
+    `(with-foreign-string (,var ,value :encoding ',encoding)
+       ,@@body)))
 @end lisp
+
+@noindent
+So let's look at the macro expansion:
+
+@lisp
+CFFI> (macroexpand-1 '(defcfun foo my-string (x my-string)))
+;; (simplified, downcased, etc...)
+(defun foo (x)
+  (with-foreign-string (#:G2021 X :encoding ':utf-8)
+    (foreign-string-to-lisp
+     (foreign-funcall "foo" :pointer #:g2021 :pointer))))
+@end lisp
+
+@noindent
+Again, no generic function overhead.
+
+@subheading Other details
 
 To short-circuit expansion and use the @code{translate-*} functions
 instead, simply call the next method.  Return its result in cases
 where your method cannot generate an appropriate replacement for it.
+This analogous to the @code{&whole form} mechanism compiler macros
+provide.
 
 The @code{expand-*} methods have precedence over their
 @code{translate-*} counterparts and are guaranteed to be used in
@@ -2097,23 +2190,7 @@ compilation.
 
 @code{expand-to-foreign-dyn} has precedence over
 @code{expand-to-foreign} and is only used in @code{defcfun} and
-@code{foreign-funcall}, only making sense in those contexts.  If you
-do not define a method on @code{expand-to-foreign-dyn}, however,
-please note that this expand method for the hypothetical type
-@code{my-string} is not the same as defining no method at all:
-
-@lisp
-(defmethod expand-to-foreign (value-form (type-name (eql 'my-string)))
-  (call-next-method))
-@end lisp
-
-Without this method, your runtime @code{translate-to-foreign} method
-will be called, and its result will be passed to
-@code{free-translated-object}.  However, if you define this method,
-@code{translate-to-foreign} will still be called, but its result will
-not be passed to @code{free-translated-object}.  If you need to free
-values with this interface, you must define an
-@code{expand-to-foreign-dyn} method.
+@code{foreign-funcall}, only making sense in those contexts.
 
 @strong{Important note:} this set of generic functions is called at
 macroexpansion time.  Methods are defined when loaded or evaluated,
@@ -2539,7 +2616,7 @@ usual foreign structure operations for accessing a union's slots.
 @node defctype
 @unnumberedsec defctype
 @subheading Syntax
-@Macro{defctype name base-type &key documentation translate-p}
+@Macro{defctype name base-type &optional documentation}
 
 @subheading Arguments and Values
 
@@ -2552,34 +2629,28 @@ A symbol or a list defining the new type.
 
 @item documentation
 A documentation string, currently ignored.
-
-@item translate-p
-A boolean.  If true (the default), the type will be subject to type
-translation.  This may be false to avoid extra generic function call
-overhead when it is known that no type translation is needed, perhaps
-because @var{base-type} is a built-in type.
 @end table
 
 @subheading Description
 The @code{defctype} macro provides a mechanism similar to C's
-@code{typedef} to define new types.
+@code{typedef} to define new types. The new type inherits
+@var{base-type}'s translators, if any.
 
-The new type inherits @var{base-type}'s translators.
+There is no way to define translations for types for types defined
+with @code{defctype}.  For that, you should use
+@ref{define-foreign-type}.
 
 @subheading Examples
 @lisp
 (defctype my-string :string
-  :documentation "My own string type.")
+  "My own string type.")
 
 (defctype long-bools (:boolean :long)
-  :documentation "Booleans that map to C longs.")
-
-(defctype my-float :float :translate-p nil)
+  "Booleans that map to C longs.")
 @end lisp
 
 @subheading See Also
-@seealso{define-foreign-type} @*
-@c @ref{define-type-translator}
+@seealso{define-foreign-type}
 
 
 @c ===================================================================
@@ -2659,35 +2730,38 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @node define-foreign-type
 @unnumberedsec define-foreign-type
 @subheading Syntax
-@Macro{define-foreign-type type-name lambda-list &body body @
-                           @result{} type-name}
+@Macro{define-foreign-type class-name supers slots &rest options @result{} class-name}
+
+options ::= (@code{:actual-type} @var{type}) | @
+    (@code{:simple-parser} @var{symbol}) | @
+    @emph{regular defclass option}
 
 @subheading Arguments and Values
 
 @table @var
-@item type-name
-A symbol naming the new foreign type.
+@item class-name
+A symbol naming the new foreign type class.
 
-@item lambda-list
-A lambda list which is the argument list of the new foreign type.
+@item supers
+A list of symbols naming the super classes.
 
-@item body
-One or more forms that provide a definition of the new foreign type.
+@item slots
+A list of slot definitions, passed to @code{defclass}.
 @end table
 
 @subheading Description
-The macro @code{define-foreign-type} defines a new parameterized type
-called @var{type-name}. Given the arguments specified in
-@var{lambda-list}, executing @var{body} should return a type
-specifier which will determine the behaviour of @var{type-name}.  The
-behaviour of parameterized types can be further customized by
-specializing @code{translate-to-foreign},
-@code{translate-from-foreign}, and @code{free-translated-object}.
 
-Unlike @code{defctype}, which is used to define simple C-like
-typedefs, @code{define-foreign-type} provides a mechanism for type
-aliases to take arguments. The following examples illustrate this
-capability.
+@c TODO rewrite
+
+The macro @code{define-foreign-type} defines a new class
+@var{class-name}. It is a thin wrapper around @code{defclass}. Among
+other things, it ensures that @var{class-name} becomes a subclass of
+@var{foreign-type}, what you need to know about that is that there's
+an initarg @code{:actual-type} which serves the same purpose as
+@code{defctype}'s @var{base-type} argument.
+
+@c TODO mention the type translators here
+@c FIX FIX
 
 @subheading Examples
 Taken from @cffi{}'s @code{:boolean} type definition:
@@ -2711,17 +2785,61 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 ;; @lispcmt{@error{} signalled by ECASE.}
 @end lisp
 
-This next example is hypothetical as there is no @code{:array} type
-yet.
+@subheading See Also
+@seealso{defctype} @*
+@seealso{define-parse-method}
+
+
+@c ===================================================================
+@c DEFINE-PARSE-METHOD
+
+@node define-parse-method
+@unnumberedsec define-parse-method
+@subheading Syntax
+@Macro{define-parse-method name lambda-list &body body @result{} name}
+
+@subheading Arguments and Values
+
+@table @var
+@item type-name
+A symbol naming the new foreign type.
+
+@item lambda-list
+A lambda list which is the argument list of the new foreign type.
+
+@item body
+One or more forms that provide a definition of the new foreign type.
+@end table
+
+@subheading Description
+
+
+@c TODO: update example. The boolean type is probably a good choice.
+
+@subheading Examples
+Taken from @cffi{}'s @code{:boolean} type definition:
 
 @lisp
-(define-foreign-type int-array (&rest dimensions)
-  `(:array :int ,@@dimensions))
+(define-foreign-type :boolean (&optional (base-type :int))
+  "Boolean type. Maps to an :int by default. Only accepts integer types."
+  (ecase base-type
+    ((:char
+      :unsigned-char
+      :int
+      :unsigned-int
+      :long
+      :unsigned-long) base-type)))
+
+CFFI> (canonicalize-foreign-type :boolean)
+@result{} :INT
+CFFI> (canonicalize-foreign-type '(:boolean :long))
+@result{} :LONG
+CFFI> (canonicalize-foreign-type '(:boolean :float))
+;; @lispcmt{@error{} signalled by ECASE.}
 @end lisp
 
 @subheading See Also
-@seealso{defctype} @*
-@c @ref{define-type-translator}
+@seealso{define-foreign-type}
 
 
 @c ===================================================================
@@ -3288,6 +3406,8 @@ CFFI-USER> (free-converted-object * :string '(t))
 @c ===================================================================
 @c FREE-TRANSLATED-OBJECT
 
+@c TODO: update
+
 @node free-translated-object
 @unnumberedsec free-translated-object
 @subheading Syntax
@@ -3322,6 +3442,8 @@ the @code{defctype} macro.
 
 @c ===================================================================
 @c TRANSLATE-FROM-FOREIGN
+
+@c TODO: update
 
 @node translate-from-foreign
 @unnumberedsec translate-from-foreign
@@ -3366,6 +3488,8 @@ defined for built-in types.
 
 @c ===================================================================
 @c TRANSLATE-TO-FOREIGN
+
+@c TODO: update
 
 @node translate-to-foreign
 @unnumberedsec translate-to-foreign
@@ -4349,7 +4473,7 @@ Dictionary
 * foreign-string-to-lisp::      
 * lisp-string-to-foreign::      
 * with-foreign-string::         
-* with-foreign-pointer-as-string::  
+* with-foreign-pointer-as-string::
 @end menu
 
 
@@ -4608,7 +4732,7 @@ CFFI> (with-foreign-pointer-as-string (str 6 str-size)
 Dictionary
 
 * defcvar::                     
-* get-var-pointer::                 
+* get-var-pointer::             
 @end menu
 
 
@@ -4862,7 +4986,7 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @subheading Syntax
 @Macro{foreign-funcall name-and-options &rest arguments @result{} return-value}
 
-arguments ::= @{ arg-type arg @}* [return-type] 
+arguments ::= @{ arg-type arg @}* [return-type]
 name-and-options ::= name | ( name &key library calling-convention cconv)
 
 @subheading Arguments and Values
@@ -4905,7 +5029,7 @@ Corman Lisp does not support @code{foreign-funcall}. On
 implementations that @strong{don't} support @code{foreign-funcall}
 @code{cffi-features:no-foreign-funcall} will be present in
 @code{*features*}. Note: in these Lisps you can still use the
-@code{defcfun} interface. 
+@code{defcfun} interface.
 @end itemize
 
 @subheading Examples
@@ -4960,7 +5084,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @subheading Syntax
 @Macro{foreign-funcall pointer options &rest arguments @result{} return-value}
 
-arguments ::= @{ arg-type arg @}* [return-type] 
+arguments ::= @{ arg-type arg @}* [return-type]
 options ::= ( &key calling-convention cconv )
 
 @subheading Arguments and Values
