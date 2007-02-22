@@ -153,10 +153,8 @@ the USE-FOREIGN-LIBRARY macro."
 ;;; signal this error when something goes wrong. We ignore the host's
 ;;; error. We should probably reuse its error message.
 
-(define-condition load-foreign-library-error (error)
-  ((text :initarg :text :reader text))
-  (:report (lambda (condition stream)
-             (write-string (text condition) stream))))
+(define-condition load-foreign-library-error (simple-error)
+  ())
 
 (defun read-new-value ()
   (format t "~&Enter a new value (unevaluated): ")
@@ -165,7 +163,8 @@ the USE-FOREIGN-LIBRARY macro."
 
 (defun fl-error (control &rest arguments)
   (error 'load-foreign-library-error
-         :text (format nil "~?" control arguments)))
+         :format-control control
+         :format-arguments arguments))
 
 ;;;# Loading Foreign Libraries
 
