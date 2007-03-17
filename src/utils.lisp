@@ -39,7 +39,8 @@
            #:let-when
            #:bif
            #:post-incf
-           #:single-bit-p))
+           #:single-bit-p
+           #:warn-if-kw-or-belongs-to-cl))
 
 (in-package #:cffi-utils)
 
@@ -163,6 +164,21 @@ set twos-complement bit."
     (loop until (logbitp 0 integer)
          do (setf integer (ash integer -1))
          finally (return (zerop (ash integer -1))))))
+
+;;; This function is here because it needs to be defined early.
+;;;
+;;; This function is used by DEFINE-PARSE-METHOD and DEFCTYPE to warn
+;;; users when they're defining types whose names belongs to the
+;;; KEYWORD or CL packages.  CFFI itself gets to use keywords without
+;;; a warning though.
+(defun warn-if-kw-or-belongs-to-cl (name)
+  (let ((package (symbol-package name)))
+    (when (or (eq package (find-package '#:cl))
+              (and (not (eq *package* (find-package '#:cffi)))
+                   (eq package (find-package '#:keyword))))
+      (warn "Defining a foreign type named ~S.  This symbol belongs to the ~A ~
+             package and that may interfere with other code using CFFI."
+            name (package-name package)))))
 
 ;(defun deprecation-warning (bad-name &optional good-name)
 ;  (warn "using deprecated ~S~@[, should use ~S instead~]"

@@ -556,35 +556,6 @@ The buffer has dynamic extent and may be stack allocated."
            ,@body))
       `(progn ,@body)))
 
-;;;# User-defined Types and Translations.
-
-(defmacro define-foreign-type (name supers slots &rest options)
-  (multiple-value-bind (new-options simple-parser actual-type initargs)
-      (let ((keywords '(:simple-parser :actual-type :default-initargs)))
-        (apply #'values
-               (remove-if (lambda (opt) (member (car opt) keywords)) options)
-               (mapcar (lambda (kw) (cdr (assoc kw options))) keywords)))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (defclass ,name ,(or supers '(enhanced-foreign-type))
-         ,slots
-         (:default-initargs ,@(when actual-type `(:actual-type ',actual-type))
-             ,@initargs)
-         ,@new-options)
-       ,(when simple-parser
-          `(notice-foreign-type ',(car simple-parser) (make-instance ',name)))
-       ',name)))
-
-(defmacro defctype (name base-type &optional documentation)
-  "Utility macro for simple C-like typedefs."
-  (declare (ignore documentation))
-  (let* ((btype (parse-type base-type))
-         (dtype (if (typep btype 'enhanced-foreign-type)
-                    'enhanced-typedef
-                    'foreign-typedef)))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-type
-        ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
-
 ;;;## Anonymous Type Translators
 ;;;
 ;;; (:wrapper :to-c some-function :from-c another-function)

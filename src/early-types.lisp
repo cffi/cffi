@@ -67,6 +67,7 @@
 (defmacro define-parse-method (name lambda-list &body body)
   "Define a type parser on NAME and lists whose CAR is NAME."
   (discard-docstring body)
+  (warn-if-kw-or-belongs-to-cl name)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (find-type-parser ',name)
            (lambda ,lambda-list ,@body))
@@ -361,7 +362,7 @@ Signals an error if the type cannot be resolved."
     (call-next-method)))
 
 (defmethod expand-from-foreign (value (type enhanced-foreign-type))
-  (declare (ignore value type))
+  (declare (ignore value))
   *runtime-translator-form*)
 
 ;;; EXPAND-TO-FOREIGN
@@ -379,7 +380,7 @@ Signals an error if the type cannot be resolved."
     (call-next-method)))
 
 (defmethod expand-to-foreign (value (type enhanced-foreign-type))
-  (declare (ignore value type))
+  (declare (ignore value))
   (values *runtime-translator-form* t))
 
 ;;; EXPAND-TO-FOREIGN-DYN
@@ -467,3 +468,33 @@ Signals an error if the type cannot be resolved."
 
 (defmethod expand-to-foreign-dyn (value var body (type enhanced-typedef))
   (expand-to-foreign-dyn value var body (actual-type type)))
+
+;;;# User-defined Types and Translations.
+
+(defmacro define-foreign-type (name supers slots &rest options)
+  (multiple-value-bind (new-options simple-parser actual-type initargs)
+      (let ((keywords '(:simple-parser :actual-type :default-initargs)))
+        (apply #'values
+               (remove-if (lambda (opt) (member (car opt) keywords)) options)
+               (mapcar (lambda (kw) (cdr (assoc kw options))) keywords)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (defclass ,name ,(or supers '(enhanced-foreign-type))
+         ,slots
+         (:default-initargs ,@(when actual-type `(:actual-type ',actual-type))
+             ,@initargs)
+         ,@new-options)
+       ,(when simple-parser
+          `(notice-foreign-type ',(car simple-parser) (make-instance ',name)))
+       ',name)))
+
+(defmacro defctype (name base-type &optional documentation)
+  "Utility macro for simple C-like typedefs."
+  (declare (ignore documentation))
+  (warn-if-kw-or-belongs-to-cl name)
+  (let* ((btype (parse-type base-type))
+         (dtype (if (typep btype 'enhanced-foreign-type)
+                    'enhanced-typedef
+                    'foreign-typedef)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-type
+        ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
