@@ -381,7 +381,7 @@ and caches it if necessary.  Finally calls it."
 
 (defun %load-foreign-library (name path)
   "Load the foreign library NAME."
-  (fli:register-module name :connection-style :immediate
+  (fli:register-module (or name path) :connection-style :immediate
                        :real-name path))
 
 (defun %close-foreign-library (name)
