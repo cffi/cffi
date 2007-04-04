@@ -28,7 +28,7 @@
 OSTYPE = $(shell uname)
 
 CC             := gcc
-CFLAGS         := -lm -Wall -std=c99 -pedantic
+CFLAGS         := -Wall -std=c99 -pedantic
 SHLIB_CFLAGS   := -shared
 SHLIB_EXT      := .so
 
@@ -47,6 +47,10 @@ endif
 
 ARCH = $(shell uname -m)
 
+ifneq ($(ARCH), x86_64)
+CFLAGS += -lm
+endif
+
 ifeq ($(ARCH), x86_64)
 CFLAGS += -fPIC
 endif
@@ -58,9 +62,9 @@ endif
 
 SHLIBS = libtest$(SHLIB_EXT) libtest2$(SHLIB_EXT)
 
-ifeq ($(ARCH), x86_64)
-SHLIBS += libtest32$(SHLIB_EXT)
-endif
+#ifeq ($(ARCH), x86_64)
+#SHLIBS += libtest32$(SHLIB_EXT)
+#endif
 
 shlibs: $(SHLIBS)
 
@@ -70,10 +74,10 @@ libtest$(SHLIB_EXT): libtest.c
 libtest2$(SHLIB_EXT): libtest2.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
-ifeq ($(ARCH), x86_64)
-libtest32$(SHLIB_EXT): libtest.c
-	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
-endif
+#ifeq ($(ARCH), x86_64)
+#libtest32$(SHLIB_EXT): libtest.c
+#	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+#endif
 
 clean:
 	rm -f *.so *.dylib *.dll *.bundle
