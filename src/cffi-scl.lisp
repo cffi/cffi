@@ -26,6 +26,8 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;;; This port is suffering from bitrot as of 2007-03-29. -- luis
+
 ;;; For posterity, a few optimizations we might use in the future:
 
 #-(and)
