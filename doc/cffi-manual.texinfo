@@ -5481,6 +5481,17 @@ In @file{libli.lisp}:
 (load-foreign-library '(:default "liblibli"))
 @end lisp
 
+@noindent
+The following example would achieve the same effect:
+
+@lisp
+(pushnew '(merge-pathnames #p"lisp/libli/" (user-homedir-pathname))
+          *foreign-library-directories*
+          :test #'equal)
+@result{} ((MERGE-PATHNAMES #P"lisp/libli/" (USER-HOMEDIR-PATHNAME)))
+
+(load-foreign-library '(:default "liblibli"))
+@end lisp
 
 @subheading See also
 
