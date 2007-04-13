@@ -25,6 +25,10 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;;; This port is suffering from bitrot as of 2007-03-29.  Corman Lisp
+;;; is too funky with ASDF, crashes easily, makes it very painful to
+;;; do any testing.  -- luis
+
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
@@ -155,8 +159,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Dereferencing
 
-;; According to the docs, Corman's C Function Definition Parser
-;; converts int to long, so we'll assume that.
+;;; According to the docs, Corman's C Function Definition Parser
+;;; converts int to long, so we'll assume that.
 (defun convert-foreign-type (type-keyword)
   "Convert a CFFI type keyword to a CormanCL type."
   (ecase type-keyword
@@ -218,9 +222,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Return the size in bytes of a foreign type."
   (sizeof (convert-foreign-type type-keyword)))
 
-;; Couldn't find anything in sys/ffi.lisp and the C declaration parser
-;; doesn't seem to care about alignment so we'll assume that it's the
-;; same as its size.
+;;; Couldn't find anything in sys/ffi.lisp and the C declaration parser
+;;; doesn't seem to care about alignment so we'll assume that it's the
+;;; same as its size.
 (defun %foreign-type-alignment (type-keyword)
   (sizeof (convert-foreign-type type-keyword)))
 
@@ -232,7 +236,7 @@ the DLL's name (a string), else returns NIL."
             (ct::get-dll-proc-address name (ct::dll-record-handle dll)))
       (return (ct::dll-record-name dll)))))
 
-;; This won't work at all...
+;;; This won't work at all...
 #||
 (defmacro %foreign-funcall (name &rest args)
   (let ((sym (gensym)))
@@ -243,10 +247,10 @@ the DLL's name (a string), else returns NIL."
                              if arg collect arg)))))
 ||#
 
-;; It *might* be possible to implement by copying most of the code
-;; from Corman's DEFUN-DLL.  Alternatively, it could implemented the
-;; same way as Lispworks' foreign-funcall.  In practice, nobody uses
-;; Corman with CFFI, apparently. :)
+;;; It *might* be possible to implement by copying most of the code
+;;; from Corman's DEFUN-DLL.  Alternatively, it could implemented the
+;;; same way as Lispworks' foreign-funcall.  In practice, nobody uses
+;;; Corman with CFFI, apparently. :)
 (defmacro %foreign-funcall (name &rest args)
   "Call a foreign function NAME passing arguments ARGS."
   `(format t "~&;; Calling ~A with args ~S.~%" ,name ',args))
@@ -271,8 +275,8 @@ the DLL's name (a string), else returns NIL."
 
 ;;;# Callbacks
 
-;; defun-c-callback vs. defun-direct-c-callback?
-;; same issue as Allegro, no return type declaration, should we coerce?
+;;; defun-c-callback vs. defun-direct-c-callback?
+;;; same issue as Allegro, no return type declaration, should we coerce?
 (defmacro %defcallback (name rettype arg-names arg-types body-form)
   (declare (ignore rettype))
   (with-unique-names (cb-sym)
@@ -305,9 +309,9 @@ the DLL's name (a string), else returns NIL."
 
 ;;;# Foreign Globals
 
-;; FFI to GetProcAddress from the Win32 API.
-;; "The GetProcAddress function retrieves the address of an exported
-;; function or variable from the specified dynamic-link library (DLL)."
+;;; FFI to GetProcAddress from the Win32 API.
+;;; "The GetProcAddress function retrieves the address of an exported
+;;; function or variable from the specified dynamic-link library (DLL)."
 (defun-dll get-proc-address
     ((module HMODULE)
      (name LPCSTR))
