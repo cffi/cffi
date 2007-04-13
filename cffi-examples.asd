@@ -25,14 +25,10 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(defpackage #:cffi-examples-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-examples-system)
-
 (defsystem cffi-examples
   :description "CFFI Examples"
   :author "James Bielman  <jamesjb@jamesjb.com>"
-  :components 
+  :components
   ((:module examples
     :components
     ((:file "examples")
