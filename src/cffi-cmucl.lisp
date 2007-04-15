@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi-sbcl.lisp --- CFFI-SYS implementation for CMU CL.
+;;; cffi-cmucl.lisp --- CFFI-SYS implementation for CMU CL.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
 ;;;
