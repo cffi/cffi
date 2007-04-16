@@ -119,6 +119,7 @@ to open-code (SETF MEM-REF) forms."
 
 ;;;# Dereferencing Foreign Arrays
 
+;;; Maybe this should be named MEM-SVREF? [2007-02-28 LO]
 (defun mem-aref (ptr type &optional (index 0))
   "Like MEM-REF except for accessing 1d arrays."
   (mem-ref ptr type (* index (foreign-type-size type))))
@@ -172,6 +173,129 @@ to open-code (SETF MEM-REF) forms."
                   ,@(if (and (constantp type) (constantp index))
                         (list index)
                         (list index-tmp)))))))
+
+(define-foreign-type foreign-array-type ()
+  ((dimensions :reader dimensions :initarg :dimensions)
+   (element-type :reader element-type :initarg :element-type))
+  (:actual-type :pointer))
+
+(defmethod print-object ((type foreign-array-type) stream)
+  "Print a FOREIGN-ARRAY-TYPE instance to STREAM unreadably."
+  (print-unreadable-object (type stream :type t :identity nil)
+    (format stream "~S ~S" (element-type type) (dimensions type))))
+
+(define-parse-method :array (element-type &rest dimensions)
+  (make-instance 'foreign-array-type
+                 :element-type element-type
+                 :dimensions dimensions))
+
+(defun array-element-size (array-type)
+  (foreign-type-size (element-type array-type)))
+
+(defun indexes-to-row-major-index (dimensions &rest subscripts)
+  (apply #'+ (maplist (lambda (x y)
+                        (* (car x) (apply #'* (cdr y))))
+                      subscripts
+                      dimensions)))
+
+(defun row-major-index-to-indexes (index dimensions)
+  (loop with idx = index
+        with rank = (length dimensions)
+        with indexes = (make-list rank)
+        for dim-index from (- rank 1) downto 0 do
+        (setf (values idx (nth dim-index indexes))
+              (floor idx (nth dim-index dimensions)))
+        finally (return indexes)))
+
+(defun lisp-array-to-foreign (array pointer array-type)
+  "Copy elements from a Lisp array to POINTER."
+  (let* ((type (follow-typedefs (parse-type array-type)))
+         (el-type (element-type type))
+         (dimensions (dimensions type)))
+    (loop with foreign-type-size = (array-element-size type)
+          with size = (reduce #'* dimensions)
+          for i from 0 below size
+          for offset = (* i foreign-type-size)
+          for element = (apply #'aref array
+                               (row-major-index-to-indexes i dimensions))
+          do (setf (mem-ref pointer el-type offset) element))))
+
+(defun foreign-array-to-lisp (pointer array-type)
+  "Copy elements from ptr into a Lisp array. If POINTER is a null
+pointer, returns NIL."
+  (unless (null-pointer-p pointer)
+    (let* ((type (follow-typedefs (parse-type array-type)))
+           (el-type (element-type type))
+           (dimensions (dimensions type))
+           (array (make-array dimensions)))
+      (loop with foreign-type-size = (array-element-size type)
+            with size = (reduce #'* dimensions)
+            for i from 0 below size
+            for offset = (* i foreign-type-size)
+            for element = (mem-ref pointer el-type offset)
+            do (setf (apply #'aref array
+                            (row-major-index-to-indexes i dimensions))
+                     element))
+      array)))
+
+(defun foreign-array-alloc (array array-type)
+  "Allocate a foreign array containing the elements of lisp array.
+The foreign array must be freed with foreign-array-free."
+  (check-type array array)
+  (let* ((type (follow-typedefs (parse-type array-type)))
+         (ptr (foreign-alloc (element-type type)
+                             :count (reduce #'* (dimensions type)))))
+    (lisp-array-to-foreign array ptr array-type)
+    ptr))
+
+(defun foreign-array-free (ptr)
+  "Free a foreign array allocated by foreign-array-alloc."
+  (foreign-free ptr))
+
+(defmacro with-foreign-array ((var lisp-array array-type) &body body)
+  "Bind var to a foreign array containing lisp-array elements in body."
+  (with-unique-names (type)
+    `(let ((,type (follow-typedefs (parse-type ,array-type))))
+       (with-foreign-pointer (,var (* (reduce #'* (dimensions ,type))
+                                      (array-element-size ,type)))
+         (lisp-array-to-foreign ,lisp-array ,var ,array-type)
+         ,@body))))
+
+(defun foreign-aref (ptr array-type &rest indexes)
+  (let* ((type (follow-typedefs (parse-type array-type)))
+         (offset (* (array-element-size type)
+                    (apply #'indexes-to-row-major-index
+                           (dimensions type) indexes))))
+    (mem-ref ptr (element-type type) offset)))
+
+(defun (setf foreign-aref) (value ptr array-type &rest indexes)
+  (let* ((type (follow-typedefs (parse-type array-type)))
+         (offset (* (array-element-size type)
+                    (apply #'indexes-to-row-major-index
+                           (dimensions type) indexes))))
+    (setf (mem-ref ptr (element-type type) offset) value)))
+
+;;; This type has defined type translators to allocate and free the
+;;; array.  It will also invoke type translators for each of the
+;;; array's element.  **But it doesn't free them yet**
+(define-foreign-type auto-array-type (foreign-array-type)
+  ())
+
+(define-parse-method :auto-array (element-type &rest dimensions)
+  (assert (>= (length dimensions) 1))
+  (make-instance 'auto-array-type
+                 :element-type element-type
+                 :dimensions dimensions))
+
+(defmethod translate-to-foreign (array (type auto-array-type))
+  (foreign-array-alloc array (unparse-type type)))
+
+(defmethod translate-from-foreign (pointer (type auto-array-type))
+  (foreign-array-to-lisp pointer (unparse-type type)))
+
+(defmethod free-translated-object (pointer (type auto-array-type) param)
+  (declare (ignore param))
+  (foreign-array-free pointer))
 
 ;;;# Foreign Structures
 
@@ -306,13 +430,13 @@ to open-code (SETF MEM-REF) forms."
 ;;;       multiple of the alignment. This may require tail padding,
 ;;;       depending on the last member."
 ;;;
-;;; Special case from darwin/ppc32's ABI:
+;;; Special cases from darwin/ppc32's ABI:
 ;;; http://developer.apple.com/documentation/DeveloperTools/Conceptual/LowLevelABI/index.html
 ;;;
-;;;   1. "The embedding alignment of the first element in a data
+;;;   4. "The embedding alignment of the first element in a data
 ;;;       structure is equal to the element's natural alignment."
 ;;;
-;;;   2. "For subsequent elements that have a natural alignment
+;;;   5. "For subsequent elements that have a natural alignment
 ;;;       greater than 4 bytes, the embedding alignment is 4, unless
 ;;;       the element is a vector."  (note: this applies for
 ;;;       structures too)
