@@ -339,9 +339,9 @@ to open-code (SETF MEM-REF) forms."
 
 (defun notice-foreign-struct-definition (name-and-options slots)
   "Parse and install a foreign structure definition."
-  (destructuring-bind (name &key size #+nil alignment)
+  (destructuring-bind (name &key size (class 'foreign-struct-type))
       (ensure-list name-and-options)
-    (let ((struct (make-instance 'foreign-struct-type :name name))
+    (let ((struct (make-instance class :name name))
           (current-offset 0)
           (max-align 1)
           (firstp t))
@@ -368,11 +368,14 @@ to open-code (SETF MEM-REF) forms."
       (setf (size struct) (or size current-offset))
       (notice-foreign-type name struct))))
 
-(defmacro defcstruct (name &body fields)
+(defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
   (discard-docstring fields)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-foreign-struct-definition ',name ',fields)))
+     ;; n-f-s-d could do with this with mop:ensure-class.
+     ,(let-when (class (getf (cdr (ensure-list name-and-options)) :class))
+        `(defclass ,class (foreign-struct-type) ()))
+     (notice-foreign-struct-definition ',name-and-options ',fields)))
 
 ;;;## Accessing Foreign Structure Slots
 
