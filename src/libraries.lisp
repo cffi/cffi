@@ -177,16 +177,28 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
         (load-foreign-library-path name (native-namestring framework))
         (fl-error "Unable to find framework ~A" framework-name))))
 
+(defun report-simple-error (name error)
+  (fl-error "Unable to load foreign library (~A).~%  ~A"
+            name
+            (format nil "~?" (simple-condition-format-control error)
+                    (simple-condition-format-arguments error))))
+
+;;; FIXME: haven't double checked whether all Lisps signal a
+;;; SIMPLE-ERROR on %load-foreign-library failure.  In any case they
+;;; should be throwing a more specific error.
 (defun load-foreign-library-path (name path)
-  "Tries to load NAME using %LOAD-FOREIGN-LIBRARY which should try and
+  "Tries to load PATH using %LOAD-FOREIGN-LIBRARY which should try and
 find it using the OS's usual methods. If that fails we try to find it
 ourselves."
-  (or (ignore-errors (%load-foreign-library name path))
-      (let ((file (find-file path *foreign-library-directories*)))
-        (when file
-          (%load-foreign-library name (native-namestring file))))
-      ;; couldn't load it directly or find it...
-      (fl-error "Unable to load foreign library: ~A" path)))
+  (handler-case
+      (%load-foreign-library name path)
+    (simple-error (error)
+      (bif (file (find-file path *foreign-library-directories*))
+           (handler-case
+               (%load-foreign-library name (native-namestring file))
+             (simple-error (error)
+               (report-simple-error name error)))
+           (report-simple-error name error)))))
 
 (defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when
@@ -194,6 +206,8 @@ none of alternatives were successfully loaded."
   (dolist (lib library-list)
     (let-when (handle (ignore-errors (load-foreign-library-helper name lib)))
       (return-from try-foreign-library-alternatives handle)))
+  ;; Perhaps we should show the error messages we got for each
+  ;; alternative if we can figure out a nice way to do that.
   (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
 
 (defparameter *cffi-feature-suffix-map*
