@@ -676,7 +676,7 @@ The buffer has dynamic extent and may be stack allocated."
                   `(* ,count (foreign-type-size ,type))))
      ,@body))
 
-(defmacro with-foreign-objects (bindings &rest body)
+(defmacro with-foreign-objects (bindings &body body)
   (if bindings
       `(with-foreign-object ,(car bindings)
          (with-foreign-objects ,(cdr bindings)
