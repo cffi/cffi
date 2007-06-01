@@ -157,9 +157,9 @@ the USE-FOREIGN-LIBRARY macro."
   ())
 
 (defun read-new-value ()
-  (format t "~&Enter a new value (unevaluated): ")
-  (force-output)
-  (read))
+  (format *query-io* "~&Enter a new value (unevaluated): ")
+  (force-output *query-io*)
+  (read *query-io*))
 
 (defun fl-error (control &rest arguments)
   (error 'load-foreign-library-error
