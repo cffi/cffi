@@ -2556,6 +2556,12 @@ CFFI> (foreign-type-size 'foo)
 @result{} 32
 @end lisp
 
+@lisp
+;;; @lispcmt{Using :count to define arrays inside of a struct.}
+(defcstruct video_tuner
+  (name :char :count 32))
+@end lisp
+
 @subheading See Also
 @seealso{foreign-slot-pointer} @*
 @seealso{foreign-slot-value} @*
