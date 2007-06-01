@@ -61,6 +61,10 @@
    #:ppc32
    #:x86
    #:x86-64
+   #:sparc
+   #:sparc64
+   #:hppa
+   #:hppa64
    ))
 
 (in-package #:cffi-features)

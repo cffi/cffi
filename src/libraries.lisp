@@ -192,7 +192,7 @@ find it using the OS's usual methods. If that fails we try to find it
 ourselves."
   (handler-case
       (%load-foreign-library name path)
-    (simple-error (error)
+    (error (error)
       (bif (file (find-file path *foreign-library-directories*))
            (handler-case
                (%load-foreign-library name (native-namestring file))

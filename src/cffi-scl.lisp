@@ -3,7 +3,7 @@
 ;;; cffi-scl.lisp --- CFFI-SYS implementation for the Scieneer Common Lisp.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
-;;; Copyright (C) 2006, Scieneer Pty Ltd.
+;;; Copyright (C) 2006-2007, Scieneer Pty Ltd.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,22 +25,6 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
-
-;;; This port is suffering from bitrot as of 2007-03-29. -- luis
-
-;;; For posterity, a few optimizations we might use in the future:
-
-#-(and)
-(defun lisp-string-to-foreign (string ptr size)
-  (c-call::deport-string-to-system-area string ptr size :iso-8859-1))
-
-#-(and)
-(defun foreign-string-to-lisp (ptr &optional (size most-positive-fixnum)
-                               (null-terminated-p t))
-  (unless (null-pointer-p ptr)
-    (if null-terminated-p
-        (c-call::naturalize-c-string ptr :iso-8859-1)
-        (c-call::naturalize-c-string ptr :iso-8859-1 size))))
 
 ;;;# Administrivia
 
@@ -84,6 +68,10 @@
           #+x86     cffi-features:x86
           #+amd64   cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
+          #+sparc   cffi-features:sparc
+          #+sparc64 cffi-features:sparc64
+          #+hppa    cffi-features:hppa
+          #+hppa64  cffi-features:hppa64
           ;; Misfeatures
           cffi-features:flat-namespace
           )))

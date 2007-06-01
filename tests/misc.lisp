@@ -64,7 +64,12 @@
 (defparameter *cpu-features*
   '(cffi-features:x86
     cffi-features:x86-64
-    cffi-features:ppc32))
+    cffi-features:ppc32
+    cffi-features:sparc
+    cffi-features:sparc64
+    cffi-features:hppa
+    cffi-features:hppa64
+    ))
 
 (deftest features.cpu.1
     (loop for feature in *cpu-features*

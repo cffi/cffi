@@ -45,9 +45,8 @@
 ;;; ASDF extensions loaded.
 (defun load-directory ()
   (let ((here #.(or *compile-file-truename* *load-truename*)))
-    (make-pathname :directory (pathname-directory here)
-                   :device (pathname-device here)
-                   :host (pathname-host here))))
+    (make-pathname :name nil :type nil :version nil
+                   :defaults here)))
 
 (defun load-test-libraries ()
   (let ((*foreign-library-directories* (list (load-directory))))
