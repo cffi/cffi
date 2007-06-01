@@ -37,7 +37,7 @@
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :version "0.9.2"
   :licence "MIT"
-  :components 
+  :components
   ((:module src
     :serial t
     :components
