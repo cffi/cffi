@@ -498,3 +498,10 @@ Signals an error if the type cannot be resolved."
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
         ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
+
+;;; For Verrazano.
+(defmacro defctype* (name base-type)
+  "Like DEFCTYPE but defers instantiation until parse-time."
+  `(define-parse-method ,name ()
+     (make-instance 'foreign-typedef :name ',name
+                    :actual-type (parse-type ',base-type))))
