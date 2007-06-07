@@ -297,11 +297,23 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defmethod unparse-type ((type enhanced-foreign-type))
   (unparsed-type type))
 
+;;; Checks NAMEs, not object identity.
+(defun check-for-typedef-cycles (type)
+  (let ((seen (make-hash-table :test 'eq)))
+    (labels ((%check (cur-type)
+               (when (typep cur-type 'foreign-type-alias)
+                 (when (gethash (name cur-type) seen)
+                   (error "Detected cycle in type ~S." type))
+                 (setf (gethash (name cur-type) seen) t)
+                 (%check (actual-type cur-type)))))
+      (%check type))))
+
 ;;; Only now we define PARSE-TYPE because it needs to do some extra
 ;;; work for ENHANCED-FOREIGN-TYPES.
 (defun parse-type (type)
   (let* ((spec (ensure-list type))
          (ptype (apply (find-type-parser (car spec)) (cdr spec))))
+    (check-for-typedef-cycles ptype)
     (when (typep ptype 'enhanced-foreign-type)
       (setf (unparsed-type ptype) type))
     ptype))
@@ -417,12 +429,6 @@ Signals an error if the type cannot be resolved."
         `(let ((,var ,expansion))
            ,@body))))
 
-#- (and)
-  (if (specializedp #'expand-to-foreign value type)
-      `(let ((,var ,(expand-to-foreign value type)))
-         ,@body)
-      *runtime-translator-form*)
-
 ;;; User interface for converting values from/to foreign using the
 ;;; type translators.  The compiler macros use the expanders when
 ;;; possible.
@@ -499,9 +505,13 @@ Signals an error if the type cannot be resolved."
        (notice-foreign-type
         ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
 
-;;; For Verrazano.
+;;; For Verrazano.  We memoize the type this way to help detect cycles.
 (defmacro defctype* (name base-type)
   "Like DEFCTYPE but defers instantiation until parse-time."
-  `(define-parse-method ,name ()
-     (make-instance 'foreign-typedef :name ',name
-                    :actual-type (parse-type ',base-type))))
+  `(let (memoized-type)
+     (define-parse-method ,name ()
+       (unless memoized-type
+         (setf memoized-type (make-instance 'foreign-typedef :name ',name
+                                            :actual-type nil)
+               (actual-type memoized-type) (parse-type ',base-type)))
+       memoized-type)))
