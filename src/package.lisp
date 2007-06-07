@@ -84,6 +84,7 @@
    #:defcenum
    #:defbitfield
    #:define-foreign-type
+   #:define-parse-method
    #:foreign-enum-keyword
    #:foreign-enum-value
    #:foreign-bitfield-symbols
