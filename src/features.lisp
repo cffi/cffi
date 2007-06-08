@@ -65,7 +65,9 @@
    #:sparc64
    #:hppa
    #:hppa64
-   ))
+
+   #:little-endian
+   #:big-endian))
 
 (in-package #:cffi-features)
 

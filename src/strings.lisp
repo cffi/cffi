@@ -27,64 +27,194 @@
 
 (in-package #:cffi)
 
+;;; FIXME: we used to support ub8 arrays here. Look into that. [2007-02 LO]
+
+;;; ENDIANNESS features.  Should probably moved somewhere else.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew (with-foreign-object (p :uint16)
+             (setf (mem-ref p :uint16) #x00ff)
+             (ecase (mem-ref p :uint8)
+               (0 'cffi-features:big-endian)
+               (#xff 'cffi-features:little-endian)))
+           *features*))
+
+#+(or (and cffi-features:big-endian babel::le)
+      (and cffi-features:little-endian babel::be)
+      (not (or cffi-features:big-endian cffi-features:little-endian)))
+(error "Bug.  Babel and CFFI don't agree on endianness.")
+
 ;;;# Foreign String Conversion
 ;;;
 ;;; Functions for converting NULL-terminated C-strings to Lisp strings
-;;; and vice versa.  Currently this is blithely ignorant of encoding
-;;; and assumes characters can fit in 8 bits.
+;;; and vice versa.  The string functions accept an ENCODING keyword
+;;; argument which is used to specify the encoding to use when
+;;; converting to/from foreign strings.
 
-(defun lisp-string-to-foreign (string ptr size)
-  "Copy at most SIZE-1 characters from a Lisp STRING to PTR.
-The foreign string will be null-terminated."
-  (decf size)
-  (etypecase string
-    (string
-     (loop with i = 0 for char across string
-           while (< i size)
-           do (%mem-set (char-code char) ptr :unsigned-char (post-incf i))
-           finally (%mem-set 0 ptr :unsigned-char i)))
-    ((array (unsigned-byte 8))
-     (loop with i = 0 for elt across string
-           while (< i size)
-           do (%mem-set elt ptr :unsigned-char (post-incf i))
-           finally (%mem-set 0 ptr :unsigned-char i)))))
+;;; FIXME: is this a good default? [2007-04-13 LO]
+;;;
+;;; :LATIN-1 would probably work better for 8-bit lisps and be
+;;; backwards compatible with previous encoding unaware CFFI
+;;; behaviour.  OTOH, most uses are probably counting on
+;;; ASCII-compatible behaviour?  [2007-06-07 LO]
+(defvar *default-foreign-encoding* :utf-8)
 
-(defun foreign-string-to-lisp (ptr &optional (size array-total-size-limit)
-                               (null-terminated-p t))
-  "Copy at most SIZE characters from PTR into a Lisp string.
-If PTR is a null pointer, returns nil."
-  (unless (null-pointer-p ptr)
-    (with-output-to-string (s)
-      (loop for i fixnum from 0 below size
-            for code = (mem-ref ptr :unsigned-char i)
-            until (and null-terminated-p (zerop code))
-            do (write-char (code-char code) s)))))
+;;; TODO: refactor, sigh.  Also, this should probably be a function.
+;;; Would have to change Babel's API for that to be possible, I think.
+(defmacro bref (ptr off &optional (bytes 1) (endianness :ne))
+  (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
+    (once-only (ptr off)
+      (ecase bytes
+        (1 `(mem-ref ,ptr :uint8 ,off))
+        (2 (if big-endian
+               #+cffi-features:big-endian
+               `(mem-ref ,ptr :uint16 ,off)
+               #-cffi-features:big-endian
+               `(dpb (mem-ref ,ptr :uint8 ,off) (byte 8 8)
+                     (mem-ref ,ptr :uint8 (1+ ,off)))
+               #+cffi-features:little-endian
+               `(mem-ref ,ptr :uint16 ,off)
+               #-cffi-features:little-endian
+               `(dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 8)
+                     (mem-ref ,ptr :uint8 ,off))))
+        (4 (if big-endian
+               #+cffi-features:big-endian
+               `(mem-ref ,ptr :uint32 ,off)
+               #-cffi-features:big-endian
+               `(dpb (mem-ref ,ptr :uint8 ,off) (byte 8 24)
+                     (dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 16)
+                          (dpb (mem-ref ,ptr :uint8 (+ ,off 2)) (byte 8 8)
+                               (mem-ref ,ptr :uint8 (+ ,off 3)))))
+               #+cffi-features:little-endian
+               `(mem-ref ,ptr :uint32 ,off)
+               #-cffi-features:little-endian
+               `(dpb (mem-ref ,ptr :uint8 (+ ,off 3)) (byte 8 24)
+                     (dpb (mem-ref ,ptr :uint8 (+ ,off 2)) (byte 8 16)
+                          (dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 8)
+                               (mem-ref ,ptr :uint8 ,off))))))))))
+
+(defsetf bref (ptr off &optional (bytes 1) (endianness :ne)) (val)
+  (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
+    (ecase bytes
+      (1 `(setf (mem-ref ,ptr :uint8 ,off) ,val))
+      (2 (if big-endian
+             #+cffi-features:big-endian
+             `(setf (mem-ref ,ptr :uint16 ,off) ,val)
+             #-cffi-features:big-endian
+             `(setf (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 0) val)
+                    (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 8) val))
+             #+cffi-features:little-endian
+             `(setf (mem-ref ,ptr :uint16 ,off) ,val)
+             #-cffi-features:little-endian
+             `(setf (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 0) val)
+                    (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 8) val))))
+      (4 (if big-endian
+             #+cffi-features:big-endian
+             `(setf (mem-ref ,ptr :uint32 ,off) ,val)
+             #-cffi-features:big-endian
+             `(setf (mem-ref ,ptr :uint8 (+ 3 ,off)) (ldb (byte 8 0) val)
+                    (mem-ref ,ptr :uint8 (+ 2 ,off)) (ldb (byte 8 8) val)
+                    (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 16) val)
+                    (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 24) val))
+             #+cffi-features:little-endian
+             `(setf (mem-ref ,ptr :uint32 ,off) ,val)
+             #-cffi-features:little-endian
+             `(setf (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 0) val)
+                    (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 8) val)
+                    (mem-ref ,ptr :uint8 (+ ,off 2)) (ldb (byte 8 16) val)
+                    (mem-ref ,ptr :uint8 (+ ,off 3)) (ldb (byte 8 24) val)))))))
+
+;;; TODO: tackle optimization notes.
+(defparameter *foreign-string-mappings*
+  (instantiate-concrete-mappings
+   :optimize ((speed 3) (debug 0) (compilation-speed 0) (safety 0))
+   :octet-seq-accessor bref
+   :octet-seq-type t                    ; hmm, we need a pointer type.
+   :code-point-seq-accessor babel::string-accessor
+   :code-point-seq-type simple-string))
+
+(defun null-terminator-len (encoding)
+  (length (enc-nul-encoding (get-character-encoding encoding))))
+
+(defun lisp-string-to-foreign (string buffer bufsize
+                               &key (encoding *default-foreign-encoding*))
+  (check-type string string)
+  (with-checked-simple-vector ((string string) (start 0) (end nil))
+    (declare (type simple-string string))
+    (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
+           (size (funcall (octet-counter mapping) string start end)))
+      (when (<= bufsize size)
+        (error "This string is too large to fit target buffer."))
+      (funcall (encoder mapping) string start end buffer 0)
+      (dotimes (i (null-terminator-len encoding))
+        (setf (mem-ref buffer :char (+ size i)) 0)))
+    buffer))
+
+;;; Expands into a loop that calculates the length of the foreign
+;;; string at PTR plus OFFSET, using ACCESSOR and looking for a null
+;;; terminator of LENGTH bytes.
+(defmacro %foreign-string-length (ptr offset type length)
+  (once-only (ptr offset)
+    `(do ((i 0 (+ i ,length)))
+         ((zerop (mem-ref ,ptr ,type (+ ,offset i))) i)
+       (declare (fixnum i)))))
+
+;;; Return the length in octets of the null terminated foreign string
+;;; at POINTER plus OFFSET octets, assumed to be encoded in ENCODING,
+;;; a CFFI encoding.  This should be smart enough to look for 8-bit vs
+;;; 16-bit null terminators, as appropriate for the encoding.
+(defun foreign-string-length (pointer &key (encoding *default-foreign-encoding*)
+                              (offset 0))
+  (ecase (null-terminator-len encoding)
+    (1 (%foreign-string-length pointer offset :uint8 1))
+    (2 (%foreign-string-length pointer offset :uint16 2))
+    (4 (%foreign-string-length pointer offset :uint32 4))))
+
+;;; what to do with COUNT here? ahrg... make it default to STRLEN? but
+;;; what about the "at most" part?
+(defun foreign-string-to-lisp (pointer &key (offset 0) count
+                               (encoding *default-foreign-encoding*))
+  "Copy at most COUNT bytes from POINTER plus OFFSET encoded in
+ENCODING into a Lisp string and return it.  If POINTER is a null
+pointer, NIL is returned."
+  (unless (null-pointer-p pointer)
+    (let ((count (or count
+                     (foreign-string-length
+                      pointer :encoding encoding :offset offset)))
+          (mapping (lookup-mapping *foreign-string-mappings* encoding)))
+      (multiple-value-bind (size new-end)
+          (funcall (code-point-counter mapping) pointer offset (+ offset count))
+        (let ((string (make-string size)))
+          (funcall (decoder mapping) pointer offset new-end string 0)
+          string)))))
 
 ;;;# Using Foreign Strings
 
-(defun foreign-string-alloc (string)
+(defun foreign-string-alloc (string &key (encoding *default-foreign-encoding*)
+                             (start 0) end)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
-  (check-type string (or string (array (unsigned-byte 8))))
-  (let* ((length (1+ (length string)))
-         (ptr (foreign-alloc :char :count length)))
-    (lisp-string-to-foreign string ptr length)
-    ptr))
+  (check-type string string)
+  (with-checked-simple-vector ((string string) (start start) (end end))
+    (declare (type simple-string string))
+    (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
+           (count (funcall (octet-counter mapping) string start end))
+           (ptr (foreign-alloc
+                 :char :count (+ count (null-terminator-len encoding)))))
+      (funcall (encoder mapping) string start end ptr 0)
+      (dotimes (i (null-terminator-len encoding))
+        (setf (mem-ref ptr :char (+ count i)) 0))
+      ptr)))
 
 (defun foreign-string-free (ptr)
   "Free a foreign string allocated by FOREIGN-STRING-ALLOC."
   (foreign-free ptr))
 
-(defmacro with-foreign-string ((var lisp-string) &body body)
+(defmacro with-foreign-string ((var lisp-string &rest args) &body body)
   "Bind VAR to a foreign string containing LISP-STRING in BODY."
-  (with-unique-names (str length)
-    `(let* ((,str ,lisp-string)
-            (,length (progn
-                       (check-type ,str (or string (array (unsigned-byte 8))))
-                       (1+ (length ,str)))))
-       (with-foreign-pointer (,var ,length)
-         (lisp-string-to-foreign ,str ,var ,length)
-         ,@body))))
+  `(let ((,var (foreign-string-alloc ,lisp-string ,@args)))
+     (unwind-protect
+          (progn ,@body)
+       (foreign-string-free ,var))))
 
 (defmacro with-foreign-strings (bindings &body body)
   (if bindings
@@ -105,34 +235,48 @@ the return value of an implicit PROGN around BODY."
 ;;;# Automatic Conversion of Foreign Strings
 
 (define-foreign-type foreign-string-type ()
-  ()
-  (:actual-type :pointer)
-  (:simple-parser :string))
+  (;; CFFI encoding of this string.
+   (encoding :initarg :encoding :reader encoding))
+  (:actual-type :pointer))
+
+;;; describe me
+(defun fst-encoding (type)
+  (or (encoding type) *default-foreign-encoding*))
+
+;;; TODO: check if encoding is valid now.
+(define-parse-method :string (&key encoding)
+  (make-instance 'foreign-string-type :encoding encoding))
+
+;;; Display the encoding when printing a FOREIGN-STRING-TYPE instance.
+(defmethod print-object ((type foreign-string-type) stream)
+  (print-unreadable-object (type stream :type t)
+    (format stream "~S" (fst-encoding type))))
 
 (defmethod translate-to-foreign ((s string) (type foreign-string-type))
-  (values (foreign-string-alloc s) t))
+  (values (foreign-string-alloc s :encoding (fst-encoding type)) t))
 
 (defmethod translate-to-foreign (obj (type foreign-string-type))
   (cond
     ((pointerp obj)
      (values obj nil))
-    ((typep obj '(array (unsigned-byte 8)))
-     (values (foreign-string-alloc obj) t))
-    (t (error "~A is not a Lisp string, (array (unsigned-byte 8)) or pointer."
-              obj))))
+    ;; ((typep obj '(array (unsigned-byte 8)))
+    ;;  (values (foreign-string-alloc obj) t))
+    (t (error "~A is not a Lisp string or pointer." obj))))
 
 (defmethod translate-from-foreign (ptr (type foreign-string-type))
-  (foreign-string-to-lisp ptr))
+  (foreign-string-to-lisp ptr :encoding (fst-encoding type)))
 
 (defmethod free-translated-object (ptr (type foreign-string-type) free-p)
   (when free-p
     (foreign-string-free ptr)))
 
-;;; STRING+PTR
+;;;# STRING+PTR
 
 (define-foreign-type foreign-string+ptr-type (foreign-string-type)
-  ()
-  (:simple-parser :string+ptr))
+  ())
+
+(define-parse-method :string+ptr (&key encoding)
+  (make-instance 'foreign-string+ptr-type :encoding encoding))
 
 (defmethod translate-from-foreign (value (type foreign-string+ptr-type))
-  (list (foreign-string-to-lisp value) value))
+  (list (call-next-method) value))

@@ -71,8 +71,7 @@
           #+x86-64  cffi-features:x86-64
           #+(and ppc (not ppc64)) cffi-features:ppc32
           ;; Misfeatures
-          cffi-features:flat-namespace
-          )))
+          cffi-features:flat-namespace)))
 
 ;;; Symbol case.
 

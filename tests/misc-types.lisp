@@ -36,6 +36,7 @@
       string)
   "foo")
 
+#-(and)
 (deftest misc-types.string+ptr.ub8
     (destructuring-bind (string pointer)
         (strdup (make-array 3 :element-type '(unsigned-byte 8)
@@ -44,6 +45,7 @@
       string)
   "foo")
 
+#-(and)
 (deftest misc-types.string.ub8.1
     (let ((array (make-array 7 :element-type '(unsigned-byte 8)
                              :initial-contents '(84 117 114 97 110 103 97))))
@@ -51,6 +53,7 @@
         (foreign-string-to-lisp foreign-string)))
   "Turanga")
 
+#-(and)
 (deftest misc-types.string.ub8.2
     (let ((str (foreign-string-alloc
                 (make-array 7 :element-type '(unsigned-byte 8)

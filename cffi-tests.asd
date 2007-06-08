@@ -67,6 +67,7 @@
      (:file "callbacks")
      (:file "foreign-globals")
      (:file "memory")
+     (:file "strings")
      (:file "struct")
      (:file "union")
      (:file "enum")

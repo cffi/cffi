@@ -6,14 +6,12 @@
 
 @c @documentencoding utf-8
 
-@ignore
-Style notes:
-
-* The reference section names and "See Also" list are roman, not
-  @code.  This is to follow the format of CLHS.
-
-* How it looks in HTML is the priority.
-@end ignore
+@c Style notes:
+@c
+@c * The reference section names and "See Also" list are roman, not
+@c   @code.  This is to follow the format of CLHS.
+@c
+@c * How it looks in HTML is the priority.
 
 @c ============================= Macros =============================
 @c The following macros are used throughout this manual.
@@ -209,6 +207,7 @@ Pointers
 
 Strings
 
+* *default-foreign-encoding*::  Default encoding for the string types.
 * foreign-string-alloc::        Converts a Lisp string to a foreign string.
 * foreign-string-free::         Deallocates memory used by a foreign string.
 * foreign-string-to-lisp::      Converts a foreign string to a Lisp string.
@@ -4481,6 +4480,7 @@ without referring to any implementation-specific symbols.
 @menu
 Dictionary
 
+* *default-foreign-encoding*::  
 * foreign-string-alloc::        
 * foreign-string-free::         
 * foreign-string-to-lisp::      
@@ -4488,6 +4488,49 @@ Dictionary
 * with-foreign-string::         
 * with-foreign-pointer-as-string::
 @end menu
+
+
+@c ===================================================================
+@c *DEFAULT-FOREIGN-ENCODING*
+
+@node *default-foreign-encoding*
+@unnumberedsec *default-foreign-encoding*
+@subheading Syntax
+
+@Variable{*default-foreign-encoding*}
+
+@subheading Value type
+
+A keyword.
+
+@subheading Initial value
+
+@code{:iso-8859-1}
+
+@subheading Description
+
+This special variable holds the default foreign encoding.
+
+@subheading Examples
+
+@lisp
+CFFI> *default-foreign-encoding*
+:ISO-8859-1
+CFFI> (foreign-funcall "strdup" (:string :encoding :utf-8) "maçã" :string)
+"maÃ§Ã£"
+CFFI> (let ((*default-foreign-encoding* :utf-8))
+        (foreign-funcall "strdup" (:string :encoding :utf-8) "maçã" :string))
+"maçã"
+@end lisp
+
+@subheading See also
+
+@seealso{Other types} (@code{:string} type) @*
+@seealso{foreign-string-alloc} @*
+@seealso{foreign-string-to-lisp} @*
+@seealso{lisp-string-to-foreign} @*
+@seealso{with-foreign-string} @*
+@seealso{with-foreign-pointer-as-string}
 
 
 @c ===================================================================
@@ -5137,7 +5180,7 @@ Corman Lisp does not support @code{foreign-funcall}. On
 implementations that @strong{don't} support @code{foreign-funcall}
 @code{cffi-features:no-foreign-funcall} will be present in
 @code{*features*}. Note: in these Lisps you can still use the
-@code{defcfun} interface. 
+@code{defcfun} interface.
 @end itemize
 
 @subheading Examples
@@ -6124,7 +6167,6 @@ The exact meanings of the features follow.  Though you will usually
 refer to these symbols as keywords, @cffi{} internally views them in
 the package @code{cffi-features}.
 
-@table @code
 @item flat-namespace
 This Lisp has a flat namespace for foreign symbols meaning that you
 won't be able to load two different libraries with homograph functions

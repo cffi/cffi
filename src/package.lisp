@@ -28,7 +28,7 @@
 (in-package #:cl-user)
 
 (defpackage #:cffi
-  (:use #:common-lisp #:cffi-sys #:cffi-utils)
+  (:use #:common-lisp #:cffi-sys #:cffi-utils #:babel-encodings)
   (:import-from #:cffi-features #:cffi-feature-p)
   (:export
    ;; Types.
@@ -54,6 +54,7 @@
    #:with-pointer-to-vector-data
 
    ;; Foreign string operations.
+   #:*default-foreign-encoding*
    #:foreign-string-alloc
    #:foreign-string-free
    #:foreign-string-to-lisp
