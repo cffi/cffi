@@ -23,11 +23,9 @@ This is a collection of TODO items and ideas in no particular order.
 
 -> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
    DEFCUN/FOREIGN-FUNCALL.
--> Figure out how to portably define types like: time_t, size_t, wchar_t, 
-   etc... Likely to involve something like SB-GROVEL and possibly avoiding
-   this step on known platforms?
 -> Implement the proposed interfaces (see doc/).
 -> Implement CFFI-SYS:ERRNO-VALUE (name?).
+   (user can access errno with cffi-grovel)
 -> Extend FOREIGN-SLOT-VALUE and make it accept multiple "indices" for
    directly accessing structs inside structs, arrays inside structs, etc...
 -> Implement EXPLAIN-FOREIGN-SLOT-VALUE.
@@ -102,6 +100,10 @@ This is a collection of TODO items and ideas in no particular order.
 -> Fill the missing sections in the CFFI User Manual.
 -> Update the CFFI-SYS Specification.
 -> have two versions of the manual on the website
+
+### CFFI-Grovel
+
+-> Look into making the C output more concise.
 
 ### Other
 

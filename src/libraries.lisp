@@ -213,7 +213,8 @@ none of alternatives were successfully loaded."
 (defparameter *cffi-feature-suffix-map*
   '((cffi-features:windows . ".dll")
     (cffi-features:darwin . ".dylib")
-    (cffi-features:unix . ".so"))
+    (cffi-features:unix . ".so")
+    (t . ".so"))
   "Mapping of OS feature keywords to shared library suffixes.")
 
 (defun default-library-suffix ()

@@ -27,6 +27,8 @@
 
 (in-package #:cl-user)
 
+;;; This package is for CFFI's internal use.  No effort is made to
+;;; maintain backwards compatibility.  Use at your own risk.
 (defpackage #:cffi-utils
   (:use #:common-lisp)
   (:export #:discard-docstring
