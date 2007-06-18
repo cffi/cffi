@@ -1850,8 +1850,7 @@ precision, among each respective category.
 
 This type is only supported on SCL.
 
-@ForeignType{:pointer}
-@ForeignType{(:pointer &optional type)}
+@ForeignType{:pointer &optional type}
 
 A foreign pointer to an object of any type, corresponding to
 @code{void *}.  You can optionally specify type of pointer
