@@ -549,3 +549,17 @@
       (incf-pointer ptr 42)
       (pointer-address ptr))
   42)
+
+(deftest pointerp.1
+    (values
+     (pointerp (null-pointer))
+     (null-pointer-p (null-pointer))
+     (typep (null-pointer) 'foreign-pointer))
+  t t t)
+
+(deftest pointerp.2
+    (let ((p (make-pointer #xFEFF)))
+      (values
+       (pointerp p)
+       (typep p 'foreign-pointer)))
+  t t)

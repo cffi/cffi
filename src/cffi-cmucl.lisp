@@ -31,6 +31,7 @@
   (:use #:common-lisp #:alien #:c-call #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -78,6 +79,9 @@
   (string-upcase name))
 
 ;;;# Basic Pointer Operations
+
+(deftype foreign-pointer ()
+  'sys:system-area-pointer)
 
 (declaim (inline pointerp))
 (defun pointerp (ptr)

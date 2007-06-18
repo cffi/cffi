@@ -31,6 +31,7 @@
   (:use #:common-lisp #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:%foreign-alloc
@@ -104,6 +105,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
        (foreign-free ,var))))
 
 ;;;# Misc. Pointer Operations
+
+(deftype foreign-pointer ()
+  'si:foreign-data)
 
 (defun null-pointer ()
   "Construct and return a null pointer."

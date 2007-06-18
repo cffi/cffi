@@ -31,6 +31,7 @@
   (:use #:common-lisp #:sb-alien #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -81,6 +82,9 @@
   (string-upcase name))
 
 ;;;# Basic Pointer Operations
+
+(deftype foreign-pointer ()
+  'sb-sys:system-area-pointer)
 
 (declaim (inline pointerp))
 (defun pointerp (ptr)

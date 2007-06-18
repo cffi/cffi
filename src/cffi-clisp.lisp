@@ -32,6 +32,7 @@
   (:use #:common-lisp #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -122,6 +123,9 @@
   (nth-value 1 (ffi:sizeof (convert-foreign-type type))))
 
 ;;;# Basic Pointer Operations
+
+(deftype foreign-pointer ()
+  '(or null ffi:foreign-address))
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."

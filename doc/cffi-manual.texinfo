@@ -3671,6 +3671,12 @@ other operations defined in the Pointers dictionary, such as
 When using them, keep in mind that they merely manipulate the Lisp
 representation of pointers, not the values they point to.
 
+@deftp {Lisp Type} foreign-pointer
+The pointers' representations differ from implementation to
+implementation and have different types.  @code{foreign-pointer}
+provides a portable type alias to each of these types.
+@end deftp
+
 
 @node Allocating Foreign Memory
 @section Allocating Foreign Memory
@@ -4035,6 +4041,8 @@ CFFI> (pointer-address **)
 CFFI> (inc-pointer *** -42)
 @result{} #<FOREIGN-ADDRESS #x00000000>
 CFFI> (null-pointer-p *)
+@result{} T
+CFFI> (typep ** 'foreign-pointer)
 @result{} T
 @end lisp
 

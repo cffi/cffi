@@ -31,6 +31,7 @@
   (:use #:common-lisp #:ccl #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp  ; ccl:pointerp
    #:pointer-eq
    #:%foreign-alloc
@@ -105,6 +106,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
        ,@body)))
 
 ;;;# Misc. Pointer Operations
+
+(deftype foreign-pointer ()
+  'ccl:macptr)
 
 (defun null-pointer ()
   "Construct and return a null pointer."

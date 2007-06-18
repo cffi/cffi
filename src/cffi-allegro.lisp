@@ -31,6 +31,7 @@
   (:use #:common-lisp #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -85,9 +86,12 @@
 
 ;;;# Basic Pointer Operations
 
+(deftype foreign-pointer ()
+  'ff:foreign-address)
+
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (integerp ptr))
+  (ff:foreign-address-p ptr))
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
@@ -107,10 +111,12 @@
 
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
+  (check-type address ff:foreign-address)
   address)
 
 (defun pointer-address (ptr)
   "Return the address pointed to by PTR."
+  (check-type ptr ff:foreign-address)
   ptr)
 
 ;;;# Allocation

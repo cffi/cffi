@@ -31,6 +31,9 @@
   (:use #:common-lisp #:cffi-sys #:cffi-utils)
   (:import-from #:cffi-features #:cffi-feature-p)
   (:export
+   ;; Types.
+   #:foreign-pointer
+
    ;; Primitive pointer operations.
    #:foreign-free
    #:foreign-alloc

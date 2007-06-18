@@ -35,6 +35,7 @@
   (:use #:common-lisp #:c-types #:cffi-utils)
   (:export
    #:canonicalize-symbol-name-case
+   #:foreign-pointer
    #:pointerp
    #:pointer-eq
    #:null-pointer
@@ -80,6 +81,9 @@
   (string-upcase name))
 
 ;;;# Basic Pointer Operations
+
+(deftype foreign-pointer ()
+  'cl::foreign)
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
