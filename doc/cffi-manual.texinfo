@@ -5849,10 +5849,10 @@ declarations for libraries that are implemented in C.  That is, it
 grovels through the system headers, getting information about types
 and structures, so you don't have to.  This is especially important
 for libraries which are implemented in different ways by different
-vendors, such as the Unix/Posix functions.  The @cffi{} declarations
-are usually quite different from platform to platform, but the
-information you give to @cffi{}-Grovel is the same.  Hence, much less
-work is required!
+vendors, such as the @sc{unix}/@sc{posix} functions.  The @cffi{}
+declarations are usually quite different from platform to platform,
+but the information you give to @cffi{}-Grovel is the same.  Hence,
+much less work is required!
 
 If you use @acronym{ASDF}, @cffi{}-Grovel is integrated, so that it
 will run automatically when your system is building.  This feature was
@@ -5893,15 +5893,11 @@ semicolon-comments and reader-macros will work as expected.
 
 There are several forms recognized by @cffi{}-Grovel:
 
-@c TODO: add these to the index
-@c TODO: use something prettier than itemize
-
-@itemize
-@item
-(@b{progn} forms*)
+@deffn {Grovel Form} progn &rest forms
 
 Processes a list of forms. Useful for conditionalizing several
 forms. For example:
+@end deffn
 
 @lisp
 #+cffi-features:freebsd
@@ -5910,85 +5906,90 @@ forms. For example:
   (constant (ev-disable "EV_DISABLE")))
 @end lisp
 
-@item
-(@b{include} file*)
+@deffn {Grovel Form} include &rest files
 
 Include the specified files (specified as strings) in the generated C
 source code.
+@end deffn
 
-@item
-(@b{in-package} symbol)
+@deffn {Grovel Form} in-package symbol
 
 Set the package to be used for the final Lisp output.
+@end deffn
 
-@item
-(@b{ctype} lisp-name signedness size-designator)
+@deffn {Grovel Form} ctype lisp-name signedness size-designator
 
 Define a @cffi{} foreign type for the string in @var{size-designator},
 e.g. @code{(ctype :pid :unsigned "pid_t")}.
+@end deffn
 
-@item
-(@b{constant} (lisp-name &rest c-names) &key documentation optional)
+@deffn {Grovel Form} constant (lisp-name &rest c-names) &key documentation optional
 
 Search for the constant named by the first @var{c-name} string found
 to be known to the C preprocessor and define it as @var{lisp-name}.
 If optional is true, no error will be raised if all the @var{c-names}
 are unknown.
+@end deffn
 
-@item
-(@b{define} name &optional value)
+@deffn {Grovel Form} define name &optional value
 
 Defines an additional C preprocessor symbol, which is useful for
 altering the behavior of included system headers.
+@end deffn
 
-@item
-(@b{flag} flag-string)
+@deffn {Grovel Form} flag flag-string
 
 Adds @var{flag-string} to the flags used for the C compiler
 invocation.
+@end deffn
 
-@item
-(@b{cstruct} lisp-name c-name slots)
+@deffn {Grovel Form} cstruct lisp-name c-name slots
 
 Define a @cffi{} foreign struct with the slot data specfied.  Slots
 are of the form @code{(lisp-name c-name &key type count (signed t))}.
+@end deffn
 
-@item
-(@b{cstruct} lisp-name c-name slots)
+@deffn {Grovel Form} cunion lisp-name c-name slots
 
 Identical to @code{cstruct}, but defines a @cffi{} foreign union.
+@end deffn
 
-@item
-(@b{cstruct-and-class} c-name slots)
+@deffn {Grovel Form} cstruct-and-class c-name slots
 
 Defines a @cffi{} foreign struct, as with @code{cstruct} and defines a
 @acronym{CLOS} class to be used with it.  This is useful for mapping
 foreign structures to application-layer code that shouldn't need to
 worry about memory allocation issues.
+@end deffn
 
-@item
-(@b{cvar} namespec type &key read-only)
+@deffn {Grovel Form} cvar namespec type &key read-only
 
 Defines a foreign variable of the specified type, even if that
 variable is potentially a C preprocessor pseudo-variable.  e.g.
 @code{(cvar ("errno" errno) errno-values)}, assuming that errno-values
 is an enum or equivalent to type @code{:int}.
 
-@c FIXME
-The @var{namespec} is similar to the namespecs used in @cffi{}.
+The @var{namespec} is similar to the one used in @ref{defcvar}.
+@end deffn
 
-@item
-(@b{cvar} cenum name elements)
+@deffn {Grovel Form} cenum name &rest elements
 
 Defines a true C enum, with elements specified as @code{((lisp-name
 &rest c-names) &key optional documentation)}.
+@end deffn
 
-@item
-(@b{constantenum} name elements)
+@deffn {Grovel Form} constantenum name &rest elements
 
 Defines an enumeration of pre-processor constants, with elements
 specified as @code{((lisp-name &rest c-names) &key optional
-documentation)}.  For example:
+documentation)}.
+
+This example defines @code{:af-inet} to represent the value held by
+@code{AF_INET} or @code{PF_INET}, whichever the pre-processor finds
+first.  Similarly for @code{:af-packet}, but no error will be
+signalled if the platform supports neither @code{AF_PACKET} nor
+@code{PF_PACKET}.
+@end deffn
 
 @lisp
 (constantenum address-family
@@ -6003,13 +6004,9 @@ documentation)}.  For example:
    :optional t))
 @end lisp
 
-This will define @code{:af-inet} to represent the value held by
-@code{AF_INET} or @code{PF_INET}, whichever the pre-processor finds
-first.  Similarly for @code{:af-packet}, but no error will be signaled
-if the platform supports neither @code{AF_PACKET} nor
-@code{PF_PACKET}.
 
-@end itemize
+@c ===================================================================
+@c SECTION: Groveller ASDF Integration
 
 @node Groveller ASDF Integration
 @section ASDF Integration
