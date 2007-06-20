@@ -288,17 +288,12 @@ field-name"
   "Return the address of a pointer."
   `(cffi:pointer-address ,ptr))
 
-;; Hmm, we need to translate chars, so translations are necessary here.
-(defun %deref-pointer (ptr type)
-  (cffi::translate-type-from-foreign (cffi:mem-ref ptr type) (cffi::parse-type type)))
-
-(defun (setf %deref-pointer) (value ptr type)
-  (setf (cffi:mem-ref ptr type)
-        (cffi::translate-type-to-foreign value (cffi::parse-type type))))
-
 (defmacro deref-pointer (ptr type)
   "Dereference a pointer."
-  `(%deref-pointer ,ptr (convert-uffi-type ,type)))
+  `(cffi:mem-ref ,ptr (convert-uffi-type ,type)))
+
+(defsetf deref-pointer (ptr type) (value)
+  `(setf (cffi:mem-ref ,ptr (convert-uffi-type ,type)) ,value))
 
 (defmacro ensure-char-character (obj &environment env)
   "Convert OBJ to a character if it is an integer."
@@ -490,7 +485,7 @@ library type if type is not specified."
         (find filename *loaded-libraries* :test #'string-equal))
         t ;; return T, but don't reload library
         (progn
-
+          ;; FIXME: Hmm, what are these two for?
           #+cmu
           (let ((type (pathname-type (parse-namestring filename))))
             (if (string-equal type "so")
@@ -508,9 +503,8 @@ library type if type is not specified."
                                     (convert-supporting-libraries-to-string
                                      supporting-libraries))))
 
-          #-cmu
+          #-(or cmu scl)
           (cffi:load-foreign-library filename)
-
           (push filename *loaded-libraries*)
           t))))
 
