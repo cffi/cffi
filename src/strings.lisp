@@ -190,7 +190,7 @@ pointer, NIL is returned."
 ;;;# Using Foreign Strings
 
 (defun foreign-string-alloc (string &key (encoding *default-foreign-encoding*)
-                             (start 0) end)
+                             (null-terminated-p t) (start 0) end)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
   (check-type string string)
@@ -198,12 +198,15 @@ The string must be freed with FOREIGN-STRING-FREE."
     (declare (type simple-string string))
     (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
            (count (funcall (octet-counter mapping) string start end))
-           (ptr (foreign-alloc
-                 :char :count (+ count (null-terminator-len encoding)))))
+           (length (if null-terminated-p
+                       (+ count (null-terminator-len encoding))
+                       count))
+           (ptr (foreign-alloc :char :count length)))
       (funcall (encoder mapping) string start end ptr 0)
-      (dotimes (i (null-terminator-len encoding))
-        (setf (mem-ref ptr :char (+ count i)) 0))
-      ptr)))
+      (when null-terminated-p
+        (dotimes (i (null-terminator-len encoding))
+          (setf (mem-ref ptr :char (+ count i)) 0)))
+      (values ptr length))))
 
 (defun foreign-string-free (ptr)
   "Free a foreign string allocated by FOREIGN-STRING-ALLOC."
