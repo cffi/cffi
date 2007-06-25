@@ -59,6 +59,7 @@
    #:foreign-string-to-lisp
    #:lisp-string-to-foreign
    #:with-foreign-string
+   #:with-foreign-strings
    #:with-foreign-pointer-as-string
 
    ;; Foreign function operations.

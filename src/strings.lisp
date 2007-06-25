@@ -86,8 +86,15 @@ The string must be freed with FOREIGN-STRING-FREE."
          (lisp-string-to-foreign ,str ,var ,length)
          ,@body))))
 
-(defmacro with-foreign-pointer-as-string
-    ((var size &optional size-var) &body body)
+(defmacro with-foreign-strings (bindings &body body)
+  (if bindings
+      `(with-foreign-string ,(first bindings)
+         (with-foreign-strings ,(rest bindings)
+           ,@body))
+      `(progn ,@body)))
+
+(defmacro with-foreign-pointer-as-string ((var size &optional size-var)
+                                          &body body)
   "Like WITH-FOREIGN-POINTER except VAR as a Lisp string is used as
 the return value of an implicit PROGN around BODY."
   `(with-foreign-pointer (,var ,size ,size-var)
