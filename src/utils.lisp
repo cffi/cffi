@@ -42,6 +42,7 @@
            #:bif
            #:post-incf
            #:single-bit-p
+           #:remove-from-plist
            #:warn-if-kw-or-belongs-to-cl))
 
 (in-package #:cffi-utils)
@@ -200,3 +201,20 @@ set twos-complement bit."
 ;          `(if ,test
 ;               (let ((it ,test)) (declare (ignorable it)),@body)
 ;               (acond ,@rest))))))
+
+;; copied from alexandria
+(defun remove-from-plist (plist &rest keys)
+  "Returns a propery-list with same keys and values as PLIST, except that keys
+in the list designated by KEYS and values corresponding to them are removed.
+The returned property-list may share structure with the PLIST, but PLIST is
+not destructively modified."
+  (declare (optimize (speed 3)))
+  ;; FIXME: unoptimal: (sans '(:a 1 :b 2) :a) has no need to copy the
+  ;; tail.
+  (loop for cell = plist :then (cddr cell)
+        for key = (car cell)
+        while cell
+        unless (member key keys :test #'eq)
+        collect key
+        and do (assert (cdr cell) () "Not a proper plist")
+        and collect (cadr cell)))
