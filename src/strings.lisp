@@ -128,7 +128,7 @@
   (instantiate-concrete-mappings
    :optimize ((speed 3) (debug 0) (compilation-speed 0) (safety 0))
    :octet-seq-accessor bref
-   :octet-seq-type t                    ; hmm, we need a pointer type.
+   :octet-seq-type foreign-pointer
    :code-point-seq-accessor babel::string-accessor
    :code-point-seq-type simple-string))
 
@@ -217,8 +217,8 @@ The string must be freed with FOREIGN-STRING-FREE."
                                 &key byte-size-variable &allow-other-keys)
                                &body body)
   "Bind C-POINTER-VARIABLE to a foreign string containing LISP-STRING in BODY.
-When BYTE-SIZE-VARIABLE is specified then bind the c buffer size \(including the
-possible null terminator\(s)) to this variable."
+When BYTE-SIZE-VARIABLE is specified then bind the c buffer size
+\(including the possible null terminator\(s)) to this variable."
   (setf args (remove-from-plist args :byte-size-variable))
   `(multiple-value-bind
           (,c-pointer-variable ,@(when byte-size-variable
@@ -229,6 +229,7 @@ possible null terminator\(s)) to this variable."
        (foreign-string-free ,c-pointer-variable))))
 
 (defmacro with-foreign-strings (bindings &body body)
+  "See WITH-FOREIGN-STRING's documentation."
   (if bindings
       `(with-foreign-string ,(first bindings)
          (with-foreign-strings ,(rest bindings)
