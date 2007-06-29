@@ -6090,6 +6090,7 @@ clash with, say, CL symbols.}
 
 @lisp
 (defpackage #:example-internal
+  (:use)
   (:nicknames #:exampleint))
 
 (defpackage #:example-software
