@@ -4698,10 +4698,13 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @c ===================================================================
 @c WITH-FOREIGN-STRING
 
+@c TODO: update this documentation
+
 @node with-foreign-string
 @unnumberedsec with-foreign-string
 @subheading Syntax
-@Macro{with-foreign-string (var lisp-string-or-ub8-array) &body body}
+@Macro{with-foreign-string (binding string &rest args) &body body}
+@Macro{with-foreign-strings (bindings &body body)}
 
 @subheading Arguments and Values
 
@@ -4709,8 +4712,8 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @item var
 A symbol.
 
-@item lisp-string-or-ub8-array
-A Lisp string or a Lisp array with element type @code{(unsigned-byte 8)}.
+@item string
+A Lisp string.
 
 @item body
 A list of forms to be executed.
@@ -4718,7 +4721,7 @@ A list of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-string} macro will bind @var{var} to a newly
-allocated foreign string containing @var{lisp-string-or-ub8-array}.
+allocated foreign string containing @var{string}.
 
 @subheading Examples
 

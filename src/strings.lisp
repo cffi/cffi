@@ -212,21 +212,19 @@ The string must be freed with FOREIGN-STRING-FREE."
   "Free a foreign string allocated by FOREIGN-STRING-ALLOC."
   (foreign-free ptr))
 
-(defmacro with-foreign-string ((c-pointer-variable lisp-string
-                                &rest args
-                                &key byte-size-variable &allow-other-keys)
-                               &body body)
-  "Bind C-POINTER-VARIABLE to a foreign string containing LISP-STRING in BODY.
-When BYTE-SIZE-VARIABLE is specified then bind the c buffer size
+(defmacro with-foreign-string ((var-or-vars lisp-string &rest args) &body body)
+  "VAR-OR-VARS is not evaluated ans should a list of the form
+\(VAR &OPTIONAL BYTE-SIZE-VAR) or just a VAR symbol.  VAR is
+bound to a foreign string containing LISP-STRING in BODY.  When
+BYTE-SIZE-VAR is specified then bind the C buffer size
 \(including the possible null terminator\(s)) to this variable."
-  (setf args (remove-from-plist args :byte-size-variable))
-  `(multiple-value-bind
-          (,c-pointer-variable ,@(when byte-size-variable
-                                   (list byte-size-variable)))
-       (foreign-string-alloc ,lisp-string ,@args)
-     (unwind-protect
-          (progn ,@body)
-       (foreign-string-free ,c-pointer-variable))))
+  (destructuring-bind (var &optional size-var)
+      (ensure-list var-or-vars)
+    `(multiple-value-bind (,var ,@(when size-var (list size-var)))
+         (foreign-string-alloc ,lisp-string ,@args)
+       (unwind-protect
+            (progn ,@body)
+         (foreign-string-free ,var)))))
 
 (defmacro with-foreign-strings (bindings &body body)
   "See WITH-FOREIGN-STRING's documentation."

@@ -65,6 +65,11 @@
       (foreign-string-to-lisp s))
   #.*ascii-test-string*)
 
+(deftest string.conversion.basic.2
+    (with-foreign-string ((ptr size) "123" :null-terminated-p nil)
+      (values (foreign-string-to-lisp ptr :count 3) size))
+  "123" 3)
+
 ;;; Ensure that conversion of *ASCII-TEST-STRING* to a foreign buffer
 ;;; and back preserves ASCII encoding.
 (deftest string.encoding.ascii
