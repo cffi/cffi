@@ -234,14 +234,19 @@ BYTE-SIZE-VAR is specified then bind the C buffer size
            ,@body))
       `(progn ,@body)))
 
-(defmacro with-foreign-pointer-as-string ((var size &optional size-var)
-                                          &body body)
-  "Like WITH-FOREIGN-POINTER except VAR as a Lisp string is used as
-the return value of an implicit PROGN around BODY."
-  `(with-foreign-pointer (,var ,size ,size-var)
-     (progn
-       ,@body
-       (foreign-string-to-lisp ,var))))
+(defmacro with-foreign-pointer-as-string
+    ((var-or-vars size &rest args) &body body)
+  "VAR-OR-VARS is not evaluated and should be a list of the form
+\(VAR &OPTIONAL SIZE-VAR) or just a VAR symbol.  VAR is bound to
+a foreign buffer of size SIZE within BODY.  The return value is
+constructed by calling FOREIGN-STRING-TO-LISP on the foreign
+buffer along with ARGS." ; fix wording, sigh
+  (destructuring-bind (var &optional size-var)
+      (ensure-list var-or-vars)
+    `(with-foreign-pointer (,var ,size ,size-var)
+       (progn
+         ,@body
+         (foreign-string-to-lisp ,var ,@args)))))
 
 ;;;# Automatic Conversion of Foreign Strings
 
