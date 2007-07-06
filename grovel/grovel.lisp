@@ -255,8 +255,12 @@ error:
   (unless recursive
     (c-format out "~%")))
 
+;;; Always NIL for now, add {ENABLE,DISABLE}-AUTO-EXPORT grovel forms
+;;; later, if necessary.
+(defvar *auto-export* nil)
+
 (defun c-export (out symbol)
-  (unless (keywordp symbol)
+  (when (and *auto-export* (not (keywordp symbol)))
     (c-format out "(cl:export '")
     (c-print-symbol out symbol t)
     (c-format out ")~%")))
@@ -519,6 +523,7 @@ error:
       (c-write out defclass-form)
       (c-write out make-defun-form))))
 
+;;; FIXME: document this function and its usage above properly.
 (defun make-from-pointer-function-name (type-name)
   (symbolicate '#:make- type-name '#:-from-pointer))
 
