@@ -90,7 +90,9 @@
    #:define-foreign-type
    #:define-parse-method
    #:foreign-enum-keyword
+   #:foreign-enum-keyword-list
    #:foreign-enum-value
+   #:foreign-bitfield-symbol-list
    #:foreign-bitfield-symbols
    #:foreign-bitfield-value
    #:foreign-slot-pointer

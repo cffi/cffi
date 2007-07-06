@@ -60,10 +60,11 @@
             (error "A foreign enum cannot contain duplicate keywords: ~S."
                    keyword)
             (setf (gethash keyword (keyword-values type)) value))
-        ;; This completely arbitrary behaviour: we keep the last we
-        ;; value->keyword mapping. I suppose the opposite would be just as
-        ;; good (keeping the first). Returning a list with all the keywords
-        ;; might be a solution too? Suggestions welcome. --luis
+        ;; This is completely arbitrary behaviour: we keep the last we
+        ;; value->keyword mapping. I suppose the opposite would be
+        ;; just as good (keeping the first). Returning a list with all
+        ;; the keywords might be a solution too? Suggestions
+        ;; welcome. --luis
         (setf (gethash value (value-keywords type)) keyword)
         (setq default-value (1+ value))))
     type))
@@ -76,6 +77,13 @@
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
         ',name (make-foreign-enum ',name ',base-type ',enum-list)))))
+
+(defun hash-keys-to-list (ht)
+  (loop for k being the hash-keys in ht collect k))
+
+(defun foreign-enum-keyword-list (enum-type)
+  "Return a list of KEYWORDS defined in ENUM-TYPE."
+  (hash-keys-to-list (keyword-values (parse-type enum-type))))
 
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
@@ -164,6 +172,10 @@
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
         ',name (make-foreign-bitfield ',name ',base-type ',masks)))))
+
+(defun foreign-bitfield-symbol-list (bitfield-type)
+  "Return a list of SYMBOLS defined in BITFIELD-TYPE."
+  (hash-keys-to-list (symbol-values (parse-type bitfield-type))))
 
 (defun %foreign-bitfield-value (type symbols)
   (reduce #'logior symbols
