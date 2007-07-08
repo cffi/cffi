@@ -77,7 +77,7 @@
           sum 1)
   1)
 
-(deftest features.endiannes
+(deftest features.endianness
     (and (not (and (featurep 'cffi-features:big-endian)
                    (featurep 'cffi-features:little-endian)))
          (or (featurep 'cffi-features:big-endian)
