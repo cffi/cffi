@@ -135,18 +135,21 @@
 (defun null-terminator-len (encoding)
   (length (enc-nul-encoding (get-character-encoding encoding))))
 
-(defun lisp-string-to-foreign (string buffer bufsize
-                               &key (encoding *default-foreign-encoding*))
+(defun lisp-string-to-foreign (string buffer bufsize &key (start 0) end offset
+                               (encoding *default-foreign-encoding*))
   (check-type string string)
-  (with-checked-simple-vector ((string string) (start 0) (end nil))
+  (when offset
+    (setq buffer (inc-pointer buffer offset)))
+  (with-checked-simple-vector ((string string) (start start) (end end))
     (declare (type simple-string string))
-    (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
-           (size (funcall (octet-counter mapping) string start end)))
-      (when (<= bufsize size)
-        (error "This string is too large to fit target buffer."))
-      (funcall (encoder mapping) string start end buffer 0)
-      (dotimes (i (null-terminator-len encoding))
-        (setf (mem-ref buffer :char (+ size i)) 0)))
+    (let ((mapping (lookup-mapping *foreign-string-mappings* encoding))
+          (nul-len (null-terminator-len encoding)))
+      (assert (plusp bufsize))
+      (multiple-value-bind (size end)
+          (funcall (octet-counter mapping) string start end (- bufsize nul-len))
+        (funcall (encoder mapping) string start end buffer 0)
+        (dotimes (i nul-len)
+          (setf (mem-ref buffer :char (+ size i)) 0))))
     buffer))
 
 ;;; Expands into a loop that calculates the length of the foreign
@@ -171,7 +174,7 @@
 
 ;;; what to do with COUNT here? ahrg... make it default to STRLEN? but
 ;;; what about the "at most" part?
-(defun foreign-string-to-lisp (pointer &key (offset 0) count
+(defun foreign-string-to-lisp (pointer &key (offset 0) count max-chars
                                (encoding *default-foreign-encoding*))
   "Copy at most COUNT bytes from POINTER plus OFFSET encoded in
 ENCODING into a Lisp string and return it.  If POINTER is a null
@@ -181,8 +184,11 @@ pointer, NIL is returned."
                      (foreign-string-length
                       pointer :encoding encoding :offset offset)))
           (mapping (lookup-mapping *foreign-string-mappings* encoding)))
+      (when max-chars
+        (assert (plusp max-chars)))
       (multiple-value-bind (size new-end)
-          (funcall (code-point-counter mapping) pointer offset (+ offset count))
+          (funcall (code-point-counter mapping) pointer offset (+ offset count)
+                   (or max-chars 0))
         (let ((string (make-string size)))
           (funcall (decoder mapping) pointer offset new-end string 0)
           string)))))
