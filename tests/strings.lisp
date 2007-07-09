@@ -92,9 +92,6 @@
 ;;; Ensure that writing a long string into a short buffer does not
 ;;; attempt to write beyond the edge of the buffer, and that the
 ;;; resulting string is still null terminated.
-;;;
-;;; Expected failure.  Investigating whether these semantics are a
-;;; good idea. [2007-06-07 LO]
 (deftest string.short-write.1
     (with-foreign-pointer (buf 6)
       (setf (mem-ref buf :unsigned-char 5) 70)
