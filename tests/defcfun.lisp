@@ -118,7 +118,7 @@
       (setf (mem-ref s :char) 0)
       (strcpy s "Hello")
       (strcat s ", world!"))
-  "Hello, world!")
+  "Hello, world!" 13)
 
 (defcfun "strerror" :string
   (n :int))
@@ -163,51 +163,52 @@
 (deftest defcfun.varargs.char
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%c" :char 65))
-  "A")
+  "A" 1)
 
 (deftest defcfun.varargs.short
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%d" :short 42))
-  "42")
+  "42" 2)
 
 (deftest defcfun.varargs.int
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%d" :int 1000))
-  "1000")
+  "1000" 4)
 
 (deftest defcfun.varargs.long
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%ld" :long 131072))
-  "131072")
+  "131072" 6)
 
 (deftest defcfun.varargs.float
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :float (float pi)))
-  "3.14")
+  "3.14" 4)
 
 (deftest defcfun.varargs.double
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :double (float pi 1.0d0)))
-  "3.14")
+  "3.14" 4)
 
 #+(and scl long-float)
 (deftest defcfun.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (sprintf s "%.2Lf" :long-double pi))
-  "3.14")
+  "3.14" 4)
 
 (deftest defcfun.varargs.string
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%s, %s!" :string "Hello" :string "world"))
-  "Hello, world!")
+  "Hello, world!" 13)
 
 ;;; (let ((rettype (find-type :long))
 ;;;       (arg-types (n-random-types-no-ll 127)))
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-#+(:and (:not :ecl) #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or)))
+#+(and (not ecl)
+       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or)))
 (progn
   (defcfun "sum_127_no_ll" :long
     (a1 :long) (a2 :unsigned-long) (a3 :short) (a4 :unsigned-short) (a5 :float)

@@ -86,7 +86,7 @@
       (setf (mem-ref s :char) 0)
       (foreign-funcall "strcpy" :pointer s :string "Hello" :pointer)
       (foreign-funcall "strcat" :pointer s :string ", world!" :pointer))
-  "Hello, world!")
+  "Hello, world!" 13)
 
 (deftest funcall.string.3
     (with-foreign-pointer (ptr 100)
@@ -102,19 +102,19 @@
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%c" :int 65 :int))
-  "A")
+  "A" 1)
 
 (deftest funcall.varargs.int
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%d" :int 1000 :int))
-  "1000")
+  "1000" 4)
 
 (deftest funcall.varargs.long
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%ld" :long 131072 :int))
-  "131072")
+  "131072" 6)
 
 ;;; There is no FUNCALL.VARARGS.FLOAT as floats are promoted to double
 ;;; when passed as variable arguments.  Currently this fails in SBCL
@@ -124,7 +124,7 @@
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%.2f"
                        :double (coerce pi 'double-float) :int))
-  "3.14")
+  "3.14" 4)
 
 #+(and scl long-float)
 (deftest funcall.varargs.long-double
@@ -132,14 +132,14 @@
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%.2Lf"
                        :long-double pi :int))
-  "3.14")
+  "3.14" 4)
 
 (deftest funcall.varargs.string
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall "sprintf" :pointer s :string "%s, %s!"
                        :string "Hello" :string "world" :int))
-  "Hello, world!")
+  "Hello, world!" 13)
 
 ;;; See DEFCFUN.DOUBLE26.
 (deftest funcall.double26

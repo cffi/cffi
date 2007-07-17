@@ -194,7 +194,7 @@ pointer, NIL is returned."
                    (or max-chars 0))
         (let ((string (make-string size)))
           (funcall (decoder mapping) pointer offset new-end string 0)
-          string)))))
+          (values string (- new-end offset)))))))
 
 ;;;# Using Foreign Strings
 
@@ -289,7 +289,7 @@ buffer along with ARGS." ; fix wording, sigh
     (t (error "~A is not a Lisp string or pointer." obj))))
 
 (defmethod translate-from-foreign (ptr (type foreign-string-type))
-  (foreign-string-to-lisp ptr :encoding (fst-encoding type)))
+  (values (foreign-string-to-lisp ptr :encoding (fst-encoding type))))
 
 (defmethod free-translated-object (ptr (type foreign-string-type) free-p)
   (when free-p

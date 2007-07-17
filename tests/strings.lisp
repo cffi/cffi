@@ -63,7 +63,7 @@
 (deftest string.conversion.basic
     (with-foreign-string (s *ascii-test-string*)
       (foreign-string-to-lisp s))
-  #.*ascii-test-string*)
+  #.*ascii-test-string* 95)
 
 (deftest string.conversion.basic.2
     (with-foreign-string ((ptr size) "123" :null-terminated-p nil)
@@ -87,7 +87,7 @@
 (deftest string.encoding.utf-16.basic
     (with-foreign-string (s *ascii-test-string* :encoding :utf-16)
       (foreign-string-to-lisp s :encoding :utf-16))
-  #.*ascii-test-string*)
+  #.*ascii-test-string* 190)
 
 ;;; Ensure that writing a long string into a short buffer does not
 ;;; attempt to write beyond the edge of the buffer, and that the
