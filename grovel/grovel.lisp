@@ -72,7 +72,8 @@
                             command arglist :output s :error :output
                             #+sbcl :search #+sbcl t)))
               (setq exit-code
-                    #+openmcl (second (ccl:external-process-status process))
+                    #+openmcl (nth-value
+                               1 (ccl:external-process-status process))
                     #+sbcl (sb-ext:process-exit-code process)
                     #+(or cmu scl) (ext:process-exit-code process))))))
     (values exit-code output)))
@@ -99,6 +100,8 @@
 
 ;;; Do we really want to suppress the output by default?
 (defun invoke (command &rest args)
+  (when (pathnamep command)
+    (setf command (cffi-sys:native-namestring command)))
   (format *debug-io* "; ~A~{ ~A~}~%" command args)
   (multiple-value-bind (exit-code output)
       (%invoke command args)
@@ -364,6 +367,7 @@ error:
 (defmacro define-grovel-syntax (name lambda-list &body body)
   (with-unique-names (name-var args)
     `(defmethod %process-grovel-form ((,name-var (eql ',name)) out ,args)
+       (declare (ignorable out))
        (destructuring-bind ,lambda-list ,args
          ,@body))))
 

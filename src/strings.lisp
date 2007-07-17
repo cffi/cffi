@@ -3,6 +3,7 @@
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -203,7 +204,7 @@ The string must be freed with FOREIGN-STRING-FREE."
   (with-checked-simple-vector ((string string) (start start) (end end))
     (declare (type simple-string string))
     (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
-           (count (funcall (octet-counter mapping) string start end))
+           (count (funcall (octet-counter mapping) string start end 0))
            (length (if null-terminated-p
                        (+ count (null-terminator-len encoding))
                        count))

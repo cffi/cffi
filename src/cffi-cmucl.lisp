@@ -375,7 +375,10 @@ WITH-POINTER-TO-VECTOR-DATA."
     (setf (car lib) (sys:int-sap 0))))
 
 (defun native-namestring (pathname)
-  (ext:unix-namestring pathname))
+  ;; UNIX-NAMESTRING seems to be buggy?
+  ;; (ext:unix-namestring #p"/tmp/foo bar baz/bar") => NIL
+  #-(and) (ext:unix-namestring pathname)
+  (namestring pathname))
 
 ;;;# Foreign Globals
 

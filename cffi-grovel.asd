@@ -29,7 +29,7 @@
   :description "The CFFI Groveller"
   :author "Dan Knapp <dankna@accela.net>"
   :depends-on (cffi)
-  :license "MIT"
+  :licence "MIT"
   :components
   ((:module grovel
     :serial t
