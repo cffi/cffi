@@ -61,7 +61,7 @@
 
 ;;; TODO: refactor, sigh.  Also, this should probably be a function.
 ;;; Would have to change Babel's API for that to be possible, I think.
-(defmacro bref (ptr off &optional (bytes 1) (endianness :ne))
+(defmacro bget (ptr off &optional (bytes 1) (endianness :ne))
   (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
     (once-only (ptr off)
       (ecase bytes
@@ -93,7 +93,7 @@
                           (dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 8)
                                (mem-ref ,ptr :uint8 ,off))))))))))
 
-(defsetf bref (ptr off &optional (bytes 1) (endianness :ne)) (val)
+(defmacro bset (val ptr off &optional (bytes 1) (endianness :ne))
   (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
     (ecase bytes
       (1 `(setf (mem-ref ,ptr :uint8 ,off) ,val))
@@ -128,9 +128,11 @@
 (defparameter *foreign-string-mappings*
   (instantiate-concrete-mappings
    :optimize ((speed 3) (debug 0) (compilation-speed 0) (safety 0))
-   :octet-seq-accessor bref
+   :octet-seq-getter bget
+   :octet-seq-setter bset
    :octet-seq-type foreign-pointer
-   :code-point-seq-accessor babel::string-accessor
+   :code-point-seq-getter babel::string-get
+   :code-point-seq-setter babel::string-set
    :code-point-seq-type simple-string))
 
 (defun null-terminator-len (encoding)
