@@ -213,30 +213,26 @@
               'another-short  another-short)))
   (a-double 1.0d0 a-short 2 a-char 3 another-short 4))
 
+(defcstruct s-long-long
+  (a-long-long :long-long)
+  (a-short     :short))
 
-#-cffi-features:no-long-long
-(progn
-  (defcstruct s-long-long
-    (a-long-long :long-long)
-    (a-short     :short))
+(defcstruct s-s-long-long
+  (a-char        :char)
+  (a-s-long-long s-long-long)
+  (another-short :short))
 
-  (defcstruct s-s-long-long
-    (a-char        :char)
-    (a-s-long-long s-long-long)
-    (another-short :short))
+(defcvar "the_s_s_long_long" s-s-long-long)
 
-  (defcvar "the_s_s_long_long" s-s-long-long)
-
-  (deftest struct.alignment.6
-      (with-foreign-slots
-          ((a-char a-s-long-long another-short) *the-s-s-long-long* s-s-long-long)
-        (with-foreign-slots ((a-long-long a-short) a-s-long-long s-long-long)
-          (list 'a-long-long    a-long-long
-                'a-short        a-short
-                'a-char         a-char
-                'another-short  another-short)))
-    (a-long-long 1 a-short 2 a-char 3 another-short 4)))
-
+(deftest struct.alignment.6
+    (with-foreign-slots
+        ((a-char a-s-long-long another-short) *the-s-s-long-long* s-s-long-long)
+      (with-foreign-slots ((a-long-long a-short) a-s-long-long s-long-long)
+        (list 'a-long-long    a-long-long
+              'a-short        a-short
+              'a-char         a-char
+              'another-short  another-short)))
+  (a-long-long 1 a-short 2 a-char 3 another-short 4))
 
 (defcstruct s-s-double3
   (a-s-double2   s-double2)
@@ -298,27 +294,25 @@
 ;; regression test, some Lisps were returning 4 instead of 8 for
 ;; (foreign-type-alignment :unsigned-long-long) on darwin/ppc32
 
-#-cffi-features:no-long-long
-(progn
-  (defcstruct s-unsigned-long-long
-    (an-unsigned-long-long :unsigned-long-long)
-    (a-short               :short))
+(defcstruct s-unsigned-long-long
+  (an-unsigned-long-long :unsigned-long-long)
+  (a-short               :short))
 
-  (defcstruct s-s-unsigned-long-long
-    (a-char                 :char)
-    (a-s-unsigned-long-long s-unsigned-long-long)
-    (another-short          :short))
+(defcstruct s-s-unsigned-long-long
+  (a-char                 :char)
+  (a-s-unsigned-long-long s-unsigned-long-long)
+  (another-short          :short))
 
-  (defcvar "the_s_s_unsigned_long_long" s-s-unsigned-long-long)
+(defcvar "the_s_s_unsigned_long_long" s-s-unsigned-long-long)
 
-  (deftest struct.alignment.8
-      (with-foreign-slots
-          ((a-char a-s-unsigned-long-long another-short)
-           *the-s-s-unsigned-long-long* s-s-unsigned-long-long)
-        (with-foreign-slots ((an-unsigned-long-long a-short)
-                             a-s-unsigned-long-long s-unsigned-long-long)
-          (list 'an-unsigned-long-long  an-unsigned-long-long
-                'a-short                a-short
-                'a-char                 a-char
-                'another-short          another-short)))
-    (an-unsigned-long-long 1 a-short 2 a-char 3 another-short 4)))
+(deftest struct.alignment.8
+    (with-foreign-slots
+        ((a-char a-s-unsigned-long-long another-short)
+         *the-s-s-unsigned-long-long* s-s-unsigned-long-long)
+      (with-foreign-slots ((an-unsigned-long-long a-short)
+                           a-s-unsigned-long-long s-unsigned-long-long)
+        (list 'an-unsigned-long-long  an-unsigned-long-long
+              'a-short                a-short
+              'a-char                 a-char
+              'another-short          another-short)))
+  (an-unsigned-long-long 1 a-short 2 a-char 3 another-short 4))

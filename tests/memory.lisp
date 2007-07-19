@@ -75,22 +75,20 @@
       (mem-ref p :unsigned-long))
   536870912)
 
-#-cffi-features:no-long-long
-(progn
-  #+(and cffi-features:darwin openmcl)
-  (pushnew 'deref.long-long rt::*expected-failures*)
+#+(and cffi-features:darwin openmcl)
+(pushnew 'deref.long-long rt::*expected-failures*)
 
-  (deftest deref.long-long
-      (with-foreign-object (p :long-long)
-        (setf (mem-ref p :long-long) -9223372036854775807)
-        (mem-ref p :long-long))
-    -9223372036854775807)
+(deftest deref.long-long
+    (with-foreign-object (p :long-long)
+      (setf (mem-ref p :long-long) -9223372036854775807)
+      (mem-ref p :long-long))
+  -9223372036854775807)
 
-  (deftest deref.unsigned-long-long
-      (with-foreign-object (p :unsigned-long-long)
-        (setf (mem-ref p :unsigned-long-long) 18446744073709551615)
-        (mem-ref p :unsigned-long-long))
-    18446744073709551615))
+(deftest deref.unsigned-long-long
+    (with-foreign-object (p :unsigned-long-long)
+      (setf (mem-ref p :unsigned-long-long) 18446744073709551615)
+      (mem-ref p :unsigned-long-long))
+  18446744073709551615)
 
 (deftest deref.float.1
     (with-foreign-object (p :float)
@@ -454,24 +452,22 @@
         (mem-ref p type)))
   536870912)
 
-#-cffi-features:no-long-long
-(progn
-  #+(and cffi-features:darwin openmcl)
-  (pushnew 'deref.nonconst.long-long rt::*expected-failures*)
+#+(and cffi-features:darwin openmcl)
+(pushnew 'deref.nonconst.long-long rt::*expected-failures*)
 
-  (deftest deref.nonconst.long-long
-      (let ((type :long-long))
-        (with-foreign-object (p type)
-          (setf (mem-ref p type) -9223372036854775807)
-          (mem-ref p type)))
-    -9223372036854775807)
+(deftest deref.nonconst.long-long
+    (let ((type :long-long))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) -9223372036854775807)
+        (mem-ref p type)))
+  -9223372036854775807)
 
-  (deftest deref.nonconst.unsigned-long-long
-      (let ((type :unsigned-long-long))
-        (with-foreign-object (p type)
-          (setf (mem-ref p type) 18446744073709551615)
-          (mem-ref p type)))
-    18446744073709551615))
+(deftest deref.nonconst.unsigned-long-long
+    (let ((type :unsigned-long-long))
+      (with-foreign-object (p type)
+        (setf (mem-ref p type) 18446744073709551615)
+        (mem-ref p type)))
+  18446744073709551615)
 
 (deftest deref.nonconst.float.1
     (let ((type :float))

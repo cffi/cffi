@@ -129,12 +129,9 @@
   "Strdup says: MORE CODE")
 
 (deftest misc-types.sized-ints
-    (mapcar #'foreign-type-size '(:int8 :uint8 :int16 :uint16 :int32 :uint32
-                                  #-cffi-features:no-long-long :int64
-                                  #-cffi-features:no-long-long :uint64))
-  (1 1 2 2 4 4
-   #-cffi-features:no-long-long 8
-   #-cffi-features:no-long-long 8))
+    (mapcar #'foreign-type-size
+            '(:int8 :uint8 :int16 :uint16 :int32 :uint32 :int64 :uint64))
+  (1 1 2 2 4 4 8 8))
 
 (define-foreign-type error-error ()
   ()

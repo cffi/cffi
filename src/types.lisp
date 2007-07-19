@@ -47,6 +47,52 @@
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
 
+;;; Define emulated LONG-LONG types.  Needs checking whether we're
+;;; using the right sizes on various platforms.
+;;;
+;;; A possibly better, certainly faster though more intrusive,
+;;; alternative is available here:
+;;;   <http://article.gmane.org/gmane.lisp.cffi.devel/1091>
+#+cffi-features:no-long-long
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defclass emulated-llong-type (foreign-type) ())
+  (defmethod foreign-type-size ((tp emulated-llong-type)) 8)
+  (defmethod foreign-type-alignment ((tp emulated-llong-type)) 8)
+  (defmethod aggregatep ((tp emulated-llong-type)) nil)
+
+  (define-foreign-type emulated-llong (emulated-llong-type)
+    ()
+    (:simple-parser :long-long))
+
+  (define-foreign-type emulated-ullong (emulated-llong-type)
+    ()
+    (:simple-parser :unsigned-long-long))
+
+  (defmethod canonicalize ((tp emulated-llong)) :long-long)
+  (defmethod unparse-type ((tp emulated-llong)) :long-long)
+  (defmethod canonicalize ((tp emulated-ullong)) :unsigned-long-long)
+  (defmethod unparse-type ((tp emulated-ullong)) :unsigned-long-long)
+
+  (defun %emulated-mem-ref-64 (ptr type offset)
+    (let ((value #+big-endian
+                 (+ (ash (mem-ref ptr :unsigned-long offset) 32)
+                    (mem-ref ptr :unsigned-long (+ offset 4)))
+                 #+little-endian
+                 (+ (mem-ref ptr :unsigned-long offset)
+                    (ash (mem-ref ptr :unsigned-long (+ offset 4)) -32))))
+      (if (and (eq type :long-long) (logbitp 63 value))
+          (lognot (logxor value #xFFFFFFFFFFFFFFFF))
+          value)))
+
+  (defun %emulated-mem-set-64 (value ptr type offset)
+    (when (and (eq type :long-long) (minusp value))
+      (setq value (lognot (logxor value #xFFFFFFFFFFFFFFFF))))
+    (%mem-set (ldb (byte 32 0) value) ptr :unsigned-long
+              #+big-endian (+ offset 4) #+little-endian offset)
+    (%mem-set (ldb (byte 32 32) value) ptr :unsigned-long
+              #+big-endian offset #+little-endian (+ offset 4))
+    value))
+
 ;;; When some lisp other than SCL supports :long-double we should
 ;;; use #-cffi-features:no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
@@ -61,13 +107,24 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
   (let ((ptype (parse-type type)))
     (if (aggregatep ptype)
         (inc-pointer ptr offset)
-        (let ((raw-value (%mem-ref ptr (canonicalize ptype) offset)))
-          (translate-from-foreign raw-value ptype)))))
+        (let ((ctype (canonicalize ptype)))
+          #+cffi-features:no-long-long
+          (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
+            (return-from mem-ref
+              (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
+                                      ptype)))
+          ;; normal branch
+          (translate-from-foreign (%mem-ref ptr ctype offset) ptype)))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
   (if (constantp type)
-      (let ((parsed-type (parse-type (eval type))))
+      (let* ((parsed-type (parse-type (eval type)))
+             (ctype (canonicalize parsed-type)))
+        ;; Bail out when using emulated long long types.
+        #+cffi-features:no-long-long
+        (when (member ctype '(:long-long :unsigned-long-long))
+          (return-from mem-ref form))
         (if (aggregatep parsed-type)
             `(inc-pointer ,ptr ,offset)
             (expand-from-foreign
@@ -77,9 +134,14 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
 
 (defun mem-set (value ptr type &optional (offset 0))
   "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
-  (let ((ptype (parse-type type)))
-    (%mem-set (translate-to-foreign value ptype)
-              ptr (canonicalize ptype) offset)))
+  (let* ((ptype (parse-type type))
+         (ctype (canonicalize ptype)))
+    #+cffi-features:no-long-long
+    (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
+      (return-from mem-set
+        (%emulated-mem-set-64 (translate-to-foreign value ptype)
+                              ptr ctype offset)))
+    (%mem-set (translate-to-foreign value ptype) ptr ctype offset)))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for MEM-REF that doesn't rebind TYPE.
@@ -112,9 +174,13 @@ to open-code (SETF MEM-REF) forms."
     (&whole form value ptr type &optional (offset 0))
   "Compiler macro to open-code (SETF MEM-REF) when type is constant."
   (if (constantp type)
-      (let ((parsed-type (parse-type (eval type))))
-        `(%mem-set ,(expand-to-foreign value parsed-type) ,ptr
-                   ,(canonicalize parsed-type) ,offset))
+      (let* ((parsed-type (parse-type (eval type)))
+             (ctype (canonicalize parsed-type)))
+        ;; Bail out when using emulated long long types.
+        #+cffi-features:no-long-long
+        (when (member ctype '(:long-long :unsigned-long-long))
+          (return-from mem-set form))
+        `(%mem-set ,(expand-to-foreign value parsed-type) ,ptr ,ctype ,offset))
       form))
 
 ;;;# Dereferencing Foreign Arrays
@@ -753,11 +819,8 @@ The buffer has dynamic extent and may be stack allocated."
 (defctype :ushort :unsigned-short)
 (defctype :uint   :unsigned-int)
 (defctype :ulong  :unsigned-long)
-
-#-cffi-features:no-long-long
-(progn
-  (defctype :llong  :long-long)
-  (defctype :ullong :unsigned-long-long))
+(defctype :llong  :long-long)
+(defctype :ullong :unsigned-long-long)
 
 ;;; We try to define the :[u]int{8,16,32,64} types by looking at
 ;;; the sizes of the built-in integer types and defining typedefs.
@@ -770,9 +833,8 @@ The buffer has dynamic extent and may be stack allocated."
                     when m collect `(defctype ,type ,m)))))
     ;; signed
     (match-types ((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
-                 (:char :short :int :long
-                  #-cffi-features:no-long-long :long-long))
+                 (:char :short :int :long :long-long))
     ;; unsigned
     (match-types ((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
                  (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
-                  #-cffi-features:no-long-long :unsigned-long-long))))
+                  :unsigned-long-long))))

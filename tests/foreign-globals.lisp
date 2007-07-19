@@ -27,23 +27,20 @@
 
 (in-package #:cffi-tests)
 
-(defcvar ("var_char" *char-var*) :char)
-(defcvar "var_unsigned_char"     :unsigned-char)
-(defcvar "var_short"             :short)
-(defcvar "var_unsigned_short"    :unsigned-short)
-(defcvar "var_int"               :int)
-(defcvar "var_unsigned_int"      :unsigned-int)
-(defcvar "var_long"              :long)
-(defcvar "var_unsigned_long"     :unsigned-long)
-(defcvar "var_float"             :float)
-(defcvar "var_double"            :double)
-(defcvar "var_pointer"           :pointer)
-(defcvar "var_string"            :string)
-
-#-cffi-features:no-long-long
-(progn
-  (defcvar "var_long_long"          :long-long)
-  (defcvar "var_unsigned_long_long" :unsigned-long-long))
+(defcvar ("var_char" *char-var*)  :char)
+(defcvar "var_unsigned_char"      :unsigned-char)
+(defcvar "var_short"              :short)
+(defcvar "var_unsigned_short"     :unsigned-short)
+(defcvar "var_int"                :int)
+(defcvar "var_unsigned_int"       :unsigned-int)
+(defcvar "var_long"               :long)
+(defcvar "var_unsigned_long"      :unsigned-long)
+(defcvar "var_float"              :float)
+(defcvar "var_double"             :double)
+(defcvar "var_pointer"            :pointer)
+(defcvar "var_string"             :string)
+(defcvar "var_long_long"          :long-long)
+(defcvar "var_unsigned_long_long" :unsigned-long-long)
 
 (deftest foreign-globals.ref.char
     *char-var*
@@ -93,17 +90,15 @@
     *var-string*
   "Hello, foreign world!")
 
-#-cffi-features:no-long-long
-(progn
-  #+openmcl (push 'foreign-globals.set.long-long rt::*expected-failures*)
+#+openmcl (push 'foreign-globals.set.long-long rt::*expected-failures*)
 
-  (deftest foreign-globals.ref.long-long
-      *var-long-long*
-    -9223372036854775807)
+(deftest foreign-globals.ref.long-long
+    *var-long-long*
+  -9223372036854775807)
 
-  (deftest foreign-globals.ref.unsigned-long-long
-      *var-unsigned-long-long*
-    18446744073709551615))
+(deftest foreign-globals.ref.unsigned-long-long
+    *var-unsigned-long-long*
+  18446744073709551615)
 
 ;; The *.set.* tests restore the old values so that the *.ref.*
 ;; don't fail when re-run.
@@ -129,7 +124,6 @@
         (foreign-free (mem-ref (get-var-pointer '*var-string*) :pointer))))
   "Ehxosxangxo")
 
-#-cffi-features:no-long-long
 (deftest foreign-globals.set.long-long
     (with-old-value-restored (*var-long-long*)
       (setq *var-long-long* -9223000000000005808)
