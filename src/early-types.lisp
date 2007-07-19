@@ -490,7 +490,8 @@ Signals an error if the type cannot be resolved."
              ,@initargs)
          ,@new-options)
        ,(when simple-parser
-          `(notice-foreign-type ',(car simple-parser) (make-instance ',name)))
+          `(define-parse-method ,(car simple-parser) (&rest args)
+             (apply #'make-instance ',name args)))
        ',name)))
 
 (defmacro defctype (name base-type &optional documentation)
