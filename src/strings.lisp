@@ -30,20 +30,6 @@
 
 ;;; FIXME: we used to support ub8 arrays here. Look into that. [2007-02 LO]
 
-;;; ENDIANNESS features.  Should probably moved somewhere else.
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (pushnew (with-foreign-object (p :uint16)
-             (setf (mem-ref p :uint16) #x00ff)
-             (ecase (mem-ref p :uint8)
-               (0 'cffi-features:big-endian)
-               (#xff 'cffi-features:little-endian)))
-           *features*))
-
-#+(or (and cffi-features:big-endian babel::le)
-      (and cffi-features:little-endian babel::be)
-      (not (or cffi-features:big-endian cffi-features:little-endian)))
-(error "Bug.  Babel and CFFI don't agree on endianness.")
-
 ;;;# Foreign String Conversion
 ;;;
 ;;; Functions for converting NULL-terminated C-strings to Lisp strings
@@ -62,63 +48,63 @@
 ;;; TODO: refactor, sigh.  Also, this should probably be a function.
 ;;; Would have to change Babel's API for that to be possible, I think.
 (defmacro bget (ptr off &optional (bytes 1) (endianness :ne))
-  (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
+  (let ((big-endian (member endianness '(:be #+big-endian :ne))))
     (once-only (ptr off)
       (ecase bytes
         (1 `(mem-ref ,ptr :uint8 ,off))
         (2 (if big-endian
-               #+cffi-features:big-endian
+               #+big-endian
                `(mem-ref ,ptr :uint16 ,off)
-               #-cffi-features:big-endian
+               #-big-endian
                `(dpb (mem-ref ,ptr :uint8 ,off) (byte 8 8)
                      (mem-ref ,ptr :uint8 (1+ ,off)))
-               #+cffi-features:little-endian
+               #+little-endian
                `(mem-ref ,ptr :uint16 ,off)
-               #-cffi-features:little-endian
+               #-little-endian
                `(dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 8)
                      (mem-ref ,ptr :uint8 ,off))))
         (4 (if big-endian
-               #+cffi-features:big-endian
+               #+big-endian
                `(mem-ref ,ptr :uint32 ,off)
-               #-cffi-features:big-endian
+               #-big-endian
                `(dpb (mem-ref ,ptr :uint8 ,off) (byte 8 24)
                      (dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 16)
                           (dpb (mem-ref ,ptr :uint8 (+ ,off 2)) (byte 8 8)
                                (mem-ref ,ptr :uint8 (+ ,off 3)))))
-               #+cffi-features:little-endian
+               #+little-endian
                `(mem-ref ,ptr :uint32 ,off)
-               #-cffi-features:little-endian
+               #-little-endian
                `(dpb (mem-ref ,ptr :uint8 (+ ,off 3)) (byte 8 24)
                      (dpb (mem-ref ,ptr :uint8 (+ ,off 2)) (byte 8 16)
                           (dpb (mem-ref ,ptr :uint8 (1+ ,off)) (byte 8 8)
                                (mem-ref ,ptr :uint8 ,off))))))))))
 
 (defmacro bset (val ptr off &optional (bytes 1) (endianness :ne))
-  (let ((big-endian (member endianness '(:be #+cffi-features:big-endian :ne))))
+  (let ((big-endian (member endianness '(:be #+big-endian :ne))))
     (ecase bytes
       (1 `(setf (mem-ref ,ptr :uint8 ,off) ,val))
       (2 (if big-endian
-             #+cffi-features:big-endian
+             #+big-endian
              `(setf (mem-ref ,ptr :uint16 ,off) ,val)
-             #-cffi-features:big-endian
+             #-big-endian
              `(setf (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 0) val)
                     (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 8) val))
-             #+cffi-features:little-endian
+             #+little-endian
              `(setf (mem-ref ,ptr :uint16 ,off) ,val)
-             #-cffi-features:little-endian
+             #-little-endian
              `(setf (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 0) val)
                     (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 8) val))))
       (4 (if big-endian
-             #+cffi-features:big-endian
+             #+big-endian
              `(setf (mem-ref ,ptr :uint32 ,off) ,val)
-             #-cffi-features:big-endian
+             #-big-endian
              `(setf (mem-ref ,ptr :uint8 (+ 3 ,off)) (ldb (byte 8 0) val)
                     (mem-ref ,ptr :uint8 (+ 2 ,off)) (ldb (byte 8 8) val)
                     (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 16) val)
                     (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 24) val))
-             #+cffi-features:little-endian
+             #+little-endian
              `(setf (mem-ref ,ptr :uint32 ,off) ,val)
-             #-cffi-features:little-endian
+             #-little-endian
              `(setf (mem-ref ,ptr :uint8 ,off) (ldb (byte 8 0) val)
                     (mem-ref ,ptr :uint8 (1+ ,off)) (ldb (byte 8 8) val)
                     (mem-ref ,ptr :uint8 (+ ,off 2)) (ldb (byte 8 16) val)

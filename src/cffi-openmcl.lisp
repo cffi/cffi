@@ -59,20 +59,20 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features
+;;;# Mis-features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; OS/CPU features.
-          #+darwin-target cffi-features:darwin
-          #+unix          cffi-features:unix
-          #+ppc32-target  cffi-features:ppc32
-          #+x8664-target  cffi-features:x86-64
+          #+darwinppc-target  cffi-features:darwin
+          #+unix              cffi-features:unix
+          #+ppc32-target      cffi-features:ppc32
+          #+x8664-target      cffi-features:x86-64
           ;; Misfeatures.
           cffi-features:flat-namespace
           )))
 
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

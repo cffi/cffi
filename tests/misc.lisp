@@ -77,13 +77,6 @@
           sum 1)
   1)
 
-(deftest features.endianness
-    (and (not (and (featurep 'cffi-features:big-endian)
-                   (featurep 'cffi-features:little-endian)))
-         (or (featurep 'cffi-features:big-endian)
-             (featurep 'cffi-features:little-endian)))
-  t)
-
 ;;;# foreign-symbol-pointer tests
 
 ;;; This might be useful for some libraries that compare function

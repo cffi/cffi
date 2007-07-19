@@ -60,21 +60,13 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features
+;;;# Mis-features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; Backend mis-features.
-          cffi-features:no-long-long
-          ;; OS/CPU features.
-          #+darwin  cffi-features:darwin
-          #+unix    cffi-features:unix
-          #+win32   cffi-features:windows
-          #+harp::pc386   cffi-features:x86
-          #+harp::powerpc cffi-features:ppc32
-          )))
+        '(cffi-features:no-long-long)))
 
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

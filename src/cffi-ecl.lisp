@@ -58,24 +58,14 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features
+;;;# Mis-features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; Backend mis-features.
-          cffi-features:no-long-long
-          cffi-features:flat-namespace
-          ;; OS/CPU features.
-          #+:darwin       cffi-features:darwin
-          #+:darwin       cffi-features:unix
-          #+:unix         cffi-features:unix
-          #+:win32        cffi-features:windows
-          ;; XXX: figure out a way to get a X86 feature
-          ;;#+:athlon       cffi-features:x86
-          #+:powerpc7450  cffi-features:ppc32
-          )))
+        '(cffi-features:no-long-long
+          cffi-features:flat-namespace)))
 
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

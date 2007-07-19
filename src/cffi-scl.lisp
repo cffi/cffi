@@ -60,24 +60,13 @@
 
 (in-package #:cffi-sys)
 
-;;;# Features
+;;;# Mis-features
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; OS/CPU features.
-          #+unix    cffi-features:unix
-          #+x86     cffi-features:x86
-          #+amd64   cffi-features:x86-64
-          #+(and ppc (not ppc64)) cffi-features:ppc32
-          #+sparc   cffi-features:sparc
-          #+sparc64 cffi-features:sparc64
-          #+hppa    cffi-features:hppa
-          #+hppa64  cffi-features:hppa64
-          ;; Misfeatures
-          cffi-features:flat-namespace
-          )))
+        '(cffi-features:flat-namespace)))
 
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

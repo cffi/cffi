@@ -63,16 +63,9 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; OS/CPU features.
-          #+darwin  cffi-features:darwin
-          #+unix    cffi-features:unix
-          #+x86     cffi-features:x86
-          #+(and ppc (not ppc64)) cffi-features:ppc32
-          ;; Misfeatures
-          cffi-features:flat-namespace
-          )))
+        '(cffi-features:flat-namespace)))
 
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

@@ -446,9 +446,9 @@ The foreign array must be freed with foreign-array-free."
   "Return alignment for TYPE according to ALIGNMENT-TYPE."
   (declare (ignorable firstp))
   (ecase alignment-type
-    (:normal #-(and cffi-features:darwin cffi-features:ppc32)
+    (:normal #-(and darwin ppc)
              (foreign-type-alignment type)
-             #+(and cffi-features:darwin cffi-features:ppc32)
+             #+(and darwin ppc)
              (if firstp
                  (foreign-type-alignment type)
                  (min 4 (foreign-type-alignment type))))))

@@ -3,7 +3,7 @@
 ;;; cffi-clisp.lisp --- CFFI-SYS implementation for CLISP.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
-;;;           (C) 2005-2006, Joerg Hoehle  <hoehle@users.sourceforge.net>
+;;; Copyright (C) 2005-2006, Joerg Hoehle  <hoehle@users.sourceforge.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -60,26 +60,7 @@
 
 (in-package #:cffi-sys)
 
-;;; FIXME: long-long could be supported anyway on 64-bit machines. --luis
-
-;;;# Features
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (mapc (lambda (feature) (pushnew feature *features*))
-        '(;; OS/CPU features.
-          #+:macos  cffi-features:darwin
-          #+:unix   cffi-features:unix
-          #+:win32  cffi-features:windows
-          ))
-  (cond ((string-equal (machine-type) "X86_64")
-         (pushnew 'cffi-features:x86-64 *features*))
-        ((member :pc386 *features*)
-         (pushnew 'cffi-features:x86 *features*))
-        ;; FIXME: probably catches PPC64 as well
-        ((string-equal (machine-type) "POWER MACINTOSH")
-         (pushnew 'cffi-features:ppc32 *features*))))
-
-;;; Symbol case.
+;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
   (declare (string name))

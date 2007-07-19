@@ -32,6 +32,11 @@
 
 ;;; CFFI-SYS backends take care of pushing the appropriate features to
 ;;; *features*.  See each cffi-*.lisp file.
+;;;
+;;; Not anymore, I think we should use TRIVIAL-FEATURES for the
+;;; platform features instead.  Less pain.  And maybe the
+;;; CFFI-specific features should be in the CFFI-SYS package,
+;;; unexported?  This is here now for backwards compatibility.
 
 (defpackage #:cffi-features
   (:use #:cl)
@@ -64,10 +69,7 @@
    #:sparc
    #:sparc64
    #:hppa
-   #:hppa64
-
-   #:little-endian
-   #:big-endian))
+   #:hppa64))
 
 (in-package #:cffi-features)
 
@@ -89,3 +91,16 @@ that belong to the CFFI-FEATURES package."
            (:and (every #'cffi-feature-p (rest feature-expression)))
            (:or  (some #'cffi-feature-p (rest feature-expression)))
            (:not (not (cffi-feature-p (cadr feature-expression))))))))))
+
+;;; for backwards compatibility
+(mapc (lambda (sym) (pushnew sym *features*))
+      '(#+darwin darwin
+        #+unix unix
+        #+windows windows
+        #+ppc ppc32
+        #+x86 x86
+        #+x86-64 x86-64
+        #+sparc sparc
+        #+sparc64 sparc64
+        #+hppa hppa
+        #+hppa64 hppa64))
