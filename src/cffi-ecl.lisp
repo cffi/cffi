@@ -157,18 +157,18 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;;# Type Operations
 
 (defconstant +translation-table+
-  '((:char            :byte		"char")
-    (:unsigned-char   :unsigned-byte	"unsigned char")
-    (:short           :short		"short")
-    (:unsigned-short  :unsigned-short	"unsigned short")
-    (:int             :int		"int")
-    (:unsigned-int    :unsigned-int	"unsigned int")
-    (:long            :long		"long")
-    (:unsigned-long   :unsigned-long	"unsigned long")
-    (:float           :float		"float")
-    (:double          :double		"double")
-    (:pointer         :pointer-void	"void*")
-    (:void            :void		"void")))
+  '((:char            :byte            "char")
+    (:unsigned-char   :unsigned-byte   "unsigned char")
+    (:short           :short           "short")
+    (:unsigned-short  :unsigned-short  "unsigned short")
+    (:int             :int             "int")
+    (:unsigned-int    :unsigned-int    "unsigned int")
+    (:long            :long            "long")
+    (:unsigned-long   :unsigned-long   "unsigned long")
+    (:float           :float           "float")
+    (:double          :double          "double")
+    (:pointer         :pointer-void    "void*")
+    (:void            :void            "void")))
 
 (defun cffi-type->ecl-type (type-keyword)
   "Convert a CFFI type keyword to an ECL type keyword."
