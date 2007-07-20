@@ -24,8 +24,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> Implement a declarative interface for FOREIGN-FUNCALL-PTR, similar to
    DEFCUN/FOREIGN-FUNCALL.
 -> Implement the proposed interfaces (see doc/).
--> Implement CFFI-SYS:ERRNO-VALUE (name?).
-   (user can access errno with cffi-grovel)
 -> Extend FOREIGN-SLOT-VALUE and make it accept multiple "indices" for
    directly accessing structs inside structs, arrays inside structs, etc...
 -> Implement EXPLAIN-FOREIGN-SLOT-VALUE.
@@ -38,12 +36,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> Implement byte swapping routines (see /usr/include/linux/byteorder)
 -> [Lost Idea] Implement UB8-REF?
 -> [Lost Idea] Something about MEM-READ-C-STRING returning multiple value?
--> Implement an array type? Useful when we're working with ranks >= 2?
--> External encodings for the :STRING type. See:
-   <http://article.gmane.org/gmane.lisp.cffi.devel/292>
--> Define a lisp type for pointers in the backends. Eg: for clisp:
-     (deftype pointer-type (or ffi:foreign-address null))
-   Useful for type declarations.
 -> Warn about :void in places where it doesn't make sense.
 
 ### Underspecified Semantics
@@ -61,7 +53,6 @@ This is a collection of TODO items and ideas in no particular order.
    and a lisp double to :float. We should either coerce on lisps that
    don't accept this or check-type on lisps that do. Probably the former
    is better since on lispworks/x86 double == float.
--> What happens when the same library is loaded twice.
 
 ### Possible Optimizations
 
@@ -90,8 +81,6 @@ This is a collection of TODO items and ideas in no particular order.
    used in many places throughout the code is apparently not 100% safe.
 -> On ECL platforms without DFFI we need to build a non-linked version
    of libtest.
--> LOAD-FOREIGN-LIBRARY should give better errors. On ECL with DFFI
-   it should show the error that %LOAD-FOREIGN-LIBRARY is signalling.
 -> foreign-enum-keyword/value should have their own error condition?
    <http://article.gmane.org/gmane.lisp.cffi.devel/975> [2007-02-22 LO]
 
