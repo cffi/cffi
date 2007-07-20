@@ -127,9 +127,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
           (return-from mem-ref form))
         (if (aggregatep parsed-type)
             `(inc-pointer ,ptr ,offset)
-            (expand-from-foreign
-             `(%mem-ref ,ptr ,(canonicalize parsed-type) ,offset)
-             parsed-type)))
+            (expand-from-foreign `(%mem-ref ,ptr ,ctype ,offset) parsed-type)))
       form))
 
 (defun mem-set (value ptr type &optional (offset 0))
