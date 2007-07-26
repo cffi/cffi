@@ -343,7 +343,7 @@ error:
   (apply #'invoke (or (getenv "CC") *cc*)
          ;; FIXME: is there a better way to detect whether these flags
          ;; are necessary?
-         (case (cffi:foreign-type-size :int)
+         (ecase (cffi:foreign-type-size :long)
            (4 "-m32")
            (8 "-m64"))
          "-o"
@@ -352,7 +352,9 @@ error:
          (append *cc-flags*
                  (when library
                    (list #+cffi-features:darwin "-bundle"
-                         #-cffi-features:darwin "-shared")))))
+                         #-cffi-features:darwin "-shared"
+                         (when (= (cffi:foreign-type-size :long) 8)
+                           "-fPIC"))))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (let* ((*cc-flags* nil)
