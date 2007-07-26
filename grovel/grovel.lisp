@@ -174,11 +174,7 @@ void type_name(FILE *output, int signed_p, int size) {
     case 1: fprintf(output, \":int8\"); break;
     case 2: fprintf(output, \":int16\"); break;
     case 4: fprintf(output, \":int32\"); break;
-    case 8: fprintf(output, \"#-cffi-features:no-long-long :int64 \"
-                            \"#+cffi-features:no-long-long \"
-                            \"#.(progn (cerror \\\"Use :int32 instead.\\\" \"
-                    \"\\\"This platform does not support long long types.\\\") \"
-                    \":int32)\"); break;
+    case 8: fprintf(output, \":int64\"); break;
     default: goto error;
     }
   } else {
@@ -186,11 +182,7 @@ void type_name(FILE *output, int signed_p, int size) {
     case 1: fprintf(output, \":uint8\"); break;
     case 2: fprintf(output, \":uint16\"); break;
     case 4: fprintf(output, \":uint32\"); break;
-    case 8: fprintf(output, \"#-cffi-features:no-long-long :uint64 \"
-                            \"#+cffi-features:no-long-long \"
-                            \"#.(progn (cerror \\\"Use :uint32 instead.\\\" \"
-                    \"\\\"This platform does not support long long types.\\\") \"
-                    \":uint32)\"); break;
+    case 8: fprintf(output, \":uint64\"); break;
     default: goto error;
     }
   }
