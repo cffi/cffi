@@ -37,7 +37,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+
+/* MSVC doesn't have stdint.h and uses a different syntax for stdcall */
+#ifndef _MSC_VER
 #include <stdint.h>
+#define STDCALL __attribute__((stdcall))
+#else
+#define STDCALL __stdcall
+#endif
 
 /*
  * Some functions that aren't available on WIN32
@@ -820,8 +827,8 @@ DLLEXPORT int ns_var = 1;
  * DEFCFUN.STDCALL.1
  */
 
-DLLEXPORT __attribute__((stdcall))
-int stdcall_fun(int a, int b, int c)
+DLLEXPORT
+int STDCALL stdcall_fun(int a, int b, int c)
 {
     return a + b + c;
 }
@@ -831,7 +838,7 @@ int stdcall_fun(int a, int b, int c)
  */
 
 DLLEXPORT
-int call_stdcall_fun(int __attribute__((stdcall)) (*f)(int, int, int))
+int call_stdcall_fun(int (STDCALL *f)(int, int, int))
 {
     int a = 42;
     f(1, 2, 3);
