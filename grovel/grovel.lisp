@@ -341,29 +341,36 @@ error:
 (cffi:defcfun "getenv" :string
   (name :string))
 
-(defun invoke-cc (input-file output-file &key library)
+;; FIXME: is there a better way to detect whether these flags
+;; are necessary?
+(defvar *cpu-word-size-flags*
+    (ecase (cffi:foreign-type-size :long)
+      (4 "-m32")
+      (8 "-m64")))
+
+(defvar *platform-library-flags*
+    (list #+cffi-features:darwin "-bundle"
+          #-cffi-features:darwin "-shared"))
+
+(defun cc-compile-and-link (input-file output-file &key library)
   (apply #'invoke (or (getenv "CC") *cc*)
-         ;; FIXME: is there a better way to detect whether these flags
-         ;; are necessary?
-         (ecase (cffi:foreign-type-size :long)
-           (4 "-m32")
-           (8 "-m64"))
-         "-o"
+         *cpu-word-size-flags*
+         "-fPIC" "-o"
          (native-namestring output-file)
          (native-namestring input-file)
          (append *cc-flags*
                  (when library
-                   (append '(#+cffi-features:darwin "-bundle"
-                             #-cffi-features:darwin "-shared")
-                           (when (= (cffi:foreign-type-size :long) 8)
-                             '("-fPIC")))))))
+                   (list #+cffi-features:darwin "-bundle"
+                         #-cffi-features:darwin "-shared"
+                         (when (= (cffi:foreign-type-size :long) 8)
+                           "-fPIC"))))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (let* ((*cc-flags* nil)
          (c-file (generate-c-file input-file output-defaults))
          (exe-file (exe-filename c-file))
          (lisp-file (tmp-lisp-filename c-file)))
-    (invoke-cc c-file exe-file)
+    (cc-compile-and-link c-file exe-file)
     (invoke exe-file (native-namestring lisp-file))
     lisp-file))
 
@@ -728,7 +735,7 @@ error:
         (lib-file (lib-filename output-defaults)))
     (multiple-value-bind (c-file lisp-forms)
         (generate-c-lib-file input-file output-defaults)
-      (invoke-cc c-file lib-file :library t)
+      (cc-compile-and-link c-file lib-file :library t)
       ;; FIXME: hardcoded library path.
       (values (generate-bindings-file lib-file lisp-forms output-defaults)
               lib-file))))
