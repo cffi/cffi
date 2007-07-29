@@ -659,19 +659,21 @@ error:
       (check-type lisp-name keyword)
       (loop for c-name in c-names do
             (check-type c-name string)
-            (format out "~&#ifdef ~A~%" c-name)
             (c-format out "~%  (")
             (c-print-symbol out lisp-name)
+            (format out "~&#ifdef ~A~%" c-name)
             (c-format out " ")
             (c-printf out "%i" c-name)
-            (c-format out ")")
             (format out "~&#else~%"))
       (unless optional
         (c-format out
-                  "(cl:warn 'cffi-grovel:missing-definition :name '~A)~%"
+                  "~%  #.(cl:progn ~
+                           (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
+                           -1)"
                   lisp-name))
       (dotimes (i (length c-names))
-        (format out "~&#endif~%"))))
+        (format out "~&#endif~%"))
+      (c-format out ")")))
   (c-format out ")~%")  )
 
 ;;;# Wrapper Generation
