@@ -353,10 +353,10 @@ error:
          (native-namestring input-file)
          (append *cc-flags*
                  (when library
-                   (list #+cffi-features:darwin "-bundle"
-                         #-cffi-features:darwin "-shared"
-                         (when (= (cffi:foreign-type-size :long) 8)
-                           "-fPIC"))))))
+                   (append '(#+cffi-features:darwin "-bundle"
+                             #-cffi-features:darwin "-shared")
+                           (when (= (cffi:foreign-type-size :long) 8)
+                             '("-fPIC")))))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (let* ((*cc-flags* nil)
