@@ -69,8 +69,11 @@
             (let ((process (#+openmcl ccl:run-program
                             #+(or cmu scl) ext:run-program
                             #+sbcl sb-ext:run-program
-                            command arglist :output s :error :output
+                            command arglist #-win32 :output #-win32 s
+                            :error :output
                             #+sbcl :search #+sbcl t)))
+              #+win32
+              (write-line "note: SBCL on windows can't redirect output.")
               (setq exit-code
                     #+openmcl (nth-value
                                1 (ccl:external-process-status process))
@@ -84,7 +87,8 @@
 
 #+allegro
 (defun %invoke (command arglist)
-  (let ((cmd (concatenate 'vector (list command command) arglist)))
+  (let ((cmd #-mswindows (concatenate 'vector (list command command) arglist)
+             #+mswindows (format nil "~A~{ ~A~}" command arglist)))
     (multiple-value-bind (output error-output exit-code)
         (excl.osi:command-output cmd :whole t)
       (declare (ignore error-output))
@@ -123,7 +127,13 @@
 
 ;;;# Grovelling
 
-(defparameter *cc* "gcc")
+;;; TODO: figure out a good way to let the user specify where his
+;;; compiler is.  Can already do that through the CC environment
+;;; variable, but that's not very convenient on windows?
+(defparameter *cc*
+  #+windows "c:/msys/1.0/bin/gcc.exe"
+  #-windows "gcc")
+
 (defvar *cc-flags*)
 
 ;;; The header of the intermediate C file.
