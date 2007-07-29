@@ -341,16 +341,16 @@ error:
 (cffi:defcfun "getenv" :string
   (name :string))
 
-;; FIXME: is there a better way to detect whether these flags
-;; are necessary?
+;;; FIXME: is there a better way to detect whether these flags
+;;; are necessary?
 (defvar *cpu-word-size-flags*
-    (ecase (cffi:foreign-type-size :long)
-      (4 "-m32")
-      (8 "-m64")))
+  (ecase (cffi:foreign-type-size :long)
+    (4 "-m32")
+    (8 "-m64")))
 
 (defvar *platform-library-flags*
-    (list #+cffi-features:darwin "-bundle"
-          #-cffi-features:darwin "-shared"))
+  (list #+cffi-features:darwin "-bundle"
+        #-cffi-features:darwin "-shared"))
 
 (defun cc-compile-and-link (input-file output-file &key library)
   (apply #'invoke (or (getenv "CC") *cc*)
@@ -360,10 +360,7 @@ error:
          (native-namestring input-file)
          (append *cc-flags*
                  (when library
-                   (list #+cffi-features:darwin "-bundle"
-                         #-cffi-features:darwin "-shared"
-                         (when (= (cffi:foreign-type-size :long) 8)
-                           "-fPIC"))))))
+                   *platform-library-flags*))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (let* ((*cc-flags* nil)
