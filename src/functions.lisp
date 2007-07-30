@@ -256,7 +256,7 @@ arguments and does type promotion for the variadic arguments."
 ;;; %DEFCFUN.
 (defmacro defcfun (name-and-options return-type &body args)
   "Defines a Lisp function that calls a foreign function."
-  (discard-docstring args)
+  (discard-docstring args t)
   (multiple-value-bind (lisp-name foreign-name options)
       (parse-name-and-options name-and-options)
     (if (eq (car (last args)) '&rest)

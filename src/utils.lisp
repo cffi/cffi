@@ -60,10 +60,10 @@
   "Make into list if atom."
   (if (listp x) x (list x)))
 
-(defmacro discard-docstring (body-var)
+(defmacro discard-docstring (body-var &optional force)
   "Discards the first element of the list in body-var if it's a
-string and the only element."
-  `(when (and (stringp (car ,body-var)) (cdr ,body-var))
+string and the only element (or if FORCE is T)."
+  `(when (and (stringp (car ,body-var)) (or ,force (cdr ,body-var)))
      (pop ,body-var)))
 
 ;;; Parse a body of code, removing an optional documentation string

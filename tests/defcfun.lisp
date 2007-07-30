@@ -125,9 +125,13 @@
 
 ;;; Regression test. Allegro would warn on direct calls to
 ;;; functions with no arguments.
+;;;
 ;;; Also, let's check if void functions will return NIL.
+;;;
+;;; Check if a docstring without arguments doesn't cause problems.
 
-(defcfun "noargs" :int)
+(defcfun "noargs" :int
+  "docstring")
 
 (deftest defcfun.noargs
     (noargs)
