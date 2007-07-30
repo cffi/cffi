@@ -478,6 +478,12 @@ error:
         (c-format out ")")))
     (c-format out ")~%")))
 
+(defun make-from-pointer-function-name (type-name)
+  (symbolicate '#:make- type-name '#:-from-pointer))
+
+;;; DEFINE-C-STRUCT-WRAPPER (in ../src/types.lisp) seems like a much
+;;; cleaner way to do this.  Unless I can find any advantage in doing
+;;; it this way I'll delete this soon.  --luis
 (define-grovel-syntax cstruct-and-class-item (&rest arguments)
   (process-grovel-form out (cons 'cstruct arguments))
   (destructuring-bind (struct-lisp-name struct-c-name &rest slots)
@@ -516,6 +522,7 @@ error:
            (make-function-name
             (make-from-pointer-function-name struct-lisp-name))
            (make-defun-form
+            ;; this function is then used as a constructor for this class.
             `(defun ,make-function-name (pointer)
                (cffi:with-foreign-slots
                    (,slot-names pointer ,struct-lisp-name)
@@ -532,10 +539,6 @@ error:
         (c-export out reader-name))
       (c-write out defclass-form)
       (c-write out make-defun-form))))
-
-;;; FIXME: document this function and its usage above properly.
-(defun make-from-pointer-function-name (type-name)
-  (symbolicate '#:make- type-name '#:-from-pointer))
 
 (define-grovel-syntax cstruct (struct-lisp-name struct-c-name &rest slots)
   (let ((documentation (when (stringp (car slots)) (pop slots))))
