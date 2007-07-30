@@ -401,9 +401,7 @@ error:
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
-  (c-format out "(cl:in-package #:")
-  (c-print-symbol out name t)
-  (c-format out ")~%~%"))
+  (c-format out "(cl:in-package #:~A)~%~%" name))
 
 (define-grovel-syntax ctype (lisp-name size-designator)
   (c-section-header out "ctype" lisp-name)
