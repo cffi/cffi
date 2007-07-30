@@ -380,7 +380,7 @@
 
 #+(and cffi-features:x86 (not cffi-features:no-stdcall))
 (progn
-  (defcfun ("stdcall_fun" :cconv :stdcall) :int
+  (defcfun ("stdcall_fun@12" stdcall-fun :cconv :stdcall) :int
     (a :int)
     (b :int)
     (c :int))
