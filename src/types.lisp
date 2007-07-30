@@ -857,11 +857,23 @@ The buffer has dynamic extent and may be stack allocated."
          `(progn
             ,@(loop for (type . size) in sized-types
                     for m = (car (member size mtypes :key #'foreign-type-size))
-                    when m collect `(defctype ,type ,m)))))
+                    when m collect `(defctype ,type ,m))))
+       (match-intptrs ()
+         (multiple-value-bind (signed unsigned)
+             (ecase (foreign-type-size :pointer)
+               (1 (values :int8 :uint8))
+               (2 (values :int16 :uint16))
+               (4 (values :int32 :uint32))
+               (8 (values :int64 :uint64)))
+           `(progn
+              (defctype :intptr ,signed)
+              (defctype :uintptr ,unsigned)))))
     ;; signed
     (match-types ((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8))
                  (:char :short :int :long :long-long))
     ;; unsigned
     (match-types ((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8))
                  (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
-                  :unsigned-long-long))))
+                  :unsigned-long-long))
+    ;; intptr_t and uintptr_t
+    (match-intptrs)))
