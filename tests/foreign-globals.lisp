@@ -181,7 +181,8 @@
     (eval (read-from-string "(DEFCVAR \"MiXeD_CaSe_InT3\"   :INT)"))))
 
 
-(when (string= (symbol-name 'nil) "nil")
+;;; EVAL gets rid of SBCL's unreachable code warnings.
+(when (string= (symbol-name (eval nil)) "nil")
   (let ((*readtable* (copy-readtable)))
     (setf (readtable-case *readtable*) :invert)
     (eval (read-from-string "(DEFCVAR \"UPPERCASEINT2\"     :INT)"))
