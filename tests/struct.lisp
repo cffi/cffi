@@ -316,3 +316,29 @@
               'a-char                 a-char
               'another-short          another-short)))
   (an-unsigned-long-long 1 a-short 2 a-char 3 another-short 4))
+
+;;;# C Struct Wrappers
+
+(define-c-struct-wrapper timeval ())
+
+(define-c-struct-wrapper (timeval2 timeval) ()
+  (tv-secs))
+
+(defmacro with-example-timeval (var &body body)
+  `(with-foreign-object (,var 'timeval)
+     (with-foreign-slots ((tv-secs tv-usecs) ,var timeval)
+       (setf tv-secs 42 tv-usecs 1984)
+       ,@body)))
+
+(deftest struct-wrapper.1
+    (with-example-timeval ptr
+      (let ((obj (make-instance 'timeval :pointer ptr)))
+        (values (timeval-tv-secs obj)
+                (timeval-tv-usecs obj))))
+  42 1984)
+
+(deftest struct-wrapper.2
+    (with-example-timeval ptr
+      (let ((obj (make-instance 'timeval2 :pointer ptr)))
+        (timeval2-tv-secs obj)))
+  42)

@@ -90,6 +90,7 @@
    #:defbitfield
    #:define-foreign-type
    #:define-parse-method
+   #:define-c-struct-wrapper
    #:foreign-enum-keyword
    #:foreign-enum-keyword-list
    #:foreign-enum-value

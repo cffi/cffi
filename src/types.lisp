@@ -644,6 +644,35 @@ foreign slots in PTR of TYPE.  Similar to WITH-SLOTS."
                   collect `(,var (foreign-slot-value ,ptr-var ',type ',var)))
          ,@body))))
 
+;;; We could add an option to define a struct instead of a class, in
+;;; the unlikely event someone needs something like that.
+(defmacro define-c-struct-wrapper (class-and-type supers &optional slots)
+  "Define a new class with CLOS slots matching those of a foreign
+struct type.  An INITIALIZE-INSTANCE method is defined which
+takes a :POINTER initarg that is used to store the slots of a
+foreign object.  This pointer is only used for initialization and
+it is not retained.
+
+CLASS-AND-TYPE is either a list of the form (class-name
+struct-type) or a single symbol naming both.  The class will
+inherit SUPERS.  If a list of SLOTS is specified, only those
+slots will be defined and stored."
+  (destructuring-bind (class-name &optional (struct-type class-name))
+      (ensure-list class-and-type)
+    (let ((slots (or slots (foreign-slot-names struct-type))))
+      `(progn
+         (defclass ,class-name ,supers
+           ,(loop for slot in slots collect
+                  (list slot :reader (symbolicate class-name "-" slot))))
+         ;; This could be done in a parent class by using
+         ;; FOREIGN-SLOT-NAMES when instantiating but then the compiler
+         ;; macros wouldn't kick in.
+         (defmethod initialize-instance ((inst ,class-name) &key pointer)
+           (with-foreign-slots (,slots pointer ,struct-type)
+             ,@(loop for slot in slots collect
+                     `(setf (slot-value inst ',slot) ,slot))))
+         ',class-name))))
+
 ;;;# Foreign Unions
 ;;;
 ;;; A union is a FOREIGN-STRUCT-TYPE in which all slots have an offset
