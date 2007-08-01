@@ -305,21 +305,28 @@ error:
   (let ((c-file (make-pathname :type "c" :defaults output-defaults)))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
       (with-open-file (in input-file :direction :input)
-        (let* ((forms (let ((*package* *package*))
-                        (loop for form = (read in nil nil)
-                              while form collect form
-                              when (eq (form-kind form) 'in-package)
-                              do (setq *package*
-                                       (find-package (second form))))))
-               (header-forms (remove-if-not #'header-form-p forms))
-               (body-forms (remove-if #'header-form-p forms)))
-          (write-string *header* out)
-          (dolist (form header-forms)
-            (process-grovel-form out form))
-          (write-string *prologue* out)
-          (dolist (form body-forms)
-            (process-grovel-form out form))
-          (write-string *postscript* out))))
+        (flet ((read-forms (s)
+                 (do ((forms ())
+                      (form (read s nil nil) (read s nil nil)))
+                     ((null form) (nreverse forms))
+                   (case (form-kind form)
+                     (in-package
+                      (setf *package* (find-package (second form)))
+                      (push form forms))
+                     (progn
+                       ;; flatten progn forms
+                       (dolist (f (rest form)) (push f forms)))
+                     (t (push form forms))))))
+          (let* ((forms (read-forms in))
+                 (header-forms (remove-if-not #'header-form-p forms))
+                 (body-forms (remove-if #'header-form-p forms)))
+            (write-string *header* out)
+            (dolist (form header-forms)
+              (process-grovel-form out form))
+            (write-string *prologue* out)
+            (dolist (form body-forms)
+              (process-grovel-form out form))
+            (write-string *postscript* out)))))
     c-file))
 
 (defun exe-filename (defaults)
@@ -380,10 +387,6 @@ error:
        (declare (ignorable out))
        (destructuring-bind ,lambda-list ,args
          ,@body))))
-
-(define-grovel-syntax progn (&rest forms)
-  (dolist (form forms)
-    (process-grovel-form out form)))
 
 (define-grovel-syntax include (&rest includes)
   (format out "~{#include <~A>~%~}" includes))
