@@ -294,8 +294,9 @@ error:
   (%process-grovel-form (form-kind form) out (cdr form)))
 
 (defun form-kind (form)
-  ;; Using INTERN here instead of FIND-SYMBOL will gives less cryptic
-  ;; error messages when an undefined grovel/wrapper form is found.
+  ;; Using INTERN here instead of FIND-SYMBOL will result in less
+  ;; cryptic error messages when an undefined grovel/wrapper form is
+  ;; found.
   (intern (symbol-name (car form)) '#:cffi-grovel))
 
 (defun header-form-p (form)
