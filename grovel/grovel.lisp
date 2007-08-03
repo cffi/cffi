@@ -50,8 +50,9 @@
 ;;; existing streams doesn't seem to be an option either.
 #+clisp
 (defun %invoke (command arglist)
-  (values (ext:run-program command :arguments arglist)
-          "<see above>"))
+  (let ((ret (ext:run-program command :arguments arglist)))
+    (values #-windows ret #+windows (if ret 0 1)
+            "<see above>")))
 
 ;;; FIXME: there's no way to tell from EXT:RUN-PROGRAM whether the
 ;;; command failed or not.  Using EXT:SYSTEM instead, but we should
