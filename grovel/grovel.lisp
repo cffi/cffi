@@ -669,10 +669,10 @@ error:
                          &key optional documentation) enum
       (declare (ignore documentation))
       (check-type lisp-name keyword)
+      (c-format out "~%  (")
+      (c-print-symbol out lisp-name)
       (loop for c-name in c-names do
             (check-type c-name string)
-            (c-format out "~%  (")
-            (c-print-symbol out lisp-name)
             (format out "~&#ifdef ~A~%" c-name)
             (c-format out " ")
             (c-printf out "%i" c-name)
