@@ -798,7 +798,7 @@ error:
 
 (defun cffi-type (typespec)
   (if (and (listp typespec) (stringp (car typespec)))
-      (cdr typespec)
+      (second typespec)
       typespec))
 
 (define-wrapper-syntax defwrapper (name-and-options rettype &rest args)
