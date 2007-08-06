@@ -241,7 +241,7 @@ buffer along with ARGS." ; fix wording, sigh
     `(with-foreign-pointer (,var ,size ,size-var)
        (progn
          ,@body
-         (foreign-string-to-lisp ,var ,@args)))))
+         (values (foreign-string-to-lisp ,var ,@args))))))
 
 ;;;# Automatic Conversion of Foreign Strings
 
