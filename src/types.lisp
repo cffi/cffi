@@ -667,7 +667,7 @@ slots will be defined and stored."
          ;; This could be done in a parent class by using
          ;; FOREIGN-SLOT-NAMES when instantiating but then the compiler
          ;; macros wouldn't kick in.
-         (defmethod initialize-instance ((inst ,class-name) &key pointer)
+         (defmethod initialize-instance :after ((inst ,class-name) &key pointer)
            (with-foreign-slots (,slots pointer ,struct-type)
              ,@(loop for slot in slots collect
                      `(setf (slot-value inst ',slot) ,slot))))
