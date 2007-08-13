@@ -48,7 +48,8 @@
 ;;; TODO: refactor, sigh.  Also, this should probably be a function.
 ;;; Would have to change Babel's API for that to be possible, I think.
 (defmacro bget (ptr off &optional (bytes 1) (endianness :ne))
-  (let ((big-endian (member endianness '(:be #+big-endian :ne))))
+  (let ((big-endian (member endianness
+                            '(:be #+big-endian :ne #+little-endian :re))))
     (once-only (ptr off)
       (ecase bytes
         (1 `(mem-ref ,ptr :uint8 ,off))
@@ -80,7 +81,8 @@
                                (mem-ref ,ptr :uint8 ,off))))))))))
 
 (defmacro bset (val ptr off &optional (bytes 1) (endianness :ne))
-  (let ((big-endian (member endianness '(:be #+big-endian :ne))))
+  (let ((big-endian (member endianness
+                            '(:be #+big-endian :ne #+little-endian :re))))
     (ecase bytes
       (1 `(setf (mem-ref ,ptr :uint8 ,off) ,val))
       (2 (if big-endian
@@ -119,7 +121,9 @@
    :octet-seq-type foreign-pointer
    :code-point-seq-getter babel::string-get
    :code-point-seq-setter babel::string-set
-   :code-point-seq-type simple-string))
+   ;; working around an SBCL bug
+   :code-point-seq-type #+sbcl (simple-array character (*))
+                        #-sbcl simple-unicode-string))
 
 (defun null-terminator-len (encoding)
   (length (enc-nul-encoding (get-character-encoding encoding))))
