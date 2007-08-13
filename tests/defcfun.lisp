@@ -118,7 +118,7 @@
       (setf (mem-ref s :char) 0)
       (strcpy s "Hello")
       (strcat s ", world!"))
-  "Hello, world!" 13)
+  "Hello, world!")
 
 (defcfun "strerror" :string
   (n :int))
@@ -163,32 +163,32 @@
 (deftest defcfun.varargs.char
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%c" :char 65))
-  "A" 1)
+  "A")
 
 (deftest defcfun.varargs.short
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%d" :short 42))
-  "42" 2)
+  "42")
 
 (deftest defcfun.varargs.int
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%d" :int 1000))
-  "1000" 4)
+  "1000")
 
 (deftest defcfun.varargs.long
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%ld" :long 131072))
-  "131072" 6)
+  "131072")
 
 (deftest defcfun.varargs.float
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :float (float pi)))
-  "3.14" 4)
+  "3.14")
 
 (deftest defcfun.varargs.double
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%.2f" :double (float pi 1.0d0)))
-  "3.14" 4)
+  "3.14")
 
 #+(and scl long-float)
 (deftest defcfun.varargs.long-double
@@ -200,7 +200,7 @@
 (deftest defcfun.varargs.string
     (with-foreign-pointer-as-string (s 100)
       (sprintf s "%s, %s!" :string "Hello" :string "world"))
-  "Hello, world!" 13)
+  "Hello, world!")
 
 ;;; (let ((rettype (find-type :long))
 ;;;       (arg-types (n-random-types-no-ll 127)))
