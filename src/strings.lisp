@@ -113,7 +113,7 @@
 ;;; TODO: tackle optimization notes.
 (defparameter *foreign-string-mappings*
   (instantiate-concrete-mappings
-   :optimize ((speed 3) (debug 0) (compilation-speed 0) (safety 0))
+   ;; :optimize ((speed 3) (debug 0) (compilation-speed 0) (safety 0))
    :octet-seq-getter bget
    :octet-seq-setter bset
    :octet-seq-type foreign-pointer
