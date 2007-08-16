@@ -141,10 +141,27 @@ may be stack-allocated if supported by the implementation.  If
 SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
-  `(let ((,size-var ,size))
-     (declare (ignorable ,size-var))
-     (ff:with-stack-fobject (,var :char :c ,size-var)
-       ,@body)))
+   #+(version>= 8 1)
+   (cond ((and (constantp size) (integerp size) (<= size ff:*max-stack-fobject-bytes*))
+          ;; stack allocation pattern
+          `(let ((,size-var ,size))
+             (declare (ignorable ,size-var))
+             (ff:with-stack-fobject (,var '(:array :char ,size))
+               (let ((,var (ff:fslot-address ,var))) ; (excl::stack-allocated-p var) => T
+                 ,@body))))
+         (t
+          ;; amalloc + free pattern
+          `(let ((,size-var ,size))
+             (declare (ignorable ,size-var))
+             (ff:with-stack-fobject (,var :char :allocation :c :size ,size-var)
+               (unwind-protect
+                    (progn ,@body)
+                 (ff:free-fobject ,var))))))
+   #-(version>= 8 1)
+   `(let ((,size-var ,size))
+      (declare (ignorable ,size-var))
+      (ff:with-stack-fobject (,var :char :c ,size-var)
+        ,@body)))
 
 ;;;# Shareable Vectors
 ;;;
