@@ -142,12 +142,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
    #+(version>= 8 1)
-   (cond ((and (constantp size) (integerp size) (<= size ff:*max-stack-fobject-bytes*))
+   (cond ((and (constantp size) (<= (eval size) ff:*max-stack-fobject-bytes*))
           ;; stack allocation pattern
           `(let ((,size-var ,size))
              (declare (ignorable ,size-var))
              (ff:with-stack-fobject (,var '(:array :char ,size))
-               (let ((,var (ff:fslot-address ,var))) ; (excl::stack-allocated-p var) => T
+               (let ((,var (ff:fslot-address ,var)))
+                 ;; (excl::stack-allocated-p var) => T
                  ,@body))))
          (t
           ;; amalloc + free pattern
