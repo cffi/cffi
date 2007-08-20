@@ -33,11 +33,16 @@
 ;;; and returning each built-in type. (adapted from funcall.lisp)
 
 (defcfun "toupper" :char
+  "toupper docstring"
   (char :char))
 
 (deftest defcfun.char
     (toupper (char-code #\a))
   #.(char-code #\A))
+
+(deftest defcfun.docstring
+    (documentation 'toupper 'function)
+  "toupper docstring")
 
 
 (defcfun ("abs" c-abs) :int
@@ -146,9 +151,14 @@
 ;;;# Calling varargs functions
 
 (defcfun "sprintf" :int
+  "sprintf docstring"
   (str (:pointer :char))
   (control :string)
   &rest)
+
+(deftest defcfun.varargs.docstrings
+    (documentation 'sprintf 'function)
+  "sprintf docstring")
 
 (deftest defcfun.varargs.char
     (with-foreign-pointer-as-string (s 100)

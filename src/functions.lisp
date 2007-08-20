@@ -172,7 +172,7 @@ arguments and does type promotion for the variadic arguments."
                                          (list rettype))
                           ,@options)))))
 
-(defun %defcfun (lisp-name foreign-name return-type args options)
+(defun %defcfun (lisp-name foreign-name return-type args options docstring)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args))
         (syms (make-gensym-list (length args))))
@@ -183,13 +183,15 @@ arguments and does type promotion for the variadic arguments."
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
+           ,@(ensure-list docstring)
            ,(translate-objects
              syms arg-names arg-types return-type caller))))))
 
-(defun %defcfun-varargs (lisp-name foreign-name return-type args options)
+(defun %defcfun-varargs (lisp-name foreign-name return-type args options doc)
   (with-unique-names (varargs)
     (let ((arg-names (mapcar #'car args)))
       `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
+         ,@(ensure-list doc)
          `(foreign-funcall-varargs
            ,'(,foreign-name ,@options)
            ,,`(list ,@(loop for (name type) in args
@@ -256,13 +258,14 @@ arguments and does type promotion for the variadic arguments."
 ;;; %DEFCFUN.
 (defmacro defcfun (name-and-options return-type &body args)
   "Defines a Lisp function that calls a foreign function."
-  (discard-docstring args t)
-  (multiple-value-bind (lisp-name foreign-name options)
-      (parse-name-and-options name-and-options)
-    (if (eq (car (last args)) '&rest)
-        (%defcfun-varargs lisp-name foreign-name return-type
-                          (butlast args) options)
-        (%defcfun lisp-name foreign-name return-type args options))))
+  (let ((docstring (when (stringp (car args)) (pop args))))
+    (multiple-value-bind (lisp-name foreign-name options)
+        (parse-name-and-options name-and-options)
+      (if (eq (car (last args)) '&rest)
+          (%defcfun-varargs lisp-name foreign-name return-type
+                            (butlast args) options docstring)
+          (%defcfun lisp-name foreign-name return-type args options
+                    docstring)))))
 
 ;;;# Defining Callbacks
 
