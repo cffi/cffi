@@ -98,10 +98,11 @@
 ;;; FIXME: Runs shell, and arguments are unquoted.
 #+lispworks
 (defun %invoke (command arglist)
- (with-output-to-string (s)
-   (sys:call-system-showing-output
-    (format nil "~A~{ ~A~}" command arglist)
-    :output-stream s :prefix "" :show-cmd nil)))
+  (let ((s (make-string-output-stream)))
+    (values (sys:call-system-showing-output
+             (format nil "~A~{ ~A~}" command arglist)
+             :output-stream s :prefix "" :show-cmd nil)
+            (get-output-stream-string s))))
 
 ;;; Do we really want to suppress the output by default?
 (defun invoke (command &rest args)
