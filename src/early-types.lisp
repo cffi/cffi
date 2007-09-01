@@ -510,10 +510,10 @@ Signals an error if the type cannot be resolved."
 (defmacro defctype* (name base-type)
   "Like DEFCTYPE but defers instantiation until parse-time."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-    (let (memoized-type)
-      (define-parse-method ,name ()
-        (unless memoized-type
-          (setf memoized-type (make-instance 'foreign-typedef :name ',name
-                                             :actual-type nil)
-                (actual-type memoized-type) (parse-type ',base-type)))
-        memoized-type))))
+     (let (memoized-type)
+       (define-parse-method ,name ()
+         (unless memoized-type
+           (setf memoized-type (make-instance 'foreign-typedef :name ',name
+                                              :actual-type nil)
+                 (actual-type memoized-type) (parse-type ',base-type)))
+         memoized-type))))
