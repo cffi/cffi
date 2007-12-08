@@ -46,7 +46,7 @@
 ;; Calling a varargs function.
 (defun sprintf-test ()
   "Test calling a varargs function."
-  (with-foreign-pointer-as-string (buf 255 buf-size)
+  (with-foreign-pointer-as-string ((buf buf-size) 255)
     (foreign-funcall
      "snprintf" :pointer buf :int buf-size
      :string "%d %f #x%x!" :int 666
