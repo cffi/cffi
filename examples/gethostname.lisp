@@ -47,5 +47,5 @@
 ;;; WITH-FOREIGN-POINTER-AS-STRING is used to allocate a temporary
 ;;; buffer and return it as a Lisp string.
 (defun gethostname ()
-  (with-foreign-pointer-as-string (buf 255 bufsize)
+  (with-foreign-pointer-as-string ((buf bufsize) 255)
     (%gethostname buf bufsize)))
