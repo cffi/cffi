@@ -118,7 +118,7 @@
 (declaim (inline make-pointer))
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
-  (declare (type (unsigned-byte 32) address))
+  ;; (declare (type (unsigned-byte 32) address))
   (sb-sys:int-sap address))
 
 (declaim (inline pointer-address))
@@ -137,7 +137,7 @@
 (declaim (inline %foreign-alloc))
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
-  (declare (type (unsigned-byte 32) size))
+  ;; (declare (type (unsigned-byte 32) size))
   (alien-sap (make-alien (unsigned 8) size)))
 
 (declaim (inline foreign-free))
