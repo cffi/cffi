@@ -28,8 +28,6 @@
 
 (in-package #:cffi)
 
-;;; FIXME: we used to support ub8 arrays here. Look into that. [2007-02 LO]
-
 ;;;# Foreign String Conversion
 ;;;
 ;;; Functions for converting NULL-terminated C-strings to Lisp strings
@@ -37,16 +35,10 @@
 ;;; argument which is used to specify the encoding to use when
 ;;; converting to/from foreign strings.
 
-;;; FIXME: is this a good default? [2007-04-13 LO]
-;;;
-;;; :LATIN-1 would probably work better for 8-bit lisps and be
-;;; backwards compatible with previous encoding unaware CFFI
-;;; behaviour.  OTOH, most uses are probably counting on
-;;; ASCII-compatible behaviour?  [2007-06-07 LO]
-(defvar *default-foreign-encoding* :utf-8)
+(defvar *default-foreign-encoding* :utf-8
+  "Default foreign encoding.")
 
 ;;; TODO: refactor, sigh.  Also, this should probably be a function.
-;;; Would have to change Babel's API for that to be possible, I think.
 (defmacro bget (ptr off &optional (bytes 1) (endianness :ne))
   (let ((big-endian (member endianness
                             '(:be #+big-endian :ne #+little-endian :re))))
@@ -121,9 +113,7 @@
    :octet-seq-type foreign-pointer
    :code-point-seq-getter babel::string-get
    :code-point-seq-setter babel::string-set
-   ;; working around an SBCL bug
-   :code-point-seq-type #+sbcl (simple-array character (*))
-                        #-sbcl simple-unicode-string))
+   :code-point-seq-type babel:simple-unicode-string))
 
 (defun null-terminator-len (encoding)
   (length (enc-nul-encoding (get-character-encoding encoding))))
@@ -133,7 +123,8 @@
   (check-type string string)
   (when offset
     (setq buffer (inc-pointer buffer offset)))
-  (with-checked-simple-vector ((string string) (start start) (end end))
+  (with-checked-simple-vector ((string (coerce string 'babel:unicode-string))
+                               (start start) (end end))
     (declare (type simple-string string))
     (let ((mapping (lookup-mapping *foreign-string-mappings* encoding))
           (nul-len (null-terminator-len encoding)))
@@ -165,8 +156,6 @@
     (2 (%foreign-string-length pointer offset :uint16 2))
     (4 (%foreign-string-length pointer offset :uint32 4))))
 
-;;; what to do with COUNT here? ahrg... make it default to STRLEN? but
-;;; what about the "at most" part?
 (defun foreign-string-to-lisp (pointer &key (offset 0) count max-chars
                                (encoding *default-foreign-encoding*))
   "Copy at most COUNT bytes from POINTER plus OFFSET encoded in
@@ -193,7 +182,8 @@ pointer, NIL is returned."
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
   (check-type string string)
-  (with-checked-simple-vector ((string string) (start start) (end end))
+  (with-checked-simple-vector ((string (coerce string 'babel:unicode-string))
+                               (start start) (end end))
     (declare (type simple-string string))
     (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
            (count (funcall (octet-counter mapping) string start end 0))
@@ -251,16 +241,21 @@ buffer along with ARGS." ; fix wording, sigh
 
 (define-foreign-type foreign-string-type ()
   (;; CFFI encoding of this string.
-   (encoding :initarg :encoding :reader encoding))
-  (:actual-type :pointer))
+   (encoding :initform nil :initarg :encoding :reader encoding)
+   ;; Should we free after translating from foreign?
+   (free-from-foreign :initarg :free-from-foreign
+                      :reader fst-free-from-foreign-p
+                      :initform nil :type boolean)
+   ;; Should we free after translating to foreign?
+   (free-to-foreign :initarg :free-to-foreign
+                    :reader fst-free-to-foreign-p
+                    :initform t :type boolean))
+  (:actual-type :pointer)
+  (:simple-parser :string))
 
 ;;; describe me
 (defun fst-encoding (type)
   (or (encoding type) *default-foreign-encoding*))
-
-;;; TODO: check if encoding is valid now.
-(define-parse-method :string (&key encoding)
-  (make-instance 'foreign-string-type :encoding encoding))
 
 ;;; Display the encoding when printing a FOREIGN-STRING-TYPE instance.
 (defmethod print-object ((type foreign-string-type) stream)
@@ -268,18 +263,23 @@ buffer along with ARGS." ; fix wording, sigh
     (format stream "~S" (fst-encoding type))))
 
 (defmethod translate-to-foreign ((s string) (type foreign-string-type))
-  (values (foreign-string-alloc s :encoding (fst-encoding type)) t))
+  (values (foreign-string-alloc s :encoding (fst-encoding type))
+          (fst-free-to-foreign-p type)))
 
 (defmethod translate-to-foreign (obj (type foreign-string-type))
   (cond
     ((pointerp obj)
      (values obj nil))
+    ;; FIXME: we used to support UB8 vectors but not anymore.
     ;; ((typep obj '(array (unsigned-byte 8)))
     ;;  (values (foreign-string-alloc obj) t))
     (t (error "~A is not a Lisp string or pointer." obj))))
 
 (defmethod translate-from-foreign (ptr (type foreign-string-type))
-  (values (foreign-string-to-lisp ptr :encoding (fst-encoding type))))
+  (unwind-protect
+       (values (foreign-string-to-lisp ptr :encoding (fst-encoding type)))
+    (when (fst-free-from-foreign-p type)
+      (foreign-free ptr))))
 
 (defmethod free-translated-object (ptr (type foreign-string-type) free-p)
   (when free-p
@@ -288,10 +288,8 @@ buffer along with ARGS." ; fix wording, sigh
 ;;;# STRING+PTR
 
 (define-foreign-type foreign-string+ptr-type (foreign-string-type)
-  ())
-
-(define-parse-method :string+ptr (&key encoding)
-  (make-instance 'foreign-string+ptr-type :encoding encoding))
+  ()
+  (:simple-parser :string+ptr))
 
 (defmethod translate-from-foreign (value (type foreign-string+ptr-type))
   (list (call-next-method) value))
