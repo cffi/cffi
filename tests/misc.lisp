@@ -127,3 +127,8 @@
       (load-test-libraries))
   t t nil t nil nil)
 ||#
+
+(deftest library.error.1
+    (handler-case (load-foreign-library "libdoesnotexistimsure")
+      (load-foreign-library-error () 'error))
+  error)
