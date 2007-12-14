@@ -64,10 +64,10 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
         '(;; OS/CPU features.
-          #+darwinppc-target  cffi-features:darwin
-          #+unix              cffi-features:unix
-          #+ppc32-target      cffi-features:ppc32
-          #+x8664-target      cffi-features:x86-64
+          #+darwin-target cffi-features:darwin
+          #+unix          cffi-features:unix
+          #+ppc32-target  cffi-features:ppc32
+          #+x8664-target  cffi-features:x86-64
           ;; Misfeatures.
           cffi-features:flat-namespace
           )))
