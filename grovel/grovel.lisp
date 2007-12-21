@@ -312,14 +312,17 @@ error:
                  (do ((forms ())
                       (form (read s nil nil) (read s nil nil)))
                      ((null form) (nreverse forms))
-                   (case (form-kind form)
-                     (in-package
-                      (setf *package* (find-package (second form)))
-                      (push form forms))
-                     (progn
-                       ;; flatten progn forms
-                       (dolist (f (rest form)) (push f forms)))
-                     (t (push form forms))))))
+                   (labels
+                       ((process-form (f)
+                          (case (form-kind f)
+                            (in-package
+                             (setf *package* (find-package (second f)))
+                             (push f forms))
+                            (progn
+                              ;; flatten progn forms
+                              (mapc #'process-form (rest f)))
+                            (t (push f forms)))))
+                     (process-form form)))))
           (let* ((forms (read-forms in))
                  (header-forms (remove-if-not #'header-form-p forms))
                  (body-forms (remove-if #'header-form-p forms)))
