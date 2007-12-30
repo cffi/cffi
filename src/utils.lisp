@@ -30,16 +30,9 @@
 ;;; This package is for CFFI's internal use.  No effort is made to
 ;;; maintain backwards compatibility.  Use at your own risk.
 (defpackage #:cffi-utils
-  (:use #:common-lisp)
+  (:use #:common-lisp #:alexandria)
   (:export #:discard-docstring
-           #:parse-body
-           #:with-unique-names
-           #:once-only
-           #:ensure-list
-           #:make-gensym-list
            #:symbolicate
-           #:let-when
-           #:bif
            #:post-incf
            #:single-bit-p
            #:warn-if-kw-or-belongs-to-cl))
@@ -58,41 +51,11 @@
          (setq ,(car new) (+ ,(car new) ,delta))
          ,setter))))
 
-(defun ensure-list (x)
-  "Make into list if atom."
-  (if (listp x) x (list x)))
-
 (defmacro discard-docstring (body-var &optional force)
   "Discards the first element of the list in body-var if it's a
 string and the only element (or if FORCE is T)."
   `(when (and (stringp (car ,body-var)) (or ,force (cdr ,body-var)))
      (pop ,body-var)))
-
-;;; Parse a body of code, removing an optional documentation string
-;;; and declaration forms.  Returns the actual body, docstring, and
-;;; declarations as three multiple values.
-(defun parse-body (body)
-  (let ((docstring nil)
-        (declarations nil))
-    (when (and (stringp (car body)) (cdr body))
-      (setf docstring (pop body)))
-    (loop while (and (consp (car body)) (eql (caar body) 'cl:declare))
-          do (push (pop body) declarations))
-    (values body docstring (nreverse declarations))))
-
-;;; LET-IF (renamed to BIF) and LET-WHEN taken from KMRCL
-(defmacro let-when ((var test-form) &body body)
-  `(let ((,var ,test-form))
-      (when ,var ,@body)))
-
-(defmacro bif ((var test-form) if-true &optional if-false)
-  `(let ((,var ,test-form))
-      (if ,var ,if-true ,if-false)))
-
-;;; ONCE-ONLY macro taken from PAIP
-(defun starts-with (list x)
-  "Is x a list whose first element is x?"
-  (and (consp list) (eql (first list) x)))
 
 (defun side-effect-free? (exp)
   "Is exp a constant, variable, or function,
@@ -102,48 +65,8 @@ string and the only element (or if FORCE is T)."
       (and (starts-with exp 'the)
            (side-effect-free? (third exp)))))
 
-(defmacro once-only (variables &rest body)
-  "Returns the code built by BODY.  If any of VARIABLES
-  might have side effects, they are evaluated once and stored
-  in temporary variables that are then passed to BODY."
-  (assert (every #'symbolp variables))
-  (let ((temps nil))
-    (dotimes (i (length variables)) (push (gensym "ONCE") temps))
-    `(if (every #'side-effect-free? (list .,variables))
-         (progn .,body)
-         (list 'let
-               ,`(list ,@(mapcar #'(lambda (tmp var)
-                                     `(list ',tmp ,var))
-                                 temps variables))
-               (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
-                             variables temps)
-                 .,body)))))
-
 ;;;; The following utils were taken from SBCL's
 ;;;; src/code/*-extensions.lisp
-
-;;; Automate an idiom often found in macros:
-;;;   (LET ((FOO (GENSYM "FOO"))
-;;;         (MAX-INDEX (GENSYM "MAX-INDEX-")))
-;;;     ...)
-;;;
-;;; "Good notation eliminates thought." -- Eric Siggia
-;;;
-;;; Incidentally, this is essentially the same operator which
-;;; _On Lisp_ calls WITH-GENSYMS.
-(defmacro with-unique-names (symbols &body body)
-  `(let ,(mapcar (lambda (symbol)
-                   (let* ((symbol-name (symbol-name symbol))
-                          (stem (if (every #'alpha-char-p symbol-name)
-                                    symbol-name
-                                    (concatenate 'string symbol-name "-"))))
-                     `(,symbol (gensym ,stem))))
-                 symbols)
-     ,@body))
-
-(defun make-gensym-list (n)
-  "Return a list of N gensyms."
-  (loop repeat n collect (gensym)))
 
 (defun symbolicate (&rest things)
   "Concatenate together the names of some strings and symbols,
@@ -200,21 +123,3 @@ set twos-complement bit."
 ;          `(if ,test
 ;               (let ((it ,test)) (declare (ignorable it)),@body)
 ;               (acond ,@rest))))))
-
-;;; copied from alexandria
-#-(and)
-(defun remove-from-plist (plist &rest keys)
-  "Returns a propery-list with same keys and values as PLIST, except that keys
-in the list designated by KEYS and values corresponding to them are removed.
-The returned property-list may share structure with the PLIST, but PLIST is
-not destructively modified."
-  (declare (optimize (speed 3)))
-  ;; FIXME: unoptimal: (sans '(:a 1 :b 2) :a) has no need to copy the
-  ;; tail.
-  (loop for cell = plist :then (cddr cell)
-        for key = (car cell)
-        while cell
-        unless (member key keys :test #'eq)
-        collect key
-        and do (assert (cdr cell) () "Not a proper plist")
-        and collect (cadr cell)))

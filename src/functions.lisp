@@ -283,9 +283,8 @@ arguments and does type promotion for the variadic arguments."
     (list :calling-convention cconv)))
 
 (defmacro defcallback (name-and-options return-type args &body body)
-  (multiple-value-bind (body docstring declarations)
-      (parse-body body)
-    (declare (ignore docstring))
+  (multiple-value-bind (body declarations)
+      (parse-body body :documentation t)
     (let ((arg-names (mapcar #'car args))
           (arg-types (mapcar #'cadr args))
           (name (car (ensure-list name-and-options)))

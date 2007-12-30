@@ -28,7 +28,7 @@
 (asdf:defsystem cffi-grovel
   :description "The CFFI Groveller"
   :author "Dan Knapp <dankna@accela.net>"
-  :depends-on (cffi)
+  :depends-on (cffi alexandria)
   :licence "MIT"
   :components
   ((:module grovel

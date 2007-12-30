@@ -561,7 +561,7 @@ The foreign array must be freed with foreign-array-free."
   (discard-docstring fields)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ;; n-f-s-d could do with this with mop:ensure-class.
-     ,(let-when (class (getf (cdr (ensure-list name-and-options)) :class))
+     ,(when-let (class (getf (cdr (ensure-list name-and-options)) :class))
         `(defclass ,class (foreign-struct-type) ()))
      (notice-foreign-struct-definition ',name-and-options ',fields)))
 

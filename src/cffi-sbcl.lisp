@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:sb-alien #:cffi-utils)
+  (:use #:common-lisp #:sb-alien #:cffi-utils #:alexandria)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -341,5 +341,5 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
-  (let-when (address (sb-sys:find-foreign-symbol-address name))
+  (when-let (address (sb-sys:find-foreign-symbol-address name))
     (sb-sys:int-sap address)))

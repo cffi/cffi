@@ -193,18 +193,18 @@ ourselves."
   (handler-case
       (%load-foreign-library name path)
     (error (error)
-      (bif (file (find-file path *foreign-library-directories*))
-           (handler-case
-               (%load-foreign-library name (native-namestring file))
-             (simple-error (error)
-               (report-simple-error name error)))
-           (report-simple-error name error)))))
+      (if-let (file (find-file path *foreign-library-directories*))
+              (handler-case
+                  (%load-foreign-library name (native-namestring file))
+                (simple-error (error)
+                  (report-simple-error name error)))
+              (report-simple-error name error)))))
 
 (defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
   (dolist (lib library-list)
-    (let-when (handle (ignore-errors (load-foreign-library-helper name lib)))
+    (when-let (handle (ignore-errors (load-foreign-library-helper name lib)))
       (return-from try-foreign-library-alternatives handle)))
   ;; Perhaps we should show the error messages we got for each
   ;; alternative if we can figure out a nice way to do that.

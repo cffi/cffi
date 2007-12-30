@@ -29,7 +29,7 @@
 ;;;
 
 (defpackage #:cffi-grovel
-  (:use #:common-lisp #:cffi-utils)
+  (:use #:common-lisp #:cffi-utils #:alexandria)
   (:import-from #:cffi-sys #:native-namestring)
   (:export
    #:grovel-file
