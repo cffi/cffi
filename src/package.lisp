@@ -50,7 +50,7 @@
    #:pointer-address
 
    ;; Shareable vectors.
-   #:make-shareable-vector
+   #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
 
    ;; Foreign string operations.
