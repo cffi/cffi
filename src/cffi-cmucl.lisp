@@ -350,14 +350,14 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %load-foreign-library (name path)
   "Load the foreign library NAME."
   ;; On some platforms SYS::LOAD-OBJECT-FILE signals an error when
-  ;; loading fails, but on others(Linux for instance) it returns
+  ;; loading fails, but on others (Linux for instance) it returns
   ;; two values: NIL and an error string.
   (declare (ignore name))
   (multiple-value-bind (ret message)
       (sys::load-object-file path)
     (cond
       ;; Loading failed.
-      ((stringp message) nil)
+      ((stringp message) (error "~A" message))
       ;; The library was already loaded.
       ((null ret) (cdr (rassoc path sys::*global-table* :test #'string=)))
       ;; The library has been loaded, but since SYS::LOAD-OBJECT-FILE
