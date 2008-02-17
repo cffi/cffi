@@ -237,7 +237,7 @@ WITH-POINTER-TO-VECTOR-DATA."
          ;; copy-in
          (loop for i below ,size-var do
                (%mem-set (aref ,vector-var i) ,ptr-var :unsigned-char i))
-         (prog1 (progn ,@body)
+         (unwind-protect (progn ,@body)
            ;; copy-out
            (loop for i below ,size-var do
                  (setf (aref ,vector-var i)

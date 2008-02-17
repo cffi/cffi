@@ -132,3 +132,20 @@
     (handler-case (load-foreign-library "libdoesnotexistimsure")
       (load-foreign-library-error () 'error))
   error)
+
+;;;# Shareable Byte Vector Tests
+
+(deftest shareable-vector.1
+    (let ((vector (cffi-sys::make-shareable-byte-vector 5)))
+      (cffi::with-pointer-to-vector-data (pointer vector)
+        (strcpy pointer "xpto"))
+      vector)
+  #(120 112 116 111 0))
+
+(deftest shareable-vector.2
+    (block nil
+      (let ((vector (cffi-sys::make-shareable-byte-vector 5)))
+        (cffi::with-pointer-to-vector-data (pointer vector)
+          (strcpy pointer "xpto")
+          (return vector))))
+  #(120 112 116 111 0))
