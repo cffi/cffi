@@ -572,12 +572,15 @@ output to *trace-output*.  Returns the shell's exit code."
 
 ;;; Some undocumented UFFI operators...
 
-(defmacro convert-from-foreign-string (obj &key (length most-positive-fixnum)
-                                       (locale :default)
+(defmacro convert-from-foreign-string (obj &key length (locale :default)
                                        (null-terminated-p t))
-  (declare (ignore locale))
+  ;; in effect, (eq NULL-TERMINATED-P (null LENGTH)). Hopefully,
+  ;; that's compatible with the intended semantics, which are
+  ;; undocumented.  If that's not the case, we can implement
+  ;; NULL-TERMINATED-P in CFFI:FOREIGN-STRING-TO-LISP.
+  (declare (ignore locale null-terminated-p))
   (let ((ret (gensym)))
-    `(let ((,ret (cffi:foreign-string-to-lisp ,obj ,length ,null-terminated-p)))
+    `(let ((,ret (cffi:foreign-string-to-lisp ,obj :count ,length)))
        (if (equal ,ret "")
            nil
            ,ret))))
