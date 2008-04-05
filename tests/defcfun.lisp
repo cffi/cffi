@@ -156,6 +156,9 @@
   (control :string)
   &rest)
 
+;;; CLISP's compiler discards macro docstrings.
+#+clisp (pushnew 'defcfun.varargs.docstrings rt::*expected-failures*)
+
 (deftest defcfun.varargs.docstrings
     (documentation 'sprintf 'function)
   "sprintf docstring")
