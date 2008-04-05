@@ -301,8 +301,10 @@ error:
   ;; found.
   (intern (symbol-name (car form)) '#:cffi-grovel))
 
+(defvar *header-forms* '(c include define flag typedef))
+
 (defun header-form-p (form)
-  (member (form-kind form) '(include define flag typedef)))
+  (member (form-kind form) *header-forms*))
 
 (defun generate-c-file (input-file output-defaults)
   (let ((c-file (make-pathname :type "c" :defaults output-defaults)))
@@ -393,6 +395,9 @@ error:
        (declare (ignorable out))
        (destructuring-bind ,lambda-list ,args
          ,@body))))
+
+(define-grovel-syntax c (body)
+  (format out "~%~A~%" body))
 
 (define-grovel-syntax include (&rest includes)
   (format out "~{#include <~A>~%~}" includes))
