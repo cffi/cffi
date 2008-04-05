@@ -33,6 +33,7 @@
   (t (:default "libtest")))
 
 (define-foreign-library libtest2
+  (:unix (:or "libtest2.so" "libtest2_32.so"))
   (:darwin "libtest2.so")
   (t (:default "libtest2")))
 

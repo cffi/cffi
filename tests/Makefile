@@ -62,9 +62,9 @@ endif
 
 SHLIBS = libtest$(SHLIB_EXT) libtest2$(SHLIB_EXT)
 
-#ifeq ($(ARCH), x86_64)
-#SHLIBS += libtest32$(SHLIB_EXT)
-#endif
+ifeq ($(ARCH), x86_64)
+SHLIBS += libtest32$(SHLIB_EXT) libtest2_32$(SHLIB_EXT)
+endif
 
 shlibs: $(SHLIBS)
 
@@ -74,10 +74,13 @@ libtest$(SHLIB_EXT): libtest.c
 libtest2$(SHLIB_EXT): libtest2.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
-#ifeq ($(ARCH), x86_64)
-#libtest32$(SHLIB_EXT): libtest.c
-#	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
-#endif
+ifeq ($(ARCH), x86_64)
+libtest32$(SHLIB_EXT): libtest.c
+	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+
+libtest2_32$(SHLIB_EXT): libtest2.c
+	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+endif
 
 clean:
 	rm -f *.so *.dylib *.dll *.bundle
