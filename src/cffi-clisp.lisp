@@ -276,6 +276,33 @@ takes care of converting the calling convention names."
     `(,(find-cffi-symbol '#:foreign-library-handle)
        (,(find-cffi-symbol '#:get-foreign-library) ',name))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  ;; version 2.40 (CVS 2006-09-03, to be more precise) added a
+  ;; PROPERTIES argument to FFI::FOREIGN-LIBRARY-FUNCTION.
+  (defun post-2.40-ffi-interface-p ()
+    (let ((f-l-f (find-symbol (string '#:foreign-library-function) '#:ffi)))
+      (if (and f-l-f (= (length (ext:arglist f-l-f)) 5))
+          '(:and)
+          '(:or))))
+  ;; FFI::FOREIGN-LIBRARY-FUNCTION and FFI::FOREIGN-LIBRARY-VARIABLE
+  ;; were deprecated in 2.41 and removed in 2.45.
+  (defun post-2.45-ffi-interface-p ()
+    (if (find-symbol (string '#:foreign-library-function) '#:ffi)
+        '(:or)
+        '(:and))))
+
+#+#.(cffi-sys::post-2.45-ffi-interface-p)
+(defun %foreign-funcall-aux (name type library)
+  `(ffi::find-foreign-function ,name ,type nil ,library nil nil))
+
+#-#.(cffi-sys::post-2.45-ffi-interface-p)
+(defun %foreign-funcall-aux (name type library)
+  `(ffi::foreign-library-function
+    ,name ,library nil
+    #+#.(cffi-sys::post-2.40-ffi-interface-p)
+    nil
+    ,type))
+
 (defmacro %foreign-funcall (name args &key library calling-convention)
   "Invoke a foreign function called NAME, taking pairs of
 foreign-type/value pairs from ARGS.  If a single element is left
@@ -286,21 +313,13 @@ the function call."
     `(funcall
       (load-time-value
        (handler-case
-           (ffi::foreign-library-function
-            ,name
-            ,(if (eq library :default)
+           ,(%foreign-funcall-aux
+             name
+             `(ffi:parse-c-type
+               ',(c-function-type types rettype calling-convention))
+             (if (eq library :default)
                  :default
-                 (library-handle-form library))
-            nil
-            ;; As of version 2.40 (CVS 2006-09-03, to be more precise),
-            ;; FFI::FOREIGN-LIBRARY-FUNCTION takes an additional
-            ;; 'PROPERTIES' argument.
-            #+#.(cl:if (cl:= (cl:length (ext:arglist
-                                         'ffi::foreign-library-function)) 5)
-                       '(and) '(or))
-            nil
-            (ffi:parse-c-type ',(c-function-type
-                                 types rettype calling-convention)))
+                 (library-handle-form library)))
          (error (err)
            (warn "~A" err))))
       ,@fargs)))
@@ -383,6 +402,9 @@ the function call."
 (defun %load-foreign-library (name path)
   "Load a foreign library from PATH."
   (declare (ignore name))
+  #+#.(cffi-sys::post-2.45-ffi-interface-p)
+  (ffi:open-foreign-library path)
+  #-#.(cffi-sys::post-2.45-ffi-interface-p)
   (ffi::foreign-library path))
 
 (defun %close-foreign-library (handle)
@@ -398,5 +420,7 @@ the function call."
   "Returns a pointer to a foreign symbol NAME."
   (prog1 (ignore-errors
            (ffi:foreign-address
-            (ffi::foreign-library-variable
-             name library nil nil)))))
+            #+#.(cffi-sys::post-2.45-ffi-interface-p)
+            (ffi::find-foreign-variable name nil library nil nil)
+            #-#.(cffi-sys::post-2.45-ffi-interface-p)
+            (ffi::foreign-library-variable name library nil nil)))))
