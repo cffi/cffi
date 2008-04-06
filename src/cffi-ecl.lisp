@@ -197,24 +197,25 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun produce-function-pointer-call (pointer types values return-type)
   #-dffi
   (if (stringp pointer)
-;;       `(ffi:c-inline ,values ,types ,return-type
-;;         ,(format nil "~A(~A)" pointer
-;;                  (subseq +ecl-inline-codes+ 0 (max 0 (1- (* (length values) 3)))))
-;;         :one-liner t :side-effects t)
-      (produce-function-pointer-call `(foreign-symbol-pointer ,pointer) types values return-type)
-      `(ffi:c-inline ,(list* pointer values) ,(list* :pointer-void types) ,return-type
+      (produce-function-pointer-call
+       `(%foreign-symbol-pointer ,pointer nil) types values return-type)
+      `(ffi:c-inline
+        ,(list* pointer values)
+        ,(list* :pointer-void types) ,return-type
         ,(with-output-to-string (s)
-          (let ((types (mapcar #'ecl-type->c-type types)))
-            ;; On AMD64, the following code only works with the extra argument ",..."
-            ;; If this is not present, functions like sprintf do not work
-            (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
-                    (ecl-type->c-type return-type) types
-                    (subseq +ecl-inline-codes+ 3 (max 3 (+ 2 (* (length values) 3)))))))
+           (let ((types (mapcar #'ecl-type->c-type types)))
+             ;; On AMD64, the following code only works with the extra
+             ;; argument ",...". If this is not present, functions
+             ;; like sprintf do not work
+             (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
+                     (ecl-type->c-type return-type) types
+                     (subseq +ecl-inline-codes+ 3
+                             (max 3 (+ 2 (* (length values) 3)))))))
         :one-liner t :side-effects t))
   #+dffi
   (progn
     (when (stringp pointer)
-      (setf pointer `(foreign-symbol-pointer ,pointer)))
+      (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
     `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values))))
 
 
@@ -295,12 +296,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Foreign Globals
 
-(defun convert-external-name (name)
-  "Add an underscore to NAME if necessary for the ABI."
-  name)
-
 (defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
-  (si:find-foreign-symbol (convert-external-name name)
-                          :default :pointer-void 0))
+  (si:find-foreign-symbol name :default :pointer-void 0))
