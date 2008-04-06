@@ -655,14 +655,20 @@ newly allocated memory."
         (setf (mem-aref ptr :pointer count) (null-pointer)))
       ptr)))
 
-;;; Stuff we could optimize here:
-;;;   1. (and (constantp type) (constantp count)) => calculate size
-;;;   2. (constantp type) => use the translators' expanders
-#-(and)
-(define-compiler-macro foreign-alloc
-    (&whole form type &key (initial-element nil initial-element-p)
-     (initial-contents nil initial-contents-p) (count 1 count-p))
-  )
+;;; Simple compiler macro that kicks in when TYPE is constant and only
+;;; the COUNT argument is passed.  (Note: hard-coding the type's size
+;;; into the fasl will likely break CLISP fasl cross-platform
+;;; compatibilty.)
+(define-compiler-macro foreign-alloc (&whole form type &rest args
+                                      &key (count 1 count-p) &allow-other-keys)
+  (if (or (and count-p (<= (length args) 2)) (null args))
+      (cond
+        ((and (constantp type) (constantp count))
+         `(%foreign-alloc ,(* (eval count) (foreign-type-size (eval type)))))
+        ((constantp type)
+         `(%foreign-alloc (* ,count ,(foreign-type-size (eval type)))))
+        (t form))
+      form))
 
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
