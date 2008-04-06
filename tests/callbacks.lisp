@@ -261,8 +261,9 @@
 
 (defcfun "call_sum_127_no_ll" :long (cb :pointer))
 
-;;; CMUCL and ECL choke on this one.
-#-(:or :ecl :cmu #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
+;;; CMUCL, ECL and CCL choke on this one.
+#-(or ecl cmu clozure
+      #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (defcallback sum-127-no-ll :long
     ((a1 :unsigned-long) (a2 :pointer) (a3 :long) (a4 :double)
      (a5 :unsigned-long) (a6 :float) (a7 :float) (a8 :int) (a9 :unsigned-int)
@@ -328,13 +329,13 @@
 
 ;;; (cb-test)
 
-#-(:or cffi-features:no-long-long
-       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
+#-(or cffi-features:no-long-long
+      #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(or) '(and)))
 (progn
   (defcfun "call_sum_127" :long-long (cb :pointer))
 
-  ;;; CMUCL and ECL choke on this one.
-  #-(or cmu ecl)
+  ;;; CMUCL, ECL and CCL choke on this one.
+  #-(or cmu ecl clozure)
   (defcallback sum-127 :long-long
       ((a1 :short) (a2 :char) (a3 :pointer) (a4 :float) (a5 :long) (a6 :double)
        (a7 :unsigned-long-long) (a8 :unsigned-short) (a9 :unsigned-char)
