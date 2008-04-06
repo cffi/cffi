@@ -101,6 +101,11 @@
 (defvar *foreign-libraries* (make-hash-table :test 'eq)
   "Hashtable of defined libraries.")
 
+(defclass foreign-library ()
+  ((spec :initarg :spec)
+   (options :initform nil :initarg :options)
+   (handle :initarg :handle :accessor foreign-library-handle)))
+
 (defun get-foreign-library (lib)
   "Look up a library by NAME, signalling an error if not found."
   (if (typep lib 'foreign-library)
@@ -110,11 +115,6 @@
 
 (defun (setf get-foreign-library) (value name)
   (setf (gethash name *foreign-libraries*) value))
-
-(defclass foreign-library ()
-  ((spec :initarg :spec)
-   (options :initform nil :initarg :options)
-   (handle :initarg :handle :accessor foreign-library-handle)))
 
 (defun %foreign-library-spec (lib)
   (assoc-if #'cffi-feature-p (slot-value lib 'spec)))
