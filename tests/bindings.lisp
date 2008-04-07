@@ -40,6 +40,9 @@
 (define-foreign-library libc
   (:windows "msvcrt.dll"))
 
+(define-foreign-library libm
+  (t (:default "libm")))
+
 ;;; Return the directory containing the source when compiling or
 ;;; loading this file.  We don't use *LOAD-TRUENAME* because the fasl
 ;;; file may be in a different directory than the source with certain
@@ -53,7 +56,8 @@
   (let ((*foreign-library-directories* (list (load-directory))))
     (load-foreign-library 'libtest)
     (load-foreign-library 'libtest2)
-    (load-foreign-library 'libc)))
+    (load-foreign-library 'libc)
+    #+lispworks (load-foreign-library 'libm)))
 
 #-(:and :ecl (:not :dffi))
 (load-test-libraries)
