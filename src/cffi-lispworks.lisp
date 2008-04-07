@@ -64,7 +64,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(cffi-features:no-long-long)))
+        '(#-lispworks-64bit cffi-features:no-long-long)))
 
 ;;;# Symbol Case
 
@@ -147,27 +147,32 @@ be stack allocated if supported by the implementation."
 (defun convert-foreign-type (cffi-type)
   "Convert a CFFI type keyword to an FLI type."
   (ecase cffi-type
-    (:char            :byte)
-    (:unsigned-char   '(:unsigned :byte))
-    (:short           :short)
-    (:unsigned-short  '(:unsigned :short))
-    (:int             :int)
-    (:unsigned-int    '(:unsigned :int))
-    (:long            :long)
-    (:unsigned-long   '(:unsigned :long))
-    (:float           :float)
-    (:double          :double)
-    (:pointer         :pointer)
-    (:void            :void)))
+    (:char               :byte)
+    (:unsigned-char      '(:unsigned :byte))
+    (:short              :short)
+    (:unsigned-short     '(:unsigned :short))
+    (:int                :int)
+    (:unsigned-int       '(:unsigned :int))
+    (:long               :long)
+    (:unsigned-long      '(:unsigned :long))
+    #+lispworks-64bit
+    (:long-long          '(:long :long))
+    #+lispworks-64bit
+    (:unsigned-long-long '(:unsigned :long :long))
+    (:float              :float)
+    (:double             :double)
+    (:pointer            :pointer)
+    (:void               :void)))
 
 ;;; Convert a CFFI type keyword to a symbol suitable for passing to
 ;;; FLI:FOREIGN-TYPED-AREF.
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (defun convert-foreign-typed-aref-type (cffi-type)
   (ecase cffi-type
-    ((:char :short :int :long)
+    ((:char :short :int :long #+lispworks-64bit :long-long)
      `(signed-byte ,(* 8 (%foreign-type-size cffi-type))))
-    ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long)
+    ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long
+      #+lispworks-64bit :unsigned-long-long)
      `(unsigned-byte ,(* 8 (%foreign-type-size cffi-type))))
     (:float 'single-float)
     (:double 'double-float)))
@@ -178,13 +183,20 @@ be stack allocated if supported by the implementation."
     (setf ptr (inc-pointer ptr offset)))
   (fli:dereference ptr :type (convert-foreign-type type)))
 
+;; Lispworks 5.0 on 64-bit platforms doesn't have [u]int64 support in
+;; FOREIGN-TYPED-AREF.  That was implemented in 5.1.
+#+(and lispworks-64bit lispworks5.0)
+(defun 64-bit-type-p (type)
+  (member type '(:long :unsigned-long :long-long :unsigned-long-long)))
+
 ;;; In LispWorks versions where FLI:FOREIGN-TYPED-AREF is fbound, use
 ;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-REF.
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
   (if (constantp type)
       (let ((type (eval type)))
-        (if (eql type :pointer)
+        (if (or #+(and lispworks-64bit lispworks5.0) (64-bit-type-p type)
+                (eql type :pointer))
             (let ((fli-type (convert-foreign-type type))
                   (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
               `(fli:dereference ,ptr-form :type ',fli-type))
@@ -217,7 +229,8 @@ be stack allocated if supported by the implementation."
   (if (constantp type)
       (once-only (val)
         (let ((type (eval type)))
-          (if (eql type :pointer)
+          (if (or #+(and lispworks-64bit lispworks5.0) (64-bit-type-p type)
+                  (eql type :pointer))
               (let ((fli-type (convert-foreign-type type))
                     (ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off))))
                 `(setf (fli:dereference ,ptr-form :type ',fli-type) ,val))
