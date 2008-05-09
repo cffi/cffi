@@ -79,7 +79,7 @@
                     (mem-ref ptr :unsigned-long (+ offset 4)))
                  #+little-endian
                  (+ (mem-ref ptr :unsigned-long offset)
-                    (ash (mem-ref ptr :unsigned-long (+ offset 4)) -32))))
+                    (ash (mem-ref ptr :unsigned-long (+ offset 4)) 32))))
       (if (and (eq type :long-long) (logbitp 63 value))
           (lognot (logxor value #xFFFFFFFFFFFFFFFF))
           value)))
