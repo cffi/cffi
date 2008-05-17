@@ -35,9 +35,17 @@
       (translate-logical-pathname thing)
       (pathname thing)))
 
+(defclass cc-flags-mixin ()
+  ((cc-flags :initform nil :accessor cc-flags-of :initarg :cc-flags)))
+
+(defmethod asdf:perform :around ((op asdf:compile-op) (file cc-flags-mixin))
+  (let ((*cc-flags* (append (ensure-list (cc-flags-of file))
+                            *cc-flags*)))
+    (call-next-method)))
+
 ;;;# ASDF component: GROVEL-FILE
 
-(defclass grovel-file (asdf:cl-source-file)
+(defclass grovel-file (asdf:cl-source-file cc-flags-mixin)
   ()
   (:documentation
    "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
@@ -57,7 +65,7 @@ loaded."))
 
 ;;;# ASDF component: WRAPPER-FILE
 
-(defclass wrapper-file (asdf:cl-source-file)
+(defclass wrapper-file (asdf:cl-source-file cc-flags-mixin)
   ()
   (:documentation
    "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP

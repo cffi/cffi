@@ -136,7 +136,7 @@
   #+windows "c:/msys/1.0/bin/gcc.exe"
   #-windows "gcc")
 
-(defvar *cc-flags*)
+(defparameter *cc-flags* (list))
 
 ;;; The header of the intermediate C file.
 (defparameter *header*
@@ -380,8 +380,7 @@ error:
                    *platform-library-flags*))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
-  (let* ((*cc-flags* nil)
-         (c-file (generate-c-file input-file output-defaults))
+  (let* ((c-file (generate-c-file input-file output-defaults))
          (exe-file (exe-filename c-file))
          (lisp-file (tmp-lisp-filename c-file)))
     (cc-compile-and-link c-file exe-file)
@@ -744,8 +743,7 @@ error:
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given grovel file.
 (defun process-wrapper-file (input-file &optional (output-defaults input-file))
-  (let ((*cc-flags* nil)
-        (*package* *package*)
+  (let ((*package* *package*)
         (lib-file (lib-filename output-defaults)))
     (multiple-value-bind (c-file lisp-forms)
         (generate-c-lib-file input-file output-defaults)
