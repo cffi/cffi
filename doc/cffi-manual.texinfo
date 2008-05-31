@@ -4525,7 +4525,7 @@ CFFI> (let ((*default-foreign-encoding* :utf-8))
 
 @subheading See also
 
-@seealso{Other types} (@code{:string} type) @*
+@seealso{Other Types} (@code{:string} type) @*
 @seealso{foreign-string-alloc} @*
 @seealso{foreign-string-to-lisp} @*
 @seealso{lisp-string-to-foreign} @*
@@ -6171,6 +6171,7 @@ The exact meanings of the features follow.  Though you will usually
 refer to these symbols as keywords, @cffi{} internally views them in
 the package @code{cffi-features}.
 
+@table @var
 @item flat-namespace
 This Lisp has a flat namespace for foreign symbols meaning that you
 won't be able to load two different libraries with homograph functions
