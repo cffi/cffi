@@ -156,7 +156,8 @@
     (2 (%foreign-string-length pointer offset :uint16 2))
     (4 (%foreign-string-length pointer offset :uint32 4))))
 
-(defun foreign-string-to-lisp (pointer &key (offset 0) count max-chars
+(defun foreign-string-to-lisp (pointer &key (offset 0) count
+                               (max-chars (1- array-total-size-limit))
                                (encoding *default-foreign-encoding*))
   "Copy at most COUNT bytes from POINTER plus OFFSET encoded in
 ENCODING into a Lisp string and return it.  If POINTER is a null
@@ -166,11 +167,10 @@ pointer, NIL is returned."
                      (foreign-string-length
                       pointer :encoding encoding :offset offset)))
           (mapping (lookup-mapping *foreign-string-mappings* encoding)))
-      (when max-chars
-        (assert (plusp max-chars)))
+      (assert (plusp max-chars))
       (multiple-value-bind (size new-end)
-          (funcall (code-point-counter mapping) pointer offset (+ offset count)
-                   (or max-chars 0))
+          (funcall (code-point-counter mapping)
+                   pointer offset (+ offset count) max-chars)
         (let ((string (make-string size)))
           (funcall (decoder mapping) pointer offset new-end string 0)
           (values string (- new-end offset)))))))
