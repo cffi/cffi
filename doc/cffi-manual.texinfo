@@ -83,6 +83,27 @@
 @alias lispcmt = asis
 @end ifclear
 
+@c My copy of makeinfo is not generating any HTML for @result{} for
+@c some odd reason. (It certainly used to...)
+@ifhtml
+@macro result
+=>
+@end macro
+@end ifhtml
+
+@c Similar macro to @result. Its purpose is to work around the fact
+@c that &rArr; does not work properly inside @lisp.
+@ifhtml
+@macro res
+@html
+&rArr;
+@end html
+@end macro
+@end ifhtml
+
+@ifnothtml
+@alias res = result
+@end ifnothtml
 
 @c ============================= Macros =============================
 
@@ -182,11 +203,12 @@ Foreign Types
 * foreign-type-alignment::      Returns the alignment of a foreign type.
 * foreign-type-size::           Returns the size of a foreign type.
 * free-converted-object::       Outside interface to typed object deallocators.
-* free-translated-object::      Free a type translated foreign object.
-* translate-from-foreign::      Translate a foreign object to a Lisp object.
-* translate-to-foreign::        Translate a Lisp object to a foreign object.
+* free-translated-object::      Defines how to free a oreign object.
+* translate-from-foreign::      Defines a foreign-to-Lisp object translation.
+* translate-to-foreign::        Defines a Lisp-to-foreign object translation.
 * with-foreign-object::         Allocates a foreign object with dynamic extent.
-* with-foreign-slots::          Access the slots of a foreign structure.
+@c * with-foreign-objects::        Plural form of @code{with-foreign-object}.
+* with-foreign-slots::          Accesses the slots of a foreign structure.
 
 Pointers
 
@@ -213,6 +235,7 @@ Strings
 * foreign-string-to-lisp::      Converts a foreign string to a Lisp string.
 * lisp-string-to-foreign::      Copies a Lisp string into a foreign string.
 * with-foreign-string::         Allocates a foreign string with dynamic extent.
+@c * with-foreign-strings::        Plural form of @code{with-foreign-string}.
 * with-foreign-pointer-as-string::  Similar to CL's with-output-to-string.
 
 Variables
@@ -306,120 +329,76 @@ for performance, use a compiler-macro instead.
 
 @cffi{} supports various free and commercial Lisp implementations:
 Allegro CL, Corman CL, @sc{clisp}, @acronym{CMUCL}, @acronym{ECL},
-LispWorks, Open@acronym{MCL}, @acronym{SBCL} and the Scieneer CL.
+LispWorks, Clozure CL, @acronym{SBCL} and the Scieneer CL.
 
-There are also plans to support Digitool @acronym{MCL}, and @acronym{GCL}.
+In general, you should work with the latest versions of each
+implementation since those will usually be tested against recent
+versions of CFFI more often and might include necessary features or
+bug fixes. Reasonable patches for compatibility with earlier versions
+are welcome nevertheless.
 
+@section Limitations
 
-@section Allegro CL
+Some features are not supported in all implementations.
+@c TODO: describe these features here.
+@c       flat-namespace too
 
-@strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
-
-Version 7.0 is supported. The 8.0 beta is also known to work. Earlier
-versions are untested and unsupported but patches to support them
-are welcome.
-
-@subheading Limitations
+@subheading Allegro CL
 
 @itemize
 @item
-Does not support the @code{:long-long} type.
+Does not support the @code{:long-long} type natively.
+@item
+Unicode support is limited to the Basic Multilingual Plane (16-bit
+code points).
 @end itemize
 
-@section Corman CL
+@section CMUCL
 
-@strong{Tested platforms:} win32/x86.
+@itemize
+@item
+No Unicode support. (8-bit code points)
+@end itemize
 
-Versions prior to 2.51 are untested and unsupported. Also, you will
-need to avoid Corman's buggy @code{COMPILE-FILE} and fasl
-loader. Please follow @uref{http://www.weitz.de/corman-asdf/, these
-instructions} by Edi Weitz to setup ASDF for Corman CL in a way that
-works around these issues.
-
-@subheading Limitations
+@subheading Corman CL
 
 @itemize
 @item
 Does not support @code{foreign-funcall}.
 @end itemize
 
+@subheading @acronym{ECL}
 
-@section @sc{clisp}
-
-@strong{Tested platforms:} linux/x86, linux/ppc, win32/x86, darwin/ppc.
-
-Version is 2.34 or newer is required on win32/x86. For other platforms
-version 2.35 or newer is required.
-
-
-@section @acronym{CMUCL}
-
-@strong{Tested platforms:} linux/x86, darwin/ppc.
-
-Versions prior to 19B are untested. For darwin/ppc, the 2006-02 (19C)
-snapshot or later is recommended.
-
-
-@section @acronym{ECL}
-
-@strong{Tested platforms:} @emph{needs testing...}
-
-As of November 2005, the CVS version of ECL is required. It is
-reported to pass all tests.
-
-@subheading Limitations
 @itemize
-@item
-Does not support the @code{:long-long} type.
-
 @item
 On platforms where ECL's dynamic FFI is not supported (ie. when
 @code{:dffi} is not present in @code{*features*}),
 @code{cffi:load-foreign-library} does not work and you must use ECL's
 own @code{ffi:load-foreign-library} with a constant string argument.
+@item
+Does not support the @code{:long-long} type natively.
+@item
+Unicode support is not enabled by default.
 @end itemize
 
+@subheading Lispworks
 
-@section Lispworks
-
-@strong{Tested platforms:} linux/x86, win32/x86, darwin/ppc.
-
-Versions prior to 4.4 are untested.
-
-@subheading Limitations
 @itemize
 @item
-Does not support the @code{:long-long} type.
+Does not support the @code{:long-long} type natively, except in 64-bit
+platforms.
+@item
+Unicode support is limited to the Basic Multilingual Plane (16-bit
+code points).
 @end itemize
 
-
-@section Open@acronym{MCL}
-
-@strong{Tested platforms:} darwin/ppc, linux/ppc.
-
-Open@acronym{MCL} 1.0 or newer is recommended.
-
-
-@section @acronym{SBCL}
-
-@strong{Tested platforms:} linux/x86, linux/ppc, darwin/ppc.
-
-Version 0.9.6 or newer is recommended.
-
-@subheading Limitations
+@subheading @acronym{SBCL}
 
 @itemize
 @item
 Not all platforms support callbacks.
+
 @end itemize
-
-
-@section Scieneer CL
-
-@strong{Tested platforms:} linux/x86, linux/amd64.
-
-Version 1.2.10 or newer is recommended.  Passes all tests.
-The x86 and AMD64 ports feature long-double support.
 
 
 @c ===================================================================
@@ -667,10 +646,10 @@ Let's pick this apart into appropriate Lisp code:
   (flags :long))
 @end lisp
 
-@impnote{CFFI currently assumes the UNIX viewpoint that there is one C
-symbol namespace, containing all symbols in all loaded objects.  This
-is not so on Windows and Darwin.  The interface may be changed to deal
-with this.}
+@impnote{By default, CFFI assumes the UNIX viewpoint that there is one
+C symbol namespace, containing all symbols in all loaded objects.
+This is not so on Windows and Darwin, but we emulate UNIX's behaviour
+there.  @ref{defcfun} for more details.}
 
 Note the parallels with the original C declaration.  We've defined
 @code{curl-code} as a wrapping type for @code{:int}; right now, it
@@ -1655,9 +1634,8 @@ likely that either code or a good reason for lack of code is already
 present.
 
 @impnote{There are some other things in @cffi{} that might deserve
-tutorial sections, such as define-foreign-type,
-free-translated-object, or structs.  Let us know which ones you care
-about.}
+tutorial sections, such as free-translated-object, or structs.  Let us
+know which ones you care about.}
 
 
 @c ===================================================================
@@ -1742,7 +1720,6 @@ define new types.
 * Foreign Type Translators::    
 * Optimizing Type Translators:: 
 * Foreign Structure Types::     
-* Operations on Types::         
 * Allocating Foreign Objects::  
 
 Dictionary
@@ -1792,6 +1769,13 @@ Dictionary
 These types correspond to the native C integer types according to the
 @acronym{ABI} of the Lisp implementation's host system.
 
+@code{:long-long} and @code{:unsigned-long-long} are not supported
+natively on all implementations. However, they are emulated by
+@code{mem-ref} and @code{mem-set}.
+
+When those types are @strong{not} available, the symbol
+@code{cffi-features:no-long-long} is pushed into @code{*features*}.
+
 @ForeignType{:uchar}
 @ForeignType{:ushort}
 @ForeignType{:uint}
@@ -1803,11 +1787,6 @@ For convenience, the above types are provided as shortcuts for
 @code{unsigned-char}, @code{unsigned-short}, @code{unsigned-int},
 @code{unsigned-long}, @code{long-long} and @code{unsigned-long-long},
 respectively.
-
-@code{:long-long} and @code{:unsigned-long-long} are not supported on
-all implementations. When those types are @strong{not} available, the
-symbol @code{cffi-features:no-long-long} is pushed into
-@code{*features*}.
 
 @ForeignType{:int8}
 @ForeignType{:uint8}
@@ -2229,9 +2208,6 @@ The equivalent @code{defcstruct} form follows:
   (reason :string))
 @end lisp
 
-@cffi{} knows how to align C @code{struct}s, and how to figure in
-padding between struct elements.
-
 Please note that this interface is only for those that must know about
 the values contained in a relevant struct.  If the library you are
 interfacing returns an opaque pointer that needs only be passed to
@@ -2239,10 +2215,7 @@ other C library functions, by all means just use @code{:pointer} or a
 type-safe definition munged together with @code{defctype} and type
 translation.
 
-@node Operations on Types
-@section Operations on Types
-
-@impnote{Which ``operations'' are worth going over here? --stephen}
+@ref{defcstruct} for more details.
 
 @node Allocating Foreign Objects
 @section Allocating Foreign Objects
@@ -2259,7 +2232,7 @@ translation.
 @node convert-from-foreign
 @unnumberedsec convert-from-foreign
 @subheading Syntax
-@Function{convert-from-foreign foreign-value type @result{} value}
+@Function{convert-from-foreign foreign-value type @res{} value}
 
 @subheading Arguments and Values
 
@@ -2301,6 +2274,7 @@ CFFI-USER> (convert-from-foreign * :string)
 
 @subheading See Also
 @seealso{convert-to-foreign} @*
+@seealso{free-converted-object} @*
 @seealso{translate-from-foreign}
 
 
@@ -2310,7 +2284,7 @@ CFFI-USER> (convert-from-foreign * :string)
 @node convert-to-foreign
 @unnumberedsec convert-to-foreign
 @subheading Syntax
-@Function{convert-to-foreign value type @result{} foreign-value, alloc-params}
+@Function{convert-to-foreign value type @res{} foreign-value, alloc-params}
 
 @subheading Arguments and Values
 
@@ -2421,7 +2395,7 @@ which is @code{:int} by default.
   :rdwr                 ;@lispcmt{@dots{}}
   :nonblock
   :append
-  (:creat    #x0200))
+  (:creat  #x0200))
   ;; @lispcmt{etc@dots{}}
 
 CFFI> (foreign-bitfield-symbols 'open-flags #b1101)
@@ -2454,7 +2428,7 @@ CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
 @node defcstruct
 @unnumberedsec defcstruct
 @subheading Syntax
-@Macro{defcstruct name-and-options &body doc-and-slots @result{} name}
+@Macro{defcstruct name-and-options &body doc-and-slots @res{} name}
 
 name-and-options ::= structure-name | (structure-name &key size)
 
@@ -2573,7 +2547,7 @@ CFFI> (foreign-type-size 'foo)
 @node defcunion
 @unnumberedsec defcunion
 @subheading Syntax
-@Macro{defcunion name &body doc-and-slots @result{} name}
+@Macro{defcunion name &body doc-and-slots @res{} name}
 
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count) @}*
 
@@ -2638,11 +2612,9 @@ A documentation string, currently ignored.
 @subheading Description
 The @code{defctype} macro provides a mechanism similar to C's
 @code{typedef} to define new types. The new type inherits
-@var{base-type}'s translators, if any.
-
-There is no way to define translations for types for types defined
-with @code{defctype}.  For that, you should use
-@ref{define-foreign-type}.
+@var{base-type}'s translators, if any. There is no way to define
+translations for types for types defined with @code{defctype}.  For
+that, you should use @ref{define-foreign-type}.
 
 @subheading Examples
 @lisp
@@ -2734,7 +2706,7 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @node define-foreign-type
 @unnumberedsec define-foreign-type
 @subheading Syntax
-@Macro{define-foreign-type class-name supers slots &rest options @result{} class-name}
+@Macro{define-foreign-type class-name supers slots &rest options @res{} class-name}
 
 options ::= (@code{:actual-type} @var{type}) | @
     (@code{:simple-parser} @var{symbol}) | @
@@ -2800,7 +2772,7 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @node define-parse-method
 @unnumberedsec define-parse-method
 @subheading Syntax
-@Macro{define-parse-method name lambda-list &body body @result{} name}
+@Macro{define-parse-method name lambda-list &body body @res{} name}
 
 @subheading Arguments and Values
 
@@ -2892,7 +2864,7 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @node foreign-bitfield-symbols
 @unnumberedsec foreign-bitfield-symbols
 @subheading Syntax
-@Function{foreign-bitfield-symbols type value @result{} symbols}
+@Function{foreign-bitfield-symbols type value @res{} symbols}
 
 @subheading Arguments and Values
 
@@ -2934,7 +2906,7 @@ CFFI> (foreign-bitfield-symbols 'boolean #b101)
 @node foreign-bitfield-value
 @unnumberedsec foreign-bitfield-value
 @subheading Syntax
-@Function{foreign-bitfield-value type symbols @result{} value}
+@Function{foreign-bitfield-value type symbols @res{} value}
 
 @subheading Arguments and Values
 
@@ -2975,7 +2947,7 @@ CFFI> (foreign-bitfield-value 'flags '(flag-a flag-c))
 @node foreign-enum-keyword
 @unnumberedsec foreign-enum-keyword
 @subheading Syntax
-@Function{foreign-enum-keyword type value &key errorp @result{} keyword}
+@Function{foreign-enum-keyword type value &key errorp @res{} keyword}
 
 @subheading Arguments and Values
 
@@ -3023,7 +2995,7 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @node foreign-enum-value
 @unnumberedsec foreign-enum-value
 @subheading Syntax
-@Function{foreign-enum-value type keyword &key errorp @result{} value}
+@Function{foreign-enum-value type keyword &key errorp @res{} value}
 
 @subheading Arguments and Values
 
@@ -3071,7 +3043,7 @@ CFFI> (foreign-enum-value 'boolean :yes)
 @node foreign-slot-names
 @unnumberedsec foreign-slot-names
 @subheading Syntax
-@Function{foreign-slot-names type @result{} names}
+@Function{foreign-slot-names type @res{} names}
 
 @subheading Arguments and Values
 
@@ -3111,7 +3083,7 @@ CFFI> (foreign-slot-names 'timeval)
 @node foreign-slot-offset
 @unnumberedsec foreign-slot-offset
 @subheading Syntax
-@Function{foreign-slot-offset type slot-name @result{} offset}
+@Function{foreign-slot-offset type slot-name @res{} offset}
 
 @subheading Arguments and Values
 
@@ -3155,7 +3127,7 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @node foreign-slot-pointer
 @unnumberedsec foreign-slot-pointer
 @subheading Syntax
-@Function{foreign-slot-pointer ptr type slot-name @result{} pointer}
+@Function{foreign-slot-pointer ptr type slot-name @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -3208,7 +3180,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @node foreign-slot-value
 @unnumberedsec foreign-slot-value
 @subheading Syntax
-@Accessor{foreign-slot-value ptr type slot-name @result{} object}
+@Accessor{foreign-slot-value ptr type slot-name @res{} object}
 
 @subheading Arguments and Values
 
@@ -3272,7 +3244,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @unnumberedsec foreign-type-alignment
 @subheading Syntax
 @c XXX: This is actually a generic function.
-@Function{foreign-type-alignment type @result{} alignment}
+@Function{foreign-type-alignment type @res{} alignment}
 
 @subheading Arguments and Values
 
@@ -3317,7 +3289,7 @@ CFFI> (foreign-type-alignment 'foo)
 @unnumberedsec foreign-type-size
 @subheading Syntax
 @c XXX: this is actually a generic function.
-@Function{foreign-type-size type @result{} size}
+@Function{foreign-type-size type @res{} size}
 
 @subheading Arguments and Values
 
@@ -3453,7 +3425,7 @@ the @code{defctype} macro.
 @unnumberedsec translate-from-foreign
 @subheading Syntax
 @GenericFunction{translate-from-foreign foreign-value type-name @
-                                        @result{} lisp-value}
+                                        @res{} lisp-value}
 
 @subheading Arguments and Values
 
@@ -3499,7 +3471,7 @@ defined for built-in types.
 @unnumberedsec translate-to-foreign
 @subheading Syntax
 @GenericFunction{translate-to-foreign lisp-value type-name @
-                                      @result{} foreign-value, alloc-param}
+                                      @res{} foreign-value, alloc-param}
 
 @subheading Arguments and Values
 
@@ -3719,7 +3691,7 @@ dereference @code{*} in C; use @code{mem-aref} for array indexing and
 @node foreign-free
 @unnumberedsec foreign-free
 @subheading Syntax
-@Function{foreign-free ptr @result{} undefined}
+@Function{foreign-free ptr @res{} undefined}
 
 @subheading Arguments and Values
 
@@ -3754,7 +3726,7 @@ CFFI> (foreign-free *)
 @unnumberedsec foreign-alloc
 @subheading Syntax
 @Function{foreign-alloc type &key initial-element initial-contents (count 1) @
-                        null-terminated-p @result{} pointer}
+                        null-terminated-p @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -3865,7 +3837,7 @@ CFFI> (progn
 @node foreign-symbol-pointer
 @unnumberedsec foreign-symbol-pointer
 @subheading Syntax
-@Function{foreign-symbol-pointer foreign-name &key library @result{} pointer}
+@Function{foreign-symbol-pointer foreign-name &key library @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -3922,7 +3894,7 @@ CFFI> (foreign-symbol-pointer "inexistent symbol")
 @node inc-pointer
 @unnumberedsec inc-pointer
 @subheading Syntax
-@Function{inc-pointer pointer offset @result{} new-pointer}
+@Function{inc-pointer pointer offset @res{} new-pointer}
 
 @subheading Arguments and Values
 
@@ -3964,7 +3936,7 @@ CFFI> (foreign-string-to-lisp *)
 @node incf-pointer
 @unnumberedsec inc-pointer
 @subheading Syntax
-@Macro{incf-pointer place &optional (offset 1) @result{} new-pointer}
+@Macro{incf-pointer place &optional (offset 1) @res{} new-pointer}
 
 @subheading Arguments and Values
 
@@ -4013,7 +3985,7 @@ CFFI> (foreign-string-to-lisp *two-words*)
 @node make-pointer
 @unnumberedsec make-pointer
 @subheading Syntax
-@Function{make-pointer address @result{} ptr}
+@Function{make-pointer address @res{} ptr}
 
 @subheading Arguments and Values
 
@@ -4120,7 +4092,7 @@ CFFI> (with-foreign-object (array :int 10)
 @node mem-ref
 @unnumberedsec mem-ref
 @subheading Syntax
-@Accessor{mem-ref ptr type &optional offset @result{} object}
+@Accessor{mem-ref ptr type &optional offset @res{} object}
 
 @subheading Arguments and Values
 
@@ -4167,7 +4139,7 @@ CFFI> (mem-ref ptr-to-int :int)
 @node null-pointer
 @unnumberedsec null-pointer
 @subheading Syntax
-@Function{null-pointer @result{} pointer}
+@Function{null-pointer @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -4199,7 +4171,7 @@ CFFI> (pointerp *)
 @node null-pointer-p
 @unnumberedsec null-pointer-p
 @subheading Syntax
-@Function{null-pointer-p ptr @result{} boolean}
+@Function{null-pointer-p ptr @res{} boolean}
 
 @subheading Arguments and Values
 
@@ -4244,7 +4216,7 @@ CFFI> (contains-str-p "Popcorns" "salt")
 @node pointerp
 @unnumberedsec pointerp
 @subheading Syntax
-@Function{pointerp ptr @result{} boolean}
+@Function{pointerp ptr @res{} boolean}
 
 @subheading Arguments and Values
 
@@ -4286,7 +4258,7 @@ CFFI> (pointerp "this is not a pointer")
 @node pointer-address
 @unnumberedsec pointer-address
 @subheading Syntax
-@Function{pointer-address ptr @result{} address}
+@Function{pointer-address ptr @res{} address}
 
 @subheading Arguments and Values
 
@@ -4327,7 +4299,7 @@ CFFI> (pointer-address (make-pointer 123))
 @node pointer-eq
 @unnumberedsec pointer-eq
 @subheading Syntax
-@Function{pointer-eq ptr1 ptr2 @result{} boolean}
+@Function{pointer-eq ptr1 ptr2 @res{} boolean}
 
 @subheading Arguments and Values
 
@@ -4505,7 +4477,7 @@ A keyword.
 
 @subheading Initial value
 
-@code{:iso-8859-1}
+@code{:utf-8}
 
 @subheading Description
 
@@ -4515,12 +4487,12 @@ This special variable holds the default foreign encoding.
 
 @lisp
 CFFI> *default-foreign-encoding*
-:ISO-8859-1
-CFFI> (foreign-funcall "strdup" (:string :encoding :utf-8) "maçã" :string)
-"maÃ§Ã£"
-CFFI> (let ((*default-foreign-encoding* :utf-8))
-        (foreign-funcall "strdup" (:string :encoding :utf-8) "maçã" :string))
-"maçã"
+:utf-8
+CFFI> (foreign-funcall "strdup" (:string :encoding :utf-16) "foo" :string)
+"f"
+CFFI> (let ((*default-foreign-encoding* :utf-16))
+        (foreign-funcall "strdup" (:string :encoding :utf-16) "foo" :string))
+"foo"
 @end lisp
 
 @subheading See also
@@ -4539,30 +4511,47 @@ CFFI> (let ((*default-foreign-encoding* :utf-8))
 @node foreign-string-alloc
 @unnumberedsec foreign-string-alloc
 @subheading Syntax
-@Function{foreign-string-alloc string-or-ub8-array @result{} pointer}
+@Function{foreign-string-alloc string &key encoding null-terminated-p @
+                               start end @res{} pointer}
 
 @subheading Arguments and Values
 
 @table @var
-@item string-or-ub8-array
-A Lisp string or a Lisp array with element-type @code{(unsigned-byte 8)}.
+@item string
+A Lisp string.
+
+@item encoding
+Foreign encoding. Defaults to @code{*default-foreign-encoding*}.
+
+@item null-terminated-p
+Boolean, defaults to true.
+
+@item start, end
+Bounding index designators of @var{string}. 0 and @code{nil}, by
+default.
 
 @item pointer
 A pointer to the newly allocated foreign string.
 @end table
 
 @subheading Description
-The @code{foreign-string-alloc} function allocates a foreign string
-containing a Lisp string or @code{(unsigned-byte 8)} array.
+The @code{foreign-string-alloc} function allocates foreign memory
+holding a copy of @var{string} converted using the specified
+@var{encoding}. @var{Start} specifies an offset into @var{string} and
+@var{end} marks the position following the last element of the foreign
+string.
 
 This string must be freed with @code{foreign-string-free}.
+
+If @var{null-terminated-p} is false, the string will not be
+null-terminated.
 
 @subheading Examples
 
 @lisp
-CFFI> (setq str (foreign-string-alloc "Hello, foreign world!"))
+CFFI> (defparameter *str* (foreign-string-alloc "Hello, foreign world!"))
 @result{} #<FOREIGN-ADDRESS #x00400560>
-CFFI> (foreign-funcall "strlen" :pointer str :int)
+CFFI> (foreign-funcall "strlen" :pointer *str* :int)
 @result{} 21
 @end lisp
 
@@ -4603,8 +4592,8 @@ allocated by @code{foreign-string-alloc}.
 @node foreign-string-to-lisp
 @unnumberedsec foreign-string-to-lisp
 @subheading Syntax
-@Function{foreign-string-to-lisp ptr &optional size null-terminated-p @
-                                 @result{} string}
+@Function{foreign-string-to-lisp ptr &optional offset count max-chars @
+                                 encoding @res{} string}
 
 @subheading Arguments and Values
 
@@ -4612,23 +4601,32 @@ allocated by @code{foreign-string-alloc}.
 @item ptr
 A pointer.
 
-@item size
-The maximum string size. @code{array-total-size-limit}, by default.
+@item offset
+An integer greater than or equal to 0. Defauls to 0.
 
-@item null-terminated-p
-Specifies if the string @var{ptr} points to is null terminated. True,
-by default.
+@item count
+Either @code{nil} (the default), or an integer greater than or equal to 0.
+
+@item max-chars
+An integer greater than or equal to 0.
+@code{(1- array-total-size-limit)}, by default.
+
+@item encoding
+Foreign encoding. Defaults to @code{*default-foreign-encoding*}.
+
+@item string
+A Lisp string.
 @end table
 
 @subheading Description
-The @code{foreign-string-to-lisp} function copies at most @var{size}
-characters from @var{ptr} into a Lisp string.
+The @code{foreign-string-to-lisp} function converts at most
+@var{count} octets from @var{ptr} into a Lisp string, using the
+defined @var{encoding}.
 
-When @var{null-terminated-p} is true (the default), characters are
-copied until @var{size} is reached or a @code{NULL} character is
-found.
+If @var{count} is @code{nil} (the default), characters are copied
+until @var{max-chars} is reached or a @code{NULL} character is found.
 
-If @var{ptr} is a null pointer, returns nil.
+If @var{ptr} is a null pointer, returns @code{nil}.
 
 Note that the @code{:string} type will automatically convert between
 Lisp strings and foreign strings.
@@ -4654,25 +4652,41 @@ CFFI> (foreign-string-to-lisp *)
 @node lisp-string-to-foreign
 @unnumberedsec lisp-string-to-foreign
 @subheading Syntax
-@Function{lisp-string-to-foreign string-or-ub8-array ptr size}
+@Function{lisp-string-to-foreign string buffer bufsize &key start @
+                                 end offset encoding @res{} buffer}
 
 @subheading Arguments and Values
 
 @table @var
-@item string-or-ub8-array
-A Lisp string or a Lisp @code{(unsigned-byte 8)} array.
+@item string
+A Lisp string.
 
-@item ptr
+@item buffer
 A foreign pointer.
 
-@item size
+@item bufsize
 An integer.
+
+@item start, end
+Bounding index designators of @var{string}. 0 and @code{nil}, by
+default.
+
+@item offset
+An integer greater than or equal to 0. Defauls to 0.
+
+@item encoding
+Foreign encoding. Defaults to @code{*default-foreign-encoding*}.
 @end table
 
 @subheading Description
-The @code{lisp-string-to-foreign} function copies at most @var{size}-1
-characters from a Lisp string or @code{(unsigned-byte 8)} arrayto
-@var{ptr}. The foreign string will be null-terminated.
+The @code{lisp-string-to-foreign} function copies at most
+@var{bufsize}-1 octets from a Lisp @var{string} using the specified
+@var{encoding} into @var{buffer}+@var{offset}. The foreign string will
+be null-terminated.
+
+@var{Start} specifies an offset into @var{string} and
+@var{end} marks the position following the last element of the foreign
+string.
 
 @subheading Examples
 
@@ -4680,13 +4694,6 @@ characters from a Lisp string or @code{(unsigned-byte 8)} arrayto
 CFFI> (with-foreign-pointer-as-string (str 255)
         (lisp-string-to-foreign "Hello, foreign world!" str 6))
 @result{} "Hello"
-
-CFFI> (with-foreign-pointer-as-string (str 255)
-        (lisp-string-to-foreign
-         (make-array 6 :element-type '(unsigned-byte 8)
-                     :initial-contents '(65 66 67 68 69 60))
-         str 4))
-@result{} "ABC"
 @end lisp
 
 @subheading See Also
@@ -4698,18 +4705,19 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @c ===================================================================
 @c WITH-FOREIGN-STRING
 
-@c TODO: update this documentation
-
 @node with-foreign-string
 @unnumberedsec with-foreign-string
 @subheading Syntax
-@Macro{with-foreign-string (binding string &rest args) &body body}
-@Macro{with-foreign-strings (bindings &body body)}
+@Macro{with-foreign-string (var-or-vars string &rest args) &body body}
+@Macro{with-foreign-strings (bindings) &body body}
+
+var-or-vars ::= var | (var &optional octet-size-var)
+bindings ::= @{(var-or-vars string &rest args)@}*
 
 @subheading Arguments and Values
 
 @table @var
-@item var
+@item var, byte-size-var
 A symbol.
 
 @item string
@@ -4721,7 +4729,11 @@ A list of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-string} macro will bind @var{var} to a newly
-allocated foreign string containing @var{string}.
+allocated foreign string containing @var{string}. @var{Args} is passed
+to the underlying @code{foreign-string-alloc} call.
+
+If @var{octet-size-var} is provided, it will be bound the length of
+foreign string in octets including the null terminator.
 
 @subheading Examples
 
@@ -4748,7 +4760,8 @@ CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
 @node with-foreign-pointer-as-string
 @unnumberedsec with-foreign-pointer-as-string
 @subheading Syntax
-@Macro{with-foreign-pointer-as-string (var size &optional size-var) &body body}
+@Macro{with-foreign-pointer-as-string (var size &optional size-var @
+                                      &rest args) &body body @res{} string}
 
 @subheading Arguments and Values
 
@@ -4756,7 +4769,7 @@ CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
 @item var
 A symbol.
 
-@item lisp-string
+@item string
 A Lisp string.
 
 @item body
@@ -4765,13 +4778,14 @@ List of forms to be executed.
 
 @subheading Description
 The @code{with-foreign-pointer-as-string} macro is similar to
-@code{with-foreign-pointer} except that @var{var}, as a Lisp string, is
-used as the returned value of an implicit @code{progn} around @var{body}.
+@code{with-foreign-pointer} except that @var{var} is used as the
+returned value of an implicit @code{progn} around @var{body}, after
+being converted to a Lisp string using the provided @var{args}.
 
 @subheading Examples
 
 @lisp
-CFFI> (with-foreign-pointer-as-string (str 6 str-size)
+CFFI> (with-foreign-pointer-as-string (str 6 str-size :encoding :ascii)
         (lisp-string-to-foreign "Hello, foreign world!" str str-size))
 @result{} "Hello"
 @end lisp
@@ -4801,10 +4815,10 @@ Dictionary
 @node defcvar
 @unnumberedsec defcvar
 @subheading Syntax
-@Macro{defcvar name-and-options type documentation @result{} lisp-name}
+@Macro{defcvar name-and-options type &optional documentation @res{} lisp-name}
 
-name-and-options ::= name | (name &key read-only (library :default))
-name ::= lisp-name [foreign-name] | foreign-name [lisp-name]
+@var{name-and-options} ::= name | (name &key read-only (library :default)) @*
+@var{name} ::= lisp-name [foreign-name] | foreign-name [lisp-name]
 
 @subheading Arguments and Values
 
@@ -4878,7 +4892,7 @@ C standard library.}
 @node get-var-pointer
 @unnumberedsec get-var-pointer
 @subheading Syntax
-@Function{get-var-pointer symbol @result{} pointer}
+@Function{get-var-pointer symbol @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -4919,8 +4933,8 @@ CFFI> (mem-ref * :int)
 @chapter Functions
 
 @menu
-* Calling Foreign Functions::   
-* Defining Foreign Functions::  
+@c * Defining Foreign Functions::  
+@c * Calling Foreign Functions::   
 
 Dictionary
 
@@ -4929,11 +4943,11 @@ Dictionary
 * foreign-funcall-pointer::     
 @end menu
 
-@node Calling Foreign Functions
-@section Calling Foreign Functions
+@c @node Calling Foreign Functions
+@c @section Calling Foreign Functions
 
-@node Defining Foreign Functions
-@section Defining Foreign Functions
+@c @node Defining Foreign Functions
+@c @section Defining Foreign Functions
 
 
 @c ===================================================================
@@ -4943,13 +4957,11 @@ Dictionary
 @unnumberedsec defcfun
 @subheading Syntax
 @Macro{defcfun name-and-options return-type &body arguments [&rest] @
-               @result{} lisp-name}
+               @res{} lisp-name}
 
-@table @asis
-@item @var{name-and-options} name | (name &key library calling-convention cconv)
-@item @var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}]
-@item @var{arguments} ::= @{ (arg-name arg-type) @}*
-@end table
+@var{name-and-options} name | (name &key library calling-convention cconv) @*
+@var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}] @*
+@var{arguments} ::= @{ (arg-name arg-type) @}* @*
 
 @subheading Arguments and Values
 
@@ -5001,7 +5013,6 @@ care of doing argument promotion. Note that in this case
 function and will only work for Lisps that support
 @code{foreign-funcall.}
 
-
 @subheading Examples
 
 @lisp
@@ -5043,7 +5054,7 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @node foreign-funcall
 @unnumberedsec foreign-funcall
 @subheading Syntax
-@Macro{foreign-funcall name-and-options &rest arguments @result{} return-value}
+@Macro{foreign-funcall name-and-options &rest arguments @res{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type]
 name-and-options ::= name | ( name &key library calling-convention cconv)
@@ -5141,7 +5152,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @node foreign-funcall-pointer
 @unnumberedsec foreign-funcall-pointer
 @subheading Syntax
-@Macro{foreign-funcall pointer options &rest arguments @result{} return-value}
+@Macro{foreign-funcall pointer options &rest arguments @res{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type]
 options ::= ( &key calling-convention cconv )
@@ -5291,7 +5302,7 @@ little about.  --stephen}
 @node close-foreign-library
 @unnumberedsec close-foreign-library
 @subheading Syntax
-@Function{close-foreign-library library @result{} success}
+@Function{close-foreign-library library @res{} success}
 
 @subheading Arguments and Values
 
@@ -5368,7 +5379,7 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 
 @subheading Syntax
 
-@Macro{define-foreign-library name-and-options @{ load-clause @}* @result{} name}
+@Macro{define-foreign-library name-and-options @{ load-clause @}* @res{} name}
 
 name-and-options ::= name | (name &key calling-convention cconv)
 load-clause ::= (feature library &key calling-convention cconv)
@@ -5564,7 +5575,7 @@ The following example would achieve the same effect:
 @node load-foreign-library
 @unnumberedsec load-foreign-library
 @subheading Syntax
-@Function{load-foreign-library library @result{} handler}
+@Function{load-foreign-library library @res{} handler}
 
 @subheading Arguments and Values
 
@@ -5734,7 +5745,7 @@ Dictionary
 @node callback
 @unnumberedsec callback
 @subheading Syntax
-@Macro{callback symbol @result{} pointer}
+@Macro{callback symbol @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -5773,7 +5784,7 @@ CFFI> (callback sum)
 @node defcallback
 @unnumberedsec defcallback
 @subheading Syntax
-@Macro{defcallback name-and-options return-type arguments &body body @result{} name}
+@Macro{defcallback name-and-options return-type arguments &body body @res{} name}
 
 name-and-options ::= name | (name &key calling-convention cconv)
 arguments ::= (@{ (arg-name arg-type) @}*)
@@ -5849,7 +5860,7 @@ CFFI> (with-foreign-object (array :int 10)
 @node get-callback
 @unnumberedsec get-callback
 @subheading Syntax
-@Accessor{get-callback symbol @result{} pointer}
+@Accessor{get-callback symbol @res{} pointer}
 
 @subheading Arguments and Values
 
@@ -6063,8 +6074,8 @@ file, and a @cffi{}-Grovel specification file.
 
 The @acronym{ASDF} file defines the system and its dependencies.
 Notice the use of @code{eval-when} to ensure @cffi{}-Grovel is present
-and the use of @code{(cffi-grovel:grovel-file ...)} instead of
-@code{(:file ...)}.
+and the use of @code{(cffi-grovel:grovel-file name &key cc-flags)}
+instead of @code{(:file name)}.
 
 @lisp
 ;;; CFFI-Grovel is needed for processing grovel-file components
@@ -6155,8 +6166,6 @@ details.
 @item
 C @code{struct}s cannot be passed by value.
 @end itemize
-
-@c more?
 
 
 @node Platform-specific features
