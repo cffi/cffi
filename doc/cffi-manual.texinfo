@@ -353,7 +353,7 @@ Unicode support is limited to the Basic Multilingual Plane (16-bit
 code points).
 @end itemize
 
-@section CMUCL
+@subheading CMUCL
 
 @itemize
 @item
