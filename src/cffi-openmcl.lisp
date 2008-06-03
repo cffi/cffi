@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:ccl #:cffi-utils)
+  (:use #:common-lisp #:ccl)
   (:import-from #:alexandria #:once-only)
   (:export
    #:canonicalize-symbol-name-case

@@ -663,7 +663,7 @@ slots will be defined and stored."
       `(progn
          (defclass ,class-name ,supers
            ,(loop for slot in slots collect
-                  (list slot :reader (symbolicate class-name "-" slot))))
+                  `(,slot :reader ,(format-symbol t "~A-~A" class-name slot))))
          ;; This could be done in a parent class by using
          ;; FOREIGN-SLOT-NAMES when instantiating but then the compiler
          ;; macros wouldn't kick in.

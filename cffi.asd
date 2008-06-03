@@ -28,10 +28,6 @@
 #-(or openmcl sbcl cmu scl clisp lispworks ecl allegro cormanlisp)
 (error "Sorry, this Lisp is not yet supported.  Patches welcome!")
 
-(defpackage #:cffi-system
-  (:use #:cl #:asdf))
-(in-package #:cffi-system)
-
 (defsystem cffi
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
@@ -42,8 +38,7 @@
   ((:module src
     :serial t
     :components
-    ((:file "utils")
-     (:file "features")
+    ((:file "features")
      #+openmcl    (:file "cffi-openmcl")
      #+sbcl       (:file "cffi-sbcl")
      #+cmu        (:file "cffi-cmucl")
@@ -54,6 +49,7 @@
      #+allegro    (:file "cffi-allegro")
      #+cormanlisp (:file "cffi-corman")
      (:file "package")
+     (:file "utils")
      (:file "libraries")
      (:file "early-types")
      (:file "types")

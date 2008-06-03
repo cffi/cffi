@@ -2,7 +2,7 @@
 ;;;
 ;;; foreign-vars.lisp --- High-level interface to foreign globals.
 ;;;
-;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2008, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -58,7 +58,7 @@ returning nil when foreign-name is not found."
   (declare (ignore documentation))
   (multiple-value-bind (lisp-name foreign-name options)
       (parse-name-and-options name-and-options t)
-    (let ((fn (symbolicate '#:%var-accessor- lisp-name))
+    (let ((fn (format-symbol t "%VAR-ACCESSOR-~A" lisp-name))
           (read-only (getf options :read-only))
           (library (getf options :library)))
       ;; We can't really setf an aggregate type.
@@ -76,7 +76,8 @@ returning nil when foreign-name is not found."
          (defun (setf ,fn) (value)
            ,(if read-only '(declare (ignore value)) (values))
            ,(if read-only
-                `(error ,(format nil "Trying to modify read-only foreign var: ~A."
+                `(error ,(format nil
+                                 "Trying to modify read-only foreign var: ~A."
                                  lisp-name))
                 `(setf (mem-ref (fs-pointer-or-lose ,foreign-name ',library)
                                 ',type)

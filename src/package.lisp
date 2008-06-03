@@ -28,7 +28,7 @@
 (in-package #:cl-user)
 
 (defpackage #:cffi
-  (:use #:common-lisp #:cffi-sys #:cffi-utils #:alexandria #:babel-encodings)
+  (:use #:common-lisp #:cffi-sys #:alexandria #:babel-encodings)
   (:import-from #:cffi-features #:cffi-feature-p)
   (:export
    ;; Types.

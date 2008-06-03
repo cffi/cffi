@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-allegro.lisp --- CFFI-SYS implementation for Allegro CL.
 ;;;
-;;; Copyright (C) 2005-2007, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2008, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:cffi-utils #:alexandria)
+  (:use #:common-lisp #:alexandria)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer

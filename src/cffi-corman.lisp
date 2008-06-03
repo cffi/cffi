@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-corman.lisp --- CFFI-SYS implementation for Corman Lisp.
 ;;;
-;;; Copyright (C) 2005-2006, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2008, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -32,7 +32,8 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:c-types #:cffi-utils #:alexandria)
+  (:use #:common-lisp #:c-types)
+  (:import-from #:alexandria #:with-unique-names)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer

@@ -28,7 +28,7 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:cl #:cffi-utils #:alexandria)
+  (:use #:cl #:alexandria)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
