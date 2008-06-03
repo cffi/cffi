@@ -31,7 +31,7 @@ CMUCL    ?= lisp
 OPENMCL  ?= openmcl
 SBCL     ?= sbcl
 CLISP    ?= clisp
-ALLEGRO  ?= acl
+ALLEGRO  ?= alisp
 SCL      ?= scl
 
 shlibs:
