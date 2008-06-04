@@ -58,7 +58,7 @@ returning nil when foreign-name is not found."
   (declare (ignore documentation))
   (multiple-value-bind (lisp-name foreign-name options)
       (parse-name-and-options name-and-options t)
-    (let ((fn (format-symbol t "%VAR-ACCESSOR-~A" lisp-name))
+    (let ((fn (symbolicate '#:%var-accessor- lisp-name))
           (read-only (getf options :read-only))
           (library (getf options :library)))
       ;; We can't really setf an aggregate type.
