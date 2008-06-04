@@ -29,7 +29,7 @@
 
 (defpackage #:cffi-sys
   (:use #:common-lisp #:sb-alien)
-  (:import-from #:alexandria #:once-only #:with-unique-names)
+  (:import-from #:alexandria #:once-only #:with-unique-names #:when-let)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
