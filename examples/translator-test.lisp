@@ -26,7 +26,7 @@
 ;;;
 
 (defpackage #:cffi-translator-test
-  (:use #:common-lisp #:cffi #:cffi-utils))
+  (:use #:common-lisp #:cffi))
 
 (in-package #:cffi-translator-test)
 

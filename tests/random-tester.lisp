@@ -36,7 +36,7 @@
 ;;; this code can generate.
 
 (defpackage #:cffi-random-tester
-  (:use #:cl #:cffi #:regression-test))
+  (:use #:cl #:cffi #:alexandria #:regression-test))
 (in-package #:cffi-random-tester)
 
 (defstruct (c-type (:conc-name type-))
@@ -197,9 +197,9 @@ ARG-TYPES list and whose sum fits in RETTYPE."
     `(progn
        (defcfun (,fun-name ,fun-sym) ,(type-keyword rettype)
          ,@(loop for type in arg-types and i from 1 collect
-                 (list (cffi-utils:symbolicate '#:a (format nil "~A" i))
+                 (list (symbolicate '#:a (format nil "~A" i))
                        (type-keyword type))))
-       (deftest ,(cffi-utils:symbolicate '#:defcfun. fun-sym)
+       (deftest ,(symbolicate '#:defcfun. fun-sym)
            ,(integer-conversion (type-keyword rettype)
                                 `(,fun-sym ,@value-forms))
          ,sum)))))
@@ -210,7 +210,7 @@ ARG-TYPES list and whose sum fits in RETTYPE."
          (fun-name (concatenate 'string "call_" fname))
          (fun-sym (cffi::lisp-function-name fun-name))
          (arg-names (loop for i from 1 upto (length arg-types) collect
-                          (cffi-utils:symbolicate '#:a (format nil "~A" i)))))
+                          (symbolicate '#:a (format nil "~A" i)))))
     `(progn
        (defcfun (,fun-name ,fun-sym) ,(type-keyword rettype) (cb :pointer))
        (defcallback ,cb-sym ,(type-keyword rettype)
@@ -221,7 +221,7 @@ ARG-TYPES list and whose sum fits in RETTYPE."
            `(+ ,@(mapcar (lambda (tp n)
                            (integer-conversion (type-keyword tp) n))
                          arg-types arg-names))))
-       (deftest ,(cffi-utils:symbolicate '#:callbacks. cb-sym)
+       (deftest ,(symbolicate '#:callbacks. cb-sym)
            ,(integer-conversion (type-keyword rettype)
                                 `(,fun-sym (callback ,cb-sym)))
          ,sum))))

@@ -32,7 +32,7 @@
 ;;; arguments to a foreign function.
 
 (defpackage #:cffi-example-gettimeofday
-  (:use #:common-lisp #:cffi #:cffi-utils)
+  (:use #:common-lisp #:cffi)
   (:export #:gettimeofday))
 
 (in-package #:cffi-example-gettimeofday)
