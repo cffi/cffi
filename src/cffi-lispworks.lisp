@@ -134,8 +134,11 @@ be stack allocated if supported by the implementation."
 
 (defun make-shareable-byte-vector (size)
   "Create a shareable byte vector."
+  #+(or lispworks3 lispworks4 lispworks5.0)
   (sys:in-static-area
-    (make-array size :element-type '(unsigned-byte 8))))
+    (make-array size :element-type '(unsigned-byte 8)))
+  #-(or lispworks3 lispworks4 lispworks5.0)
+  (make-array size :element-type '(unsigned-byte 8) :allocation :static))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a pointer at the data in VECTOR."
