@@ -43,10 +43,9 @@
 (defmethod perform ((o compile-op) (c c-test-lib))
   #-(or win32 mswindows)
   (unless (zerop (run-shell-command
-                   #-(or freebsd solaris) "cd ~A; make"
-                   #+(or freebsd solaris) "cd ~A; gmake"
-                   (namestring (make-pathname :name nil :type nil
-                                              :directory *tests-dir*))))
+                  "cd ~A; make"
+                  (namestring (make-pathname :name nil :type nil
+                                             :directory *tests-dir*))))
     (error 'operation-error :component c :operation o)))
 
 ;; For the convenience of ECL users.
