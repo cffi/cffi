@@ -383,13 +383,13 @@ field-name"
 
 (defmacro with-cstring ((foreign-string lisp-string) &body body)
   "Binds a newly creating string."
-  (let ((str (gensym)))
-    `(let ((,str ,lisp-string))
-       (if (null ,str)
-           (let ((,foreign-string (cffi:null-pointer)))
-             ,@body)
-           (cffi:with-foreign-string (,foreign-string ,str)
-             ,@body)))))
+  (let ((str (gensym)) (body-proc (gensym)))
+    `(flet ((,body-proc (,foreign-string) ,@body))
+       (let ((,str ,lisp-string))
+         (if (null ,str)
+             (,body-proc (cffi:null-pointer))
+             (cffi:with-foreign-string (,foreign-string ,str)
+               (,body-proc ,foreign-string)))))))
 
 ;; Taken from UFFI's src/strings.lisp
 (defmacro with-cstrings (bindings &rest body)
