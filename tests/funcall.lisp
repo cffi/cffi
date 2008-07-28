@@ -181,7 +181,7 @@
 
 ;;;# stdcall
 
-#+(and cffi-features:x86 (not cffi-features:no-stdcall))
+#+(and x86 windows (not cffi-features:no-stdcall))
 (deftest funcall.stdcall.1
     (flet ((fun ()
              (foreign-funcall ("stdcall_fun@12" :cconv :stdcall)
