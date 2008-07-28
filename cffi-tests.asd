@@ -73,13 +73,13 @@
      (:file "misc-types")
      (:file "misc")))))
 
-(defun run-cffi-tests (&key (compiled nil))
-  (funcall (intern (symbol-name '#:run-cffi-tests) '#:cffi-tests)
-           :compiled compiled))
+(defmethod operation-done-p ((o test-op) (c (eql (find-system :cffi-tests))))
+  nil)
 
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
-  (unless (and (run-cffi-tests :compiled nil)
-               (run-cffi-tests :compiled t))
-    (error "test-op failed.")))
+  (flet ((run-tests (&rest args)
+           (apply (intern (string '#:run-cffi-tests) '#:cffi-tests) args)))
+    (run-tests :compiled nil)
+    (run-tests :compiled t)))
 
 ;;; vim: ft=lisp et

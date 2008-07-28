@@ -85,17 +85,8 @@
 (defcvar "double_max" :double)
 (defcvar "double_min" :double)
 
-;;; This is not the best place for this code...
-(defparameter *repeat* 1)
-
 (defun run-cffi-tests (&key (compiled nil))
   (let ((regression-test::*compile-tests* compiled)
         (*package* (find-package '#:cffi-tests)))
-    (format t "~2&How many times shall we run the tests (~Acompiled)? [~D]: "
-            (if compiled "" "un") *repeat*)
-    (force-output *standard-output*)
-    (let* ((ntimes (or (ignore-errors (parse-integer (read-line))) *repeat*))
-           (ret-values (loop repeat ntimes collect (do-tests))))
-      (format t "~&;;; Finished running tests (~Acompiled) ~D times."
-              (if compiled "" "un") ntimes)
-      (every #'identity ret-values))))
+    (format t "~&;;; running tests (~Acompiled)" (if compiled "" "un"))
+    (do-tests)))
