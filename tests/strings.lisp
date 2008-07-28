@@ -80,6 +80,9 @@
         vector))
   #.*ascii-test-bytes*)
 
+;;; FIXME: bogus test. We need support for BOM or UTF-16{BE,LE}.
+(pushnew 'string.encoding.utf-16.basic rtest::*expected-failures*)
+
 ;;; Test UTF-16 conversion of a string back and forth.  Tests proper
 ;;; null terminator handling for wide character strings and ensures no
 ;;; byte order marks are added.  (Why no BOM? --luis)
@@ -117,6 +120,9 @@
 (defun list-latin-compatible-encodings ()
   (remove-if (lambda (x) (member x *non-latin-compatible-encodings*))
              (babel:list-character-encodings)))
+
+;;; FIXME: bogus wrt UTF-16. See STRING.ENCODING.UTF-16.BASIC.
+(pushnew 'string.encodings.all.basic rtest::*expected-failures*)
 
 (deftest string.encodings.all.basic
     (let (failed)
