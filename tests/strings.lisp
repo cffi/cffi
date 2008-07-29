@@ -106,7 +106,8 @@
 #-babel::8-bit-chars
 (deftest string.encoding.utf-8.basic
     (with-foreign-pointer (buf 7 size)
-      (let ((string (concatenate 'string '(#\u03bb #\u00e3 #\u03bb))))
+      (let ((string (concatenate 'babel:unicode-string
+                                 '(#\u03bb #\u00e3 #\u03bb))))
         (lisp-string-to-foreign string buf size :encoding :utf-8)
         (loop for i from 0 below size
               collect (mem-ref buf :unsigned-char i))))

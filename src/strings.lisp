@@ -171,7 +171,7 @@ pointer, NIL is returned."
       (multiple-value-bind (size new-end)
           (funcall (code-point-counter mapping)
                    pointer offset (+ offset count) max-chars)
-        (let ((string (make-string size)))
+        (let ((string (make-string size :element-type 'babel:unicode-char)))
           (funcall (decoder mapping) pointer offset new-end string 0)
           (values string (- new-end offset)))))))
 
