@@ -144,7 +144,7 @@
 
 (defcfun "noop" :void)
 
-#+openmcl (pushnew 'defcfun.noop rt::*expected-failures*)
+#+(or allegro openmcl) (pushnew 'defcfun.noop rt::*expected-failures*)
 
 (deftest defcfun.noop
     (noop)

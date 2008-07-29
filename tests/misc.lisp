@@ -135,6 +135,10 @@
 
 ;;;# Shareable Byte Vector Tests
 
+#+allegro
+(mapc (lambda (x) (pushnew x rt::*expected-failures*))
+      '(shareable-vector.1 shareable-vector.2))
+
 (deftest shareable-vector.1
     (let ((vector (cffi-sys::make-shareable-byte-vector 5)))
       (cffi::with-pointer-to-vector-data (pointer vector)
