@@ -62,7 +62,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (mapc (lambda (feature) (pushnew feature *features*))
-        '(cffi-features:no-long-long
+        '(#-x86-64 cffi-features:no-long-long
           cffi-features:flat-namespace)))
 
 ;;;# Symbol Case
@@ -155,6 +155,8 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:unsigned-int    :unsigned-int    "unsigned int")
     (:long            :long            "long")
     (:unsigned-long   :unsigned-long   "unsigned long")
+    #+x86-64 (:long-long :long "long long")
+    #+x86-64 (:unsigned-long-long :unsigned-long "unsigned long long")
     (:float           :float           "float")
     (:double          :double          "double")
     (:pointer         :pointer-void    "void*")
