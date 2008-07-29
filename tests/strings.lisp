@@ -35,6 +35,8 @@
 ;;; a start at defining tests for strings and encoding conversion, but
 ;;; there needs to be a lot more.
 
+(babel:enable-sharp-backslash-syntax)
+
 ;;; *ASCII-TEST-STRING* contains the characters in the ASCII character
 ;;; set that we will convert to a foreign string and check against
 ;;; *ASCII-TEST-BYTES*.  We don't bother with control characters.
