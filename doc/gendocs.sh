@@ -217,7 +217,7 @@ cmd="${MAKEINFO} --html -o $PACKAGE.html $html $srcfile"
 echo "Generating html by node... ($cmd)"
 eval $cmd
 split_html_dir=$PACKAGE.html
-sbcl --load colorize-lisp-examples.lisp "${split_html_dir}/*.html"
+sbcl --load colorize-lisp-examples.lisp "${split_html_dir}"/*.html
 (
   cd ${split_html_dir} || exit 1
   #fix libc xrefs
