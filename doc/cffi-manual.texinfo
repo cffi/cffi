@@ -114,7 +114,7 @@
 
 @copying
 Copyright @copyright{} 2005 James Bielman <jamesjb at jamesjb.com> @*
-Copyright @copyright{} 2005-2007 Lu@'{@dotless{i}}s Oliveira
+Copyright @copyright{} 2005-2008 Lu@'{@dotless{i}}s Oliveira
   <loliveira at common-lisp.net> @*
 Copyright @copyright{} 2006 Stephen Compall <s11 at member.fsf.org>
 
@@ -161,6 +161,7 @@ software or the use or other dealings in the software.}
 
 @menu
 * Introduction::                What is CFFI?
+* Installation::                
 * Implementation Support::      
 * Tutorial::                    Interactive intro to using CFFI.
 * Wrapper generators::          CFFI forms from munging C source code.
@@ -319,6 +320,56 @@ untyped one.  It is difficult to do the opposite.
 Functions are better than macros.  When a macro could be used
 for performance, use a compiler-macro instead.
 @end itemize
+
+
+@c ===================================================================
+@c CHAPTER: Installation
+
+@node Installation
+@chapter Installation
+
+@cffi{} can be obtained through one of the following means available
+through its @uref{http://common-lisp.net/project/cffi/,,website}:
+
+@itemize
+@item
+@uref{http://common-lisp.net/project/cffi/releases/?M=D,,official release
+tarballs}
+
+@item
+@uref{http://common-lisp.net/project/cffi/darcs/cffi,,darcs
+repository}
+
+@item
+@uref{http://common-lisp.net/project/cffi/tarballs/?M=D,,nightly-generated
+snapshots}
+
+@end itemize
+
+In addition, you will need to obtain and install the following
+dependencies:
+
+@itemize
+@item
+@uref{http://common-lisp.net/project/babel/,,Babel}, a charset
+encoding/decoding library.
+
+@item
+@uref{http://common-lisp.net/project/alexandria/,,Alexandria}, a
+collection of portable public-domain utilities.
+
+@item
+@uref{http://www.cliki.net/trivial-features,,trivial-features}, a
+portability layer that ensure consistent @code{*features*} across
+multiple Common Lisp implementations.
+
+@end itemize
+
+You may find mechanisms such as
+@uref{http://common-lisp.net/project/clbuild/,,clbuild} (recommended)
+or @uref{http://www.cliki.net/ASDF-Install,,ASDF-Install} (not as
+recommendable) helpful in getting and managing @cffi{} and its
+dependencies.
 
 
 @c ===================================================================

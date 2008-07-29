@@ -15,3 +15,6 @@ particular, UFFI's use of aliens in CMUCL and SBCL can be tricky to
 get right.  CFFI avoids this by using system area pointers directly
 instead of alien objects.  All foreign function definitions and uses
 should compile without alien-value compiler notes in CMUCL/SBCL.
+
+Please consult the manual for further details, including installation
+instructions.
