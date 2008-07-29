@@ -57,7 +57,9 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass emulated-llong-type (foreign-type) ())
   (defmethod foreign-type-size ((tp emulated-llong-type)) 8)
-  (defmethod foreign-type-alignment ((tp emulated-llong-type)) 8)
+  (defmethod foreign-type-alignment ((tp emulated-llong-type))
+    ;; better than assuming that the alignment is 8
+    (foreign-type-alignment :long))
   (defmethod aggregatep ((tp emulated-llong-type)) nil)
 
   (define-foreign-type emulated-llong (emulated-llong-type)
