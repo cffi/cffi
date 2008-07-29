@@ -135,7 +135,7 @@
 
 ;;;# Shareable Byte Vector Tests
 
-#+allegro
+#+(or ecl allegro)
 (mapc (lambda (x) (pushnew x rt::*expected-failures*))
       '(shareable-vector.1 shareable-vector.2))
 
