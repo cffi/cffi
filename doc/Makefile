@@ -37,7 +37,7 @@ clean:
 	find . \( -name "*.info" -o -name "*.aux" -o -name "*.cp" -o -name "*.fn" -o -name "*.fns" -o -name "*.ky" -o -name "*.log" -o -name "*.pg" -o -name "*.toc" -o -name "*.tp" -o -name "*.vr" -o -name "*.dvi" -o -name "*.cps" -o -name "*.vrs" \) -exec rm {} \;
 	rm -rf manual spec
 
-upload-docs:
+upload-docs: manual spec
 	rsync -av --delete -e ssh manual spec common-lisp.net:/project/cffi/public_html/
 #	scp -r manual spec common-lisp.net:/project/cffi/public_html/
 
