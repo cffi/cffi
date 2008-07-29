@@ -170,7 +170,7 @@
     (expand-abs -1)
   1)
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (deftest misc-types.expand.2
     (foreign-funcall "abs" error-error -1 error-error)
   1)

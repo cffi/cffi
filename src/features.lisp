@@ -34,9 +34,9 @@
 ;;; *features*.  See each cffi-*.lisp file.
 ;;;
 ;;; Not anymore, I think we should use TRIVIAL-FEATURES for the
-;;; platform features instead.  Less pain.  And maybe the
-;;; CFFI-specific features should be in the CFFI-SYS package,
-;;; unexported?  This is here now for backwards compatibility.
+;;; platform features instead.  Less pain.  CFFI-FEATURES is now
+;;; deprecated and this code will stay here for a while for backwards
+;;; compatibility purposes, to be removed in a future release.
 
 (defpackage #:cffi-features
   (:use #:cl)
@@ -103,4 +103,9 @@ that belong to the CFFI-FEATURES package."
         #+sparc sparc
         #+sparc64 sparc64
         #+hppa hppa
-        #+hppa64 hppa64))
+        #+hppa64 hppa64
+        #+cffi-sys::no-long-long no-long-long
+        #+cffi-sys::flat-namespace flat-namespace
+        #+cffi-sys::no-foreign-funcall no-foreign-funcall
+        #+cffi-sys::no-stdcall no-stdcall
+        ))

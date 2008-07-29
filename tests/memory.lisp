@@ -75,7 +75,7 @@
       (mem-ref p :unsigned-long))
   536870912)
 
-#+(and cffi-features:darwin openmcl)
+#+(and darwin openmcl)
 (pushnew 'deref.long-long rt::*expected-failures*)
 
 (deftest deref.long-long
@@ -128,7 +128,7 @@
 
 ;;; TODO: use something like *DOUBLE-MIN/MAX* above once we actually
 ;;; have an available lisp that supports long double.
-;#-cffi-features:no-long-float
+;#-cffi-sys::no-long-float
 #+(and scl long-double)
 (progn
   (deftest deref.long-double.1
@@ -452,7 +452,7 @@
         (mem-ref p type)))
   536870912)
 
-#+(and cffi-features:darwin openmcl)
+#+(and darwin openmcl)
 (pushnew 'deref.nonconst.long-long rt::*expected-failures*)
 
 (deftest deref.nonconst.long-long

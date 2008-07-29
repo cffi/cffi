@@ -27,56 +27,6 @@
 
 (in-package #:cffi-tests)
 
-;;; From CLRFI-1
-(defun featurep (feature-expression)
-  (etypecase feature-expression
-    (symbol (not (null (member feature-expression *features*))))
-    (cons                ; Not LIST, as we've already eliminated NIL.
-     (ecase (first feature-expression)
-       (:and (every #'featurep (rest feature-expression)))
-       (:or  (some #'featurep (rest feature-expression)))
-       (:not (not (featurep (cadr feature-expression))))))))
-
-;;;# Test relations between OS features.
-
-(deftest features.os.1
-    (if (featurep 'cffi-features:windows)
-        (not (or (featurep 'cffi-features:unix)
-                 (featurep 'cffi-features:darwin)))
-        t)
-  t)
-
-(deftest features.os.2
-    (if (featurep 'cffi-features:darwin)
-        (and (not (featurep 'cffi-features:windows))
-             (featurep 'cffi-features:unix))
-        t)
-  t)
-
-(deftest features.os.3
-    (if (featurep 'cffi-features:unix)
-        (not (featurep 'cffi-features:windows))
-        t)
-  t)
-
-;;;# Test mutual exclusiveness of CPU features.
-
-(defparameter *cpu-features*
-  '(cffi-features:x86
-    cffi-features:x86-64
-    cffi-features:ppc32
-    cffi-features:sparc
-    cffi-features:sparc64
-    cffi-features:hppa
-    cffi-features:hppa64
-    ))
-
-(deftest features.cpu.1
-    (loop for feature in *cpu-features*
-          when (featurep feature)
-          sum 1)
-  1)
-
 ;;;# foreign-symbol-pointer tests
 
 ;;; This might be useful for some libraries that compare function
@@ -103,7 +53,7 @@
 ;;; loaded and stuff like that.  That could work.
 
 #||
-#-(and :ecl (not :dffi))
+#-(and ecl (not dffi))
 (deftest library.close.2
     (unwind-protect
          (progn
@@ -112,9 +62,9 @@
       (load-test-libraries))
   nil)
 
-#-(or (and :ecl (not :dffi))
-      cffi-features:flat-namespace
-      cffi-features:no-foreign-funcall)
+#-(or (and ecl (not dffi))
+      cffi-sys::flat-namespace
+      cffi-sys::no-foreign-funcall)
 (deftest library.close.2
     (unwind-protect
          (values

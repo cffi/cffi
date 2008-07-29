@@ -95,7 +95,7 @@
 ;;;
 ;;; This information is stored in the *FOREIGN-LIBRARIES* hashtable
 ;;; and when the library is loaded through LOAD-FOREIGN-LIBRARY (or
-;;; USE-FOREIGN-LIBRARY) the first clause matched by CFFI-FEATURE-P is
+;;; USE-FOREIGN-LIBRARY) the first clause matched by FEATUREP is
 ;;; processed.
 
 (defvar *foreign-libraries* (make-hash-table :test 'eq)
@@ -117,7 +117,7 @@
   (setf (gethash name *foreign-libraries*) value))
 
 (defun %foreign-library-spec (lib)
-  (assoc-if #'cffi-feature-p (slot-value lib 'spec)))
+  (assoc-if #'featurep (slot-value lib 'spec)))
 
 (defun foreign-library-spec (lib)
   (second (%foreign-library-spec lib)))
@@ -211,9 +211,9 @@ none of alternatives were successfully loaded."
   (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
 
 (defparameter *cffi-feature-suffix-map*
-  '((cffi-features:windows . ".dll")
-    (cffi-features:darwin . ".dylib")
-    (cffi-features:unix . ".so")
+  '((:windows . ".dll")
+    (:darwin . ".dylib")
+    (:unix . ".so")
     (t . ".so"))
   "Mapping of OS feature keywords to shared library suffixes.")
 
@@ -221,7 +221,7 @@ none of alternatives were successfully loaded."
   "Return a string to use as default library suffix based on the
 operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
-  (or (cdr (assoc-if #'cffi-feature-p *cffi-feature-suffix-map*))
+  (or (cdr (assoc-if #'featurep *cffi-feature-suffix-map*))
       (fl-error "Unable to determine the default library suffix on this OS.")))
 
 (defun load-foreign-library-helper (name thing)

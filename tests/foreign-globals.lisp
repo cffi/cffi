@@ -247,7 +247,7 @@
 
 ;;;# Namespace
 
-#-cffi-features:flat-namespace
+#-cffi-sys::flat-namespace
 (progn
   (deftest foreign-globals.namespace.1
       (values

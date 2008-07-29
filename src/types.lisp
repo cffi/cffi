@@ -42,7 +42,7 @@
 (define-built-in-foreign-type :double)
 (define-built-in-foreign-type :void)
 
-#-cffi-features:no-long-long
+#-cffi-sys::no-long-long
 (progn
   (define-built-in-foreign-type :long-long)
   (define-built-in-foreign-type :unsigned-long-long))
@@ -53,7 +53,7 @@
 ;;; A possibly better, certainly faster though more intrusive,
 ;;; alternative is available here:
 ;;;   <http://article.gmane.org/gmane.lisp.cffi.devel/1091>
-#+cffi-features:no-long-long
+#+cffi-sys::no-long-long
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass emulated-llong-type (foreign-type) ())
   (defmethod foreign-type-size ((tp emulated-llong-type)) 8)
@@ -96,7 +96,7 @@
     value))
 
 ;;; When some lisp other than SCL supports :long-double we should
-;;; use #-cffi-features:no-long-double here instead.
+;;; use #-cffi-sys::no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
 
 ;;;# Foreign Pointers
@@ -110,7 +110,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
     (if (aggregatep ptype)
         (inc-pointer ptr offset)
         (let ((ctype (canonicalize ptype)))
-          #+cffi-features:no-long-long
+          #+cffi-sys::no-long-long
           (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
             (return-from mem-ref
               (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
@@ -124,7 +124,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
       (let* ((parsed-type (parse-type (eval type)))
              (ctype (canonicalize parsed-type)))
         ;; Bail out when using emulated long long types.
-        #+cffi-features:no-long-long
+        #+cffi-sys::no-long-long
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-ref form))
         (if (aggregatep parsed-type)
@@ -136,7 +136,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
   "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
   (let* ((ptype (parse-type type))
          (ctype (canonicalize ptype)))
-    #+cffi-features:no-long-long
+    #+cffi-sys::no-long-long
     (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
       (return-from mem-set
         (%emulated-mem-set-64 (translate-to-foreign value ptype)
@@ -177,7 +177,7 @@ to open-code (SETF MEM-REF) forms."
       (let* ((parsed-type (parse-type (eval type)))
              (ctype (canonicalize parsed-type)))
         ;; Bail out when using emulated long long types.
-        #+cffi-features:no-long-long
+        #+cffi-sys::no-long-long
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-set form))
         `(%mem-set ,(expand-to-foreign value parsed-type) ,ptr ,ctype ,offset))
@@ -821,8 +821,8 @@ The buffer has dynamic extent and may be stack allocated."
    'foreign-boolean-type :actual-type
    (ecase (canonicalize-foreign-type base-type)
      ((:char :unsigned-char :int :unsigned-int :long :unsigned-long
-       #-cffi-features:no-long-long :long-long
-       #-cffi-features:no-long-long :unsigned-long-long) base-type))))
+       #-cffi-sys::no-long-long :long-long
+       #-cffi-sys::no-long-long :unsigned-long-long) base-type))))
 
 (defmethod translate-to-foreign (value (type foreign-boolean-type))
   (if value 1 0))

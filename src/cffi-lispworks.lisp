@@ -60,11 +60,9 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-features
+;;;# Misfeatures
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (mapc (lambda (feature) (pushnew feature *features*))
-        '(#-lispworks-64bit cffi-features:no-long-long)))
+#-lispworks-64bit (pushnew 'no-long-long *features*)
 
 ;;;# Symbol Case
 

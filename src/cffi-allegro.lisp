@@ -62,10 +62,8 @@
 
 ;;;# Mis-features
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (mapc (lambda (feature) (pushnew feature *features*))
-        '(cffi-features:no-long-long
-          cffi-features:flat-namespace)))
+(pushnew 'no-long-long *features*)
+(pushnew 'flat-namespace *features*)
 
 ;;;# Symbol Case
 

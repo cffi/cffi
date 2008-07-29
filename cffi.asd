@@ -38,8 +38,7 @@
   ((:module src
     :serial t
     :components
-    ((:file "features")
-     #+openmcl    (:file "cffi-openmcl")
+    (#+openmcl    (:file "cffi-openmcl")
      #+sbcl       (:file "cffi-sbcl")
      #+cmu        (:file "cffi-cmucl")
      #+scl        (:file "cffi-scl")
@@ -56,7 +55,8 @@
      (:file "enum")
      (:file "strings")
      (:file "functions")
-     (:file "foreign-vars")))))
+     (:file "foreign-vars")
+     (:file "features")))))
 
 (defmethod operation-done-p ((o test-op) (c (eql (find-system :cffi))))
   nil)

@@ -1774,7 +1774,7 @@ natively on all implementations. However, they are emulated by
 @code{mem-ref} and @code{mem-set}.
 
 When those types are @strong{not} available, the symbol
-@code{cffi-features:no-long-long} is pushed into @code{*features*}.
+@code{cffi-sys::no-long-long} is pushed into @code{*features*}.
 
 @ForeignType{:uchar}
 @ForeignType{:ushort}
@@ -5097,7 +5097,7 @@ foreign functions.
 @item
 Corman Lisp does not support @code{foreign-funcall}. On
 implementations that @strong{don't} support @code{foreign-funcall}
-@code{cffi-features:no-foreign-funcall} will be present in
+@code{cffi-sys::no-foreign-funcall} will be present in
 @code{*features*}. Note: in these Lisps you can still use the
 @code{defcfun} interface.
 @end itemize
@@ -5192,7 +5192,7 @@ foreign functions.
 @item
 Corman Lisp does not support @code{foreign-funcall}. On
 implementations that @strong{don't} support @code{foreign-funcall}
-@code{cffi-features:no-foreign-funcall} will be present in
+@code{cffi-sys::no-foreign-funcall} will be present in
 @code{*features*}. Note: in these Lisps you can still use the
 @code{defcfun} interface.
 @end itemize
@@ -5410,14 +5410,11 @@ Creates a new library designator called @var{name}.  The
 When trying to load the library @var{name}, the relevant function
 searches the @var{load-clause}s in order for the first one where
 @var{feature} evaluates to true.  That happens for any of the
-following situations:@footnote{This is described in
-@code{cffi-feature-p} in @file{libraries.lisp}.}
+following situations:
 
 @enumerate 1
 @item
-If @var{feature} is a symbol (idiomatically a keyword), a symbol with
-the same name, but interned into the @code{cffi-features} package, is
-present in @code{common-lisp:*features*}.
+If @var{feature} is a symbol present in @code{common-lisp:*features*}.
 
 @item
 If @var{feature} is a list, depending on @code{(first @var{feature})},
@@ -5957,7 +5954,7 @@ forms. For example:
 @end deffn
 
 @lisp
-#+cffi-features:freebsd
+#+freebsd
 (progn
   (constant (ev-enable "EV_ENABLE"))
   (constant (ev-disable "EV_DISABLE")))
@@ -6171,54 +6168,31 @@ C @code{struct}s cannot be passed by value.
 @node Platform-specific features
 @appendix Platform-specific features
 
-@cffi{} does some platform tests on loading.  The details vary between
-Lisps; in fact, the purpose is to unify the list of available platform
-features for use elsewhere in the @cffi{} code.  These features are
-also part of the public interface; see @ref{define-foreign-library}.
-
-The exact meanings of the features follow.  Though you will usually
-refer to these symbols as keywords, @cffi{} internally views them in
-the package @code{cffi-features}.
+Whenever a backend doesn't support one of @cffi{}'s features, a
+specific symbol is pushed onto @code{common-lisp:*features*}.  The
+meanings of these symbol follow.
 
 @table @var
-@item flat-namespace
+@item cffi-sys::flat-namespace
 This Lisp has a flat namespace for foreign symbols meaning that you
 won't be able to load two different libraries with homograph functions
 and successfully differentiate them through the @code{:library}
 option to @code{defcfun}, @code{defcvar}, etc@dots{}
 
-@item darwin
-This operating system is Darwin or a derivative thereof, such as
-Mac @acronym{OS X}.
-
-@item no-foreign-funcall
+@item cffi-sys::no-foreign-funcall
 The macro @code{foreign-funcall} is @strong{not} available.  On such
 platforms, the only way to call a foreign function is through
 @code{defcfun}.  @xref{foreign-funcall}, and @ref{defcfun}.
 
-@item no-long-long
+@item cffi-sys::no-long-long
 The C @code{long long} type is @strong{not} available as a foreign
 type.
 
-@item no-stdcall
+@item cffi-sys::no-stdcall
 This Lisp doesn't support the @code{stdcall} calling convention.  Note
 that it only makes sense to support @code{stdcall} on (32-bit) x86
 platforms.
 
-@item ppc32
-The underlying @acronym{CPU} architecture is 32-bit PowerPC.
-
-@item unix
-This operating system is a @sc{unix}-like, such as
-@acronym{GNU}/Linux, Darwin, or even Cygwin on Lisps that show the
-@sc{unix}-like interface provided by Cygwin to Lisp code.
-
-@item windows
-This operating system is Windows.
-
-@item x86
-The underlying @acronym{CPU} architecture is x86, such as on
-processors from Intel or @acronym{AMD}.
 @end table
 
 

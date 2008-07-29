@@ -96,7 +96,7 @@
 ;; of foreign types part of the public interface in CLisp. :-)
 (defun %foreign-type-alignment (type)
   "Return the structure alignment in bytes of foreign TYPE."
-  #+(and cffi-features:darwin cffi-features:ppc32)
+  #+(and darwin ppc)
   (case type
     ((:double :long-long :unsigned-long-long)
      (return-from %foreign-type-alignment 8)))

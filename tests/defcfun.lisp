@@ -274,8 +274,8 @@
 ;;;   (c-function rettype arg-types)
 ;;;   (gen-function-test rettype arg-types))
 
-#-(:or :ecl cffi-features:no-long-long
-       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
+#-(or ecl cffi-sys::no-long-long
+      #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (progn
   (defcfun "sum_127" :long-long
     (a1 :pointer) (a2 :pointer) (a3 :float) (a4 :unsigned-long) (a5 :pointer)
@@ -383,7 +383,7 @@
 
 ;;;# Namespaces
 
-#-cffi-features:flat-namespace
+#-cffi-sys::flat-namespace
 (progn
   (defcfun ("ns_function" ns-fun1 :library libtest) :boolean)
   (defcfun ("ns_function" ns-fun2 :library libtest2) :boolean)
@@ -394,7 +394,7 @@
 
 ;;;# stdcall
 
-#+(and x86 windows (not cffi-features:no-stdcall))
+#+(and x86 windows (not cffi-sys::no-stdcall))
 (progn
   (defcfun ("stdcall_fun@12" stdcall-fun :cconv :stdcall) :int
     (a :int)

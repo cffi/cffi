@@ -35,7 +35,7 @@
 
 ;;; Don't run these tests if the implementation does not support
 ;;; foreign-funcall.
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (progn
 
 (deftest funcall.char
@@ -59,7 +59,7 @@
     (foreign-funcall "labs" :long -131072 :long)
   131072)
 
-#-cffi-features:no-long-long
+#-cffi-sys::no-long-long
 (deftest funcall.long-long
     (foreign-funcall "my_llabs" :long-long -9223372036854775807 :long-long)
   9223372036854775807)
@@ -173,7 +173,7 @@
 
 ;;;# Namespaces
 
-#-cffi-features:flat-namespace
+#-cffi-sys::flat-namespace
 (deftest funcall.namespace.1
     (values (foreign-funcall ("ns_function" :library libtest) :boolean)
             (foreign-funcall ("ns_function" :library libtest2) :boolean))
@@ -181,7 +181,7 @@
 
 ;;;# stdcall
 
-#+(and x86 windows (not cffi-features:no-stdcall))
+#+(and x86 windows (not cffi-sys::no-stdcall))
 (deftest funcall.stdcall.1
     (flet ((fun ()
              (foreign-funcall ("stdcall_fun@12" :cconv :stdcall)
@@ -190,4 +190,4 @@
             finally (return (fun))))
   6)
 
-) ;; #-cffi-features:no-foreign-funcall
+) ;; #-cffi-sys::no-foreign-funcall

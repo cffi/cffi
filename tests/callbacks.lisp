@@ -40,7 +40,7 @@
 (defcfun "expect_pointer_sum"        :int (f :pointer))
 (defcfun "expect_strcat"             :int (f :pointer))
 
-#-cffi-features:no-long-long
+#-cffi-sys::no-long-long
 (progn
   (defcfun "expect_long_long_sum"          :int (f :pointer))
   (defcfun "expect_unsigned_long_long_sum" :int (f :pointer)))
@@ -81,7 +81,7 @@
     ((a :unsigned-long) (b :unsigned-long))
   (+ a b))
 
-#-cffi-features:no-long-long
+#-cffi-sys::no-long-long
 (progn
   (defcallback sum-long-long :long-long
       ((a :long-long) (b :long-long))
@@ -142,7 +142,7 @@
     (expect-unsigned-long-sum (callback sum-unsigned-long))
   1)
 
-#-cffi-features:no-long-long
+#-cffi-sys::no-long-long
 (progn
   #+openmcl (push 'callbacks.long-long rt::*expected-failures*)
 
@@ -175,11 +175,11 @@
     (expect-strcat (callback lisp-strcat))
   1)
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (defcallback return-a-string-not-nil :string ()
   "abc")
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (deftest callbacks.string-not-docstring
     (foreign-funcall-pointer (callback return-a-string-not-nil) () :string)
   "abc")
@@ -216,11 +216,11 @@
 (defcfun "pass_int_ref" :void (f :pointer))
 
 ;;; CMUCL chokes on this one for some reason.
-#-(and cffi-features:darwin cmu)
+#-(and darwin cmu)
 (defcallback read-int-from-pointer :void ((a :pointer))
   (setq *int* (mem-ref a :int)))
 
-#+(and cffi-features:darwin cmu)
+#+(and darwin cmu)
 (pushnew 'callbacks.void rt::*expected-failures*)
 
 (deftest callbacks.void
@@ -232,7 +232,7 @@
 ;;; test funcalling of a callback and also declarations inside
 ;;; callbacks.
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (progn
   (defcallback sum-2 :int ((a :int) (b :int) (c :int))
     (declare (ignore c))
@@ -319,7 +319,7 @@
           (format t "a~A: ~A~%" i arg))
     (reduce #'+ args)))
 
-#+(or openmcl cmu ecl (and cffi-features:darwin (or allegro lispworks)))
+#+(or openmcl cmu ecl (and darwin (or allegro lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
 
 #+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
@@ -329,7 +329,7 @@
 
 ;;; (cb-test)
 
-#-(or cffi-features:no-long-long
+#-(or cffi-sys::no-long-long
       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(or) '(and)))
 (progn
   (defcfun "call_sum_127" :long-long (cb :pointer))
@@ -403,7 +403,7 @@
 ;;; point arithmetic rounding errors.
 ;;;
 ;;; CMUCL chokes on this one.
-#-(and cffi-features:darwin cmu)
+#-(and darwin cmu)
 (defcallback double26 :double
     ((a1 :double) (a2 :double) (a3 :double) (a4 :double) (a5 :double)
      (a6 :double) (a7 :double) (a8 :double) (a9 :double) (a10 :double)
@@ -420,17 +420,17 @@
 
 (defcfun "call_double26" :double (f :pointer))
 
-#+(and cffi-features:darwin (or allegro cmu))
+#+(and darwin (or allegro cmu))
 (pushnew 'callbacks.double26 rt::*expected-failures*)
 
 (deftest callbacks.double26
     (call-double26 (callback double26))
   81.64d0)
 
-#+(and cffi-features:darwin cmu)
+#+(and darwin cmu)
 (pushnew 'callbacks.double26.funcall rt::*expected-failures*)
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (deftest callbacks.double26.funcall
     (foreign-funcall-pointer
      (callback double26) () :double 3.14d0 :double 3.14d0
@@ -444,7 +444,7 @@
   81.64d0)
 
 ;;; Same as above, for floats.
-#-(and cffi-features:darwin cmu)
+#-(and darwin cmu)
 (defcallback float26 :float
     ((a1 :float) (a2 :float) (a3 :float) (a4 :float) (a5 :float)
      (a6 :float) (a7 :float) (a8 :float) (a9 :float) (a10 :float)
@@ -461,17 +461,17 @@
 
 (defcfun "call_float26" :float (f :pointer))
 
-#+(and cffi-features:darwin (or lispworks openmcl cmu))
+#+(and darwin (or lispworks openmcl cmu))
 (pushnew 'callbacks.float26 regression-test::*expected-failures*)
 
 (deftest callbacks.float26
     (call-float26 (callback float26))
   130.0)
 
-#+(and cffi-features:darwin (or lispworks openmcl cmu))
+#+(and darwin (or lispworks openmcl cmu))
 (pushnew 'callbacks.float26.funcall regression-test::*expected-failures*)
 
-#-cffi-features:no-foreign-funcall
+#-cffi-sys::no-foreign-funcall
 (deftest callbacks.float26.funcall
     (foreign-funcall-pointer
      (callback float26) () :float 5.0 :float 5.0
@@ -498,7 +498,7 @@
 
 ;;;# Stdcall
 
-#+(and cffi-features:x86 (not cffi-features:no-stdcall))
+#+(and x86 (not cffi-sys::no-stdcall))
 (progn
   (defcallback (stdcall-cb :cconv :stdcall) :int
       ((a :int) (b :int) (c :int))

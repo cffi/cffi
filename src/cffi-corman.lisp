@@ -63,12 +63,10 @@
 
 (in-package #:cffi-sys)
 
-;;;# Mis-features
+;;;# Misfeatures
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (mapc (lambda (feature) (pushnew feature *features*))
-        '(cffi-features:no-long-long
-          cffi-features:no-foreign-funcall)))
+(pushnew 'no-long-long *features*)
+(pushnew 'no-foreign-funcall *features*)
 
 ;;;$ Symbol Case
 
