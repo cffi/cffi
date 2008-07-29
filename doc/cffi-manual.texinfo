@@ -6221,7 +6221,7 @@ C @code{struct}s cannot be passed by value.
 
 Whenever a backend doesn't support one of @cffi{}'s features, a
 specific symbol is pushed onto @code{common-lisp:*features*}.  The
-meanings of these symbol follow.
+meanings of these symbols follow.
 
 @table @var
 @item cffi-sys::flat-namespace
