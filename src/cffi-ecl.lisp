@@ -241,7 +241,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (declare (ignore name))
   #-dffi (error "LOAD-FOREIGN-LIBRARY requires ECL's DFFI support. Use ~
                  FFI:LOAD-FOREIGN-LIBRARY with a constant argument instead.")
-  #+dffi (si:load-foreign-module path))
+  #+dffi
+  (handler-case (si:load-foreign-module path)
+    (file-error ()
+      (error "file error while trying to load `~A'" path))))
 
 (defun %close-foreign-library (handle)
   (error "%CLOSE-FOREIGN-LIBRARY unimplemented."))
