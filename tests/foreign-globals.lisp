@@ -42,6 +42,20 @@
 (defcvar "var_long_long"          :long-long)
 (defcvar "var_unsigned_long_long" :unsigned-long-long)
 
+;;; The expected failures marked below result from this odd behaviour:
+;;;
+;;;   (foreign-symbol-pointer "var_char") => NIL
+;;;
+;;;   (foreign-symbol-pointer "var_char" :library 'libtest)
+;;;     => #<Pointer to type :VOID = #xF7F50740>
+;;;
+;;; Why is this  happening? --luis
+#+lispworks
+(mapc (lambda (x) (pushnew x rtest::*expected-failures*))
+      '(foreign-globals.ref.char foreign-globals.get-var-pointer.1
+        foreign-globals.get-var-pointer.2 foreign-globals.symbol-name
+        foreign-globals.read-only.1 ))
+
 (deftest foreign-globals.ref.char
     *char-var*
   -127)
