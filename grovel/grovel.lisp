@@ -650,13 +650,16 @@ error:
 
 ;;; FIXME: where would docs on enum elements go?
 (define-grovel-syntax cenum (name &rest enum-list)
-  (destructuring-bind (name &key define-constants)
+  (destructuring-bind (name &key base-type define-constants)
       (ensure-list name)
     (c-section-header out "cenum" name)
     (c-export out name)
-    (c-format out "(cffi:defcenum ")
+    (c-format out "(cffi:defcenum (")
     (c-print-symbol out name t)
-    (c-format out "~%")
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
     (dolist (enum enum-list)
       (destructuring-bind ((lisp-name &rest c-names) &key documentation)
           enum
@@ -674,12 +677,16 @@ error:
       (define-constants-from-enum out enum-list))))
 
 (define-grovel-syntax constantenum (name &rest enum-list)
-  (destructuring-bind (name &key define-constants)
+  (destructuring-bind (name &key base-type define-constants)
       (ensure-list name)
     (c-section-header out "constantenum" name)
     (c-export out name)
-    (c-format out "(cffi:defcenum ")
+    (c-format out "(cffi:defcenum (")
     (c-print-symbol out name t)
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
     (dolist (enum enum-list)
       (destructuring-bind ((lisp-name &rest c-names)
                            &key optional documentation) enum
