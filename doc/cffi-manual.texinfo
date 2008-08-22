@@ -6078,17 +6078,23 @@ is an enum or equivalent to type @code{:int}.
 The @var{namespec} is similar to the one used in @ref{defcvar}.
 @end deffn
 
-@deffn {Grovel Form} cenum name &rest elements
+@deffn {Grovel Form} cenum name-and-opts &rest elements
 
 Defines a true C enum, with elements specified as @code{((lisp-name
 &rest c-names) &key optional documentation)}.
+@code{name-and-opts} can be either a symbol as name, or a list
+@code{(name &key define-constants)}. If @code{define-constants} is
+non-null, a Lisp constant will be defined for each enum member.
 @end deffn
 
-@deffn {Grovel Form} constantenum name &rest elements
+@deffn {Grovel Form} constantenum name-and-opts &rest elements
 
 Defines an enumeration of pre-processor constants, with elements
 specified as @code{((lisp-name &rest c-names) &key optional
 documentation)}.
+@code{name-and-opts} can be either a symbol as name, or a list
+@code{(name &key define-constants)}. If @code{define-constants} is
+non-null, a Lisp constant will be defined for each enum member.
 
 This example defines @code{:af-inet} to represent the value held by
 @code{AF_INET} or @code{PF_INET}, whichever the pre-processor finds

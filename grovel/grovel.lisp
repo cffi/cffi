@@ -650,53 +650,70 @@ error:
 
 ;;; FIXME: where would docs on enum elements go?
 (define-grovel-syntax cenum (name &rest enum-list)
-  (c-section-header out "cenum" name)
-  (c-export out name)
-  (c-format out "(cffi:defcenum ")
-  (c-print-symbol out name t)
-  (c-format out "~%")
-  (dolist (enum enum-list)
-    (destructuring-bind ((lisp-name &rest c-names) &key documentation)
-        enum
-      (declare (ignore documentation))
-      (check-type lisp-name keyword)
-      (loop :for c-name :in c-names :do
-       (check-type c-name string)
-       (c-format out "  (")
-       (c-print-symbol out lisp-name)
-       (c-format out " ")
-       (c-printf out "%i" c-name)
-       (c-format out ")~%"))))
-  (c-format out ")~%"))
+  (destructuring-bind (name &key define-constants)
+      (ensure-list name)
+    (c-section-header out "cenum" name)
+    (c-export out name)
+    (c-format out "(cffi:defcenum ")
+    (c-print-symbol out name t)
+    (c-format out "~%")
+    (dolist (enum enum-list)
+      (destructuring-bind ((lisp-name &rest c-names) &key documentation)
+          enum
+        (declare (ignore documentation))
+        (check-type lisp-name keyword)
+        (loop :for c-name :in c-names :do
+           (check-type c-name string)
+           (c-format out "  (")
+           (c-print-symbol out lisp-name)
+           (c-format out " ")
+           (c-printf out "%i" c-name)
+           (c-format out ")~%"))))
+    (c-format out ")~%")
+    (when define-constants
+      (define-constants-from-enum out enum-list))))
 
 (define-grovel-syntax constantenum (name &rest enum-list)
-  (c-section-header out "constantenum" name)
-  (c-export out name)
-  (c-format out "(cffi:defcenum ")
-  (c-print-symbol out name t)
-  (dolist (enum enum-list)
-    (destructuring-bind ((lisp-name &rest c-names)
-                         &key optional documentation) enum
-      (declare (ignore documentation))
-      (check-type lisp-name keyword)
-      (c-format out "~%  (")
-      (c-print-symbol out lisp-name)
-      (loop for c-name in c-names do
-            (check-type c-name string)
-            (format out "~&#ifdef ~A~%" c-name)
-            (c-format out " ")
-            (c-printf out "%i" c-name)
-            (format out "~&#else~%"))
-      (unless optional
-        (c-format out
-                  "~%  #.(cl:progn ~
+  (destructuring-bind (name &key define-constants)
+      (ensure-list name)
+    (c-section-header out "constantenum" name)
+    (c-export out name)
+    (c-format out "(cffi:defcenum ")
+    (c-print-symbol out name t)
+    (dolist (enum enum-list)
+      (destructuring-bind ((lisp-name &rest c-names)
+                           &key optional documentation) enum
+        (declare (ignore documentation))
+        (check-type lisp-name keyword)
+        (c-format out "~%  (")
+        (c-print-symbol out lisp-name)
+        (loop for c-name in c-names do
+             (check-type c-name string)
+             (format out "~&#ifdef ~A~%" c-name)
+             (c-format out " ")
+             (c-printf out "%i" c-name)
+             (format out "~&#else~%"))
+        (unless optional
+          (c-format out
+                    "~%  #.(cl:progn ~
                            (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
                            -1)"
-                  lisp-name))
-      (dotimes (i (length c-names))
-        (format out "~&#endif~%"))
-      (c-format out ")")))
-  (c-format out ")~%")  )
+                    lisp-name))
+        (dotimes (i (length c-names))
+          (format out "~&#endif~%"))
+        (c-format out ")")))
+    (c-format out ")~%")
+    (when define-constants
+      (define-constants-from-enum out enum-list))))
+
+(defun define-constants-from-enum (out enum-list)
+  (dolist (enum enum-list)
+    (destructuring-bind ((lisp-name &rest c-names) &rest options)
+        enum
+      (%process-grovel-form
+       'constant out
+       `((,(intern (string lisp-name)) ,(car c-names))
+         ,@options)))))
 
 ;;;# Wrapper Generation
 ;;;
