@@ -6022,10 +6022,10 @@ source code.
 Set the package to be used for the final Lisp output.
 @end deffn
 
-@deffn {Grovel Form} ctype lisp-name signedness size-designator
+@deffn {Grovel Form} ctype lisp-name size-designator
 
 Define a @cffi{} foreign type for the string in @var{size-designator},
-e.g. @code{(ctype :pid :unsigned "pid_t")}.
+e.g. @code{(ctype :pid "pid_t")}.
 @end deffn
 
 @deffn {Grovel Form} constant (lisp-name &rest c-names) &key documentation optional
