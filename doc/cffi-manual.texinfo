@@ -6082,8 +6082,8 @@ The @var{namespec} is similar to the one used in @ref{defcvar}.
 
 Defines a true C enum, with elements specified as @code{((lisp-name
 &rest c-names) &key optional documentation)}.
-@code{name-and-opts} can be either a symbol as name, or a list
-@code{(name &key define-constants)}. If @code{define-constants} is
+@var{name-and-opts} can be either a symbol as name, or a list
+@code{(name &key define-constants)}. If @var{define-constants} is
 non-null, a Lisp constant will be defined for each enum member.
 @end deffn
 
@@ -6092,8 +6092,8 @@ non-null, a Lisp constant will be defined for each enum member.
 Defines an enumeration of pre-processor constants, with elements
 specified as @code{((lisp-name &rest c-names) &key optional
 documentation)}.
-@code{name-and-opts} can be either a symbol as name, or a list
-@code{(name &key define-constants)}. If @code{define-constants} is
+@var{name-and-opts} can be either a symbol as name, or a list
+@code{(name &key define-constants)}. If @var{define-constants} is
 non-null, a Lisp constant will be defined for each enum member.
 
 This example defines @code{:af-inet} to represent the value held by
