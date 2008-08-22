@@ -6033,7 +6033,8 @@ e.g. @code{(ctype :pid "pid_t")}.
 Search for the constant named by the first @var{c-name} string found
 to be known to the C preprocessor and define it as @var{lisp-name}.
 If optional is true, no error will be raised if all the @var{c-names}
-are unknown.
+are unknown. If @var{lisp-name} is a keyword, the actual constant
+will be a symbol of the same name interned in the current package.
 @end deffn
 
 @deffn {Grovel Form} define name &optional value
