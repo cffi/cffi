@@ -806,6 +806,12 @@ error:
 (define-wrapper-syntax flag (flag-string)
   (push flag-string *cc-flags*))
 
+(define-wrapper-syntax proclaim (&rest proclamations)
+  (push `(proclaim ,@proclamations) *lisp-forms*))
+
+(define-wrapper-syntax declaim (&rest declamations)
+  (push `(declaim ,@declamations) *lisp-forms*))
+
 (define-wrapper-syntax define (name &optional value)
   (format out "#define ~A~@[ ~A~]~%" name value))
 
