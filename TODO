@@ -34,8 +34,6 @@ This is a collection of TODO items and ideas in no particular order.
 -> Extend DEFCVAR's symbol macro in order to handle memory (de)allocation
    automatically (see CLISP).
 -> Implement byte swapping routines (see /usr/include/linux/byteorder)
--> [Lost Idea] Implement UB8-REF?
--> [Lost Idea] Something about MEM-READ-C-STRING returning multiple value?
 -> Warn about :void in places where it doesn't make sense.
 
 ### Underspecified Semantics
