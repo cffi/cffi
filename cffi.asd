@@ -31,7 +31,7 @@
 (defsystem cffi
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.10.1"
+  :version "0.10.2"
   :licence "MIT"
   :depends-on (alexandria trivial-features babel)
   :components
