@@ -83,6 +83,19 @@
       (load-foreign-library-error () 'error))
   error)
 
+(define-foreign-library pseudo-library
+  (t pseudo-library-spec))
+
+;;; RT: T clause was being handled as :T by FEATUREP.
+;;;
+;;; We might want to export (and clean up) the API used in this test
+;;; when the need arises.
+(deftest library.t-clause
+    (eq (cffi::foreign-library-spec
+         (cffi::get-foreign-library 'pseudo-library))
+        'pseudo-library-spec)
+  t)
+
 ;;;# Shareable Byte Vector Tests
 
 #+(or ecl allegro)

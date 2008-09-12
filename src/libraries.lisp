@@ -117,7 +117,10 @@
   (setf (gethash name *foreign-libraries*) value))
 
 (defun %foreign-library-spec (lib)
-  (assoc-if #'featurep (slot-value lib 'spec)))
+  (assoc-if (lambda (feature)
+              (or (eq feature t)
+                  (featurep feature)))
+            (slot-value lib 'spec)))
 
 (defun foreign-library-spec (lib)
   (second (%foreign-library-spec lib)))
