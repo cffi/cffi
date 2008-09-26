@@ -23,6 +23,8 @@
 # Original author: Mohit Agarwal.
 # Send bug reports and any other correspondence to bug-texinfo@gnu.org.
 
+#set -e
+
 prog="`basename \"$0\"`"
 srcdir=`pwd`
 
@@ -205,7 +207,7 @@ cmd="${MAKEINFO} --no-split --html -o $PACKAGE.html $html $srcfile"
 echo "Generating monolithic html... ($cmd)"
 rm -rf $PACKAGE.html  # in case a directory is left over
 eval $cmd
-sbcl --load colorize-lisp-examples.lisp $PACKAGE.html
+sbcl --no-sysinit --no-userinit --load colorize-lisp-examples.lisp $PACKAGE.html
 #fix libc/libtool xrefs
 sed -e `monognuorg libc` -e `monognuorg libtool` $PACKAGE.html >$outdir/$PACKAGE.html
 rm $PACKAGE.html
@@ -217,7 +219,7 @@ cmd="${MAKEINFO} --html -o $PACKAGE.html $html $srcfile"
 echo "Generating html by node... ($cmd)"
 eval $cmd
 split_html_dir=$PACKAGE.html
-sbcl --load colorize-lisp-examples.lisp "${split_html_dir}"/\*.html
+sbcl --no-userinit --no-sysinit --load colorize-lisp-examples.lisp "${split_html_dir}"/\*.html
 (
   cd ${split_html_dir} || exit 1
   #fix libc xrefs
