@@ -200,7 +200,7 @@
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (sprintf s "%.2Lf" :long-double pi))
-  "3.14" 4)
+  "3.14")
 
 (deftest defcfun.varargs.string
     (with-foreign-pointer-as-string (s 100)

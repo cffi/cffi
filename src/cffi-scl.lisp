@@ -310,7 +310,7 @@
   (ext:close-dynamic-object name))
 
 (defun native-namestring (pathname)
-  (ext:unix-namestring pathname))
+  (ext:unix-namestring pathname nil))
 
 ;;;# Foreign Globals
 

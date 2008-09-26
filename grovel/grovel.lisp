@@ -62,7 +62,7 @@
   (values (ext:system (format nil "~A~{ ~A~}" command arglist))
           "<see above>"))
 
-#+(or openmcl cmu sbcl)
+#+(or openmcl cmu scl sbcl)
 (defun %invoke (command arglist)
   (let* ((exit-code)
          (output
