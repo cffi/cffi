@@ -329,7 +329,12 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Closes a foreign library."
   (sb-alien::dlclose-or-lose
    (find (sb-ext:native-namestring handle) sb-alien::*shared-objects*
-         :key #'sb-alien::shared-object-file
+         :key #.(flet ((find-so-accessor (name)
+                         (let ((sym (find-symbol (string name) :sb-alien)))
+                           (and (fboundp sym) `(function ,sym)))))
+                  (or (find-so-accessor '#:shared-object-file) ; before 1.0.21.15
+                      (find-so-accessor '#:shared-object-pathname)
+                      (error "No shared object accessor found. Please report this bug.")))
          :test #'string=)))
 
 (defun native-namestring (pathname)
