@@ -586,7 +586,12 @@ error:
                            (format nil "sizeof(~A) - offsetof(~A, ~A)"
                                    struct-c-name
                                    struct-c-name
-                                   slot-c-name)))))
+                                   slot-c-name)))
+                (t
+                 (format out "~&#ifdef ~A~%" count)
+                 (c-printf out " :count %i"
+                           (format nil "~A" count))
+                 (format out "~&#endif~%"))))
         (c-printf out " :offset %i)"
                   (format nil "offsetof(~A, ~A)"
                           struct-c-name
