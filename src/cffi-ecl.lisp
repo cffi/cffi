@@ -125,6 +125,32 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Return the address pointed to by PTR."
   (ffi:pointer-address ptr))
 
+;;;# Shareable Vectors
+;;;
+;;; This interface is very experimental.  WITH-POINTER-TO-VECTOR-DATA
+;;; should be defined to perform a copy-in/copy-out if the Lisp
+;;; implementation can't do this.
+
+(defun make-shareable-byte-vector (size)
+  "Create a Lisp vector of SIZE bytes that can passed to
+WITH-POINTER-TO-VECTOR-DATA."
+  (make-array size :element-type '(unsigned-byte 8)))
+
+;;; ECL, built with the Boehm GC never moves allocated data, so this
+;;; isn't nearly as hard to do.
+(defun %vector-address (vector)
+  "Return the address of VECTOR's data."
+  (check-type vector (vector (unsigned-byte 8)))
+  (ffi:c-inline (vector) (object) :unsigned-long
+                "(unsigned long) #0->vector.self.b8"
+                :side-effects nil
+                :one-liner t))
+
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
+  `(let ((,ptr-var (make-pointer (%vector-address ,vector))))
+     ,@body))
+
 ;;;# Dereferencing
 
 (defun %mem-ref (ptr type &optional (offset 0))
