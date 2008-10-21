@@ -344,7 +344,8 @@ error:
                 :defaults defaults)))
     ;; It's necessary to prepend "./" to relative paths because some
     ;; implementations of INVOKE use a shell.
-    (when (eq :relative (car (pathname-directory path)))
+    (when (or (not (pathname-directory path))
+              (eq :relative (car (pathname-directory path))))
       (setf path (make-pathname
                   :directory (list* :relative "."
                                     (cdr (pathname-directory path)))
