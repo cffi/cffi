@@ -29,7 +29,8 @@
 
 (defpackage #:cffi-sys
   (:use #:common-lisp #:sb-alien)
-  (:import-from #:alexandria #:once-only #:with-unique-names #:when-let)
+  (:import-from #:alexandria
+                #:once-only #:with-unique-names #:when-let #:removef)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -325,17 +326,31 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore name))
   (load-shared-object path))
 
+;;; SBCL 1.0.21.15 renamed SB-ALIEN::SHARED-OBJECT-FILE but introduced
+;;; SB-ALIEN:UNLOAD-SHARED-OBJECT which we can use instead.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun unload-shared-object-present-p ()
+    (multiple-value-bind (foundp kind)
+        (find-symbol "UNLOAD-SHARED-OBJECT" "SB-ALIEN")
+      (if (and foundp (eq kind :external))
+          '(:and)
+          '(:or)))))
+
 (defun %close-foreign-library (handle)
   "Closes a foreign library."
-  (sb-alien::dlclose-or-lose
-   (find (sb-ext:native-namestring handle) sb-alien::*shared-objects*
-         :key #.(flet ((find-so-accessor (name)
-                         (let ((sym (find-symbol (string name) :sb-alien)))
-                           (and (fboundp sym) `(function ,sym)))))
-                  (or (find-so-accessor '#:shared-object-file) ; before 1.0.21.15
-                      (find-so-accessor '#:shared-object-pathname)
-                      (error "No shared object accessor found. Please report this bug.")))
-         :test #'string=)))
+  #+#.(cffi-sys::unload-shared-object-present-p)
+  (sb-alien:unload-shared-object handle)
+  #-#.(cffi-sys::unload-shared-object-present-p)
+  (sb-thread:with-mutex (sb-alien::*shared-objects-lock*)
+    (let ((obj (find (sb-ext:native-namestring handle)
+                     sb-alien::*shared-objects*
+                     :key #'sb-alien::shared-object-file
+                     :test #'string=)))
+      (when obj
+        (sb-alien::dlclose-or-lose obj)
+        (removef sb-alien::*shared-objects* obj)
+        #+(and linkage-table (not win32))
+        (sb-alien::update-linkage-table)))))
 
 (defun native-namestring (pathname)
   (sb-ext:native-namestring pathname))
