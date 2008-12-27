@@ -5007,10 +5007,10 @@ Dictionary
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
-@Macro{defcfun name-and-options return-type &body arguments [&rest] @
+@Macro{defcfun name-and-options return-type &body [docstring] arguments [&rest] @
                @res{} lisp-name}
 
-@var{name-and-options} name | (name &key library calling-convention cconv) @*
+@var{name-and-options} ::= name | (name &key library calling-convention cconv) @*
 @var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}] @*
 @var{arguments} ::= @{ (arg-name arg-type) @}* @*
 
@@ -5032,10 +5032,13 @@ A foreign type.
 
 @item calling-convention
 @itemx cconv
-One of @code{:cdecl} (default) or @code{stdcall}.
+One of @code{:cdecl} (default) or @code{:stdcall}.
 
 @item library
 A symbol designating a foreign library.
+
+@item docstring
+A documentation string.
 @end table
 
 @subheading Description
@@ -5067,7 +5070,9 @@ function and will only work for Lisps that support
 @subheading Examples
 
 @lisp
-(defcfun "strlen" :int (n :string))
+(defcfun "strlen" :int
+  "Calculate the length of a string."
+  (n :string))
 
 CFFI> (strlen "123")
 @result{} 3
@@ -5078,6 +5083,15 @@ CFFI> (strlen "123")
 
 CFFI> (c-abs -42)
 @result{} 42
+@end lisp
+
+Function without arguments:
+
+@lisp
+(defcfun "rand" :int)
+
+CFFI> (rand)
+@result{} 1804289383
 @end lisp
 
 Variadic function example:
