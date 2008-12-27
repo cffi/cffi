@@ -55,7 +55,6 @@ returning nil when foreign-name is not found."
 
 (defmacro defcvar (name-and-options type &optional documentation)
   "Define a foreign global variable."
-  (declare (ignore documentation))
   (multiple-value-bind (lisp-name foreign-name options)
       (parse-name-and-options name-and-options t)
     (let ((fn (symbolicate '#:%var-accessor- lisp-name))
@@ -65,6 +64,7 @@ returning nil when foreign-name is not found."
       (when (aggregatep (parse-type type))
         (setq read-only t))
       `(progn
+         (setf (documentation ',lisp-name 'variable) ,documentation)
          ;; Save foreign-name and library for posterior access by
          ;; GET-VAR-POINTER.
          (setf (get ',lisp-name 'foreign-var-name) ,foreign-name)

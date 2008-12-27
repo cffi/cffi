@@ -284,9 +284,13 @@
 ;;;# Read-only
 
 (defcvar ("var_char" *var-char-ro* :read-only t) :char
-  "Testing the docstring too.")
+  "docstring")
 
 (deftest foreign-globals.read-only.1
     (values *var-char-ro*
             (ignore-errors (setf *var-char-ro* 12)))
   -127 nil)
+
+(deftest defcvar.docstring
+    (documentation '*var-char-ro* 'variable)
+  "docstring")
