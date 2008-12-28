@@ -486,13 +486,14 @@ error:
         (c-print-symbol out slot-lisp-name t)
         (c-format out " ")
         (c-print-symbol out type)
-        (when count
-          (cond ((integerp count)
-                 (c-format out " :count ~D" count))
-                ((eq count :auto)
-                 ;; nb, works like :count :auto does in cstruct below
-                 (c-printf out " :count %i"
-                           (format nil "sizeof(~A)" union-c-name)))))
+        (etypecase count
+          (integer
+           (c-format out " :count ~D" count))
+          ((eql :auto)
+           ;; nb, works like :count :auto does in cstruct below
+           (c-printf out " :count %i"
+                     (format nil "sizeof(~A)" union-c-name)))
+          (null t))
         (c-format out ")")))
     (c-format out ")~%")))
 
@@ -578,20 +579,21 @@ error:
         (c-print-symbol out slot-lisp-name t)
         (c-format out " ")
         (c-print-symbol out type)
-        (when count
-          (cond ((integerp count)
-                 (c-format out " :count ~D" count))
-                ((eq count :auto)
-                 (c-printf out " :count %i"
-                           (format nil "sizeof(~A) - offsetof(~A, ~A)"
-                                   struct-c-name
-                                   struct-c-name
-                                   slot-c-name)))
-                (t
-                 (format out "~&#ifdef ~A~%" count)
-                 (c-printf out " :count %i"
-                           (format nil "~A" count))
-                 (format out "~&#endif~%"))))
+        (etypecase count
+          (integer
+           (c-format out " :count ~D" count))
+          ((eql :auto)
+           (c-printf out " :count %i"
+                     (format nil "sizeof(~A) - offsetof(~A, ~A)"
+                             struct-c-name
+                             struct-c-name
+                             slot-c-name)))
+          ((or symbol string)
+           (format out "~&#ifdef ~A~%" count)
+           (c-printf out " :count %i"
+                     (format nil "~A" count))
+           (format out "~&#endif~%"))
+          (null t))
         (c-printf out " :offset %i)"
                   (format nil "offsetof(~A, ~A)"
                           struct-c-name
