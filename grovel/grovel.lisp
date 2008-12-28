@@ -42,7 +42,7 @@
 
 ;;;# Shell Execution
 
-#-(or openmcl clisp lispworks allegro scl cmu sbcl ecl)
+#-(or allegro clisp cmu ecl lispworks openmcl sbcl scl)
 (error "%INVOKE is unimplemented for this Lisp.  Patches welcome.")
 
 ;;; FIXME: As best I can tell CLISP's EXT:RUN-PROGRAM can either
@@ -51,7 +51,10 @@
 #+clisp
 (defun %invoke (command arglist)
   (let ((ret (ext:run-program command :arguments arglist)))
-    (values #-windows ret #+windows (if ret 0 1)
+    (values (etypecase ret
+              ((eql nil) 0)
+              ((eql   t) 1)
+              (integer   ret))
             "<see above>")))
 
 ;;; FIXME: there's no way to tell from EXT:RUN-PROGRAM whether the
