@@ -75,13 +75,13 @@
 @alias seealso = ref
 @end ifnotinfo
 
-@c Set ROMANCOMMENTS to get comments in roman font.
-@ifset ROMANCOMMENTS
+@c Typeset comments in roman font for the TeX output.
+@iftex
 @alias lispcmt = r
-@end ifset
-@ifclear ROMANCOMMENTS
+@end iftex
+@ifnottex
 @alias lispcmt = asis
-@end ifclear
+@end ifnottex
 
 @c My copy of makeinfo is not generating any HTML for @result{} for
 @c some odd reason. (It certainly used to...)
@@ -360,7 +360,7 @@ collection of portable public-domain utilities.
 
 @item
 @uref{http://www.cliki.net/trivial-features,,trivial-features}, a
-portability layer that ensure consistent @code{*features*} across
+portability layer that ensures consistent @code{*features*} across
 multiple Common Lisp implementations.
 
 @end itemize
@@ -1026,10 +1026,10 @@ set-`TYPE-NAME'-`OPTION-NAME', where OPTION-NAME is the NAME from
 the above destructuring."
   (flet ((enumerated-value (type offset)
            (+ (getf type-offsets type) offset))
-         ;;@lispcmt{map PROCEDURE, destructuring each of ENUM-ARGS}
+         ;; @lispcmt{map PROCEDURE, destructuring each of ENUM-ARGS}
          (map-enum-args (procedure)
            (mapcar (lambda (arg) (apply procedure arg)) enum-args))
-         ;;@lispcmt{build a name like SET-CURL-OPTION-NOSIGNAL}
+         ;; @lispcmt{build a name like SET-CURL-OPTION-NOSIGNAL}
          (make-setter-name (option-name)
            (intern (concatenate
                     'string "SET-" (symbol-name type-name)
@@ -2113,7 +2113,7 @@ defined @code{my-string} type:
 
 @lisp
 CFFI> (macroexpand-1 '(defcfun foo my-string (x my-string)))
-;; (simplified, downcased, etc...)
+;; @lispcmt{(simplified, downcased, etc...)}
 (defun foo (x)
   (multiple-value-bind (#:G2019 #:PARAM3149)
       (translate-to-foreign x #<MY-STRING-TYPE @{11ED5A79@}>)
@@ -2152,7 +2152,7 @@ look like:
 
 @lisp
 CFFI> (macroexpand-1 '(defcfun bar my-boolean (x my-boolean)))
-;; (simplified, downcased, etc...)
+;; @lispcmt{(simplified, downcased, etc...)}
 (defun bar (x)
   (let ((#:g3182 (if x 1 0)))
     (not (zerop (foreign-funcall "bar" :int #:g3182 :int)))))
@@ -2186,7 +2186,7 @@ So let's look at the macro expansion:
 
 @lisp
 CFFI> (macroexpand-1 '(defcfun foo my-string (x my-string)))
-;; (simplified, downcased, etc...)
+;; @lispcmt{(simplified, downcased, etc...)}
 (defun foo (x)
   (with-foreign-string (#:G2021 X :encoding ':utf-8)
     (foreign-string-to-lisp
@@ -2280,6 +2280,7 @@ translation.
 @c ===================================================================
 @c CONVERT-FROM-FOREIGN
 
+@page
 @node convert-from-foreign
 @unnumberedsec convert-from-foreign
 @subheading Syntax
@@ -2332,6 +2333,7 @@ CFFI-USER> (convert-from-foreign * :string)
 @c ===================================================================
 @c CONVERT-TO-FOREIGN
 
+@page
 @node convert-to-foreign
 @unnumberedsec convert-to-foreign
 @subheading Syntax
@@ -2392,6 +2394,7 @@ CFFI-USER> (code-char (mem-aref * :char 5))
 @c ===================================================================
 @c DEFBITFIELD
 
+@page
 @node defbitfield
 @unnumberedsec defbitfield
 @subheading Syntax
@@ -2476,6 +2479,7 @@ CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
 @c ===================================================================
 @c DEFCSTRUCT
 
+@page
 @node defcstruct
 @unnumberedsec defcstruct
 @subheading Syntax
@@ -2595,6 +2599,7 @@ CFFI> (foreign-type-size 'foo)
 @c ===================================================================
 @c DEFCUNION
 
+@page
 @node defcunion
 @unnumberedsec defcunion
 @subheading Syntax
@@ -2642,6 +2647,7 @@ usual foreign structure operations for accessing a union's slots.
 @c ===================================================================
 @c DEFCTYPE
 
+@page
 @node defctype
 @unnumberedsec defctype
 @subheading Syntax
@@ -2683,6 +2689,7 @@ that, you should use @ref{define-foreign-type}.
 @c ===================================================================
 @c DEFCENUM
 
+@page
 @node defcenum
 @unnumberedsec defcenum
 @subheading Syntax
@@ -2754,6 +2761,7 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @c ===================================================================
 @c DEFINE-FOREIGN-TYPE
 
+@page
 @node define-foreign-type
 @unnumberedsec define-foreign-type
 @subheading Syntax
@@ -2820,6 +2828,7 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @c ===================================================================
 @c DEFINE-PARSE-METHOD
 
+@page
 @node define-parse-method
 @unnumberedsec define-parse-method
 @subheading Syntax
@@ -2912,6 +2921,7 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @c ===================================================================
 @c FOREIGN-BITFIELD-SYMBOLS
 
+@page
 @node foreign-bitfield-symbols
 @unnumberedsec foreign-bitfield-symbols
 @subheading Syntax
@@ -2954,6 +2964,7 @@ CFFI> (foreign-bitfield-symbols 'boolean #b101)
 @c ===================================================================
 @c FOREIGN-BITFIELD-VALUE
 
+@page
 @node foreign-bitfield-value
 @unnumberedsec foreign-bitfield-value
 @subheading Syntax
@@ -2995,6 +3006,7 @@ CFFI> (foreign-bitfield-value 'flags '(flag-a flag-c))
 @c ===================================================================
 @c FOREIGN-ENUM-KEYWORD
 
+@page
 @node foreign-enum-keyword
 @unnumberedsec foreign-enum-keyword
 @subheading Syntax
@@ -3043,6 +3055,7 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @c ===================================================================
 @c FOREIGN-ENUM-VALUE
 
+@page
 @node foreign-enum-value
 @unnumberedsec foreign-enum-value
 @subheading Syntax
@@ -3091,6 +3104,7 @@ CFFI> (foreign-enum-value 'boolean :yes)
 @c ===================================================================
 @c FOREIGN-SLOT-NAMES
 
+@page
 @node foreign-slot-names
 @unnumberedsec foreign-slot-names
 @subheading Syntax
@@ -3131,6 +3145,7 @@ CFFI> (foreign-slot-names 'timeval)
 @c ===================================================================
 @c FOREIGN-SLOT-OFFSET
 
+@page
 @node foreign-slot-offset
 @unnumberedsec foreign-slot-offset
 @subheading Syntax
@@ -3175,6 +3190,7 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @c ===================================================================
 @c FOREIGN-SLOT-POINTER
 
+@page
 @node foreign-slot-pointer
 @unnumberedsec foreign-slot-pointer
 @subheading Syntax
@@ -3228,6 +3244,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @c ===================================================================
 @c FOREIGN-SLOT-VALUE
 
+@page
 @node foreign-slot-value
 @unnumberedsec foreign-slot-value
 @subheading Syntax
@@ -3291,6 +3308,7 @@ CFFI> (with-foreign-object (ptr 'point)
 @c ===================================================================
 @c FOREIGN-TYPE-ALIGNMENT
 
+@page
 @node foreign-type-alignment
 @unnumberedsec foreign-type-alignment
 @subheading Syntax
@@ -3336,6 +3354,7 @@ CFFI> (foreign-type-alignment 'foo)
 @c ===================================================================
 @c FOREIGN-TYPE-SIZE
 
+@page
 @node foreign-type-size
 @unnumberedsec foreign-type-size
 @subheading Syntax
@@ -3379,6 +3398,7 @@ CFFI> (foreign-type-size 'foo)
 @c ===================================================================
 @c FREE-CONVERTED-OBJECT
 
+@page
 @node free-converted-object
 @unnumberedsec free-converted-object
 @subheading Syntax
@@ -3435,6 +3455,7 @@ CFFI-USER> (free-converted-object * :string '(t))
 
 @c TODO: update
 
+@page
 @node free-translated-object
 @unnumberedsec free-translated-object
 @subheading Syntax
@@ -3472,6 +3493,7 @@ the @code{defctype} macro.
 
 @c TODO: update
 
+@page
 @node translate-from-foreign
 @unnumberedsec translate-from-foreign
 @subheading Syntax
@@ -3518,6 +3540,7 @@ defined for built-in types.
 
 @c TODO: update
 
+@page
 @node translate-to-foreign
 @unnumberedsec translate-to-foreign
 @subheading Syntax
@@ -3577,6 +3600,7 @@ defined for built-in types.
 @c ===================================================================
 @c WITH-FOREIGN-SLOTS
 
+@page
 @node with-foreign-slots
 @unnumberedsec with-foreign-slots
 @subheading Syntax
@@ -3739,6 +3763,7 @@ dereference @code{*} in C; use @code{mem-aref} for array indexing and
 @c ===================================================================
 @c FOREIGN-FREE
 
+@page
 @node foreign-free
 @unnumberedsec foreign-free
 @subheading Syntax
@@ -3773,6 +3798,7 @@ CFFI> (foreign-free *)
 @c ===================================================================
 @c FOREIGN-ALLOC
 
+@page
 @node foreign-alloc
 @unnumberedsec foreign-alloc
 @subheading Syntax
@@ -3853,15 +3879,15 @@ CFFI> (loop for i from 0 below 3
             collect (mem-aref * :int i))
 @result{} (1 2 3)
 
-;;; Allocate a char** pointer that points to newly allocated memory
-;;; by the :string type translator for the string "foo".
+;;; @lispcmt{Allocate a char** pointer that points to newly allocated memory}
+;;; @lispcmt{by the :string type translator for the string "foo".}
 CFFI> (foreign-alloc :string :initial-element "foo")
 @result{} #<A Mac Pointer #x102C40>
 @end lisp
 
 @lisp
-;;; Allocate a null-terminated array of strings.
-;;; (Note: FOREIGN-STRING-TO-LISP returns NIL when passed a null pointer)
+;;; @lispcmt{Allocate a null-terminated array of strings.}
+;;; @lispcmt{(Note: FOREIGN-STRING-TO-LISP returns NIL when passed a null pointer)}
 CFFI> (foreign-alloc :string
                      :initial-contents '("foo" "bar" "baz")
                      :null-terminated-p t)
@@ -3885,6 +3911,7 @@ CFFI> (progn
 @c ===================================================================
 @c FOREIGN-SYMBOL-POINTER
 
+@page
 @node foreign-symbol-pointer
 @unnumberedsec foreign-symbol-pointer
 @subheading Syntax
@@ -3942,6 +3969,7 @@ CFFI> (foreign-symbol-pointer "inexistent symbol")
 @c ===================================================================
 @c INC-POINTER
 
+@page
 @node inc-pointer
 @unnumberedsec inc-pointer
 @subheading Syntax
@@ -3984,8 +4012,9 @@ CFFI> (foreign-string-to-lisp *)
 @c ===================================================================
 @c INCF-POINTER
 
+@page
 @node incf-pointer
-@unnumberedsec inc-pointer
+@unnumberedsec incf-pointer
 @subheading Syntax
 @Macro{incf-pointer place &optional (offset 1) @res{} new-pointer}
 
@@ -4033,6 +4062,7 @@ CFFI> (foreign-string-to-lisp *two-words*)
 @c ===================================================================
 @c MAKE-POINTER
 
+@page
 @node make-pointer
 @unnumberedsec make-pointer
 @subheading Syntax
@@ -4082,6 +4112,7 @@ CFFI> (typep ** 'foreign-pointer)
 @c ===================================================================
 @c MEM-AREF
 
+@page
 @node mem-aref
 @unnumberedsec mem-aref
 @subheading Syntax
@@ -4140,6 +4171,7 @@ CFFI> (with-foreign-object (array :int 10)
 @c ===================================================================
 @c MEM-REF
 
+@page
 @node mem-ref
 @unnumberedsec mem-ref
 @subheading Syntax
@@ -4187,6 +4219,7 @@ CFFI> (mem-ref ptr-to-int :int)
 @c ===================================================================
 @c NULL-POINTER
 
+@page
 @node null-pointer
 @unnumberedsec null-pointer
 @subheading Syntax
@@ -4219,6 +4252,7 @@ CFFI> (pointerp *)
 @c ===================================================================
 @c NULL-POINTER-P
 
+@page
 @node null-pointer-p
 @unnumberedsec null-pointer-p
 @subheading Syntax
@@ -4264,6 +4298,7 @@ CFFI> (contains-str-p "Popcorns" "salt")
 @c ===================================================================
 @c POINTERP
 
+@page
 @node pointerp
 @unnumberedsec pointerp
 @subheading Syntax
@@ -4306,6 +4341,7 @@ CFFI> (pointerp "this is not a pointer")
 @c ===================================================================
 @c POINTER-ADDRESS
 
+@page
 @node pointer-address
 @unnumberedsec pointer-address
 @subheading Syntax
@@ -4347,6 +4383,7 @@ CFFI> (pointer-address (make-pointer 123))
 @c ===================================================================
 @c POINTER-EQ
 
+@page
 @node pointer-eq
 @unnumberedsec pointer-eq
 @subheading Syntax
@@ -4394,6 +4431,7 @@ CFFI> (pointer-eq (null-pointer) (null-pointer))
 @c ===================================================================
 @c WITH-FOREIGN-OBJECT
 
+@page
 @node with-foreign-object
 @unnumberedsec with-foreign-object
 @subheading Syntax
@@ -4440,6 +4478,7 @@ CFFI> (with-foreign-object (array :int 10)
 @c ===================================================================
 @c WITH-FOREIGN-POINTER
 
+@page
 @node with-foreign-pointer
 @unnumberedsec with-foreign-pointer
 @subheading Syntax
@@ -4516,6 +4555,7 @@ Dictionary
 @c ===================================================================
 @c *DEFAULT-FOREIGN-ENCODING*
 
+@page
 @node *default-foreign-encoding*
 @unnumberedsec *default-foreign-encoding*
 @subheading Syntax
@@ -4559,6 +4599,7 @@ CFFI> (let ((*default-foreign-encoding* :utf-16))
 @c ===================================================================
 @c FOREIGN-STRING-ALLOC
 
+@page
 @node foreign-string-alloc
 @unnumberedsec foreign-string-alloc
 @subheading Syntax
@@ -4615,6 +4656,7 @@ CFFI> (foreign-funcall "strlen" :pointer *str* :int)
 @c ===================================================================
 @c FOREIGN-STRING-FREE
 
+@page
 @node foreign-string-free
 @unnumberedsec foreign-string-free
 @subheading Syntax
@@ -4640,6 +4682,7 @@ allocated by @code{foreign-string-alloc}.
 @c ===================================================================
 @c FOREIGN-STRING-TO-LISP
 
+@page
 @node foreign-string-to-lisp
 @unnumberedsec foreign-string-to-lisp
 @subheading Syntax
@@ -4700,6 +4743,7 @@ CFFI> (foreign-string-to-lisp *)
 @c ===================================================================
 @c LISP-STRING-TO-FOREIGN
 
+@page
 @node lisp-string-to-foreign
 @unnumberedsec lisp-string-to-foreign
 @subheading Syntax
@@ -4756,6 +4800,7 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @c ===================================================================
 @c WITH-FOREIGN-STRING
 
+@page
 @node with-foreign-string
 @unnumberedsec with-foreign-string
 @subheading Syntax
@@ -4808,6 +4853,7 @@ CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
 @c ===================================================================
 @c WITH-FOREIGN-POINTER-AS-STRING
 
+@page
 @node with-foreign-pointer-as-string
 @unnumberedsec with-foreign-pointer-as-string
 @subheading Syntax
@@ -4863,6 +4909,7 @@ Dictionary
 @c ===================================================================
 @c DEFCVAR
 
+@page
 @node defcvar
 @unnumberedsec defcvar
 @subheading Syntax
@@ -4940,6 +4987,7 @@ C standard library.}
 @c ===================================================================
 @c GET-VAR-POINTER
 
+@page
 @node get-var-pointer
 @unnumberedsec get-var-pointer
 @subheading Syntax
@@ -5004,6 +5052,7 @@ Dictionary
 @c ===================================================================
 @c DEFCFUN
 
+@page
 @node defcfun
 @unnumberedsec defcfun
 @subheading Syntax
@@ -5116,6 +5165,7 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @c ===================================================================
 @c FOREIGN-FUNCALL
 
+@page
 @node foreign-funcall
 @unnumberedsec foreign-funcall
 @subheading Syntax
@@ -5214,6 +5264,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @c ===================================================================
 @c FOREIGN-FUNCALL-POINTER
 
+@page
 @node foreign-funcall-pointer
 @unnumberedsec foreign-funcall-pointer
 @subheading Syntax
@@ -5364,6 +5415,7 @@ little about.  --stephen}
 @c ===================================================================
 @c CLOSE-FOREIGN-LIBRARY
 
+@page
 @node close-foreign-library
 @unnumberedsec close-foreign-library
 @subheading Syntax
@@ -5398,6 +5450,7 @@ define through @code{define-foreign-library} or an instance of
 @c ===================================================================
 @c *DARWIN-FRAMEWORK-DIRECTORIES*
 
+@page
 @node *darwin-framework-directories*
 @unnumberedsec *darwin-framework-directories*
 @subheading Syntax
@@ -5439,6 +5492,7 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 @c ===================================================================
 @c DEFINE-FOREIGN-LIBRARY
 
+@page
 @node define-foreign-library
 @unnumberedsec define-foreign-library
 
@@ -5538,6 +5592,7 @@ global library options (the @var{name-and-options} argument)
 @c ===================================================================
 @c *FOREIGN-LIBRARY-DIRECTORIES*
 
+@page
 @node *foreign-library-directories*
 @unnumberedsec *foreign-library-directories*
 @subheading Syntax
@@ -5634,6 +5689,7 @@ The following example would achieve the same effect:
 @c ===================================================================
 @c LOAD-FOREIGN-LIBRARY
 
+@page
 @node load-foreign-library
 @unnumberedsec load-foreign-library
 @subheading Syntax
@@ -5717,6 +5773,7 @@ own @code{ffi:load-foreign-library} with a constant string argument.
 @c ===================================================================
 @c LOAD-FOREIGN-LIBRARY-ERROR
 
+@page
 @node load-foreign-library-error
 @unnumberedsec load-foreign-library-error
 
@@ -5747,6 +5804,7 @@ a different foreign library designator.
 @c ===================================================================
 @c USE-FOREIGN-LIBRARY
 
+@page
 @node use-foreign-library
 @unnumberedsec use-foreign-library
 
@@ -5804,6 +5862,7 @@ Dictionary
 @c ===================================================================
 @c CALLBACK
 
+@page
 @node callback
 @unnumberedsec callback
 @subheading Syntax
@@ -5843,6 +5902,7 @@ CFFI> (callback sum)
 @c ===================================================================
 @c DEFCALLBACK
 
+@page
 @node defcallback
 @unnumberedsec defcallback
 @subheading Syntax
@@ -5919,6 +5979,7 @@ CFFI> (with-foreign-object (array :int 10)
 @c ===================================================================
 @c GET-CALLBACK
 
+@page
 @node get-callback
 @unnumberedsec get-callback
 @subheading Syntax
@@ -6147,7 +6208,7 @@ and the use of @code{(cffi-grovel:grovel-file name &key cc-flags)}
 instead of @code{(:file name)}.
 
 @lisp
-;;; CFFI-Grovel is needed for processing grovel-file components
+;;; @lispcmt{CFFI-Grovel is needed for processing grovel-file components}
 (cl:eval-when (:load-toplevel :execute)
   (asdf:operate 'asdf:load-op 'cffi-grovel))
 
