@@ -408,6 +408,7 @@ The foreign array must be freed with foreign-array-free."
 (defclass foreign-struct-slot ()
   ((name   :initarg :name   :reader   slot-name)
    (offset :initarg :offset :accessor slot-offset)
+   ;; FIXME: the type should probably be parsed?
    (type   :initarg :type   :accessor slot-type))
   (:documentation "Base class for simple and aggregate slots."))
 
@@ -546,10 +547,10 @@ The foreign array must be freed with foreign-array-free."
         offset
         (+ offset (- align rem)))))
 
-(defun notice-foreign-struct-definition (name-and-options slots)
+(defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
-  (destructuring-bind (name &key size (class 'foreign-struct-type))
-      (ensure-list name-and-options)
+  (destructuring-bind (&key size (class 'foreign-struct-type))
+      options
     (let ((struct (make-instance class :name name))
           (current-offset 0)
           (max-align 1)
@@ -577,14 +578,31 @@ The foreign array must be freed with foreign-array-free."
       (setf (size struct) (or size current-offset))
       (notice-foreign-type name struct))))
 
+(defun generate-struct-accessors (name conc-name slot-names)
+  (loop with pointer-arg = (symbolicate '#:pointer-to- name)
+        for slot in slot-names
+        for accessor = (symbolicate conc-name slot)
+        collect `(defun ,accessor (,pointer-arg)
+                   (foreign-slot-value ,pointer-arg ',name ',slot))
+        collect `(defun (setf ,accessor) (value ,pointer-arg)
+                   (foreign-slot-set value ,pointer-arg ',name ',slot))))
+
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
   (discard-docstring fields)
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     ;; n-f-s-d could do with this with mop:ensure-class.
-     ,(when-let (class (getf (cdr (ensure-list name-and-options)) :class))
-        `(defclass ,class (foreign-struct-type) ()))
-     (notice-foreign-struct-definition ',name-and-options ',fields)))
+  (destructuring-bind (name . options)
+      (ensure-list name-and-options)
+    (let ((conc-name (getf options :conc-name)))
+      (remf options :conc-name)
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         ;; m-f-s-t could do with this with mop:ensure-class.
+         ,(when-let (class (getf options :class))
+            `(defclass ,class (foreign-struct-type) ()))
+         (notice-foreign-struct-definition ',name ',options ',fields)
+         ,@(when conc-name
+             (generate-struct-accessors name conc-name
+                                        (mapcar #'car fields)))
+         ',name))))
 
 ;;;## Accessing Foreign Structure Slots
 
