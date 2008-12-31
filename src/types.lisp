@@ -245,18 +245,28 @@ to open-code (SETF MEM-REF) forms."
    (element-type :reader element-type :initarg :element-type))
   (:actual-type :pointer))
 
+(defmethod aggregatep ((type foreign-array-type))
+  t)
+
 (defmethod print-object ((type foreign-array-type) stream)
   "Print a FOREIGN-ARRAY-TYPE instance to STREAM unreadably."
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S ~S" (element-type type) (dimensions type))))
 
+(defun array-element-size (array-type)
+  (foreign-type-size (element-type array-type)))
+
+(defmethod foreign-type-size ((type foreign-array-type))
+  (* (array-element-size type) (reduce #'* (dimensions type))))
+
+(defmethod foreign-type-alignment ((type foreign-array-type))
+  (foreign-type-alignment (element-type type)))
+
 (define-parse-method :array (element-type &rest dimensions)
+  (assert (plusp (length dimensions)))
   (make-instance 'foreign-array-type
                  :element-type element-type
                  :dimensions dimensions))
-
-(defun array-element-size (array-type)
-  (foreign-type-size (element-type array-type)))
 
 (defun indexes-to-row-major-index (dimensions &rest subscripts)
   (apply #'+ (maplist (lambda (x y)
@@ -341,25 +351,29 @@ The foreign array must be freed with foreign-array-free."
                            (dimensions type) indexes))))
     (setf (mem-ref ptr (element-type type) offset) value)))
 
-;;; This type has defined type translators to allocate and free the
-;;; array.  It will also invoke type translators for each of the
-;;; array's element.  **But it doesn't free them yet**
-(define-foreign-type auto-array-type (foreign-array-type)
-  ())
+;;; Automatic translations for the :ARRAY type. Notice that these
+;;; translators will also invoke the appropriate translators for for
+;;; each of the array's elements since that's the normal behaviour of
+;;; the FOREIGN-ARRAY-* operators, but there's a FIXME: **it doesn't
+;;; free them yet**
 
-(define-parse-method :auto-array (element-type &rest dimensions)
-  (assert (>= (length dimensions) 1))
-  (make-instance 'auto-array-type
-                 :element-type element-type
-                 :dimensions dimensions))
+;;; This used to be in a separate type but let's experiment with just
+;;; one type for a while. [2008-12-30 LO]
 
-(defmethod translate-to-foreign (array (type auto-array-type))
+;;; FIXME: those ugly invocations of UNPARSE-TYPE suggest that these
+;;; foreign array operators should take the type and dimention
+;;; arguments "unboxed". [2008-12-31 LO]
+
+(defmethod translate-to-foreign (array (type foreign-array-type))
   (foreign-array-alloc array (unparse-type type)))
 
-(defmethod translate-from-foreign (pointer (type auto-array-type))
+(defmethod translate-aggregate-to-foreign (ptr value (type foreign-array-type))
+  (lisp-array-to-foreign value ptr (unparse-type type)))
+
+(defmethod translate-from-foreign (pointer (type foreign-array-type))
   (foreign-array-to-lisp pointer (unparse-type type)))
 
-(defmethod free-translated-object (pointer (type auto-array-type) param)
+(defmethod free-translated-object (pointer (type foreign-array-type) param)
   (declare (ignore param))
   (foreign-array-free pointer))
 
