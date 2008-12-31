@@ -333,6 +333,10 @@ Signals an error if the type cannot be resolved."
     (declare (ignore type))
     value))
 
+;;; Similar to TRANSLATE-TO-FOREIGN, used exclusively by
+;;; (SETF FOREIGN-STRUCT-SLOT-VALUE).
+(defgeneric translate-aggregate-to-foreign (ptr value type))
+
 ;;; Translate the foreign object VALUE from the type repsented by
 ;;; TYPE, which will be a subclass of ENHANCED-FOREIGN-TYPE.  Returns
 ;;; the converted Lisp value.

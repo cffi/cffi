@@ -442,30 +442,35 @@ The foreign array must be freed with foreign-array-free."
   ((count :initarg :count :accessor slot-count))
   (:documentation "Aggregate structure slots."))
 
-;;; A case could be made for just returning an error here instead of
-;;; this rather DWIM-ish behavior to return the address.  It would
-;;; complicate being able to chain together slot names when accessing
-;;; slot values in nested structures though.
+;;; Since MEM-REF returns a pointer for struct types we are able to
+;;; chain together slot names when accessing slot values in nested
+;;; structures.
 (defmethod foreign-struct-slot-value (ptr (slot aggregate-struct-slot))
   "Return a pointer to SLOT relative to PTR."
-  (foreign-struct-slot-pointer ptr slot))
+  (convert-from-foreign (inc-pointer ptr (slot-offset slot))
+                        (slot-type slot)))
 
 (defmethod foreign-struct-slot-value-form (ptr (slot aggregate-struct-slot))
   "Return a form to get the value of SLOT relative to PTR."
-  (foreign-struct-slot-pointer-form ptr slot))
+  `(convert-from-foreign (inc-pointer ,ptr ,(slot-offset slot))
+                         ',(slot-type slot)))
 
-;;; This is definitely an error though.  Eventually, we could define a
-;;; new type of type translator that can convert certain aggregate
-;;; types, notably C strings or arrays of integers.  For now, just error.
-(defmethod (setf foreign-struct-slot-value) (value ptr (slot aggregate-struct-slot))
-  "Signal an error; setting aggregate slot values is forbidden."
-  (declare (ignore value ptr))
-  (error "Cannot set value of aggregate slot ~A." slot))
+(defmethod translate-aggregate-to-foreign (ptr value (type foreign-struct-type))
+  ;;; FIXME: use the block memory interface instead.
+  (loop for i below (foreign-type-size type)
+        do (%mem-set (%mem-ref value :char i) ptr :char i)))
 
+(defmethod (setf foreign-struct-slot-value)
+    (value ptr (slot aggregate-struct-slot))
+  "Set the value of an aggregate SLOT to VALUE in PTR."
+  (translate-aggregate-to-foreign (inc-pointer ptr (slot-offset slot))
+                                  value
+                                  (parse-type (slot-type slot))))
+
+;;; TODO: optimize.
 (defmethod foreign-struct-slot-set-form (value ptr (slot aggregate-struct-slot))
-  "Signal an error; setting aggregate slot values is forbidden."
-  (declare (ignore value ptr))
-  (error "Cannot set value of aggregate slot ~A." slot))
+  "Return a form to get the value of an aggregate SLOT relative to PTR."
+  `(setf (foreign-struct-slot-value ,ptr ',slot) ,value))
 
 ;;;## Defining Foreign Structures
 
