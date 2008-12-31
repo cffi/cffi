@@ -346,6 +346,9 @@ Signals an error if the type cannot be resolved."
 ;;; ENHANCED-FOREIGN-TYPE subclass.  PARAM, if present, contains the
 ;;; second value returned by TRANSLATE-TO-FOREIGN, and is used to
 ;;; communicate between the two functions.
+;;;
+;;; FIXME: I don't think this PARAM argument is necessary anymore
+;;; because the TYPE object can contain that information. [2008-12-31 LO]
 (defgeneric free-translated-object (value type param)
   (:method (value type param)
     (declare (ignore value type param))))
