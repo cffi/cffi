@@ -583,6 +583,7 @@ error:
         (c-format out " ")
         (c-print-symbol out type)
         (etypecase count
+          (null t)
           (integer
            (c-format out " :count ~D" count))
           ((eql :auto)
@@ -595,8 +596,7 @@ error:
            (format out "~&#ifdef ~A~%" count)
            (c-printf out " :count %i"
                      (format nil "~A" count))
-           (format out "~&#endif~%"))
-          (null t))
+           (format out "~&#endif~%")))
         (c-printf out " :offset %i)"
                   (format nil "offsetof(~A, ~A)"
                           struct-c-name
