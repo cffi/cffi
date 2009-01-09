@@ -130,27 +130,21 @@ may be stack-allocated if supported by the implementation.  If
 SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
-   #+(version>= 8 1)
-   (cond ((and (constantp size) (<= (eval size) ff:*max-stack-fobject-bytes*))
-          ;; stack allocation
-          `(let ((,size-var ,size))
-             (declare (ignorable ,size-var))
-             (ff:with-stack-fobject (,var '(:array :char ,size)
-                                          :allocation :foreign-static-gc)
-               ;; (excl::stack-allocated-p var) => T
-               (let ((,var (ff:fslot-address ,var)))
-                 ,@body))))
-         (t
-          ;; heap allocation
-          `(let ((,size-var ,size))
-             (ff:with-stack-fobject (,var :char :allocation :c :size ,size-var)
-               (unwind-protect
-                    (progn ,@body)
-                 (ff:free-fobject ,var))))))
-   #-(version>= 8 1)
-   `(let ((,size-var ,size))
-      (ff:with-stack-fobject (,var :char :c ,size-var)
-        ,@body)))
+  #+(version>= 8 1)
+  (when (and (constantp size) (<= (eval size) ff:*max-stack-fobject-bytes*))
+    (return-from with-foreign-pointer
+      `(let ((,size-var ,size))
+         (declare (ignorable ,size-var))
+         (ff:with-static-fobject (,var '(:array :char ,size)
+                                       :allocation :foreign-static-gc)
+           ;; (excl::stack-allocated-p var) => T
+           (let ((,var (ff:fslot-address ,var)))
+             ,@body)))))
+  `(let* ((,size-var ,size)
+          (,var (ff:allocate-fobject :char :c ,size-var)))
+     (unwind-protect
+          (progn ,@body)
+       (ff:free-fobject ,var))))
 
 ;;;# Shareable Vectors
 ;;;
