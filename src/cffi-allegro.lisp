@@ -171,7 +171,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 ;;;# Dereferencing
 
-(defun convert-foreign-type (type-keyword &optional (context :normal))
+(defun convert-foreign-type (type-keyword)
   "Convert a CFFI type keyword to an Allegro type."
   (ecase type-keyword
     (:char             :char)
@@ -184,9 +184,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:unsigned-long    :unsigned-long)
     (:float            :float)
     (:double           :double)
-    (:pointer          (ecase context
-                         (:normal '(* :void))
-                         (:funcall :foreign-address)))
+    (:pointer          :unsigned-nat)
     (:void             :void)))
 
 (defun %mem-ref (ptr type &optional (offset 0))
@@ -243,36 +241,24 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   "Returns a list of types, list of args and return type."
   (let ((return-type :void))
     (loop for (type arg) on args by #'cddr
-          if arg collect (convert-foreign-type type :funcall) into types
+          if arg collect type into types
           and collect arg into fargs
-          else do (setf return-type (convert-foreign-type type :funcall))
+          else do (setf return-type type)
           finally (return (values types fargs return-type)))))
 
 (defun convert-to-lisp-type (type)
-  (if (equal '(* :void) type)
-      'integer
-      (ecase type
-        (:char 'signed-byte)
-        (:unsigned-char 'integer) ;'unsigned-byte)
-        ((:short
-          :unsigned-short
-          :int
-          :unsigned-int
-          :long
-          :unsigned-long) 'integer)
-        (:float 'single-float)
-        (:double 'double-float)
-        (:foreign-address :foreign-address)
-        (:void 'null))))
+  (ecase type
+    ((:char :short :int :long)
+     `(signed-byte ,(* 8 (ff:sizeof-fobject type))))
+    ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long :unsigned-nat)
+     `(unsigned-byte ,(* 8 (ff:sizeof-fobject type))))
+    (:float 'single-float)
+    (:double 'double-float)
+    (:void 'null)))
 
-(defun foreign-allegro-type (type)
-  (if (eq type :foreign-address)
-      nil
-      type))
-
-(defun allegro-type-pair (type)
-  (list (foreign-allegro-type type)
-        (convert-to-lisp-type type)))
+(defun allegro-type-pair (cffi-type)
+  (let ((ftype (convert-foreign-type cffi-type)))
+    (list ftype (convert-to-lisp-type ftype))))
 
 #+ignore
 (defun note-named-foreign-function (symbol name types rettype)
@@ -283,11 +269,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                  t  ; callback
                  :c ; convention
                  ;; return type '(:c-type lisp-type)
-                 ',(allegro-type-pair (convert-foreign-type rettype :funcall))
+                 ',(allegro-type-pair rettype)
                  ;; arg types '({(:c-type lisp-type)}*)
-                 '(,@(loop for type in types
-                           collect (allegro-type-pair
-                                    (convert-foreign-type type :funcall))))
+                 '(,@(mapcar #'allegro-type-pair types))
                  nil ; arg-checking
                  ff::ep-flag-never-release))))
 
@@ -313,19 +297,15 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (declare (ignore options))
   (let ((ff-name (intern (format nil "%cffi-foreign-function/~A" lisp-name))))
     (values
-     `(ff:def-foreign-call (,ff-name ,name)
-          ,(mapcar (lambda (ty)
-                     (let ((allegro-type (convert-foreign-type ty)))
-                       (list (gensym) allegro-type
-                             (convert-to-lisp-type allegro-type))))
-                   types)
-        :returning ,(allegro-type-pair
-                     (convert-foreign-type rettype :funcall))
-        ;; Don't use call-direct when there are no arguments.
-        ,@(unless (null args) '(:call-direct t))
-        :arg-checking nil
-        :strings-convert nil)
-     `(,ff-name ,@args))))
+      `(ff:def-foreign-call (,ff-name ,name)
+           ,(loop for type in types
+                  collect (list* (gensym) (allegro-type-pair type)))
+         :returning ,(allegro-type-pair rettype)
+         ;; Don't use call-direct when there are no arguments.
+         ,@(unless (null args) '(:call-direct t))
+         :arg-checking nil
+         :strings-convert nil)
+      `(,ff-name ,@args))))
 
 ;;; See doc/allegro-internals.txt for a clue about entry-vec.
 (defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
