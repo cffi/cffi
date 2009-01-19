@@ -152,16 +152,16 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 ;;; should be defined to perform a copy-in/copy-out if the Lisp
 ;;; implementation can't do this.
 
-;(defun make-shareable-byte-vector (size)
-;  "Create a Lisp vector of SIZE bytes can passed to
-;WITH-POINTER-TO-VECTOR-DATA."
-;  (make-array size :element-type '(unsigned-byte 8)))
-;
-;(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
-;  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-;  `(sb-sys:without-gcing
-;     (let ((,ptr-var (sb-sys:vector-sap ,vector)))
-;       ,@body)))
+(defun make-shareable-byte-vector (size)
+  "Create a Lisp vector of SIZE bytes can passed to
+WITH-POINTER-TO-VECTOR-DATA."
+  (make-array size :element-type '(unsigned-byte 8)
+              :allocation :static-reclaimable))
+
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
+  `(let ((,ptr-var ,vector))
+     ,@body))
 
 ;;;# Dereferencing
 
@@ -251,8 +251,12 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:void 'null)))
 
 (defun allegro-type-pair (cffi-type)
-  (let ((ftype (convert-foreign-type cffi-type)))
-    (list ftype (convert-to-lisp-type ftype))))
+  ;; the :FOREIGN-ADDRESS pseudo-type accepts both pointers and
+  ;; arrays. We need the latter for shareable byte vector support.
+  (if (eq cffi-type :pointer)
+      (list :foreign-address)
+      (let ((ftype (convert-foreign-type cffi-type)))
+        (list ftype (convert-to-lisp-type ftype)))))
 
 #+ignore
 (defun note-named-foreign-function (symbol name types rettype)
