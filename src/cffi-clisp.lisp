@@ -60,6 +60,10 @@
 
 (in-package #:cffi-sys)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :ffi)
+    (error "CFFI requires CLISP compiled with dynamic FFI support.")))
+
 ;;;# Symbol Case
 
 (defun canonicalize-symbol-name-case (name)
