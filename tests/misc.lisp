@@ -98,7 +98,7 @@
 
 ;;;# Shareable Byte Vector Tests
 
-#+(or ecl allegro)
+#+ecl
 (mapc (lambda (x) (pushnew x rt::*expected-failures*))
       '(shareable-vector.1 shareable-vector.2))
 

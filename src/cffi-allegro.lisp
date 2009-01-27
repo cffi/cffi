@@ -52,8 +52,8 @@
    #:native-namestring
    #:%mem-ref
    #:%mem-set
-   ;#:make-shareable-byte-vector
-   ;#:with-pointer-to-vector-data
+   #:make-shareable-byte-vector
+   #:with-pointer-to-vector-data
    #:%foreign-symbol-pointer
    #:defcfun-helper-forms
    #:%defcallback
@@ -161,8 +161,15 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  `(let ((,ptr-var ,vector))
-     ,@body))
+  ;; An array allocated in static-reclamable is a non-simple array in
+  ;; the normal Lisp allocation area, pointing to a simple array in
+  ;; the static-reclaimable allocation area. Therefore we have to get
+  ;; out the simple-array to find the pointer to the actual contents.
+  (with-unique-names (simple-vec)
+    `(excl:with-underlying-simple-vector (,vector ,simple-vec)
+       (let ((,ptr-var (ff:fslot-address-typed :unsigned-char :lisp
+                                               ,simple-vec)))
+         ,@body))))
 
 ;;;# Dereferencing
 
