@@ -290,7 +290,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; internal callback for NAME.
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun intern-callback (name)
-    (intern (format nil "~A::~A" (package-name (symbol-package name))
+    (intern (format nil "~A::~A"
+                    (if-let (package (symbol-package name))
+                      (package-name package)
+                      "#")
                     (symbol-name name))
             '#:cffi-callbacks)))
 

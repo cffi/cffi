@@ -510,3 +510,10 @@
   (deftest callbacks.stdcall.1
       (call-stdcall-fun (callback stdcall-cb))
     42))
+
+;;; RT: many of the %DEFCALLBACK implementations wouldn't handle
+;;;     uninterned symbols.
+(deftest callbacks.uninterned
+    (values (defcallback #1=#:foo :void ())
+            (pointerp (callback #1#)))
+  #1# t)

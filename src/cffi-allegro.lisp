@@ -2,7 +2,7 @@
 ;;;
 ;;; cffi-allegro.lisp --- CFFI-SYS implementation for Allegro CL.
 ;;;
-;;; Copyright (C) 2005-2008, Luis Oliveira  <loliveira(@)common-lisp.net>
+;;; Copyright (C) 2005-2009, Luis Oliveira  <loliveira(@)common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -28,7 +28,8 @@
 ;;;# Administrivia
 
 (defpackage #:cffi-sys
-  (:use #:common-lisp #:alexandria)
+  (:use #:common-lisp)
+  (:import-from #:alexandria #:if-let #:with-unique-names #:once-only)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -358,7 +359,10 @@ WITH-POINTER-TO-VECTOR-DATA."
   (:use))
 
 (defun intern-callback (name)
-  (intern (format nil "~A::~A" (package-name (symbol-package name))
+  (intern (format nil "~A::~A"
+                  (if-let (package (symbol-package name))
+                    (package-name package)
+                    "#")
                   (symbol-name name))
           '#:cffi-callbacks))
 

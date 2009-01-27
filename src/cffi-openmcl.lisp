@@ -29,7 +29,7 @@
 
 (defpackage #:cffi-sys
   (:use #:common-lisp #:ccl)
-  (:import-from #:alexandria #:once-only)
+  (:import-from #:alexandria #:once-only #:if-let)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -264,7 +264,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
 ;;; callback for NAME.
 (defun intern-callback (name)
-  (intern (format nil "~A::~A" (package-name (symbol-package name))
+  (intern (format nil "~A::~A"
+                  (if-let (package (symbol-package name))
+                    (package-name package)
+                    "#")
                   (symbol-name name))
           '#:cffi-callbacks))
 

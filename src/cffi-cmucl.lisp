@@ -29,7 +29,7 @@
 
 (defpackage #:cffi-sys
   (:use #:common-lisp #:alien #:c-call)
-  (:import-from #:alexandria #:once-only #:with-unique-names)
+  (:import-from #:alexandria #:once-only #:with-unique-names #:if-let)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -297,7 +297,10 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; callback for NAME.
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun intern-callback (name)
-    (intern (format nil "~A::~A" (package-name (symbol-package name))
+    (intern (format nil "~A::~A"
+                    (if-let (package (symbol-package name))
+                      (package-name package)
+                      name)
                     (symbol-name name))
             '#:cffi-callbacks)))
 
