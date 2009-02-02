@@ -157,6 +157,7 @@
   "
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifndef offsetof
 #define offsetof(type, slot) ((int) ((char *) &(((type *) 0)->slot)))
@@ -167,6 +168,7 @@
 
 #define SIGNEDP(x) (((x)-1)<0)
 #define SIGNED_(x) (SIGNEDP(x)?\"\":\"un\")
+#define SIGNED64P(x) ( x <= 0x7FFFFFFFFFFFFFFFLL )
 
 void type_name(FILE *output, int signed_p, int size);
 
@@ -458,7 +460,10 @@ error:
     (c-format out "(cl:defconstant ")
     (c-print-symbol out lisp-name t)
     (c-format out " ")
-    (c-printf out "%i" c-name)
+    (format out "~&  if(SIGNED64P(~A))~%" c-name)
+    (format out "    fprintf(output, \"%lli\", (int64_t) ~A);" c-name)
+    (format out "~&  else~%")
+    (format out "    fprintf(output, \"%llu\", (uint64_t) ~A);" c-name)
     (when documentation
       (c-format out " ~S" documentation))
     (c-format out ")~%")
