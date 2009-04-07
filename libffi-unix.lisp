@@ -1,6 +1,6 @@
 ;; CFFI-Grovel definitions for unix systems.
 ;; Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
-;; Time-stamp: <2009-02-22 22:20:32EST libffi-unix.lisp>
+;; Time-stamp: <2009-04-06 22:37:46EDT libffi-unix.lisp>
 ;; $Id: $
 
 #+linux
@@ -45,3 +45,19 @@
  (bytes   "bytes"   :type :unsigned)
  (flags   "flags"   :type :unsigned))
 |#
+
+(constant (+type-void+ "FFI_TYPE_VOID"))
+(constant (+type-int+ "FFI_TYPE_INT"))
+(constant (+type-float+ "FFI_TYPE_FLOAT"))
+(constant (+type-double+ "FFI_TYPE_DOUBLE"))
+(constant (+type-longdouble+ "FFI_TYPE_LONGDOUBLE"))
+(constant (+type-uint8+ "FFI_TYPE_UINT8"))
+(constant (+type-sint8+ "FFI_TYPE_SINT8"))
+(constant (+type-uint16+ "FFI_TYPE_UINT16"))
+(constant (+type-sint16+ "FFI_TYPE_SINT16"))
+(constant (+type-uint32+ "FFI_TYPE_UINT32"))
+(constant (+type-sint32+ "FFI_TYPE_SINT32"))
+(constant (+type-uint64+ "FFI_TYPE_UINT64"))
+(constant (+type-sint64+ "FFI_TYPE_SINT64"))
+(constant (+type-struct+ "FFI_TYPE_STRUCT"))
+(constant (+type-pointer+ "FFI_TYPE_POINTER"))

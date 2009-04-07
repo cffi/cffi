@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-02-22 22:08:15EST fsbv.asd>
+;; Time-stamp: <2009-04-06 22:47:34EDT fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -20,4 +20,5 @@
    (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
    (:file "library")
    (:file "types")
-   (:file "structs")))
+   (:file "structs")
+   (:file "functions" :depends-on (libffi structs))))

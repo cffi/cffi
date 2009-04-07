@@ -1,22 +1,22 @@
 ;; libffi types
 ;; Liam Healy 2009-02-22 19:35:20EST types.lisp
-;; Time-stamp: <2009-02-23 08:39:07EST types.lisp>
+;; Time-stamp: <2009-04-06 22:37:04EDT types.lisp>
 
 (in-package :fsbv)
 
-(defcvar ("ffi_type_double" +type-double+ :read-only t) :int)
-(defcvar ("ffi_type_float" +type-float+ :read-only t) :int)
-(defcvar ("ffi_type_longdouble" +type-longdouble+ :read-only t) :int)
-(defcvar ("ffi_type_pointer" +type-pointer+ :read-only t) :int)
-(defcvar ("ffi_type_sint16" +type-sint16+ :read-only t) :int)
-(defcvar ("ffi_type_sint32" +type-sint32+ :read-only t) :int)
-(defcvar ("ffi_type_sint64" +type-sint64+ :read-only t) :int)
-(defcvar ("ffi_type_sint8" +type-sint8+ :read-only t) :int)
-(defcvar ("ffi_type_uint16" +type-uint16+ :read-only t) :int)
-(defcvar ("ffi_type_uint32" +type-uint32+ :read-only t) :int)
-(defcvar ("ffi_type_uint64" +type-uint64+ :read-only t) :int)
-(defcvar ("ffi_type_uint8" +type-uint8+ :read-only t) :int)
-(defcvar ("ffi_type_void" +type-void+ :read-only t) :int)
+(defcvar ("ffi_type_double" +size-double+ :read-only t) :int)
+(defcvar ("ffi_type_float" +size-float+ :read-only t) :int)
+(defcvar ("ffi_type_longdouble" +size-longdouble+ :read-only t) :int)
+(defcvar ("ffi_type_pointer" +size-pointer+ :read-only t) :int)
+(defcvar ("ffi_type_sint16" +size-sint16+ :read-only t) :int)
+(defcvar ("ffi_type_sint32" +size-sint32+ :read-only t) :int)
+(defcvar ("ffi_type_sint64" +size-sint64+ :read-only t) :int)
+(defcvar ("ffi_type_sint8" +size-sint8+ :read-only t) :int)
+(defcvar ("ffi_type_uint16" +size-uint16+ :read-only t) :int)
+(defcvar ("ffi_type_uint32" +size-uint32+ :read-only t) :int)
+(defcvar ("ffi_type_uint64" +size-uint64+ :read-only t) :int)
+(defcvar ("ffi_type_uint8" +size-uint8+ :read-only t) :int)
+(defcvar ("ffi_type_void" +size-void+ :read-only t) :int)
 
 (defvar +pointer-type-double+ (foreign-symbol-pointer "ffi_type_double"))
 (defvar +pointer-type-float+ (foreign-symbol-pointer "ffi_type_float"))
