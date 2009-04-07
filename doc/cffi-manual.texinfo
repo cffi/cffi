@@ -5316,7 +5316,7 @@ implementations that @strong{don't} support @code{foreign-funcall}
 @subheading Examples
 
 @lisp
-CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs")
+CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs") ()
                                :int -42 :int)
 @result{} 42
 @end lisp
@@ -5932,10 +5932,10 @@ One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
 @subheading Description
-The macro @code{defcallback} defines a Lisp function the can be called
-from C (but not from Lisp). The arguments passed to this function will
-be converted to the appropriate Lisp representation and its return
-value will be converted to its C representation.
+The @code{defcallback} macro defines a Lisp function that can be called
+from C. The arguments passed to this function will be converted to the
+appropriate Lisp representation and its return value will be converted
+to its C representation.
 
 This Lisp function can be accessed by the @code{callback} macro or the
 @code{get-callback} function.
