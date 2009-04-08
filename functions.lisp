@@ -1,6 +1,6 @@
 ;; Interface to libffi functions
 ;; Liam Healy 2009-04-06 21:14:55EDT functions.lisp
-;; Time-stamp: <2009-04-06 23:43:46EDT functions.lisp>
+;; Time-stamp: <2009-04-07 21:50:30EDT functions.lisp>
 
 (in-package :fsbv)
 
@@ -19,10 +19,8 @@
     (rvalue :pointer)
     (avalues :pointer))
 
-;;(load-foreign-library #+unix "libgslcblas.so")
-;;(load-foreign-library #+unix "libgsl.so")
-
-;; (cffi:foreign-funcall "gsl_complex_abs" ???? #C(1.0d0 2.0d0) :double)
+(load-foreign-library #+unix "libgslcblas.so")
+(load-foreign-library #+unix "libgsl.so")
 
 (defvar +pointer-type-complex+
   ;; See file:///usr/share/doc/libffi-dev/html/Structures.html#Structures
@@ -40,22 +38,29 @@
      (cffi:foreign-slot-value ptr 'ffi-type 'elements) complex)
     ptr))
 
-(defvar test-prep
+;;; From /usr/include/gsl/gsl_complex.h
+(cffi:defcstruct complex
+  (dat :double :count 2))
+
+(defun test-call (complex-number)
   (with-foreign-objects
       ((cif 'ffi-cif)
        (argtypes :pointer 1)
-       ;(arguments :pointer 1)
-       ;(result :double)
-       )
+       (argvalues :pointer 1)
+       (result :double)
+       (numb 'complex))
     (setf (cffi:mem-aref argtypes :pointer 0) +pointer-type-complex+)
+    (setf (cffi:mem-aref (cffi:foreign-slot-value numb 'complex 'dat) :double 0)
+	  (realpart complex-number)
+	  (cffi:mem-aref (cffi:foreign-slot-value numb 'complex 'dat) :double 1)
+	  (imagpart complex-number))
+    (setf (cffi:mem-aref argvalues :pointer 0)
+	  numb)
     (when (eql
 	   :OK
 	   (prep-cif cif :default-abi 1 +pointer-type-double+ argtypes))
-      t)))
-
-#|
-    (call cif
-	  (foreign-symbol-pointer "gsl_complex_abs")
-	  result
-	  )
-|#
+      (call cif
+	    (cffi:foreign-symbol-pointer "gsl_complex_abs")
+	    result
+	    argvalues)
+      (cffi:mem-aref result :double))))
