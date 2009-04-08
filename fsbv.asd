@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-04-06 22:47:34EDT fsbv.asd>
+;; Time-stamp: <2009-04-07 22:22:07EDT fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -21,4 +21,5 @@
    (:file "library")
    (:file "types")
    (:file "structs")
-   (:file "functions" :depends-on (libffi structs))))
+   (:file "functions" :depends-on (libffi structs))
+   (:file "examples" :depends-on (libffi structs))))
