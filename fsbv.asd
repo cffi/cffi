@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-04-07 22:22:07EDT fsbv.asd>
+;; Time-stamp: <2009-04-09 00:25:29EDT fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -16,10 +16,8 @@
   ;;:pathname (merge-pathnames "syscalls/" *load-truename*)
   :serial t
   :components
-  ((:file "pkgdcl")
+  ((:file "init")
    (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
-   (:file "library")
-   (:file "types")
-   (:file "structs")
-   (:file "functions" :depends-on (libffi structs))
-   (:file "examples" :depends-on (libffi structs))))
+   (:file "defs" :depends-on (libffi))
+   (:file "interface")
+   (:file "examples" :depends-on (libffi))))

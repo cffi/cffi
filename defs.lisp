@@ -1,8 +1,10 @@
 ;; libffi types
 ;; Liam Healy 2009-02-22 19:35:20EST types.lisp
-;; Time-stamp: <2009-04-07 22:48:57EDT types.lisp>
+;; Time-stamp: <2009-04-08 19:07:25EDT types.lisp>
 
 (in-package :fsbv)
+
+;;; Types
 
 (cffi:defcvar ("ffi_type_double" +size-double+ :read-only t) :int)
 (cffi:defcvar ("ffi_type_float" +size-float+ :read-only t) :int)
@@ -31,3 +33,29 @@
 (defvar +pointer-type-uint32+ (cffi:foreign-symbol-pointer "ffi_type_uint32"))
 (defvar +pointer-type-uint64+ (cffi:foreign-symbol-pointer "ffi_type_uint64"))
 (defvar +pointer-type-uint8+ (cffi:foreign-symbol-pointer "ffi_type_uint8"))
+
+;;; Structs
+
+(cffi:defcstruct ffi-cif
+  (abi ffi-abi)
+  (number-of-arguments unsigned)
+  (argument-types :pointer)
+  (return-type :pointer)
+  (bytes unsigned)
+  (flags unsigned))
+
+;;; Functions
+;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
+
+(cffi:defcfun ("ffi_prep_cif" prep-cif) status
+    (ffi-cif :pointer)
+    (ffi-abi abi)
+    (nargs :uint)
+    (rtype :pointer)
+    (argtypes :pointer))
+
+(cffi:defcfun ("ffi_call" call) :void
+    (ffi-cif :pointer)
+    (function :pointer)
+    (rvalue :pointer)
+    (avalues :pointer))

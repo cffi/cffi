@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-07 22:49:53EDT examples.lisp>
+;; Time-stamp: <2009-04-09 00:36:19EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -14,26 +14,8 @@
 (cffi:load-foreign-library #+unix "libgsl.so")
 
 ;;; Define the foreign struct; see /usr/include/gsl/gsl_complex.h
-(cffi:defcstruct complex
+(defcstruct complex
   (dat :double :count 2))
-
-;;; Define a foreign structure for libffi that represents the complex
-;;; number structure above.
-(defvar +pointer-type-complex+
-  ;; See file:///usr/share/doc/libffi-dev/html/Structures.html#Structures
-  (let ((ptr (cffi:foreign-alloc 'ffi-type))
-	(complex (cffi:foreign-alloc :pointer :count 3)))
-    (setf
-     ;; The elements
-     (cffi:mem-aref complex :pointer 0) +pointer-type-double+
-     (cffi:mem-aref complex :pointer 1) +pointer-type-double+
-     (cffi:mem-aref complex :pointer 2) (cffi:null-pointer)
-     ;; The ffi-type
-     (cffi:foreign-slot-value ptr 'ffi-type 'size) 0
-     (cffi:foreign-slot-value ptr 'ffi-type 'alignment) 0
-     (cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
-     (cffi:foreign-slot-value ptr 'ffi-type 'elements) complex)
-    ptr))
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
@@ -44,7 +26,7 @@
        (argvalues :pointer 1)
        (result :double)
        (argument 'complex))
-    (setf (cffi:mem-aref argtypes :pointer 0) +pointer-type-complex+
+    (setf (cffi:mem-aref argtypes :pointer 0) (libffi-type-pointer complex)
 	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
@@ -68,7 +50,7 @@
        (argvalues :pointer 1)
        (result 'complex)
        (argument 'complex))
-    (setf (cffi:mem-aref argtypes :pointer 0) +pointer-type-complex+
+    (setf (cffi:mem-aref argtypes :pointer 0) (libffi-type-pointer complex)
 	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
@@ -76,7 +58,7 @@
 			 :double 1)
 	  (imagpart complex-number)
 	  (cffi:mem-aref argvalues :pointer 0) argument)
-    (when (eql :OK (prep-cif cif :default-abi 1 +pointer-type-complex+ argtypes))
+    (when (eql :OK (prep-cif cif :default-abi 1 (libffi-type-pointer complex) argtypes))
       (call cif
 	    (cffi:foreign-symbol-pointer "gsl_complex_conjugate")
 	    result
