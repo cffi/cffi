@@ -1,6 +1,6 @@
 ;; User interface for making definitions
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-09 22:11:28EDT interface.lisp>
+;; Time-stamp: <2009-04-09 22:38:48EDT interface.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -9,43 +9,8 @@
 ;;; get and/or return structs as transparent as possible, mimicking
 ;;; the CFFI definitions.
 
-(defmacro libffi-type-pointer (symbol) `(get ',symbol 'type-pointer))
-
-;;; Types supported by CFFI:
-;;; http://common-lisp.net/project/cffi/manual/html_node/Built_002dIn-Types.html#Built_002dIn-Types
-;;; Assign these more accurately?
-(defparameter *cffi-built-in-types*
-  '((:char . +pointer-type-sint8+)
-    (:unsigned-char . +pointer-type-uint8+)
-    (:short . +pointer-type-sint16+)
-    (:unsigned-short . +pointer-type-uint16+)
-    (:int . +pointer-type-sint32+)
-    (:unsigned-int  . +pointer-type-uint32+)
-    (:long . +pointer-type-sint64+)
-    (:unsigned-long . +pointer-type-uint64+)
-    (:uchar . +pointer-type-uint8+)
-    (:ushort . +pointer-type-uint16+)
-    (:uint  . +pointer-type-uint32+)
-    (:ulong . +pointer-type-uint64+)
-    ;; (:llong)
-    ;; (:ullong)
-    (:int8 . +pointer-type-sint8+)
-    (:uint8 . +pointer-type-uint8+)
-    (:int16 . +pointer-type-sint16+)
-    (:uint16 . +pointer-type-uint16+)
-    (:int32 . +pointer-type-sint32+)
-    (:uint32 . +pointer-type-uint32+)
-    (:int64 . +pointer-type-sint64+)
-    (:uint64 . +pointer-type-uint64+)
-    (:float . +pointer-type-float+)
-    (:double . +pointer-type-double+)
-    (:long-double . +pointer-type-longdouble+)
-    (:pointer . +pointer-type-pointer+)
-    (:void)))
-
 (defun lookup-type (symbol)
-  (or (rest (assoc symbol *cffi-built-in-types*))
-      `(libffi-type-pointer ,symbol)
+  (or `(libffi-type-pointer ,symbol)
       (error "Element type ~a is not known to libffi." symbol)))
 
 (defun field-count (field)

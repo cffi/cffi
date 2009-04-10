@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-09 00:36:19EDT examples.lisp>
+;; Time-stamp: <2009-04-09 22:37:45EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -34,7 +34,9 @@
 			 :double 1)
 	  (imagpart complex-number)
 	  (cffi:mem-aref argvalues :pointer 0) argument)
-    (when (eql :OK (prep-cif cif :default-abi 1 +pointer-type-double+ argtypes))
+    (when (eql
+	   :OK
+	   (prep-cif cif :default-abi 1 (libffi-type-pointer :double) argtypes))
       (call cif
 	    (cffi:foreign-symbol-pointer "gsl_complex_abs")
 	    result
