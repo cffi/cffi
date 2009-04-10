@@ -1,6 +1,6 @@
 ;; User interface for making definitions
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-09 22:38:48EDT interface.lisp>
+;; Time-stamp: <2009-04-09 22:59:38EDT interface.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -50,3 +50,37 @@
 		(cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
 		(cffi:foreign-slot-value ptr 'ffi-type 'elements) elements)
 	       ptr)))))
+
+;;; foreign-funcall args are (type arg ...)
+;;; defcfun args are ((arg type) ...)
+;;; This macro assumes defcfun style
+
+(defmacro libffi-function-wrapper (return-type arguments)
+  "Create the libffi objects necessary to call the function of the
+   given arguments, which is a list of (arg type) lists."
+  (let ((number-of-arguments (length arguments)))
+    `(cffi:with-foreign-objects
+	 ((cif 'ffi-cif)
+	  (argtypes :pointer ,number-of-arguments)
+	  (argvalues :pointer ,number-of-arguments)
+	  (result ,return-type))
+       (setf ,@(loop for arg in arguments
+		  for argc from 0
+		  append
+		  `((cffi:mem-aref argtypes :pointer ,argc)
+		    (libffi-type-pointer ,(second arg))
+		    (cffi:mem-aref argvalues :pointer ,argc)
+		    ,(first arg))))
+       (unless
+	   (eql :OK
+		(prep-cif cif :default-abi ,number-of-arguments
+			  (libffi-type-pointer ,return-type)
+			  argtypes))
+	 (error "Function did not prepare correctly."))
+       (call cif
+	     (cffi:foreign-symbol-pointer "gsl_complex_abs")
+	     result
+	     argvalues)
+       (cffi:mem-aref result ,return-type))))))
+
+;;; (libffi-function-wrapper :double ((in complex)))
