@@ -1,0 +1,90 @@
+<!-- -*- mode: HTML; time-stamp-line-limit: -18; -*- -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+<html>
+    <head>
+    <title>FSBV, Foreign Structures By Value
+    </title>
+    </head>
+<p>Call foreign functions when one or more
+  arguments and/or the return value are structures.
+  In CFFI and most Lisp foreign interfaces, structures must be passed
+  by reference, that is, as pointers.  FSBV permits calling them by
+  value.  It requires
+  <a href="http://common-lisp.net/project/cffi/">CFFI</a>
+  and <a href="http://sourceware.org/libffi/">libffi</a>.
+  </p>
+<p> For example, the complex type is defined in
+ the <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library
+(GSL)</a> as
+<pre>
+typedef struct
+  {
+    double dat[2];
+  }
+gsl_complex;
+</pre>
+<p>The function <code>gsl_complex_conjugate</code> takes and returns a
+structure of this type by value,
+<pre>
+gsl_complex gsl_complex_conjugate (gsl_complex z);
+</pre>
+<p>If we define
+<pre>
+(fsbv:defcstruct complex
+  (dat :double :count 2))
+(defun complex-conjugate (complex-number)
+  (cffi:with-foreign-objects
+      ((argument 'complex))
+    (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
+			 :double 0)
+	  (realpart complex-number)
+	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
+			 :double 1)
+	  (imagpart complex-number))
+    (let ((ans
+	   (fsbv:foreign-funcall "gsl_complex_conjugate" complex argument complex)))
+      (complex
+       (cffi:mem-aref ans :double 0)
+       (cffi:mem-aref ans :double 1)))))
+</pre>
+then we can call this function from Lisp:
+<pre>
+(complex-conjugate #c(3.0d0 4.0d0))
+#C(3.0 -4.0)
+</pre>
+<p>There are two macros for users: <code>fsbv:defcstruct</code>
+  and <code>fsbv:foreign-funcall</code>; they have the same arugments
+  as their CFFI counterparts.  If foreign-funcall specifies no
+  structures by value in its list of arguments or return type, it
+  expands as <code>cffi:foreign-funcall</code>.
+</p>
+<br>
+<hr>
+<p>Copyright &copy; 2009 Liam Healy &lt;lhealy at common-lisp.net&gt;
+
+   <blockquote>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+&ldquo;Software&rdquo;), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+        <p>The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+        <p><span class="sc">The software is provided &ldquo;as is&rdquo;, without warranty of any kind,
+express or implied, including but not limited to the warranties of
+merchantability, fitness for a particular purpose and noninfringement. 
+In no event shall the authors or copyright holders be liable for any
+claim, damages or other liability, whether in an action of contract,
+tort or otherwise, arising from, out of or in connection with the
+software or the use or other dealings in the software.</span>
+</blockquote>
+
+<small>
+Time-stamp: <2009-04-11 14:44:38EDT readme.html>
+</small>
+
+</html>

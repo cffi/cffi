@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-11 12:57:31EDT examples.lisp>
+;; Time-stamp: <2009-04-11 15:17:21EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -19,22 +19,20 @@
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
-(defun complex-in (complex-number)
-  (cffi:with-foreign-objects
-      ((argument 'complex))
+(defun complex-abs (complex-number)
+  (cffi:with-foreign-objects ((argument 'complex))
     (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
 	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 1)
 	  (imagpart complex-number))
-    (libffi-function-wrapper "gsl_complex_abs" :double ((argument complex)))))
+    (foreign-funcall "gsl_complex_abs" complex argument :double)))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
-(defun complex-in-out (complex-number)
-  (cffi:with-foreign-objects
-      ((argument 'complex))
+(defun complex-conjugate (complex-number)
+  (cffi:with-foreign-objects ((argument 'complex))
     (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
@@ -42,8 +40,7 @@
 			 :double 1)
 	  (imagpart complex-number))
     (let ((ans
-	   (libffi-function-wrapper
-	    "gsl_complex_conjugate" complex ((argument complex)))))
+	   (foreign-funcall "gsl_complex_conjugate" complex argument complex)))
       (complex
        (cffi:mem-aref ans :double 0)
        (cffi:mem-aref ans :double 1)))))

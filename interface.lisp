@@ -1,9 +1,11 @@
 ;; User interface for making definitions
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-11 12:56:18EDT interface.lisp>
+;; Time-stamp: <2009-04-11 15:38:19EDT interface.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
+
+(export '(defcstruct foreign-funcall))
 
 ;;; These macros are designed to make the interface to functions that
 ;;; get and/or return structs as transparent as possible, mimicking
@@ -13,19 +15,27 @@
   (or `(libffi-type-pointer ,symbol)
       (error "Element type ~a is not known to libffi." symbol)))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *libffi-struct-defs* nil))
+
 (defun field-count (field)
   (getf field :count 1))
+
+(defun name-from-name-and-options (name-and-options)
+  (if (listp name-and-options)
+      (first name-and-options)
+      name-and-options))
 
 (defmacro defcstruct (name-and-options &body fields)
   "A macro to define the struct to CFFI and to libffi simultaneously.
    Syntax is exactly that of cffi:defcstruct."
-  (let ((total-number-of-elements (apply '+ (mapcar 'field-count fields))))
+  (let ((total-number-of-elements (apply '+ (mapcar 'field-count fields)))
+	(name (name-from-name-and-options name-and-options)))
+    (pushnew name *libffi-struct-defs*)
     `(progn
        (cffi:defcstruct ,name-and-options ,@fields)
-       (setf (libffi-type-pointer
-	      ,(if (listp name-and-options)
-		   (first name-and-options)
-		   name-and-options))
+       (pushnew ',name *libffi-struct-defs*)
+       (setf (libffi-type-pointer ,name)
 	     (let ((ptr (cffi:foreign-alloc 'ffi-type))
 		   (elements (cffi:foreign-alloc
 			      :pointer
@@ -83,3 +93,20 @@
 	     result
 	     argvalues)
        (cffi:mem-aref result ',return-type))))
+
+(defmacro foreign-funcall (name-and-options &rest arguments)
+  "Call the foreign function with or without structs-by-value."
+  (let ((arguments-symbol-type
+	 (loop for (type symbol) on (butlast arguments) by #'cddr
+	    collect (list symbol type)))
+	(return-type (first (last arguments))))
+    (if (or (member return-type *libffi-struct-defs*)
+	    (intersection *libffi-struct-defs*
+			  (mapcar 'second arguments-symbol-type)))
+	`(libffi-function-wrapper
+	  ;; We do not use the "options" in name-and-options yet
+	  ,(name-from-name-and-options name-and-options)
+	  ,return-type ,arguments-symbol-type)
+	;; If there are no call or return by value structs, simply use
+	;; cffi:foreign-funcall.
+	`(cffi:foreign-funcall ,name-and-options ,@arguments))))
