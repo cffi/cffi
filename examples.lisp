@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-09 22:37:45EDT examples.lisp>
+;; Time-stamp: <2009-04-11 12:57:31EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -21,51 +21,29 @@
 ;;; number and returns a double-float
 (defun complex-in (complex-number)
   (cffi:with-foreign-objects
-      ((cif 'ffi-cif)
-       (argtypes :pointer 1)
-       (argvalues :pointer 1)
-       (result :double)
-       (argument 'complex))
-    (setf (cffi:mem-aref argtypes :pointer 0) (libffi-type-pointer complex)
-	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
+      ((argument 'complex))
+    (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
 	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 1)
-	  (imagpart complex-number)
-	  (cffi:mem-aref argvalues :pointer 0) argument)
-    (when (eql
-	   :OK
-	   (prep-cif cif :default-abi 1 (libffi-type-pointer :double) argtypes))
-      (call cif
-	    (cffi:foreign-symbol-pointer "gsl_complex_abs")
-	    result
-	    argvalues)
-      (cffi:mem-aref result :double))))
+	  (imagpart complex-number))
+    (libffi-function-wrapper "gsl_complex_abs" :double ((argument complex)))))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
 (defun complex-in-out (complex-number)
   (cffi:with-foreign-objects
-      ((cif 'ffi-cif)
-       (argtypes :pointer 1)
-       (argvalues :pointer 1)
-       (result 'complex)
-       (argument 'complex))
-    (setf (cffi:mem-aref argtypes :pointer 0) (libffi-type-pointer complex)
-	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
+      ((argument 'complex))
+    (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 0)
 	  (realpart complex-number)
 	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
 			 :double 1)
-	  (imagpart complex-number)
-	  (cffi:mem-aref argvalues :pointer 0) argument)
-    (when (eql :OK (prep-cif cif :default-abi 1 (libffi-type-pointer complex) argtypes))
-      (call cif
-	    (cffi:foreign-symbol-pointer "gsl_complex_conjugate")
-	    result
-	    argvalues)
-      (let ((res (cffi:foreign-slot-value result 'complex 'dat)))
-	(complex
-	 (cffi:mem-aref res :double 0)
-	 (cffi:mem-aref res :double 1))))))
+	  (imagpart complex-number))
+    (let ((ans
+	   (libffi-function-wrapper
+	    "gsl_complex_conjugate" complex ((argument complex)))))
+      (complex
+       (cffi:mem-aref ans :double 0)
+       (cffi:mem-aref ans :double 1)))))
