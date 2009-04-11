@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-04-11 15:17:10EDT fsbv.asd>
+;; Time-stamp: <2009-04-11 16:05:30EDT fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -11,7 +11,7 @@
 (asdf:defsystem :fsbv
   :description "Foreign Structures By Value."
   :maintainer "Liam Healy <lhealy@common-lisp.net>"
-  :licence "LLGPL"
+  :licence "See readme.html"
   :depends-on (:cffi :cffi-grovel :trivial-features)
   ;;:pathname (merge-pathnames "syscalls/" *load-truename*)
   :serial t
