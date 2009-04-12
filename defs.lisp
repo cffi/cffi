@@ -1,6 +1,6 @@
 ;; libffi types
 ;; Liam Healy 2009-02-22 19:35:20EST types.lisp
-;; Time-stamp: <2009-04-09 22:34:51EDT defs.lisp>
+;; Time-stamp: <2009-04-11 22:12:08EDT defs.lisp>
 
 (in-package :fsbv)
 
@@ -27,7 +27,9 @@
 
 ;;; http://common-lisp.net/project/cffi/manual/html_node/Built_002dIn-Types.html#Built_002dIn-Types
 ;;; Assign these more accurately?
-(setf (libffi-type-pointer :double)
+(setf (libffi-type-pointer :void)
+      (cffi:foreign-symbol-pointer "ffi_type_void")
+      (libffi-type-pointer :double)
       (cffi:foreign-symbol-pointer "ffi_type_double")
       (libffi-type-pointer :float)
       (cffi:foreign-symbol-pointer "ffi_type_float")
