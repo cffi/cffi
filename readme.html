@@ -33,21 +33,18 @@ gsl_complex gsl_complex_conjugate (gsl_complex z);
 (fsbv:defcstruct complex
   (dat :double :count 2))
 (defun complex-conjugate (complex-number)
-  (cffi:with-foreign-objects
-      ((argument 'complex))
-    (setf (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
-			 :double 0)
-	  (realpart complex-number)
-	  (cffi:mem-aref (cffi:foreign-slot-value argument 'complex 'dat)
-			 :double 1)
-	  (imagpart complex-number))
-    (let ((ans
-	   (fsbv:foreign-funcall "gsl_complex_conjugate" complex argument complex)))
+  (cffi:with-foreign-objects ((argument 'complex))
+    (setf (foreign-realpart argument) (realpart complex-number)
+	  (foreign-imagpart argument) (imagpart complex-number))
+    (let ((ans (foreign-funcall "gsl_complex_conjugate"
+				complex argument complex)))
       (complex
-       (cffi:mem-aref ans :double 0)
-       (cffi:mem-aref ans :double 1)))))
+       (foreign-realpart ans)
+       (foreign-imagpart ans)))))
 </pre>
-then we can call this function from Lisp:
+using appropriately-defined macros <code>foreign-realpart</code>
+and <code>foreign-imagpart</code>, then we can call this function
+from Lisp: 
 <pre>
 (complex-conjugate #c(3.0d0 4.0d0))
 #C(3.0 -4.0)
@@ -84,7 +81,7 @@ software or the use or other dealings in the software.</span>
 </blockquote>
 
 <small>
-Time-stamp: <2009-04-11 14:44:38EDT readme.html>
+Time-stamp: <2009-04-13 14:12:37EDT readme.html>
 </small>
 
 </html>
