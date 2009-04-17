@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-13 14:04:55EDT examples.lisp>
+;; Time-stamp: <2009-04-17 13:16:30EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -22,59 +22,47 @@
 ;;; Define the foreign struct; see /usr/include/gsl/gsl_complex.h
 (defcstruct complex (dat :double :count 2))
 
-(defmacro foreign-realpart (complex)
-  "Extract the real part of the foreign complex struct."
-  `(cffi:mem-aref (cffi:foreign-slot-value ,complex 'complex 'dat)
-		  :double 0))
+;;; Generalize this into fsbv:with-foreign-objects
+;;; where the bindings are (var type &optional initialize)
+(defmacro with-complex-input ((object foreign-name) &body body)
+  `(cffi:with-foreign-objects ((,foreign-name 'complex))
+     (setf (foreign-object-components ,foreign-name 'complex)
+	   (list (realpart ,object)
+		 (imagpart ,object)))
+     ,@body))
 
-(defmacro foreign-imagpart (complex)
-  "Extract the imaginary part of the foreign complex struct."
-  `(cffi:mem-aref (cffi:foreign-slot-value ,complex 'complex 'dat)
-		  :double 1))
+(defmacro complex-return (form)
+  `(apply 'complex (foreign-object-components ,form 'complex)))
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
 (defun complex-abs (complex-number)
-  (cffi:with-foreign-objects ((argument 'complex))
-    (setf (foreign-realpart argument) (realpart complex-number)
-	  (foreign-imagpart argument) (imagpart complex-number))
-    (foreign-funcall "gsl_complex_abs" complex argument :double)))
+  (with-complex-input (complex-number gslnum)
+    (foreign-funcall "gsl_complex_abs" complex gslnum :double)))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
 (defun complex-conjugate (complex-number)
-  (cffi:with-foreign-objects ((argument 'complex))
-    (setf (foreign-realpart argument) (realpart complex-number)
-	  (foreign-imagpart argument) (imagpart complex-number))
-    (let ((ans (foreign-funcall "gsl_complex_conjugate"
-				complex argument complex)))
-      (complex
-       (foreign-realpart ans)
-       (foreign-imagpart ans)))))
+  (with-complex-input (complex-number gslin)
+    (complex-return
+     (foreign-funcall "gsl_complex_conjugate" complex gslin complex))))
 
 ;;; gsl_complex_add: an example of a function that takes two complex
 ;;; numbers and returns another complex number
 (defun complex-add (c1 c2)
-  (cffi:with-foreign-objects ((arg1 'complex) (arg2 'complex))
-    (setf (foreign-realpart arg1) (realpart c1)
-	  (foreign-imagpart arg1) (imagpart c1)
-	  (foreign-realpart arg2) (realpart c2)
-	  (foreign-imagpart arg2) (imagpart c2))
-    (let ((ans (foreign-funcall "gsl_complex_add"
-				complex arg1 complex arg2 complex)))
-      (complex
-       (foreign-realpart ans)
-       (foreign-imagpart ans)))))
+  (with-complex-input (c1 arg1)
+    (with-complex-input (c2 arg2)
+      (complex-return
+	  (foreign-funcall "gsl_complex_add"
+			   complex arg1 complex arg2 complex)))))
 
 ;;; gsl_complex_add_real: an example of a function that takes one complex
 ;;; number and one real number and returns another complex number
 (defun complex-add-real (c1 real)
-  (cffi:with-foreign-objects ((arg1 'complex) (arg2 :double))
-    (setf (foreign-realpart arg1) (realpart c1)
-	  (foreign-imagpart arg1) (imagpart c1)
-	  (cffi:mem-aref arg2 :double) real)
-    (let ((ans (foreign-funcall "gsl_complex_add_real"
-				complex arg1 :double arg2 complex)))
-      (complex
-       (foreign-realpart ans)
-       (foreign-imagpart ans)))))
+  (cffi:with-foreign-objects ((arg2 :double))
+    (setf (foreign-object-components arg2 :double) real)
+    (with-complex-input (c1 arg1)
+      (complex-return
+       (foreign-funcall "gsl_complex_add_real"
+			complex arg1 :double arg2 complex)))))
+
