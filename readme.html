@@ -33,17 +33,12 @@ gsl_complex gsl_complex_conjugate (gsl_complex z);
 (fsbv:defcstruct complex
   (dat :double :count 2))
 (defun complex-conjugate (complex-number)
-  (cffi:with-foreign-objects ((argument 'complex))
-    (setf (foreign-realpart argument) (realpart complex-number)
-	  (foreign-imagpart argument) (imagpart complex-number))
-    (let ((ans (foreign-funcall "gsl_complex_conjugate"
-				complex argument complex)))
-      (complex
-       (foreign-realpart ans)
-       (foreign-imagpart ans)))))
+  (with-complex-input (complex-number gslin)
+    (complex-return
+     (foreign-funcall "gsl_complex_conjugate" complex gslin complex))))
 </pre>
-using appropriately-defined macros <code>foreign-realpart</code>
-and <code>foreign-imagpart</code>, then we can call this function
+using appropriately-defined macros <code>with-complex-input</code>
+and <code>complex-return</code>, then we can call this function
 from Lisp: 
 <pre>
 (complex-conjugate #c(3.0d0 4.0d0))
@@ -81,7 +76,7 @@ software or the use or other dealings in the software.</span>
 </blockquote>
 
 <small>
-Time-stamp: <2009-04-13 14:12:37EDT readme.html>
+Time-stamp: <2009-04-17 13:36:40EDT readme.html>
 </small>
 
 </html>
