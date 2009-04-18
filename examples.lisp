@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-17 13:16:30EDT examples.lisp>
+;; Time-stamp: <2009-04-18 18:05:28EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -20,19 +20,18 @@
 (cffi:load-foreign-library #+unix "libgsl.so")
 
 ;;; Define the foreign struct; see /usr/include/gsl/gsl_complex.h
-(defcstruct complex (dat :double :count 2))
+(defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
+  (dat :double :count 2))
 
 ;;; Generalize this into fsbv:with-foreign-objects
 ;;; where the bindings are (var type &optional initialize)
 (defmacro with-complex-input ((object foreign-name) &body body)
   `(cffi:with-foreign-objects ((,foreign-name 'complex))
-     (setf (foreign-object-components ,foreign-name 'complex)
-	   (list (realpart ,object)
-		 (imagpart ,object)))
+     (setf (foreign-object-components ,foreign-name 'complex) ,object)
      ,@body))
 
 (defmacro complex-return (form)
-  `(apply 'complex (foreign-object-components ,form 'complex)))
+  `(foreign-object-components ,form 'complex))
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float

@@ -1,6 +1,6 @@
 ;; User interface for making definitions
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-17 13:04:44EDT interface.lisp>
+;; Time-stamp: <2009-04-18 17:59:14EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -26,6 +26,11 @@
       (first name-and-options)
       name-and-options))
 
+(defun option-from-name-and-options (name-and-options option default)
+  (if (listp name-and-options)
+      (getf (rest name-and-options) option default)
+      default))
+
 (defun iterate-foreign-structure (fields form)
   "Iterate over the foreign structure, generating forms
    with form-function, a function of field, fn and gn.
@@ -46,7 +51,9 @@
 	(name (name-from-name-and-options name-and-options)))
     (pushnew name *libffi-struct-defs*)
     `(progn
-       (cffi:defcstruct ,name-and-options ,@fields)
+       (cffi:defcstruct
+	   ,(name-from-name-and-options name-and-options)
+	 ,@fields)
        (pushnew ',name *libffi-struct-defs*)
        (setf (libffi-type-pointer ,name)
 	     (let ((ptr (cffi:foreign-alloc 'ffi-type))
@@ -75,12 +82,12 @@
 	     (lambda (object &optional (index 0))
 	       (declare (ignore index))
 	       (let ((fp (cffi:foreign-slot-value object ',name 'dat)))
-		 (list
-		  ,@(iterate-foreign-structure
-		     fields
-		     (lambda (field fn gn)
-		       (declare (ignore gn))
-		       (list `(foreign-object-components fp ,(second field) ,fn)))))))
+		 (,(option-from-name-and-options name-and-options :constructor 'list)
+		   ,@(iterate-foreign-structure
+		      fields
+		      (lambda (field fn gn)
+			(declare (ignore gn))
+			(list `(foreign-object-components fp ,(second field) ,fn)))))))
 	     (get ',name 'setf-foreign-object-components)
 	     (lambda (value object &optional (index 0))
 	       (declare (ignore index))
@@ -90,5 +97,10 @@
 		     fields
 		     (lambda (field fn gn)
 		       `((foreign-object-components fp ,(second field) ,fn)
-			 (nth ,gn value)))))
+			 ,(let ((decon
+				 (option-from-name-and-options
+				  name-and-options :deconstructor 'elt)))
+			       (if (listp decon)
+				   `(,(nth gn decon) value)
+				   `(,decon value ,gn)))))))
 		 value))))))
