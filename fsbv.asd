@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-04-17 13:17:41EDT fsbv.asd>
+;; Time-stamp: <2009-04-18 22:05:52EDT fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -24,5 +24,5 @@
    (:file "functions" :depends-on (cstruct))
    ;; If you have the GSL libraries installed and want to try the
    ;; examples, push :havegsl onto *features*
-   #+havegsl (:file "examples" :depends-on (libffi cstruct))
-   ))
+   #+havegsl
+   (:file "examples" :depends-on (libffi cstruct foreign-object-components))))

@@ -1,11 +1,11 @@
 ;; Foreign object components: read and write
 ;; Liam Healy 2009-04-16 22:06:02EDT foreign-object-components.lisp
-;; Time-stamp: <2009-04-17 13:23:03EDT foreign-object-components.lisp>
+;; Time-stamp: <2009-04-18 22:16:00EDT foreign-object-components.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
 
-(export 'foreign-object-components)
+(export '(object with-foreign-objects))
 
 (defmacro def-foc-direct (type)
   "Define the foreign object components reader and writer, assuming
@@ -41,9 +41,26 @@
 (def-foc-direct :uint)
 (def-foc-direct :ulong)
 
-(defun foreign-object-components (object type &optional (index 0))
-  "Find the components of the foreign object from its pointer."
-  (funcall (get type 'foreign-object-components) object index))
+(defun object (foreign-object type &optional (index 0))
+  "Create the CL object from the foreign object."
+  (funcall (get type 'foreign-object-components) foreign-object index))
 
-(defun (setf foreign-object-components) (value object type &optional (index 0))
-  (funcall (get type 'setf-foreign-object-components) value object index))
+(defun (setf object) (value foreign-object type &optional (index 0))
+  "Set the foreign object from the CL object contents."
+  (funcall
+   (get type 'setf-foreign-object-components)
+   value foreign-object index))
+
+(defmacro with-foreign-objects (bindings &body body)
+  "For each binding (var type &optional initial-value), bind the
+   variable to a foreign object whose contents is the same as the
+   corresponding CL object."
+  `(cffi:with-foreign-objects
+       ,(mapcar (lambda (al) (subseq al 0 2)) bindings)
+     (setf
+      ,@(mapcan
+	 (lambda (bnd)
+	   (when (third bnd)
+	     `((object ,(first bnd) ,(second bnd)) ,(third bnd))))
+	 bindings))
+     ,@body))

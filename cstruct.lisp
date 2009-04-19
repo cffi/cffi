@@ -1,6 +1,6 @@
 ;; User interface for making definitions
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-18 17:59:14EDT cstruct.lisp>
+;; Time-stamp: <2009-04-18 23:00:01EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -87,7 +87,7 @@
 		      fields
 		      (lambda (field fn gn)
 			(declare (ignore gn))
-			(list `(foreign-object-components fp ,(second field) ,fn)))))))
+			(list `(object fp ,(second field) ,fn)))))))
 	     (get ',name 'setf-foreign-object-components)
 	     (lambda (value object &optional (index 0))
 	       (declare (ignore index))
@@ -96,11 +96,12 @@
 		  ,@(iterate-foreign-structure
 		     fields
 		     (lambda (field fn gn)
-		       `((foreign-object-components fp ,(second field) ,fn)
+		       `((object fp ,(second field) ,fn)
 			 ,(let ((decon
 				 (option-from-name-and-options
 				  name-and-options :deconstructor 'elt)))
 			       (if (listp decon)
 				   `(,(nth gn decon) value)
 				   `(,decon value ,gn)))))))
-		 value))))))
+		 value)))
+       ',name)))

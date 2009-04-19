@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-18 18:05:28EDT examples.lisp>
+;; Time-stamp: <2009-04-18 22:04:55EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -23,45 +23,34 @@
 (defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
   (dat :double :count 2))
 
-;;; Generalize this into fsbv:with-foreign-objects
-;;; where the bindings are (var type &optional initialize)
-(defmacro with-complex-input ((object foreign-name) &body body)
-  `(cffi:with-foreign-objects ((,foreign-name 'complex))
-     (setf (foreign-object-components ,foreign-name 'complex) ,object)
-     ,@body))
-
-(defmacro complex-return (form)
-  `(foreign-object-components ,form 'complex))
-
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
 (defun complex-abs (complex-number)
-  (with-complex-input (complex-number gslnum)
+  (with-foreign-objects ((gslnum 'complex complex-number))
     (foreign-funcall "gsl_complex_abs" complex gslnum :double)))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
 (defun complex-conjugate (complex-number)
-  (with-complex-input (complex-number gslin)
-    (complex-return
-     (foreign-funcall "gsl_complex_conjugate" complex gslin complex))))
+  (with-foreign-objects ((gslin 'complex complex-number))
+    (object
+     (foreign-funcall "gsl_complex_conjugate" complex gslin complex)
+     'complex)))
 
 ;;; gsl_complex_add: an example of a function that takes two complex
 ;;; numbers and returns another complex number
 (defun complex-add (c1 c2)
-  (with-complex-input (c1 arg1)
-    (with-complex-input (c2 arg2)
-      (complex-return
-	  (foreign-funcall "gsl_complex_add"
-			   complex arg1 complex arg2 complex)))))
+  (with-foreign-objects ((arg1 'complex c1) (arg2 'complex c2))
+    (object
+     (foreign-funcall "gsl_complex_add"
+		      complex arg1 complex arg2 complex)
+     'complex)))
 
 ;;; gsl_complex_add_real: an example of a function that takes one complex
 ;;; number and one real number and returns another complex number
 (defun complex-add-real (c1 real)
-  (cffi:with-foreign-objects ((arg2 :double))
-    (setf (foreign-object-components arg2 :double) real)
-    (with-complex-input (c1 arg1)
-      (complex-return
-       (foreign-funcall "gsl_complex_add_real"
-			complex arg1 :double arg2 complex)))))
-
+  (with-foreign-objects ((arg1 'complex c1) (arg2 :double real))
+    (object
+     (foreign-funcall "gsl_complex_add_real"
+		      complex arg1 :double arg2 complex)
+     'complex)))
