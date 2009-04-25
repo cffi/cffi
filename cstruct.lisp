@@ -1,6 +1,6 @@
-;; User interface for making definitions
+;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-18 23:00:01EDT cstruct.lisp>
+;; Time-stamp: <2009-04-25 17:07:35EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -10,6 +10,10 @@
 ;;; These macros are designed to make the interface to functions that
 ;;; get and/or return structs as transparent as possible, mimicking
 ;;; the CFFI definitions.
+
+;;; Potential efficiency improvement: when a filed has count > 1,
+;;; define a pointer to the first element, and reference from that,
+;;; instead of recomputing the pointer each element.
 
 (defun lookup-type (symbol)
   (or `(libffi-type-pointer ,symbol)
@@ -81,27 +85,29 @@
 	     (get ',name 'foreign-object-components)
 	     (lambda (object &optional (index 0))
 	       (declare (ignore index))
-	       (let ((fp (cffi:foreign-slot-value object ',name 'dat)))
-		 (,(option-from-name-and-options name-and-options :constructor 'list)
-		   ,@(iterate-foreign-structure
-		      fields
-		      (lambda (field fn gn)
-			(declare (ignore gn))
-			(list `(object fp ,(second field) ,fn)))))))
+	       (,(option-from-name-and-options name-and-options :constructor 'list)
+		 ,@(iterate-foreign-structure
+		    fields
+		    (lambda (field fn gn)
+		      (declare (ignore gn))
+		      (list
+		       `(object
+			 (cffi:foreign-slot-value object ',name ',(first field))
+			 ,(second field) ,fn))))))
 	     (get ',name 'setf-foreign-object-components)
 	     (lambda (value object &optional (index 0))
 	       (declare (ignore index))
-	       (let ((fp (cffi:foreign-slot-value object ',name 'dat)))
-		 (setf
-		  ,@(iterate-foreign-structure
-		     fields
-		     (lambda (field fn gn)
-		       `((object fp ,(second field) ,fn)
-			 ,(let ((decon
-				 (option-from-name-and-options
-				  name-and-options :deconstructor 'elt)))
-			       (if (listp decon)
-				   `(,(nth gn decon) value)
-				   `(,decon value ,gn)))))))
-		 value)))
+	       (setf
+		,@(iterate-foreign-structure
+		   fields
+		   (lambda (field fn gn)
+		     `((object
+			(cffi:foreign-slot-value object ',name ',(first field))
+			,(second field) ,fn)
+		       ,(let ((decon
+			       (option-from-name-and-options
+				name-and-options :deconstructor 'elt)))
+			     (if (listp decon)
+				 `(,(nth gn decon) value)
+				 `(,decon value ,gn)))))))))
        ',name)))
