@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-04-17 13:04:46EDT functions.lisp>
+;; Time-stamp: <2009-04-27 22:50:05EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -10,6 +10,16 @@
 ;;; foreign-funcall args are (type arg ...)
 ;;; defcfun args are ((arg type) ...)
 ;;; This macro assumes defcfun style
+
+(define-condition libffi-not-prepared (error)
+  ((foreign-function-name
+    :initarg :foreign-function-name :reader foreign-function-name))
+  (:report
+   (lambda (condition stream)
+     (format stream "Foreign function ~a did not prepare correctly"
+	     (foreign-function-name condition))))
+  (:documentation
+   "A condition that has been signalled by the FSBV library."))
 
 (defmacro libffi-function-wrapper
     (foreign-function-name return-type arguments)
@@ -34,7 +44,7 @@
 		(prep-cif cif :default-abi ,number-of-arguments
 			  (libffi-type-pointer ,return-type)
 			  argtypes))
-	 (error "Function did not prepare correctly."))
+	 (error 'libffi-not-prepared :foreign-function-name ',foreign-function-name))
        (call cif
 	     (cffi:foreign-symbol-pointer ,foreign-function-name)
 	     ,(if no-return-p '(cffi:null-pointer) 'result)

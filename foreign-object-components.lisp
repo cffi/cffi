@@ -1,6 +1,6 @@
 ;; Foreign object components: read and write
 ;; Liam Healy 2009-04-16 22:06:02EDT foreign-object-components.lisp
-;; Time-stamp: <2009-04-18 22:16:00EDT foreign-object-components.lisp>
+;; Time-stamp: <2009-04-27 22:44:52EDT foreign-object-components.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -43,12 +43,15 @@
 
 (defun object (foreign-object type &optional (index 0))
   "Create the CL object from the foreign object."
-  (funcall (get type 'foreign-object-components) foreign-object index))
+  (funcall (or (get type 'foreign-object-components)
+	       (error "No function defined to convert ~a to Lisp from foreign." type))
+	   foreign-object index))
 
 (defun (setf object) (value foreign-object type &optional (index 0))
   "Set the foreign object from the CL object contents."
   (funcall
-   (get type 'setf-foreign-object-components)
+   (or (get type 'setf-foreign-object-components)
+       (error "No function defined to convert ~a from Lisp to foreign." type))
    value foreign-object index))
 
 (defmacro with-foreign-objects (bindings &body body)
