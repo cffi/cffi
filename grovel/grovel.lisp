@@ -386,7 +386,8 @@ error:
                    *platform-library-flags*))))
 
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
-  (let* ((c-file (generate-c-file input-file output-defaults))
+  (let* ((*package* *package*)
+         (c-file (generate-c-file input-file output-defaults))
          (exe-file (exe-filename c-file))
          (lisp-file (tmp-lisp-filename c-file)))
     (cc-compile-and-link c-file exe-file)
