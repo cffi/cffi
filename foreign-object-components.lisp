@@ -1,11 +1,11 @@
 ;; Foreign object components: read and write
 ;; Liam Healy 2009-04-16 22:06:02EDT foreign-object-components.lisp
-;; Time-stamp: <2009-04-27 22:44:52EDT foreign-object-components.lisp>
+;; Time-stamp: <2009-04-29 22:43:34EDT foreign-object-components.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
 
-(export '(object with-foreign-objects))
+(export '(defcenum-aux defsynonym object with-foreign-objects))
 
 (defmacro def-foc-direct (type)
   "Define the foreign object components reader and writer, assuming
@@ -40,6 +40,31 @@
 (def-foc-direct :ushort)
 (def-foc-direct :uint)
 (def-foc-direct :ulong)
+
+(defmacro defcenum-aux (name &optional (base-type :int))
+  "Auxiliary definitions for the enumation type named."
+  `(setf
+    (libffi-type-pointer ,name)
+    (libffi-type-pointer ,base-type)
+    (get ',name 'foreign-object-components)
+    (lambda (object &optional (index 0))
+      (cffi:foreign-enum-keyword
+       ',name
+       (cffi:mem-aref object ',name index)))
+    (get ',name 'setf-foreign-object-components)
+    (lambda (value object &optional (index 0))
+      (setf (cffi:mem-aref object ',name index)
+	    (cffi:foreign-enum-value ',name value)))))
+
+(defmacro defsynonym (name type)
+  "Define a new name for an existing type."
+  `(setf
+     (libffi-type-pointer ,name)
+     (libffi-type-pointer ,type)
+     (get ',name 'foreign-object-components)
+     (get ',type 'foreign-object-components)
+     (get ',name 'setf-foreign-object-components)
+     (get ',type 'setf-foreign-object-components)))
 
 (defun object (foreign-object type &optional (index 0))
   "Create the CL object from the foreign object."

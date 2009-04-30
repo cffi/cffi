@@ -85,6 +85,13 @@ then we can call this function from Lisp:
 	type <i>type</i> which has optionally been initialized to
 	the <i>initial-value</i>. 
     </li>
+    <li>Macro: <b>fsbv:defcenum-aux</b>
+    (<var>name</var>)<var> &amp;optional (base-type :int)</var>
+      <p>
+	For the C enumeration <i>name</i> which has been defined using
+      <code>cffi:defcenum</code>, make auxiliary definitions for
+	FSBV.
+    </li>
     <li>Function: <b>fsbv:object</b>
       <p>
       Create the CL object from the foreign object
@@ -94,6 +101,10 @@ then we can call this function from Lisp:
       Set the foreign object from the CL object contents.
     </li>
   </ul>
+  Note: <i>all</i> arguments to the function, and the return value,
+  will gain an additional layer of indirection.  This means that
+  arguments normally sent by reference (as a pointer) will require a
+  pointer to the pointer.
 </p>
 <h2>Copying</h2>
 <p>Copyright &copy; 2009 Liam Healy &lt;lhealy at common-lisp.net&gt;
@@ -122,7 +133,7 @@ software or the use or other dealings in the software.</span>
 <br>
 <hr>
 <small>
-Time-stamp: <2009-04-18 22:59:08EDT readme.html>
+Time-stamp: <2009-04-29 20:42:08EDT readme.html>
 </small>
 
 </html>
