@@ -1,6 +1,6 @@
 ;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-04-25 17:07:35EDT cstruct.lisp>
+;; Time-stamp: <2009-05-02 14:17:13EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -21,6 +21,9 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *libffi-struct-defs* nil))
+
+(defun user-defined (name)
+  (member name *libffi-struct-defs*))
 
 (defun field-count (field)
   (getf field :count 1))

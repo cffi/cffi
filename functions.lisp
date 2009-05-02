@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-04-27 22:50:05EDT functions.lisp>
+;; Time-stamp: <2009-05-02 14:20:21EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -50,7 +50,9 @@
 	     ,(if no-return-p '(cffi:null-pointer) 'result)
 	     argvalues)
        ,(unless no-return-p
-		`(cffi:mem-aref result ',return-type)))))
+		(if (user-defined return-type)
+		    `(object (cffi:mem-aref result ',return-type) ',return-type)
+		    `(cffi:mem-aref result ',return-type))))))
 
 (defmacro foreign-funcall (name-and-options &rest arguments)
   "Call the foreign function with or without structs-by-value."
@@ -58,13 +60,13 @@
 	 (loop for (type symbol) on (butlast arguments) by #'cddr
 	    collect (list symbol type)))
 	(return-type (first (last arguments))))
-    (if (or (member return-type *libffi-struct-defs*)
-	    (intersection *libffi-struct-defs*
-			  (mapcar 'second arguments-symbol-type)))
+    (if (or (user-defined return-type)
+	    (some 'user-defined (mapcar 'second arguments-symbol-type)))
 	`(libffi-function-wrapper
 	  ;; We do not use the "options" in name-and-options yet
 	  ,(name-from-name-and-options name-and-options)
-	  ,return-type ,arguments-symbol-type)
+	  ,return-type
+	  ,arguments-symbol-type)
 	;; If there are no call or return by value structs, simply use
 	;; cffi:foreign-funcall.
 	`(cffi:foreign-funcall ,name-and-options ,@arguments))))

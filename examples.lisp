@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-04-18 22:04:55EDT examples.lisp>
+;; Time-stamp: <2009-05-02 14:21:20EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -33,24 +33,18 @@
 ;;; number and returns another complex number
 (defun complex-conjugate (complex-number)
   (with-foreign-objects ((gslin 'complex complex-number))
-    (object
-     (foreign-funcall "gsl_complex_conjugate" complex gslin complex)
-     'complex)))
+    (foreign-funcall "gsl_complex_conjugate" complex gslin complex)))
 
 ;;; gsl_complex_add: an example of a function that takes two complex
 ;;; numbers and returns another complex number
 (defun complex-add (c1 c2)
   (with-foreign-objects ((arg1 'complex c1) (arg2 'complex c2))
-    (object
-     (foreign-funcall "gsl_complex_add"
-		      complex arg1 complex arg2 complex)
-     'complex)))
+    (foreign-funcall "gsl_complex_add"
+		     complex arg1 complex arg2 complex)))
 
 ;;; gsl_complex_add_real: an example of a function that takes one complex
 ;;; number and one real number and returns another complex number
 (defun complex-add-real (c1 real)
   (with-foreign-objects ((arg1 'complex c1) (arg2 :double real))
-    (object
-     (foreign-funcall "gsl_complex_add_real"
-		      complex arg1 :double arg2 complex)
-     'complex)))
+    (foreign-funcall "gsl_complex_add_real"
+		     complex arg1 :double arg2 complex)))

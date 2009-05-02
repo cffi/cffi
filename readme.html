@@ -36,9 +36,7 @@ gsl_complex gsl_complex_conjugate (gsl_complex z);
   (dat :double :count 2))
 (defun complex-conjugate (complex-number)
   (with-foreign-objects ((gslin 'complex complex-number))
-    (object
-     (foreign-funcall "gsl_complex_conjugate" complex gslin complex)
-     'complex)))
+     (foreign-funcall "gsl_complex_conjugate" complex gslin complex)))
 </pre>
 then we can call this function from Lisp: 
 <pre>
@@ -92,15 +90,14 @@ then we can call this function from Lisp:
       <code>cffi:defcenum</code>, make auxiliary definitions for
 	FSBV.
     </li>
-    <li>Function: <b>fsbv:object</b>
-      <p>
-      Create the CL object from the foreign object
-    </li>
-    <li>Function: <b>(setf fsbv:object)</b>
-      <p>
-      Set the foreign object from the CL object contents.
-    </li>
   </ul>
+  <p>
+    There are also functions <b>fsbv:object</b> and <b>(setf
+    fsbv:object)</b> that create the Lisp object
+    from the foreign pointer and type, and vice versa.
+    They are used internally but are exported for the convenience of
+    users. 
+  <p>
   Note: <i>all</i> arguments to the function, and the return value,
   will gain an additional layer of indirection.  This means that
   arguments normally sent by reference (as a pointer) will require a
@@ -133,7 +130,7 @@ software or the use or other dealings in the software.</span>
 <br>
 <hr>
 <small>
-Time-stamp: <2009-04-29 20:42:08EDT readme.html>
+Time-stamp: <2009-05-02 14:29:56EDT readme.html>
 </small>
 
 </html>
