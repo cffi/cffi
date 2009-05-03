@@ -1,6 +1,6 @@
 ;; Examples of using FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-05-02 14:21:20EDT examples.lisp>
+;; Time-stamp: <2009-05-02 21:18:21EDT examples.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -25,26 +25,33 @@
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
-(defun complex-abs (complex-number)
-  (with-foreign-objects ((gslnum 'complex complex-number))
-    (foreign-funcall "gsl_complex_abs" complex gslnum :double)))
+(defcfun (complex-abs "gsl_complex_abs") :double
+  "Find the absolute value of the complex number."
+  (complex-number complex))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
-(defun complex-conjugate (complex-number)
-  (with-foreign-objects ((gslin 'complex complex-number))
-    (foreign-funcall "gsl_complex_conjugate" complex gslin complex)))
+(defcfun (complex-conjugate "gsl_complex_conjugate") complex
+  "Find the complex conjugate of the given complex number."
+  (c complex))
 
 ;;; gsl_complex_add: an example of a function that takes two complex
 ;;; numbers and returns another complex number
 (defun complex-add (c1 c2)
-  (with-foreign-objects ((arg1 'complex c1) (arg2 'complex c2))
-    (foreign-funcall "gsl_complex_add"
-		     complex arg1 complex arg2 complex)))
+  (foreign-funcall "gsl_complex_add" complex c1 complex c2 complex))
 
 ;;; gsl_complex_add_real: an example of a function that takes one complex
 ;;; number and one real number and returns another complex number
-(defun complex-add-real (c1 real)
-  (with-foreign-objects ((arg1 'complex c1) (arg2 :double real))
-    (foreign-funcall "gsl_complex_add_real"
-		     complex arg1 :double arg2 complex)))
+
+(defcfun (complex-add-real "gsl_complex_add_real") complex
+  "Add the real number to the complex number."
+  (c complex) (r :double))
+
+;;; Definition of complex-add-real using the preparation from the
+;;; defcfun above.
+(defun complex-add-real-ff-prep (c r)
+  (foreign-funcall complex-add-real complex c :double r complex))
+
+;;; Definition of complex-add-real re-preparing each call.
+(defun complex-add-real-ff-noprep (c r)
+  (foreign-funcall "gsl_complex_add_real" complex c :double r complex))

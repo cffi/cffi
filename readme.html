@@ -34,9 +34,8 @@ gsl_complex gsl_complex_conjugate (gsl_complex z);
 <pre>
 (defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
   (dat :double :count 2))
-(defun complex-conjugate (complex-number)
-  (with-foreign-objects ((gslin 'complex complex-number))
-     (foreign-funcall "gsl_complex_conjugate" complex gslin complex)))
+(defcfun (complex-conjugate "gsl_complex_conjugate") complex
+  (c complex))
 </pre>
 then we can call this function from Lisp: 
 <pre>
@@ -65,14 +64,36 @@ then we can call this function from Lisp:
      symbols that select the parts of the object in order; default
      is <code>elt</code>.
     </li>
+    <li>Macro: <b>fsbv:defcfun</b><var> name-and-options return-type &amp;body </var>[<var>docstring</var>]<var> arguments </var>[<var>&amp;rest</var>]<var> &rArr; lisp-name<a name="index-defcfun-127"></a></var><br>
+      
+</div>
+<p><var>name-and-options</var> ::= name | (name) <br>
+  <var>name</var> ::= <var>lisp-name</var> [<var>foreign-name</var>] | <var>foreign-name</var> [<var>lisp-name</var>] <br>
+  <var>arguments</var> ::= { (arg-name arg-type) }*
+      <p>This is used the same as
+	<code><a href="http://common-lisp.net/project/cffi/manual/html_node/defcfun.html#defcfun">
+	    cffi:defcfun</a></code>,
+	except that options are not supported in <code>name-and-options</code>.
+    </li>
     <li>Macro: <b>fsbv:foreign-funcall</b><var> name-and-options
     &amp;rest arguments &rArr;
     return-value</var> 
       <p>This is called the same as
-	<code><a href="http://common-lisp.net/project/cffi/manual/html_node/foreign_002dfuncall.html#foreign_002dfuncall">cffi:foreign-funcall</a></code>.
+	<code><a href="http://common-lisp.net/project/cffi/manual/html_node/foreign_002dfuncall.html#foreign_002dfuncall">cffi:foreign-funcall</a></code>,
+	except that if the <i>name</i> is a symbol (as opposed to a
+	string), the preparation defined by a
+	previous <code>fsbv:defcfun</code> for that function name will
+	be used.
 	If foreign-funcall specifies no structures by value in its
 	list of arguments or return type, it expands
 	as <code>cffi:foreign-funcall</code>.
+    </li>
+    <li>Macro: <b>fsbv:defcenum-aux</b>
+    (<var>name</var>)<var> &amp;optional (base-type :int)</var>
+      <p>
+	For the C enumeration <i>name</i> which has been defined using
+      <code>cffi:defcenum</code>, make auxiliary definitions for
+	FSBV.
     </li>
     <li>Macro: <b>fsbv:with-foreign-objects</b>
     (<var>bindings</var>)<var> &amp;body
@@ -82,13 +103,6 @@ then we can call this function from Lisp:
 	Bind <i>var</i> to a pointer of a foreign object of
 	type <i>type</i> which has optionally been initialized to
 	the <i>initial-value</i>. 
-    </li>
-    <li>Macro: <b>fsbv:defcenum-aux</b>
-    (<var>name</var>)<var> &amp;optional (base-type :int)</var>
-      <p>
-	For the C enumeration <i>name</i> which has been defined using
-      <code>cffi:defcenum</code>, make auxiliary definitions for
-	FSBV.
     </li>
   </ul>
   <p>
@@ -130,7 +144,7 @@ software or the use or other dealings in the software.</span>
 <br>
 <hr>
 <small>
-Time-stamp: <2009-05-02 14:29:56EDT readme.html>
+Time-stamp: <2009-05-02 21:15:21EDT readme.html>
 </small>
 
 </html>
