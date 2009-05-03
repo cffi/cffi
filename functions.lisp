@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-05-02 21:24:44EDT functions.lisp>
+;; Time-stamp: <2009-05-02 22:18:41EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -21,7 +21,7 @@
   "Generate a closure that can be called on the Lisp objects and will return
    a Lisp object."
   (let* ((number-of-arguments (length argument-types))
-	 (no-return-p (member return-type '(:void)))
+	 (no-return-p (member return-type *no-value*))
 	 (fo-symbols (loop for i from 0 below number-of-arguments
 			collect (make-symbol (format nil "ARG~d" i)))))
     `(let ((cif (cffi:foreign-alloc 'ffi-cif))
