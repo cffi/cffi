@@ -112,7 +112,8 @@ then we can call this function from Lisp:
     fsbv:object)</b> that create the Lisp object
     from the foreign pointer and type, and vice versa.
     They are used internally but are exported for the convenience of
-    users. 
+    users.  When FSBV is loaded, it will put <code>:fsbv</code> in
+    <code>*features*</code>. 
   <p>
   Note: <i>all</i> arguments to the function, and the return value,
   will gain an additional layer of indirection.  This means that
@@ -146,7 +147,7 @@ software or the use or other dealings in the software.</span>
 <br>
 <hr>
 <small>
-Time-stamp: <2009-05-02 22:38:48EDT readme.html>
+Time-stamp: <2009-05-03 12:12:50EDT readme.html>
 </small>
 
 </html>

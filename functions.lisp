@@ -1,13 +1,13 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-05-02 22:18:41EDT functions.lisp>
+;; Time-stamp: <2009-05-03 09:25:29EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
 
-(export '(foreign-funcall defcfun))
+(export '(foreign-funcall defcfun foreign-function-not-prepared))
 
-(define-condition libffi-not-prepared (error)
+(define-condition foreign-function-not-prepared (error)
   ((foreign-function-name
     :initarg :foreign-function-name :reader foreign-function-name))
   (:report
@@ -36,7 +36,9 @@
 		(prep-cif cif :default-abi ,number-of-arguments
 			  (libffi-type-pointer ,return-type)
 			  ffi-argtypes))
-	 (error 'libffi-not-prepared :foreign-function-name ',foreign-function-name))
+	 (error
+	  'foreign-function-not-prepared
+	  :foreign-function-name ',foreign-function-name))
        (lambda (&rest args)
 	 (with-foreign-objects
 	     ,(loop for i from 0 below number-of-arguments
