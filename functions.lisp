@@ -1,11 +1,12 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-05-03 09:25:29EDT functions.lisp>
+;; Time-stamp: <2009-05-03 13:17:34EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
 
-(export '(foreign-funcall defcfun foreign-function-not-prepared))
+(export '(foreign-funcall defcfun foreign-function-not-prepared
+	  defcfun-args-from-ff-args))
 
 (define-condition foreign-function-not-prepared (error)
   ((foreign-function-name
@@ -59,27 +60,33 @@
 			  `(object (cffi:mem-aref result ',return-type) ',return-type)
 			  `(cffi:mem-aref result ',return-type)))))))))
 
+(defun defcfun-args-from-ff-args (arguments)
+  "Convert the argument format from foreign-funcall to defcfun form.
+   Returns a list of input arguments, and the return type."
+  (values 
+   (loop for (type symbol) on (butlast arguments) by #'cddr
+      collect (list symbol type))
+   (first (last arguments))))
+
 (defmacro foreign-funcall (name-and-options &rest arguments)
   "Call the foreign function with or without structs-by-value."
-  (let ((arguments-symbol-type
-	 (loop for (type symbol) on (butlast arguments) by #'cddr
-	    collect (list symbol type)))
-	(return-type (first (last arguments)))
-	(name (name-from-name-and-options name-and-options)))
-    (if (or (user-defined return-type)
-	    (some 'user-defined (mapcar 'second arguments-symbol-type)))
-	`(funcall
-	  ,(if (symbolp name)
-	       `(get ',name 'prepared)
-	       (prepare-function
-		;; We do not use the "options" in name-and-options yet
-		name
-		return-type
-		(mapcar 'second arguments-symbol-type)))
-	  ,@(mapcar 'first arguments-symbol-type))
-	;; If there are no call or return by value structs, simply use
-	;; cffi:foreign-funcall.
-	`(cffi:foreign-funcall ,name-and-options ,@arguments))))
+  (multiple-value-bind (arguments-symbol-type return-type)
+      (defcfun-args-from-ff-args arguments)
+    (let ((name (name-from-name-and-options name-and-options)))
+      (if (or (user-defined return-type)
+	      (some 'user-defined (mapcar 'second arguments-symbol-type)))
+	  `(funcall
+	    ,(if (symbolp name)
+		 `(get ',name 'prepared)
+		 (prepare-function
+		  ;; We do not use the "options" in name-and-options yet
+		  name
+		  return-type
+		  (mapcar 'second arguments-symbol-type)))
+	    ,@(mapcar 'first arguments-symbol-type))
+	  ;; If there are no call or return by value structs, simply use
+	  ;; cffi:foreign-funcall.
+	  `(cffi:foreign-funcall ,name-and-options ,@arguments)))))
 
 (defmacro defcfun (name-and-options return-type &body args)
   "Define a Lisp function that calls a foreign function."
