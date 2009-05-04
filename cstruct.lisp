@@ -1,11 +1,11 @@
 ;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-05-02 14:17:13EDT cstruct.lisp>
+;; Time-stamp: <2009-05-03 22:15:51EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
 
-(export '(defcstruct))
+(export '(defcstruct defined-type-p))
 
 ;;; These macros are designed to make the interface to functions that
 ;;; get and/or return structs as transparent as possible, mimicking
@@ -22,7 +22,8 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *libffi-struct-defs* nil))
 
-(defun user-defined (name)
+(defun defined-type-p (name)
+  "This structure has been defined for call-by-value."
   (member name *libffi-struct-defs*))
 
 (defun field-count (field)
@@ -61,7 +62,8 @@
        (cffi:defcstruct
 	   ,(name-from-name-and-options name-and-options)
 	 ,@fields)
-       (pushnew ',name *libffi-struct-defs*)
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+	 (pushnew ',name *libffi-struct-defs*))
        (setf (libffi-type-pointer ,name)
 	     (let ((ptr (cffi:foreign-alloc 'ffi-type))
 		   (elements (cffi:foreign-alloc

@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-05-03 13:17:34EDT functions.lisp>
+;; Time-stamp: <2009-05-03 22:16:06EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -56,7 +56,7 @@
 		   ,(if no-return-p '(cffi:null-pointer) 'result)
 		   argvalues)
 	     ,(unless no-return-p
-		      (if (user-defined return-type)
+		      (if (defined-type-p return-type)
 			  `(object (cffi:mem-aref result ',return-type) ',return-type)
 			  `(cffi:mem-aref result ',return-type)))))))))
 
@@ -73,8 +73,8 @@
   (multiple-value-bind (arguments-symbol-type return-type)
       (defcfun-args-from-ff-args arguments)
     (let ((name (name-from-name-and-options name-and-options)))
-      (if (or (user-defined return-type)
-	      (some 'user-defined (mapcar 'second arguments-symbol-type)))
+      (if (or (defined-type-p return-type)
+	      (some 'defined-type-p (mapcar 'second arguments-symbol-type)))
 	  `(funcall
 	    ,(if (symbolp name)
 		 `(get ',name 'prepared)
