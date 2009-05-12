@@ -1,6 +1,6 @@
 ;; CFFI-Grovel definitions for unix systems.
 ;; Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
-;; Time-stamp: <2009-04-06 22:37:46EDT libffi-unix.lisp>
+;; Time-stamp: <2009-05-12 15:18:14EDT libffi-unix.lisp>
 ;; $Id: $
 
 #+linux
@@ -8,6 +8,9 @@
 
 (in-package :fsbv)
 
+#+darwin
+(include "ffi/ffi.h")
+#-darwin
 (include "ffi.h")
 
 (cenum status
