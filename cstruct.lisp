@@ -1,6 +1,6 @@
 ;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-05-03 22:15:51EDT cstruct.lisp>
+;; Time-stamp: <2009-05-19 14:13:31EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -26,8 +26,8 @@
   "This structure has been defined for call-by-value."
   (member name *libffi-struct-defs*))
 
-(defun field-count (field)
-  (getf field :count 1))
+(defun field-count (field &optional (default 1))
+  (getf field :count default))
 
 (defun name-from-name-and-options (name-and-options)
   (if (listp name-and-options)
@@ -51,6 +51,15 @@
 	(prog1
 	    (funcall form field fn gn)
 	  (incf gn)))))
+
+(defun structure-slot-form (field name fn)
+  "A form for getting or setting the foreign slot value."
+  (if (field-count field nil)		; aggregate slot
+      `(object
+	(cffi:foreign-slot-value object ',name ',(first field))
+	,(second field) ,fn)
+      ;; simple slot
+      `(cffi:foreign-slot-value object ',name ',(first field))))
 
 (defmacro defcstruct (name-and-options &body fields)
   "A macro to define the struct to CFFI and to libffi simultaneously.
@@ -95,10 +104,7 @@
 		    fields
 		    (lambda (field fn gn)
 		      (declare (ignore gn))
-		      (list
-		       `(object
-			 (cffi:foreign-slot-value object ',name ',(first field))
-			 ,(second field) ,fn))))))
+		      `(,(structure-slot-form field name fn))))))
 	     (get ',name 'setf-foreign-object-components)
 	     (lambda (value object &optional (index 0))
 	       (declare (ignore index))
@@ -106,13 +112,11 @@
 		,@(iterate-foreign-structure
 		   fields
 		   (lambda (field fn gn)
-		     `((object
-			(cffi:foreign-slot-value object ',name ',(first field))
-			,(second field) ,fn)
-		       ,(let ((decon
-			       (option-from-name-and-options
-				name-and-options :deconstructor 'elt)))
-			     (if (listp decon)
-				 `(,(nth gn decon) value)
-				 `(,decon value ,gn)))))))))
+		     `(,(structure-slot-form field name fn)
+			,(let ((decon
+				(option-from-name-and-options
+				 name-and-options :deconstructor 'elt)))
+			      (if (listp decon)
+				  `(,(nth gn decon) value)
+				  `(,decon value ,gn)))))))))
        ',name)))
