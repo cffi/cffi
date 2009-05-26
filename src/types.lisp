@@ -482,10 +482,9 @@ The foreign array must be freed with foreign-array-free."
                                   value
                                   (parse-type (slot-type slot))))
 
-;;; TODO: optimize.
 (defmethod foreign-struct-slot-set-form (value ptr (slot aggregate-struct-slot))
   "Return a form to get the value of an aggregate SLOT relative to PTR."
-  `(setf (foreign-struct-slot-value ,ptr ',slot) ,value))
+  `(setf (foreign-struct-slot-value ,ptr ',(slot-name slot)) ,value))
 
 ;;;## Defining Foreign Structures
 
