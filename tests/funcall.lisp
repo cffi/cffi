@@ -190,4 +190,24 @@
             finally (return (fun))))
   6)
 
+;;; RT: NIL arguments are skipped
+
+(defvar *nil-skipped*)
+
+(define-foreign-type check-nil-skip-type ()
+  ()
+  (:actual-type :pointer)
+  (:simple-parser check-nil-skip-type))
+
+(defmethod expand-to-foreign (val (type check-nil-skip-type))
+  (setf *nil-skipped* nil)
+  (null-pointer))
+
+(deftest funcall.nil-skip
+    (let ((*nil-skipped* t))
+      (compile nil '(lambda ()
+                     (foreign-funcall "abs" check-nil-skip-type nil)))
+      *nil-skipped*)
+  nil)
+
 ) ;; #-cffi-sys::no-foreign-funcall

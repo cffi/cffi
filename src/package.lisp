@@ -32,7 +32,7 @@
   (:import-from #:alexandria
                 #:ensure-list #:featurep #:format-symbol #:if-let
                 #:make-gensym-list #:once-only #:parse-body #:symbolicate
-                #:when-let #:with-unique-names)
+                #:when-let #:with-unique-names #:lastcar)
   (:export
    ;; Types.
    #:foreign-pointer

@@ -52,12 +52,13 @@
 
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
-  (let ((return-type :void))
-    (loop for (type arg) on args by #'cddr
-          if arg collect type into types
-             and collect (canonicalize-foreign-type type) into ctypes
-             and collect arg into fargs
-          else do (setf return-type type)
+  (let* ((len (length args))
+         (return-type (if (oddp len) (lastcar args) :void)))
+    (loop repeat (floor len 2)
+          for (type arg) on args by #'cddr
+          collect type into types
+          collect (canonicalize-foreign-type type) into ctypes
+          collect arg into fargs
           finally (return (values types ctypes fargs return-type)))))
 
 ;;; While the options passed directly to DEFCFUN/FOREIGN-FUNCALL have
