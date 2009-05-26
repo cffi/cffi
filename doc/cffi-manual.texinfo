@@ -4971,14 +4971,14 @@ CFFI> (foreign-funcall "strerror" :int *errno* :string)
 Trying to modify a read-only foreign variable:
 
 @lisp
-CFFI> (defcvar ("errno" +error-number+) :int :read-only t)
+CFFI> (defcvar ("errno" +error-number+ :read-only t) :int)
 @result{} +ERROR-NUMBER+
 CFFI> (setf +error-number+ 12)
 ;; @lispcmt{@error{} Trying to modify read-only foreign var: +ERROR-NUMBER+.}
 @end lisp
 
 @emph{Note that accessing @code{errno} this way won't work with every
-C standard library.}
+implementation of the C standard library.}
 
 @subheading See Also
 @seealso{get-var-pointer}
