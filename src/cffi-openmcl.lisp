@@ -273,11 +273,12 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro %defcallback (name rettype arg-names arg-types body
                         &key calling-convention)
-  (declare (ignore calling-convention))
   (let ((cb-name (intern-callback name)))
     `(progn
        (defcallback ,cb-name
-           (,@(mapcan (lambda (sym type)
+           (,@(when (eq calling-convention :stdcall)
+                '(:discard-stack-args))
+            ,@(mapcan (lambda (sym type)
                         (list (convert-foreign-type type) sym))
                       arg-names arg-types)
             ,(convert-foreign-type rettype))
