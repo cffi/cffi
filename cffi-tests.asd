@@ -29,6 +29,9 @@
   (:use #:cl #:asdf))
 (in-package #:cffi-tests-system)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (oos 'load-op 'trivial-features))
+
 (defvar *tests-dir* (append (pathname-directory *load-truename*) '("tests")))
 
 (defclass c-test-lib (c-source-file)
@@ -41,7 +44,7 @@
   nil)
 
 (defmethod perform ((o compile-op) (c c-test-lib))
-  #-(or win32 mswindows)
+  #-windows
   (unless (zerop (run-shell-command
                   "cd ~A; make"
                   (namestring (make-pathname :name nil :type nil
