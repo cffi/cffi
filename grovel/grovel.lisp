@@ -171,6 +171,7 @@
 #define SIGNED64P(x) ( x <= 0x7FFFFFFFFFFFFFFFLL )
 
 void type_name(FILE *output, int signed_p, int size);
+char* print_double_for_lisp(double n);
 
 int main(int argc, char**argv) {
   FILE *output = argc > 1 ? fopen(argv[1], \"w\") : stdout;
@@ -208,6 +209,14 @@ void type_name(FILE *output, int signed_p, int size) {
 
 error:
   fprintf(output, \"(cl:error \\\"No type of size ~D.\\\" %i)\\n\", size);
+}
+
+char* print_double_for_lisp(double n)
+{
+    static char buf[256];
+    memset(buf, 0, 256);
+    snprintf(buf, 255, \"(let ((*read-default-float-format* 'double-float)) (coerce (read-from-string \\\"%.20E\\\") 'double-float))\", n);
+    return buf;
 }
 ")
 
@@ -451,7 +460,7 @@ error:
 
 ;;; Syntax differs from anything else in CFFI.  Fix?
 (define-grovel-syntax constant ((lisp-name &rest c-names)
-                                &key documentation optional)
+                                &key (type 'integer) documentation optional)
   (when (keywordp lisp-name)
     (setf lisp-name (format-symbol "~A" lisp-name)))
   (c-section-header out "constant" lisp-name)
@@ -461,10 +470,14 @@ error:
     (c-format out "(cl:defconstant ")
     (c-print-symbol out lisp-name t)
     (c-format out " ")
-    (format out "~&  if(SIGNED64P(~A))~%" c-name)
-    (format out "    fprintf(output, \"%lli\", (int64_t) ~A);" c-name)
-    (format out "~&  else~%")
-    (format out "    fprintf(output, \"%llu\", (uint64_t) ~A);" c-name)
+    (ecase type
+      (integer
+       (format out "~&  if(SIGNED64P(~A))~%" c-name)
+       (format out "    fprintf(output, \"%lli\", (int64_t) ~A);" c-name)
+       (format out "~&  else~%")
+       (format out "    fprintf(output, \"%llu\", (uint64_t) ~A);" c-name))
+      (double-float
+       (format out "~&  fprintf(output, \"%s\", print_double_for_lisp((double)~A));~%" c-name)))
     (when documentation
       (c-format out " ~S" documentation))
     (c-format out ")~%")
