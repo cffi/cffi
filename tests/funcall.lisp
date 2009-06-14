@@ -210,4 +210,10 @@
       *nil-skipped*)
   nil)
 
+;;; RT: CLISP returns NIL instead of a null-pointer
+
+(deftest funcall.pointer-not-nil
+    (not (null (foreign-funcall "strchr" :string "" :int 1 :pointer)))
+  t)
+
 ) ;; #-cffi-sys::no-foreign-funcall

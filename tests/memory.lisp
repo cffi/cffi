@@ -285,6 +285,14 @@
     (pointer-address (null-pointer))
   0)
 
+(deftest pointer.null
+    (nth-value 0 (ignore-errors (null-pointer-p nil)))
+  nil)
+
+(deftest foreign-pointer-type.nil
+    (typep nil 'foreign-pointer)
+  nil)
+
 ;;; Ensure that a pointer to the highest possible address can be
 ;;; created using MAKE-POINTER.  Regression test for CLISP/X86-64.
 (deftest make-pointer.high

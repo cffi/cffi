@@ -110,11 +110,11 @@
 ;;;# Basic Pointer Operations
 
 (deftype foreign-pointer ()
-  '(or null ffi:foreign-address))
+  'ffi:foreign-address)
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (or (null ptr) (typep ptr 'ffi:foreign-address)))
+  (typep ptr 'ffi:foreign-address))
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
@@ -127,12 +127,12 @@
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null foreign pointer."
-  (or (null ptr) (zerop (ffi:foreign-address-unsigned ptr))))
+  (zerop (ffi:foreign-address-unsigned ptr)))
 
 (defun inc-pointer (ptr offset)
   "Return a pointer pointing OFFSET bytes past PTR."
   (ffi:unsigned-foreign-address
-   (+ offset (if (null ptr) 0 (ffi:foreign-address-unsigned ptr)))))
+   (+ offset (ffi:foreign-address-unsigned ptr))))
 
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
@@ -172,16 +172,25 @@ SIZE during BODY."
 
 ;;;# Memory Access
 
+;;; %MEM-REF and its compiler macro work around CLISP's FFI:C-POINTER
+;;; type and convert NILs back to null pointers.
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference a pointer OFFSET bytes from PTR to an object of
 built-in foreign TYPE.  Returns the object as a foreign pointer
 or Lisp number."
-  (ffi:memory-as ptr (convert-foreign-type type) offset))
+  (let ((value (ffi:memory-as ptr (convert-foreign-type type) offset)))
+    (if (eq type :pointer)
+        (or value (null-pointer))
+        value)))
 
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code when TYPE is constant."
   (if (constantp type)
-      `(ffi:memory-as ,ptr ',(convert-foreign-type (eval type)) ,offset)
+      (let* ((ftype (convert-foreign-type (eval type)))
+             (form `(ffi:memory-as ,ptr ',ftype ,offset)))
+        (if (eq type :pointer)
+            `(or ,form (null-pointer))
+            form))
       form))
 
 (defun %mem-set (value ptr type &optional (offset 0))
@@ -295,19 +304,22 @@ over at the end of ARGS, it specifies the foreign return type of
 the function call."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
-    `(funcall
-      (load-time-value
-       (handler-case
-           ,(%foreign-funcall-aux
-             name
-             `(ffi:parse-c-type
-               ',(c-function-type types rettype calling-convention))
-             (if (eq library :default)
-                 :default
-                 (library-handle-form library)))
-         (error (err)
-           (warn "~A" err))))
-      ,@fargs)))
+    (let* ((fn (%foreign-funcall-aux
+                name
+                `(ffi:parse-c-type
+                  ',(c-function-type types rettype calling-convention))
+                (if (eq library :default)
+                    :default
+                    (library-handle-form library))))
+          (form `(funcall
+                  (load-time-value
+                   (handler-case ,fn
+                     (error (err)
+                       (warn "~A" err))))
+                  ,@fargs)))
+      (if (eq rettype 'ffi:c-pointer)
+          `(or ,form (null-pointer))
+          form))))
 
 (defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   "Similar to %foreign-funcall but takes a pointer instead of a string."
@@ -369,9 +381,17 @@ the function call."
 ;;; passed to C code for this callback by calling %CALLBACK.
 (defmacro %defcallback (name rettype arg-names arg-types body
                         &key calling-convention)
-  `(register-callback ',name (lambda ,arg-names ,body)
-                      ,(callback-type rettype arg-names arg-types
-                                      calling-convention)))
+  `(register-callback
+    ',name
+    (lambda ,arg-names
+      ;; Work around CLISP's FFI:C-POINTER type and convert NIL values
+      ;; back into a null pointers.
+      (let (,@(loop for name in arg-names
+                    and type in arg-types
+                    when (eq type :pointer)
+                    collect `(,name (or ,name (null-pointer)))))
+        ,body))
+    ,(callback-type rettype arg-names arg-types calling-convention)))
 
 ;;; Look up the name of a callback and return a pointer that can be
 ;;; passed to a C function.  Signals an error if no callback is

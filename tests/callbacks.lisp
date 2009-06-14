@@ -184,6 +184,15 @@
     (foreign-funcall-pointer (callback return-a-string-not-nil) () :string)
   "abc")
 
+(defcallback check-for-nil :boolean ((pointer :pointer))
+  (null pointer))
+
+#-cffi-sys::no-foreign-funcall
+(deftest callbacks.nil-for-null
+    (foreign-funcall-pointer (callback check-for-nil) nil
+                             :pointer (null-pointer) :boolean)
+  nil)
+
 ;;; This one tests mem-aref too.
 (defcfun "qsort" :void
   (base :pointer)
