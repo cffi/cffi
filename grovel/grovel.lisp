@@ -132,7 +132,6 @@
 
 ;;;# Grovelling
 
-;;; TODO: look at the CC environment variable.
 (defparameter *cc*
   #+(or cygwin (not windows)) "cc"
   #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
