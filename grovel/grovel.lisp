@@ -132,12 +132,10 @@
 
 ;;;# Grovelling
 
-;;; TODO: figure out a good way to let the user specify where his
-;;; compiler is.  Can already do that through the CC environment
-;;; variable, but that's not very convenient on windows?
+;;; TODO: look at the CC environment variable.
 (defparameter *cc*
-  #+windows "c:/msys/1.0/bin/gcc.exe"
-  #-windows "gcc")
+  #+(or cygwin (not windows)) "cc"
+  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
 
 (defparameter *cc-flags* (list))
 
