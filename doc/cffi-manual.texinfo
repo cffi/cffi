@@ -6103,10 +6103,12 @@ Define a @cffi{} foreign type for the string in @var{size-designator},
 e.g. @code{(ctype :pid "pid_t")}.
 @end deffn
 
-@deffn {Grovel Form} constant (lisp-name &rest c-names) &key documentation optional
+@deffn {Grovel Form} constant (lisp-name &rest c-names) &key type documentation optional
 
 Search for the constant named by the first @var{c-name} string found
 to be known to the C preprocessor and define it as @var{lisp-name}.
+The keyword argument type specifies how to grovel the constant:
+either INTEGER(the default) or DOUBLE-FLOAT.
 If optional is true, no error will be raised if all the @var{c-names}
 are unknown. If @var{lisp-name} is a keyword, the actual constant
 will be a symbol of the same name interned in the current package.
