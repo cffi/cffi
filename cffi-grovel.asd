@@ -36,6 +36,7 @@
     :components
     ((:file "package")
      (:file "invoke")
+     (:static-file "common.h")
      (:file "grovel")
      (:file "asdf")))))
 
