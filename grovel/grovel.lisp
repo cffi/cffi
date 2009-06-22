@@ -708,7 +708,7 @@ int main(int argc, char**argv) {
     (write-line string out)))
 
 (define-wrapper-syntax flag (&rest flags)
-  (appendf *cc-flags* (strip-whitespace flags)))
+  (appendf *cc-flags* (trim-whitespace flags)))
 
 (define-wrapper-syntax proclaim (&rest proclamations)
   (push `(proclaim ,@proclamations) *lisp-forms*))
