@@ -215,11 +215,13 @@ int main(int argc, char**argv) {
             (write-string *postscript* out)))))
     c-file))
 
+(defparameter *exe-extension*
+  #-cffi-features:windows nil
+  #+cffi-features:windows "exe")
+
 (defun exe-filename (defaults)
-  (let* ((path (make-pathname
-                :type #-cffi-features:windows nil
-                      #+cffi-features:windows "exe"
-                :defaults defaults)))
+  (let ((path (make-pathname :type *exe-extension*
+                             :defaults defaults)))
     ;; It's necessary to prepend "./" to relative paths because some
     ;; implementations of INVOKE use a shell.
     (when (or (not (pathname-directory path))
