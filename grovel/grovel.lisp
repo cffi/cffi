@@ -30,6 +30,12 @@
 
 (in-package #:cffi-grovel)
 
+;;;# Utils
+
+(defun trim-whitespace (strings)
+  (loop for s in strings
+        collect (string-trim '(#\Space #\Tab #\VT) s)))
+
 ;;;# Error Conditions
 
 ;;; This warning is signalled when cffi-grovel can't find some macro.
@@ -283,24 +289,25 @@ char* print_double_for_lisp(double n)
 
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
-(defvar *cpu-word-size-flags*
+(defparameter *cpu-word-size-flags*
   (ecase (cffi:foreign-type-size :long)
-    (4 "-m32")
-    (8 "-m64")))
+    (4 (list "-m32"))
+    (8 (list "-m64"))))
 
-(defvar *platform-library-flags*
+(defparameter *platform-library-flag*
   (list #+cffi-features:darwin "-bundle"
         #-cffi-features:darwin "-shared"))
 
 (defun cc-compile-and-link (input-file output-file &key library)
-  (apply #'invoke (or (getenv "CC") *cc*)
-         *cpu-word-size-flags*
-         "-fPIC" "-o"
-         (native-namestring output-file)
-         (native-namestring input-file)
-         (append *cc-flags*
-                 (when library
-                   *platform-library-flags*))))
+  (let ((arglist
+         `(,(or (getenv "CC") *cc*)
+           ,@*cpu-word-size-flags*
+           ,@*cc-flags*
+           ,@(when library *platform-library-flags*)
+           "-fPIC" "-o"
+           ,(native-namestring output-file)
+           ,(native-namestring input-file))))
+    (apply #'invoke arglist)))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given grovel file.
@@ -337,8 +344,8 @@ char* print_double_for_lisp(double n)
 (define-grovel-syntax ffi-typedef (new-type base-type)
   (c-format out "(cffi:defctype ~S ~S)~%" new-type base-type))
 
-(define-grovel-syntax flag (flag-string)
-  (push flag-string *cc-flags*))
+(define-grovel-syntax flag (&rest flags)
+  (appendf *cc-flags* (trim-whitespace flags)))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
@@ -743,8 +750,8 @@ char* print_double_for_lisp(double n)
   (dolist (string strings)
     (write-line string out)))
 
-(define-wrapper-syntax flag (flag-string)
-  (push flag-string *cc-flags*))
+(define-wrapper-syntax flag (&rest flags)
+  (appendf *cc-flags* (strip-whitespace flags)))
 
 (define-wrapper-syntax proclaim (&rest proclamations)
   (push `(proclaim ,@proclamations) *lisp-forms*))

@@ -6122,9 +6122,9 @@ Defines an additional C preprocessor symbol, which is useful for
 altering the behavior of included system headers.
 @end deffn
 
-@deffn {Grovel Form} flag flag-string
+@deffn {Grovel Form} flag &rest flags
 
-Adds @var{flag-string} to the flags used for the C compiler
+Adds @var{flags} to the command line arguments used for the C compiler
 invocation.
 @end deffn
 
