@@ -246,7 +246,7 @@ int main(int argc, char**argv) {
     (4 (list "-m32"))
     (8 (list "-m64"))))
 
-(defparameter *platform-library-flag*
+(defparameter *platform-library-flags*
   (list #+cffi-features:darwin "-bundle"
         #-cffi-features:darwin "-shared"))
 
