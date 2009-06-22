@@ -1,8 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi-grovel.asd --- ASDF system definition for cffi-grovel.
-;;;
-;;; Copyright (C) 2007, Luis Oliveira  <loliveira@common-lisp.net>
+;;; package.lisp --- Groveler DEFPACKAGE.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,18 +23,12 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(asdf:defsystem cffi-grovel
-  :description "The CFFI Groveller"
-  :author "Dan Knapp <dankna@accela.net>"
-  :depends-on (cffi alexandria)
-  :licence "MIT"
-  :components
-  ((:module grovel
-    :serial t
-    :components
-    ((:file "package")
-     (:file "invoke")
-     (:file "grovel")
-     (:file "asdf")))))
-
-;; vim: ft=lisp et
+(defpackage #:cffi-grovel
+  (:use #:common-lisp #:alexandria)
+  (:import-from #:cffi-sys #:native-namestring)
+  (:export
+   #:grovel-file
+   #:wrapper-file
+   #:process-grovel-file
+   #:process-wrapper-file
+   #:missing-definition))
