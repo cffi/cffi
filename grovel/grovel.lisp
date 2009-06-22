@@ -65,6 +65,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifndef offsetof
 #define offsetof(type, slot) ((int) ((char *) &(((type *) 0)->slot)))
