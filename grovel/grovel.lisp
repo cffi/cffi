@@ -146,7 +146,7 @@
   #+(or cygwin (not windows)) "cc"
   #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
 
-(defparameter *cc-flags* (list))
+(defparameter *cc-flags* nil)
 
 ;;; The header of the intermediate C file.
 (defparameter *header*
