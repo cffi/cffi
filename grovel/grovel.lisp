@@ -401,14 +401,16 @@ char* print_double_for_lisp(double n)
                  (when library
                    *platform-library-flags*))))
 
+;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
+;;; *the extent of a given grovel file.
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
-  (let* ((*package* *package*)
-         (c-file (generate-c-file input-file output-defaults))
-         (exe-file (exe-filename c-file))
-         (lisp-file (tmp-lisp-filename c-file)))
-    (cc-compile-and-link c-file exe-file)
-    (invoke exe-file (native-namestring lisp-file))
-    lisp-file))
+  (with-standard-io-syntax
+    (let* ((c-file (generate-c-file input-file output-defaults))
+           (exe-file (exe-filename c-file))
+           (lisp-file (tmp-lisp-filename c-file)))
+      (cc-compile-and-link c-file exe-file)
+      (invoke exe-file (native-namestring lisp-file))
+      lisp-file)))
 
 ;;; OUT is lexically bound to the output stream within BODY.
 (defmacro define-grovel-syntax (name lambda-list &body body)
@@ -804,16 +806,16 @@ char* print_double_for_lisp(double n)
                  :defaults defaults))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
-;;; *the extent of a given grovel file.
+;;; *the extent of a given wrapper file.
 (defun process-wrapper-file (input-file &optional (output-defaults input-file))
-  (let ((*package* *package*)
-        (lib-file (lib-filename output-defaults)))
-    (multiple-value-bind (c-file lisp-forms)
-        (generate-c-lib-file input-file output-defaults)
-      (cc-compile-and-link c-file lib-file :library t)
-      ;; FIXME: hardcoded library path.
-      (values (generate-bindings-file lib-file lisp-forms output-defaults)
-              lib-file))))
+  (with-standard-io-syntax
+    (let ((lib-file (lib-filename output-defaults)))
+      (multiple-value-bind (c-file lisp-forms)
+          (generate-c-lib-file input-file output-defaults)
+        (cc-compile-and-link c-file lib-file :library t)
+        ;; FIXME: hardcoded library path.
+        (values (generate-bindings-file lib-file lisp-forms output-defaults)
+                lib-file)))))
 
 (defgeneric %process-wrapper-form (name out arguments)
   (:method (name out arguments)
