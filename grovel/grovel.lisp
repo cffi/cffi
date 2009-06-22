@@ -42,8 +42,18 @@
 
 ;;;# Shell Execution
 
-#-(or allegro clisp cmu ecl lispworks openmcl sbcl scl)
+#-(or abcl allegro clisp cmu ecl lispworks openmcl sbcl scl)
 (error "%INVOKE is unimplemented for this Lisp.  Patches welcome.")
+
+;; FIXME: doesn't do shell quoting
+#+abcl
+(defun %invoke (command arglist)
+  (let ((cmdline (reduce (lambda (str1 str2)
+                           (concatenate 'string str1 #\Space str2))
+                         arglist :initial-value command))
+        (stream (make-string-output-stream)))
+    (values (ext:run-shell-command cmdline :output stream)
+            (get-output-stream-string stream))))
 
 ;;; FIXME: As best I can tell CLISP's EXT:RUN-PROGRAM can either
 ;;; create new streams OR return the exit code, but not both.  Using
