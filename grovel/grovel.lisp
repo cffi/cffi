@@ -34,7 +34,7 @@
 
 (defun trim-whitespace (strings)
   (loop for s in strings
-        collect (string-trim '(#\Space #\Tab #\VT) s)))
+        collect (string-trim '(#\Space #\Tab) s)))
 
 ;;;# Error Conditions
 
