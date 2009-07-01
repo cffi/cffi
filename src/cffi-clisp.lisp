@@ -148,7 +148,8 @@
   "Allocate SIZE bytes of foreign-addressable memory and return a
 pointer to the allocated block.  An implementation-specific error
 is signalled if the memory cannot be allocated."
-  (ffi:foreign-address (ffi:allocate-shallow 'ffi:uint8 :count size)))
+  (ffi:foreign-address
+   (ffi:allocate-shallow 'ffi:uint8 :count (if (zerop size) 1 size))))
 
 (defun foreign-free (ptr)
   "Free a pointer PTR allocated by FOREIGN-ALLOC.  The results

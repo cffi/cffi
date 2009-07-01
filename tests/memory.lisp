@@ -351,9 +351,15 @@
 (deftest foreign-alloc.5
     (values
      (ignore-errors
-       (let ((ptr (foreign-alloc :int :initial-element 1 :initial-contents '(1))))
+       (let ((ptr (foreign-alloc :int :initial-element 1
+                                 :initial-contents '(1))))
          (foreign-free ptr))
        t))
+  nil)
+
+;;; RT: FOREIGN-ALLOC with :COUNT 0 on CLISP signalled an error.
+(deftest foreign-alloc.6
+    (foreign-free (foreign-alloc :char :count 0))
   nil)
 
 ;;; Regression test: FOREIGN-ALLOC shouldn't actually perform translation
