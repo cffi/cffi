@@ -215,9 +215,7 @@ int main(int argc, char**argv) {
             (write-string *postscript* out)))))
     c-file))
 
-(defparameter *exe-extension*
-  #-cffi-features:windows nil
-  #+cffi-features:windows "exe")
+(defparameter *exe-extension* #-windows nil #+windows "exe")
 
 (defun exe-filename (defaults)
   (let ((path (make-pathname :type *exe-extension*
@@ -247,8 +245,7 @@ int main(int argc, char**argv) {
     (8 (list "-m64"))))
 
 (defparameter *platform-library-flags*
-  (list #+cffi-features:darwin "-bundle"
-        #-cffi-features:darwin "-shared"))
+  (list #+darwin "-bundle" #-darwin "-shared"))
 
 (defun cc-compile-and-link (input-file output-file &key library)
   (let ((arglist
