@@ -233,8 +233,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun convert-external-name (name)
   "Add an underscore to NAME if necessary for the ABI."
-  #+darwinppc-target (concatenate 'string "_" name)
-  #-darwinppc-target name)
+  #+darwin (concatenate 'string "_" name)
+  #-darwin name)
 
 (defmacro %foreign-funcall (function-name args &key library calling-convention)
   "Perform a foreign function call, document it more later."
