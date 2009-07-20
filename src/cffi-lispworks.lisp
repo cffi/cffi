@@ -284,7 +284,7 @@ signature.")
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defun create-foreign-funcallable (types rettype cconv)
+(defun create-foreign-funcallable (types rettype calling-convention)
   "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
   (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
           types rettype)
@@ -299,26 +299,26 @@ signature.")
                    :result-type ,rettype
                    :language :ansi-c
                    ;; avoid warning about cdecl not being supported on mac
-                   #-mac ,@(list :calling-convention cconv)))))
+                   #-mac ,@(list :calling-convention calling-convention)))))
     internal-name))
 
-(defun get-foreign-funcallable (types rettype cconv)
+(defun get-foreign-funcallable (types rettype calling-convention)
   "Returns a foreign funcallable for the signature TYPES -> RETTYPE -
 either from the cache or newly created."
   (let ((signature (cons rettype types)))
     (or (gethash signature *foreign-funcallable-cache*)
         ;; (SETF GETHASH) is supposed to be thread-safe
         (setf (gethash signature *foreign-funcallable-cache*)
-              (create-foreign-funcallable types rettype cconv)))))
+              (create-foreign-funcallable types rettype calling-convention)))))
 
-(defmacro %%foreign-funcall (foreign-function args cconv)
+(defmacro %%foreign-funcall (foreign-function args calling-convention)
   "Does the actual work for %FOREIGN-FUNCALL-POINTER and %FOREIGN-FUNCALL.
 Checks if a foreign funcallable which fits ARGS already exists and creates
 and caches it if necessary.  Finally calls it."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(funcall (load-time-value
-               (get-foreign-funcallable ',types ',rettype ',cconv))
+               (get-foreign-funcallable ',types ',rettype ',calling-convention))
               ,foreign-function ,@fargs)))
 
 (defmacro %foreign-funcall (name args &key library calling-convention)

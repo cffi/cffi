@@ -250,7 +250,7 @@ values to pass to the function, and the CLISP FFI return type."
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defun convert-cconv (calling-convention)
+(defun convert-calling-convention (calling-convention)
   (ecase calling-convention
     (:stdcall :stdc-stdcall)
     (:cdecl :stdc)))
@@ -260,7 +260,7 @@ values to pass to the function, and the CLISP FFI return type."
 takes care of converting the calling convention names."
   `(ffi:c-function (:arguments ,@arg-types)
                    (:return-type ,rettype)
-                   (:language ,(convert-cconv calling-convention))))
+                   (:language ,(convert-calling-convention calling-convention))))
 
 ;;; Quick hack around the fact that the CFFI package is not yet
 ;;; defined when this file is loaded.  I suppose we could arrange for
@@ -351,7 +351,7 @@ the function call."
                                (list sym (convert-foreign-type type)))
                              arg-names arg-types))
        (:return-type ,(convert-foreign-type rettype))
-       (:language ,(convert-cconv calling-convention))))))
+       (:language ,(convert-calling-convention calling-convention))))))
 
 ;;; Register and create a callback function.
 (defun register-callback (name function parsed-type)

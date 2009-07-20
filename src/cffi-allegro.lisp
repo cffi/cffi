@@ -373,8 +373,8 @@ WITH-POINTER-TO-VECTOR-DATA."
                   (symbol-name name))
           '#:cffi-callbacks))
 
-(defun convert-cconv (cconv)
-  (ecase cconv
+(defun convert-calling-convention (calling-convention)
+  (ecase calling-convention
     (:cdecl :c)
     (:stdcall :stdcall)))
 
@@ -386,7 +386,7 @@ WITH-POINTER-TO-VECTOR-DATA."
        (ff:defun-foreign-callable ,cb-name
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
-         (declare (:convention ,(convert-cconv calling-convention)))
+         (declare (:convention ,(convert-calling-convention calling-convention)))
          ,body)
        (register-callback ',name ',cb-name))))
 
