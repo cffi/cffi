@@ -32,7 +32,8 @@
   (:import-from #:alexandria
                 #:ensure-list #:featurep #:format-symbol #:if-let
                 #:make-gensym-list #:once-only #:parse-body #:symbolicate
-                #:when-let #:with-unique-names #:lastcar)
+                #:when-let #:with-unique-names #:lastcar
+                #:hash-table-values #:make-keyword)
   (:export
    ;; Types.
    #:foreign-pointer
@@ -74,6 +75,11 @@
    ;; Foreign library operations.
    #:*foreign-library-directories*
    #:*darwin-framework-directories*
+   #:foreign-library
+   #:foreign-library-pathname
+   #:foreign-library-type
+   #:foreign-library-loaded-p
+   #:list-foreign-libraries
    #:define-foreign-library
    #:load-foreign-library
    #:load-foreign-library-error

@@ -72,8 +72,7 @@
                (when libraryp
                  (let ((lib-options (foreign-library-options
                                      (get-foreign-library library))))
-                   (getf lib-options :cconv
-                         (getf lib-options :calling-convention))))
+                   (getf lib-options :calling-convention)))
                :cdecl)
            ;; Don't pass the library option if we're dealing with
            ;; FOREIGN-FUNCALL-POINTER.
