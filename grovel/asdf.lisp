@@ -67,20 +67,27 @@ loaded."))
 ;;;# ASDF component: WRAPPER-FILE
 
 (defclass wrapper-file (asdf:cl-source-file cc-flags-mixin)
-  ()
+  ((soname :initform nil :initarg :soname :accessor soname-of))
   (:documentation
    "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
 operations that take care of calling PROCESS-WRAPPER-FILE in
 order to generate a foreign library and matching CFFI bindings
 that are subsequently compiled and/or loaded."))
 
+(defun %perform-process-wrapper-file (op c)
+  (let ((fasl-file (ensure-pathname (car (asdf:output-files op c)))))
+    (values (process-wrapper-file (asdf:component-pathname c)
+                                  fasl-file
+                                  (or (soname-of c)
+                                      (asdf:component-name c)))
+            fasl-file)))
+
 (defmethod asdf:perform ((op asdf:compile-op) (c wrapper-file))
-  (let ((output-file (ensure-pathname (car (asdf:output-files op c)))))
-    (compile-file (print (process-wrapper-file (asdf:component-pathname c) output-file))
-                  :output-file output-file
+  (multiple-value-bind (generated-source-file fasl-file)
+      (%perform-process-wrapper-file op c)
+    (compile-file generated-source-file
+                  :output-file fasl-file
                   #+ecl :system-p #+ecl t)))
 
 (defmethod asdf:perform ((op asdf:load-source-op) (c wrapper-file))
-  (load (process-wrapper-file
-         (asdf:component-pathname c)
-         (ensure-pathname (car (asdf:output-files op c))))))
+  (load (%perform-process-wrapper-file op c)))
