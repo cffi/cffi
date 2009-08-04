@@ -55,8 +55,9 @@ loaded."))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c grovel-file))
   (let ((output-file (ensure-pathname (car (asdf:output-files op c)))))
-    (compile-file (process-grovel-file (asdf:component-pathname c) output-file)
-                  :output-file output-file)))
+    (compile-file (print (process-grovel-file (asdf:component-pathname c) output-file))
+                  :output-file output-file
+                  #+ecl :system-p #+ecl t)))
 
 (defmethod asdf:perform ((op asdf:load-source-op) (c grovel-file))
   (load (process-grovel-file
@@ -75,8 +76,9 @@ that are subsequently compiled and/or loaded."))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c wrapper-file))
   (let ((output-file (ensure-pathname (car (asdf:output-files op c)))))
-    (compile-file (process-wrapper-file (asdf:component-pathname c) output-file)
-                  :output-file output-file)))
+    (compile-file (print (process-wrapper-file (asdf:component-pathname c) output-file))
+                  :output-file output-file
+                  #+ecl :system-p #+ecl t)))
 
 (defmethod asdf:perform ((op asdf:load-source-op) (c wrapper-file))
   (load (process-wrapper-file
