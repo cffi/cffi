@@ -338,11 +338,11 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
     ;; %LOAD-FOREIGN-LIBRARY.
     (retry ()
       :report "Try loading the foreign library again."
-      (%do-load-foreign-library library search-path))
+      (load-foreign-library library :search-path search-path))
     (use-value (new-library)
       :report "Use another library instead."
       :interactive read-new-value
-      (%do-load-foreign-library new-library search-path))))
+      (load-foreign-library new-library :search-path search-path))))
 
 (defmacro use-foreign-library (name)
   `(load-foreign-library ',name))
