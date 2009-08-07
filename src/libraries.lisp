@@ -149,9 +149,9 @@
 
 (defun list-foreign-libraries (&key (loaded-only t) type)
   "Return a list of defined foreign libraries.
-If LOADED-ONLY is non-null only loaded libraries are returns.
-TYPE restricts the output to a specific library type.
-If NIL all libraries are returned."
+If LOADED-ONLY is non-null only loaded libraries are returned.
+TYPE restricts the output to a specific library type: if NIL
+all libraries are returned."
   (let ((libs (hash-table-values *foreign-libraries*)))
     (remove-if (lambda (lib)
                  (or (and type
