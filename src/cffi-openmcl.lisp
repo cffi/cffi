@@ -215,7 +215,8 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Return the size in bytes of a foreign type."
   (/ (ccl::foreign-type-bits
       (ccl::parse-foreign-type
-       (convert-foreign-type type-keyword))) 8))
+       (convert-foreign-type type-keyword)))
+     8))
 
 ;; There be dragons here.  See the following thread for details:
 ;; http://clozure.com/pipermail/openmcl-devel/2005-June/002777.html
