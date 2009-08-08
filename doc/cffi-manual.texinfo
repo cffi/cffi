@@ -5059,7 +5059,7 @@ Dictionary
 @Macro{defcfun name-and-options return-type &body [docstring] arguments [&rest] @
                @res{} lisp-name}
 
-@var{name-and-options} ::= name | (name &key library calling-convention cconv) @*
+@var{name-and-options} ::= name | (name &key library convention) @*
 @var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}] @*
 @var{arguments} ::= @{ (arg-name arg-type) @}* @*
 
@@ -5079,8 +5079,7 @@ A symbol.
 @itemx arg-type
 A foreign type.
 
-@item calling-convention
-@itemx cconv
+@item convention
 One of @code{:cdecl} (default) or @code{:stdcall}.
 
 @item library
@@ -5172,7 +5171,7 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @Macro{foreign-funcall name-and-options &rest arguments @res{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type]
-name-and-options ::= name | ( name &key library calling-convention cconv)
+name-and-options ::= name | ( name &key library convention)
 
 @subheading Arguments and Values
 
@@ -5195,8 +5194,7 @@ A lisp object.
 @item library
 A lisp symbol; not evaluated.
 
-@item calling-convention
-@itemx cconv
+@item convention
 One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
@@ -5268,10 +5266,10 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @node foreign-funcall-pointer
 @unnumberedsec foreign-funcall-pointer
 @subheading Syntax
-@Macro{foreign-funcall pointer options &rest arguments @res{} return-value}
+@Macro{foreign-funcall-pointer pointer options &rest arguments @res{} return-value}
 
 arguments ::= @{ arg-type arg @}* [return-type]
-options ::= ( &key calling-convention cconv )
+options ::= ( &key convention )
 
 @subheading Arguments and Values
 
@@ -5291,8 +5289,7 @@ A foreign type, @code{:void} by default.
 @item return-value
 A lisp object.
 
-@item calling-convention
-@itemx cconv
+@item convention
 One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
@@ -5500,8 +5497,8 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 
 @Macro{define-foreign-library name-and-options @{ load-clause @}* @res{} name}
 
-name-and-options ::= name | (name &key calling-convention cconv)
-load-clause ::= (feature library &key calling-convention cconv)
+name-and-options ::= name | (name &key convention)
+load-clause ::= (feature library &key convention)
 
 @subheading Arguments and Values
 
@@ -5515,8 +5512,7 @@ A feature expression.
 @item library
 A library designator.
 
-@item calling-convention
-@itemx cconv
+@item convention
 One of @code{:cdecl} (default) or @code{:stdcall}
 @end table
 
@@ -5908,7 +5904,7 @@ CFFI> (callback sum)
 @subheading Syntax
 @Macro{defcallback name-and-options return-type arguments &body body @res{} name}
 
-name-and-options ::= name | (name &key calling-convention cconv)
+name-and-options ::= name | (name &key convention)
 arguments ::= (@{ (arg-name arg-type) @}*)
 
 @subheading Arguments and Values
@@ -5926,8 +5922,7 @@ A symbol.
 @item arg-type
 A foreign type.
 
-@item calling-convention
-@itemx cconv
+@item convention
 One of @code{:cdecl} (default) or @code{:stdcall}.
 @end table
 
