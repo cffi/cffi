@@ -64,15 +64,21 @@
 ;;; While the options passed directly to DEFCFUN/FOREIGN-FUNCALL have
 ;;; precedence, we also grab its library's options, if possible.
 (defun parse-function-options (options &key pointer)
-  (destructuring-bind (&key (library :default libraryp) calling-convention
-                            (cconv calling-convention))
+  (destructuring-bind (&key (library :default libraryp)
+                            (cconv nil cconv-p)
+                            (calling-convention cconv calling-convention-p)
+                            (convention calling-convention))
       options
-    (list* :calling-convention
-           (or cconv
+    (when cconv-p
+      (warn-obsolete-argument :cconv :convention))
+    (when calling-convention-p
+      (warn-obsolete-argument :calling-convention :convention))
+    (list* :convention
+           (or convention
                (when libraryp
                  (let ((lib-options (foreign-library-options
                                      (get-foreign-library library))))
-                   (getf lib-options :calling-convention)))
+                   (getf lib-options :convention)))
                :cdecl)
            ;; Don't pass the library option if we're dealing with
            ;; FOREIGN-FUNCALL-POINTER.
@@ -277,10 +283,15 @@ arguments and does type promotion for the variadic arguments."
      ,(expand-to-foreign call (parse-type rettype))))
 
 (defun parse-defcallback-options (options)
-  (destructuring-bind (&key (calling-convention :cdecl)
-                            (cconv calling-convention))
+  (destructuring-bind (&key (cconv :cdecl cconv-p)
+                            (calling-convention cconv calling-convention-p)
+                            (convention calling-convention))
       options
-    (list :calling-convention cconv)))
+    (when cconv-p
+      (warn-obsolete-argument :cconv :convention))
+    (when calling-convention-p
+      (warn-obsolete-argument :calling-convention :convention))
+    (list :convention convention)))
 
 (defmacro defcallback (name-and-options return-type args &body body)
   (multiple-value-bind (body declarations)

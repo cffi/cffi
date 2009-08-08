@@ -160,35 +160,51 @@ all libraries are returned."
                           (not (foreign-library-loaded-p lib)))))
                libs)))
 
-;; :CALLING-CONVENTION and :CCONV are coalesced, the former taking priority
-;; then options with NULL values are removed
+;; :CONVENTION, :CALLING-CONVENTION and :CCONV are coalesced,
+;; the former taking priority
+;; options with NULL values are removed
 (defun clean-spec-up (spec)
   (mapcar (lambda (x)
             (list* (first x) (second x)
                    (let* ((opts (cddr x))
                           (cconv (getf opts :cconv))
-                          (calling-convention (getf opts :calling-convention)))
-                     (remf opts :cconv)
-                     (setf (getf opts :calling-convention)
-                           (or calling-convention cconv))
+                          (calling-convention (getf opts :calling-convention))
+                          (convention (getf opts :convention)))
+                     (remf opts :cconv) (remf opts :calling-convention)
+                     (when cconv
+                       (warn-obsolete-argument :cconv :convention))
+                     (when calling-convention
+                       (warn-obsolete-argument :calling-convention
+                                               :convention))
+                     (setf (getf opts :convention)
+                           (or convention calling-convention cconv))
                      (loop for (opt val) on opts by #'cddr
                            when val append (list opt val) into new-opts
                            finally (return new-opts)))))
           spec))
 
-(defmethod initialize-instance :after ((lib foreign-library) &key
-                                       cconv calling-convention search-path)
+(defmethod initialize-instance :after
+    ((lib foreign-library) &key search-path
+     (cconv :cdecl cconv-p)
+     (calling-convention cconv calling-convention-p)
+     (convention calling-convention))
   (with-slots (type options spec) lib
-    (setf spec (clean-spec-up (copy-tree spec)))
+    (check-type type (member :system :test :grovel-wrapper))
+    (setf spec (clean-spec-up spec))
     (let ((all-options
            (apply #'append options (mapcar #'cddr spec))))
-      (check-type type (member :system :test :grovel-wrapper))
-      (assert (subsetp (loop for (key . nil) on all-options by #'cddr collect key)
-                       '(:calling-convention :search-path)))
+      (assert (subsetp (loop for (key . nil) on all-options by #'cddr
+                             collect key)
+                       '(:convention :search-path)))
+      (when cconv-p
+        (warn-obsolete-argument :cconv :convention))
+      (when calling-convention-p
+        (warn-obsolete-argument :calling-convention :convention))
       (flet ((set-option (key value)
                (when value (setf (getf options key) value))))
-        (set-option :calling-convention (or calling-convention cconv))
-        (set-option :search-path (mapcar #'pathname (ensure-list search-path)))))))
+        (set-option :convention convention)
+        (set-option :search-path
+                    (mapcar #'pathname (ensure-list search-path)))))))
 
 ;;; FIXME: re-evaluating DEFINE-FOREIGN-LIBRARY overwrites the current entry
 ;;;        breaking FOREIGN-LIBRARY-LOADED-P if already loaded

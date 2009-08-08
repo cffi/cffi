@@ -509,7 +509,7 @@
 
 #+(and x86 (not cffi-sys::no-stdcall))
 (progn
-  (defcallback (stdcall-cb :cconv :stdcall) :int
+  (defcallback (stdcall-cb :convention :stdcall) :int
       ((a :int) (b :int) (c :int))
     (+ a b c))
 

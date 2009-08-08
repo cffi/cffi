@@ -184,7 +184,7 @@
 #+(and x86 windows (not cffi-sys::no-stdcall))
 (deftest funcall.stdcall.1
     (flet ((fun ()
-             (foreign-funcall ("stdcall_fun@12" :cconv :stdcall)
+             (foreign-funcall ("stdcall_fun@12" :convention :stdcall)
                               :int 1 :int 2 :int 3 :int)))
       (loop repeat 100 do (fun)
             finally (return (fun))))

@@ -54,3 +54,14 @@ set twos-complement bit."
       (warn "Defining a foreign type named ~S.  This symbol belongs to the ~A ~
              package and that may interfere with other code using CFFI."
             name (package-name package)))))
+
+(define-condition obsolete-argument-warning (style-warning)
+  ((old-arg :initarg :old-arg :reader old-arg)
+   (new-arg :initarg :new-arg :reader new-arg))
+  (:report (lambda (c s)
+             (format s "Keyword ~S is obsolete, please use ~S"
+                     (old-arg c) (new-arg c)))))
+
+(defun warn-obsolete-argument (old-arg new-arg)
+  (warn 'obsolete-argument-warning
+        :old-arg old-arg :new-arg new-arg))

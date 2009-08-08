@@ -281,8 +281,8 @@ WITH-POINTER-TO-VECTOR-DATA."
                  nil ; arg-checking
                  ff::ep-flag-never-release))))
 
-(defmacro %foreign-funcall (name args &key calling-convention library)
-  (declare (ignore calling-convention library))
+(defmacro %foreign-funcall (name args &key convention library)
+  (declare (ignore convention library))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(system::ff-funcall
@@ -314,8 +314,8 @@ WITH-POINTER-TO-VECTOR-DATA."
       `(,ff-name ,@args))))
 
 ;;; See doc/allegro-internals.txt for a clue about entry-vec.
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
-  (declare (ignore calling-convention))
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
+  (declare (ignore convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (entry-vec)
@@ -373,20 +373,20 @@ WITH-POINTER-TO-VECTOR-DATA."
                   (symbol-name name))
           '#:cffi-callbacks))
 
-(defun convert-calling-convention (calling-convention)
-  (ecase calling-convention
+(defun convert-calling-convention (convention)
+  (ecase convention
     (:cdecl :c)
     (:stdcall :stdcall)))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
+                        &key convention)
   (declare (ignore rettype))
   (let ((cb-name (intern-callback name)))
     `(progn
        (ff:defun-foreign-callable ,cb-name
            ,(mapcar (lambda (sym type) (list sym (convert-foreign-type type)))
                     arg-names arg-types)
-         (declare (:convention ,(convert-calling-convention calling-convention)))
+         (declare (:convention ,(convert-calling-convention convention)))
          ,body)
        (register-callback ',name ',cb-name))))
 

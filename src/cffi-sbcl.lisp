@@ -279,16 +279,16 @@ WITH-POINTER-TO-VECTOR-DATA."
     (extern-alien ,name (function ,rettype ,@types))
     ,@fargs))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
   "Perform a foreign function call, document it more later."
-  (declare (ignore library calling-convention))
+  (declare (ignore library convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   "Funcall a pointer to a foreign function."
-  (declare (ignore calling-convention))
+  (declare (ignore convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     (with-unique-names (function)
@@ -304,8 +304,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defvar *callbacks* (make-hash-table))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
-  (declare (ignore calling-convention))
+                        &key convention)
+  (declare (ignore convention))
   `(setf (gethash ',name *callbacks*)
          (alien-sap
           (sb-alien::alien-lambda ,(convert-foreign-type rettype)

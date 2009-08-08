@@ -236,15 +236,15 @@ WITH-POINTER-TO-VECTOR-DATA."
   #+darwin (concatenate 'string "_" name)
   #-darwin name)
 
-(defmacro %foreign-funcall (function-name args &key library calling-convention)
+(defmacro %foreign-funcall (function-name args &key library convention)
   "Perform a foreign function call, document it more later."
-  (declare (ignore library calling-convention))
+  (declare (ignore library convention))
   `(external-call
     ,(convert-external-name function-name)
     ,@(convert-foreign-funcall-types args)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
-  (declare (ignore calling-convention))
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
+  (declare (ignore convention))
   `(ff-call ,ptr ,@(convert-foreign-funcall-types args)))
 
 ;;;# Callbacks
@@ -272,11 +272,11 @@ WITH-POINTER-TO-VECTOR-DATA."
           '#:cffi-callbacks))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
+                        &key convention)
   (let ((cb-name (intern-callback name)))
     `(progn
        (defcallback ,cb-name
-           (,@(when (eq calling-convention :stdcall)
+           (,@(when (eq convention :stdcall)
                 '(:discard-stack-args))
             ,@(mapcan (lambda (sym type)
                         (list (convert-foreign-type type) sym))

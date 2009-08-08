@@ -396,7 +396,7 @@
 
 #+(and x86 windows (not cffi-sys::no-stdcall))
 (progn
-  (defcfun ("stdcall_fun@12" stdcall-fun :cconv :stdcall) :int
+  (defcfun ("stdcall_fun@12" stdcall-fun :convention :stdcall) :int
     (a :int)
     (b :int)
     (c :int))

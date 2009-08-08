@@ -284,7 +284,7 @@ signature.")
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defun create-foreign-funcallable (types rettype calling-convention)
+(defun create-foreign-funcallable (types rettype convention)
   "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
   (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
           types rettype)
@@ -299,38 +299,38 @@ signature.")
                    :result-type ,rettype
                    :language :ansi-c
                    ;; avoid warning about cdecl not being supported on mac
-                   #-mac ,@(list :calling-convention calling-convention)))))
+                   #-mac ,@(list :calling-convention convention)))))
     internal-name))
 
-(defun get-foreign-funcallable (types rettype calling-convention)
+(defun get-foreign-funcallable (types rettype convention)
   "Returns a foreign funcallable for the signature TYPES -> RETTYPE -
 either from the cache or newly created."
   (let ((signature (cons rettype types)))
     (or (gethash signature *foreign-funcallable-cache*)
         ;; (SETF GETHASH) is supposed to be thread-safe
         (setf (gethash signature *foreign-funcallable-cache*)
-              (create-foreign-funcallable types rettype calling-convention)))))
+              (create-foreign-funcallable types rettype convention)))))
 
-(defmacro %%foreign-funcall (foreign-function args calling-convention)
+(defmacro %%foreign-funcall (foreign-function args convention)
   "Does the actual work for %FOREIGN-FUNCALL-POINTER and %FOREIGN-FUNCALL.
 Checks if a foreign funcallable which fits ARGS already exists and creates
 and caches it if necessary.  Finally calls it."
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(funcall (load-time-value
-               (get-foreign-funcallable ',types ',rettype ',calling-convention))
+               (get-foreign-funcallable ',types ',rettype ',convention))
               ,foreign-function ,@fargs)))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
   "Calls a foreign function named NAME passing arguments ARGS."
   `(%%foreign-funcall
     (fli:make-pointer :symbol-name ,name
                       :module ',(if (eq library :default) nil library))
-    ,args ,calling-convention))
+    ,args ,convention))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   "Calls a foreign function pointed at by PTR passing arguments ARGS."
-  `(%%foreign-funcall ,ptr ,args ,calling-convention))
+  `(%%foreign-funcall ,ptr ,args ,convention))
 
 (defun defcfun-helper-forms (name lisp-name rettype args types options)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
@@ -344,7 +344,7 @@ and caches it if necessary.  Finally calls it."
         :module ',(let ((lib (getf options :library)))
                     (if (eq lib :default) nil lib))
         ;; avoid warning about cdecl not being supported on mac platforms
-        #-mac ,@(list :calling-convention (getf options :calling-convention)))
+        #-mac ,@(list :calling-convention (getf options :convention)))
      `(,ff-name ,@args))))
 
 ;;;# Callbacks
@@ -369,13 +369,13 @@ and caches it if necessary.  Finally calls it."
             '#:cffi-callbacks)))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
+                        &key convention)
   (let ((cb-name (intern-callback name)))
     `(progn
        (fli:define-foreign-callable
            (,cb-name :encode :lisp
                      :result-type ,(convert-foreign-type rettype)
-                     :calling-convention ,calling-convention
+                     :calling-convention ,convention
                      :language :ansi-c
                      :no-check nil)
            ,(mapcar (lambda (sym type)

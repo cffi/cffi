@@ -261,16 +261,16 @@ WITH-POINTER-TO-VECTOR-DATA."
           else do (setf return-type (cffi-type->ecl-type type))
           finally (return (values types values return-type)))))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
   "Call a foreign function."
-  (declare (ignore library calling-convention))
+  (declare (ignore library convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
     (produce-function-pointer-call name types values return-type)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   "Funcall a pointer to a foreign function."
-  (declare (ignore calling-convention))
+  (declare (ignore convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
     (produce-function-pointer-call ptr types values return-type)))
@@ -315,8 +315,8 @@ WITH-POINTER-TO-VECTOR-DATA."
             '#:cffi-callbacks)))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
-  (declare (ignore calling-convention))
+                        &key convention)
+  (declare (ignore convention))
   (let ((cb-name (intern-callback name)))
     `(progn
        (ffi:defcallback (,cb-name :cdecl)

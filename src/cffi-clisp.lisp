@@ -250,17 +250,17 @@ values to pass to the function, and the CLISP FFI return type."
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
-(defun convert-calling-convention (calling-convention)
-  (ecase calling-convention
+(defun convert-calling-convention (convention)
+  (ecase convention
     (:stdcall :stdc-stdcall)
     (:cdecl :stdc)))
 
-(defun c-function-type (arg-types rettype calling-convention)
+(defun c-function-type (arg-types rettype convention)
   "Generate the apropriate CLISP foreign type specification. Also
 takes care of converting the calling convention names."
   `(ffi:c-function (:arguments ,@arg-types)
                    (:return-type ,rettype)
-                   (:language ,(convert-calling-convention calling-convention))))
+                   (:language ,(convert-calling-convention convention))))
 
 ;;; Quick hack around the fact that the CFFI package is not yet
 ;;; defined when this file is loaded.  I suppose we could arrange for
@@ -298,7 +298,7 @@ takes care of converting the calling convention names."
     nil
     ,type))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
   "Invoke a foreign function called NAME, taking pairs of
 foreign-type/value pairs from ARGS.  If a single element is left
 over at the end of ARGS, it specifies the foreign return type of
@@ -308,7 +308,7 @@ the function call."
     (let* ((fn (%foreign-funcall-aux
                 name
                 `(ffi:parse-c-type
-                  ',(c-function-type types rettype calling-convention))
+                  ',(c-function-type types rettype convention))
                 (if (eq library :default)
                     :default
                     (library-handle-form library))))
@@ -322,14 +322,14 @@ the function call."
           `(or ,form (null-pointer))
           form))))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   "Similar to %foreign-funcall but takes a pointer instead of a string."
   (multiple-value-bind (types fargs rettype)
       (parse-foreign-funcall-args args)
     `(funcall (ffi:foreign-function
                ,ptr (load-time-value
                      (ffi:parse-c-type ',(c-function-type
-                                          types rettype calling-convention))))
+                                          types rettype convention))))
               ,@fargs)))
 
 ;;;# Callbacks
@@ -344,14 +344,14 @@ the function call."
 ;;; Return a CLISP FFI function type for a CFFI callback function
 ;;; given a return type and list of argument names and types.
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun callback-type (rettype arg-names arg-types calling-convention)
+  (defun callback-type (rettype arg-names arg-types convention)
     (ffi:parse-c-type
      `(ffi:c-function
        (:arguments ,@(mapcar (lambda (sym type)
                                (list sym (convert-foreign-type type)))
                              arg-names arg-types))
        (:return-type ,(convert-foreign-type rettype))
-       (:language ,(convert-calling-convention calling-convention))))))
+       (:language ,(convert-calling-convention convention))))))
 
 ;;; Register and create a callback function.
 (defun register-callback (name function parsed-type)
@@ -381,7 +381,7 @@ the function call."
 ;;; translated according to RETTYPE.  Obtain a pointer that can be
 ;;; passed to C code for this callback by calling %CALLBACK.
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
+                        &key convention)
   `(register-callback
     ',name
     (lambda ,arg-names
@@ -392,7 +392,7 @@ the function call."
                     when (eq type :pointer)
                     collect `(,name (or ,name (null-pointer)))))
         ,body))
-    ,(callback-type rettype arg-names arg-types calling-convention)))
+    ,(callback-type rettype arg-names arg-types convention)))
 
 ;;; Look up the name of a callback and return a pointer that can be
 ;;; passed to a C function.  Signals an error if no callback is
