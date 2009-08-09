@@ -169,7 +169,8 @@ all libraries are returned."
                    (let* ((opts (cddr x))
                           (cconv (getf opts :cconv))
                           (calling-convention (getf opts :calling-convention))
-                          (convention (getf opts :convention)))
+                          (convention (getf opts :convention))
+                          (search-path (getf opts :search-path)))
                      (remf opts :cconv) (remf opts :calling-convention)
                      (when cconv
                        (warn-obsolete-argument :cconv :convention))
@@ -178,6 +179,8 @@ all libraries are returned."
                                                :convention))
                      (setf (getf opts :convention)
                            (or convention calling-convention cconv))
+                     (setf (getf opts :search-path)
+                           (mapcar #'pathname (ensure-list search-path)))
                      (loop for (opt val) on opts by #'cddr
                            when val append (list opt val) into new-opts
                            finally (return new-opts)))))
