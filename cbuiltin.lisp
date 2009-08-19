@@ -1,6 +1,6 @@
 ;; Bulit-in types known to CFFI
 ;; Liam Healy 2009-05-02 13:43:08EDT cbuiltin.lisp
-;; Time-stamp: <2009-05-02 22:24:24EDT cbuiltin.lisp>
+;; Time-stamp: <2009-08-18 22:12:14EDT cbuiltin.lisp>
 ;; $Id: $
 
 ;;; Handle built-in types; see
@@ -46,7 +46,6 @@
 (defcbuiltin :uint16)
 (defcbuiltin :uint32)
 (defcbuiltin :uint64)
-(defcbuiltin :uint)
 (defcbuiltin :void)
 
 ;;; Assign these more accurately?
