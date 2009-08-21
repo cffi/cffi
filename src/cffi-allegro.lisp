@@ -63,7 +63,7 @@
 
 ;;;# Mis-features
 
-(pushnew 'no-long-long *features*)
+#-64bit (pushnew 'no-long-long *features*)
 (pushnew 'flat-namespace *features*)
 
 ;;;# Symbol Case
@@ -184,6 +184,8 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:unsigned-int     :unsigned-int)
     (:long             :long)
     (:unsigned-long    :unsigned-long)
+    #+64bit (:long-long :nat)
+    #+64bit (:unsigned-long-long :unsigned-nat)
     (:float            :float)
     (:double           :double)
     (:pointer          :unsigned-nat)
