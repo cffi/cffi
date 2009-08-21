@@ -41,9 +41,16 @@
 /* MSVC doesn't have stdint.h and uses a different syntax for stdcall */
 #ifndef _MSC_VER
 #include <stdint.h>
-#define STDCALL __attribute__((stdcall))
-#else
+#endif
+
+#ifdef WIN32
+#ifdef _MSC_VER
 #define STDCALL __stdcall
+#else
+#define STDCALL __attribute__((stdcall))
+#endif
+#else
+#define STDCALL
 #endif
 
 /*
