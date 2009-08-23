@@ -195,6 +195,8 @@ int main(int argc, char**argv) {
                    (labels
                        ((process-form (f)
                           (case (form-kind f)
+                            (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
+                          (case (form-kind f)
                             (in-package
                              (setf *package* (find-package (second f)))
                              (push f forms))
@@ -299,6 +301,9 @@ int main(int argc, char**argv) {
   (c-format out "(cffi:defctype ~S ~S)~%" new-type base-type))
 
 (define-grovel-syntax flag (&rest flags)
+  (appendf *cc-flags* (trim-whitespace flags)))
+
+(define-grovel-syntax cc-flags (&rest flags)
   (appendf *cc-flags* (trim-whitespace flags)))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.

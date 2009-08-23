@@ -6117,9 +6117,9 @@ Defines an additional C preprocessor symbol, which is useful for
 altering the behavior of included system headers.
 @end deffn
 
-@deffn {Grovel Form} flag &rest flags
+@deffn {Grovel Form} cc-flags &rest flags
 
-Adds @var{flags} to the command line arguments used for the C compiler
+Adds @var{cc-flags} to the command line arguments used for the C compiler
 invocation.
 @end deffn
 
