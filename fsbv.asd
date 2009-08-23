@@ -18,12 +18,12 @@
   :components
   ((:file "init")
    (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
-   (:file "defs" :depends-on (libffi))
+   (:file "defs" :depends-on ("libffi"))
    (:file "foreign-object-components")
    (:file "cbuiltin")
    (:file "cstruct")
-   (:file "functions" :depends-on (cstruct))
+   (:file "functions" :depends-on ("cstruct"))
    ;; If you have the GSL libraries installed and want to try the
    ;; examples, push :havegsl onto *features*
    #+havegsl
-   (:file "examples" :depends-on (libffi cstruct foreign-object-components))))
+   (:file "examples" :depends-on ("libffi" "cstruct" "foreign-object-components"))))

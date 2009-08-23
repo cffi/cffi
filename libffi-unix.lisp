@@ -1,12 +1,17 @@
 ;; CFFI-Grovel definitions for unix systems.
 ;; Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
-;; Time-stamp: <2009-05-12 15:18:14EDT libffi-unix.lisp>
+;; Time-stamp: <2009-08-23 09:51:01EDT libffi-unix.lisp>
 ;; $Id: $
+
+(in-package :fsbv)
 
 #+linux
 (define "_GNU_SOURCE")
 
-(in-package :fsbv)
+;; When installed through Mac Ports, FSBV include files
+;; will be found in /opt/local/include.
+#+darwin
+(cc-flags "-I/opt/local/include/")
 
 #+darwin
 (include "ffi/ffi.h")

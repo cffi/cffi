@@ -12,10 +12,4 @@
  #+darwin "libffi.dylib"
  #+(and (not darwin) unix) "libffi.so")
 
-;;; When installed through Mac Ports, GSL .h files will be found
-;;; in /opt/local/include.
-#+darwin
-(setf cffi-grovel::*cc-flags*
-      (append '("-I" "/opt/local/include/") cffi-grovel::*cc-flags*))
-
 (pushnew :fsbv *features*)
