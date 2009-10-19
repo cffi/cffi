@@ -120,6 +120,19 @@ then we can call this function from Lisp:
   arguments normally sent by reference (as a pointer) will require a
   pointer to the pointer.
 </p>
+<h2>Installation note</h2>
+Because different platforms and package managers install libffi in
+different places, it is hard to provide the proper path
+to <code>ffi.h</code> for every installation.  If the file is not
+found, you will need to find it yourself (try
+<code>pkg-config --cflags-only-I libffi</code>) and specify the path in a
+<code>cc-flags</code> form in libffi-unix.lisp; note the Darwin example
+there.  If yours is a common installation/platform and the path is not
+highly specific to a libffi version number (e.g. nothing
+like <code>/usr/lib64/libffi-3.0.8/include</code> which will be obsolete
+when 3.0.9 is installed), send the form to me at the
+address below and I will incorporate it into the file.
+
 <h2>Copying</h2>
 <p>Copyright &copy; 2009 Liam Healy &lt;lhealy at common-lisp.net&gt;
 
@@ -147,7 +160,7 @@ software or the use or other dealings in the software.</span>
 <br>
 <hr>
 <small>
-Time-stamp: <2009-05-03 12:12:50EDT readme.html>
+Time-stamp: <2009-10-18 22:52:37EDT readme.html>
 </small>
 
 </html>
