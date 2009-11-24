@@ -1904,9 +1904,8 @@ C strings. Note that, in the case of functions the converted C string
 will have dynamic extent (i.e.@: it will be automatically freed after
 the foreign function returns).
 
-In addition to Lisp strings, this type will also convert
-Lisp arrays of element type @code{(unsigned-byte 8)} and will pass
-foreign pointers unmodified.
+In addition to Lisp strings, this type will accept foreign pointers
+and pass them unmodified.
 
 A method for @ref{free-translated-object} is specialized for this
 type. So, for example, foreign strings allocated by this type and
@@ -1920,11 +1919,6 @@ CFFI> (foreign-funcall "getenv" :string "SHELL" :string)
 CFFI> (with-foreign-string (str "abcdef")
         (foreign-funcall "strlen" :string str :int))
 @result{} 6
-
-CFFI> (let ((str (make-array 4 :element-type '(unsigned-byte 8)
-                             :initial-element 65)))
-        (foreign-funcall "strlen" :string str :int))
-@result{} 4
 @end lisp
 
 @ForeignType{:string+ptr}
