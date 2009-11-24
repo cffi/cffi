@@ -26,6 +26,7 @@
 #
 
 OSTYPE = $(shell uname)
+ARCH   = $(shell uname -m)
 
 CC             := gcc
 CFLAGS         := -Wall -std=c99 -pedantic
@@ -35,6 +36,9 @@ SHLIB_EXT      := .so
 ifneq ($(if $(filter Linux %BSD,$(OSTYPE)),OK), OK)
 ifeq ($(OSTYPE), Darwin)
 SHLIB_CFLAGS   := -bundle
+ifeq ($(shell sysctl -n hw.optional.x86_64), 1)
+ARCH           := x86_64
+endif
 else
 ifeq ($(OSTYPE), SunOS)
 CFLAGS         := -c -Wall -std=c99 -pedantic
@@ -45,19 +49,17 @@ endif
 endif
 endif
 
-ARCH = $(shell uname -m)
-
 ifneq ($(ARCH), x86_64)
 CFLAGS += -lm
 endif
 
 ifeq ($(ARCH), x86_64)
-CFLAGS += -fPIC
+CFLAGS_64 += -fPIC
 endif
 
 # Are all G5s ppc970s?
 ifeq ($(ARCH), ppc970)
-CFLAGS += -m64
+CFLAGS_64 += -m64
 endif
 
 SHLIBS = libtest$(SHLIB_EXT) libtest2$(SHLIB_EXT)
@@ -69,10 +71,10 @@ endif
 shlibs: $(SHLIBS)
 
 libtest$(SHLIB_EXT): libtest.c
-	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $(CFLAGS_64) $<
 
 libtest2$(SHLIB_EXT): libtest2.c
-	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $(CFLAGS_64) $<
 
 ifeq ($(ARCH), x86_64)
 libtest32$(SHLIB_EXT): libtest.c
