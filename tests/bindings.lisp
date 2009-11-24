@@ -41,6 +41,8 @@
   (:windows "msvcrt.dll"))
 
 (define-foreign-library libm
+  #+(and lispworks darwin) ; not sure why the full path is necessary
+  (:darwin "/usr/lib/libm.dylib")
   (t (:default "libm")))
 
 ;;; Return the directory containing the source when compiling or
