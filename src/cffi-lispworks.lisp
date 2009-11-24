@@ -156,9 +156,9 @@ be stack allocated if supported by the implementation."
     (:unsigned-int       '(:unsigned :int))
     (:long               :long)
     (:unsigned-long      '(:unsigned :long))
-    #+lispworks-64bit
+    ;; On 32-bit platforms, Lispworks 5.0+ supports long-long for
+    ;; DEFCFUN and FOREIGN-FUNCALL.
     (:long-long          '(:long :long))
-    #+lispworks-64bit
     (:unsigned-long-long '(:unsigned :long :long))
     (:float              :float)
     (:double             :double)
