@@ -4,7 +4,7 @@
 ;;;
 ;;; Copyright (C) 2005-2006, Dan Knap <dankna@accela.net>
 ;;; Copyright (C) 2005-2006, Matthew Backes <lucca@accela.net>
-;;; Copyright (C) 2007, Stelian Ionescu <stelian.ionescu-zeus@poste.it>
+;;; Copyright (C) 2007, Stelian Ionescu <sionescu@cddr.org>
 ;;; Copyright (C) 2007, Luis Oliveira <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
