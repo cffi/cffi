@@ -55,7 +55,7 @@ loaded."))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c grovel-file))
   (let ((output-file (ensure-pathname (car (asdf:output-files op c)))))
-    (compile-file (print (process-grovel-file (asdf:component-pathname c) output-file))
+    (compile-file (process-grovel-file (asdf:component-pathname c) output-file)
                   :output-file output-file
                   #+ecl :system-p #+ecl t)))
 
