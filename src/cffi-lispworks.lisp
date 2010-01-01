@@ -287,6 +287,7 @@ signature.")
 
 (defun create-foreign-funcallable (types rettype convention)
   "Creates a foreign funcallable for the signature TYPES -> RETTYPE."
+  #+mac (declare (ignore convention))
   (format t "~&Creating foreign funcallable for signature ~S -> ~S~%"
           types rettype)
   ;; yes, ugly, this most likely wants to be a top-level form...
