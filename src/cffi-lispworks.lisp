@@ -91,6 +91,7 @@
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
+  (check-type ptr fli::pointer)
   (fli:null-pointer-p ptr))
 
 ;; FLI:INCF-POINTER won't work on FLI pointers to :void so we
