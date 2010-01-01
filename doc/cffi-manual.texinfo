@@ -365,6 +365,9 @@ multiple Common Lisp implementations.
 
 @end itemize
 
+Furthermore, if you wish to run the testsuite,
+@uref{http://www.cliki.net/rt,,RT} is required.
+
 You may find mechanisms such as
 @uref{http://common-lisp.net/project/clbuild/,,clbuild} (recommended)
 or @uref{http://www.cliki.net/ASDF-Install,,ASDF-Install} (not as
@@ -436,8 +439,8 @@ Unicode support is not enabled by default.
 
 @itemize
 @item
-Does not support the @code{:long-long} type natively, except in 64-bit
-platforms.
+Does not completely support the @code{:long-long} type natively in
+32-bit platforms.
 @item
 Unicode support is limited to the Basic Multilingual Plane (16-bit
 code points).
@@ -6313,6 +6316,17 @@ platforms, the only way to call a foreign function is through
 @item cffi-sys::no-long-long
 The C @code{long long} type is @strong{not} available as a foreign
 type.
+
+However, on such platforms @cffi{} provides its own implementation of
+the @code{long long} type for all of operations in chapters
+@ref{Foreign Types}, @ref{Pointers} and @ref{Variables}. The
+functionality described in @ref{Functions} and @ref{Callbacks} will
+not be available.
+
+32-bit Lispworks 5.0+ is an exception. In addition to the @cffi{}
+implementation described above, Lispworks itself implements the
+@code{long long} type for @ref{Functions}. @ref{Callbacks} are still
+missing @code{long long} support, though.
 
 @item cffi-sys::no-stdcall
 This Lisp doesn't support the @code{stdcall} calling convention.  Note
