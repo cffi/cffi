@@ -59,7 +59,7 @@
     (load-foreign-library 'libtest)
     (load-foreign-library 'libtest2)
     (load-foreign-library 'libc)
-    #+lispworks (load-foreign-library 'libm)))
+    #+(or abcl lispworks) (load-foreign-library 'libm)))
 
 #-(:and :ecl (:not :dffi))
 (load-test-libraries)
