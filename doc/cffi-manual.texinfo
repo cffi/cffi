@@ -114,7 +114,7 @@
 
 @copying
 Copyright @copyright{} 2005 James Bielman <jamesjb at jamesjb.com> @*
-Copyright @copyright{} 2005-2008 Lu@'{@dotless{i}}s Oliveira
+Copyright @copyright{} 2005-2010 Lu@'{@dotless{i}}s Oliveira
   <loliveira at common-lisp.net> @*
 Copyright @copyright{} 2006 Stephen Compall <s11 at member.fsf.org>
 
@@ -154,7 +154,7 @@ software or the use or other dealings in the software.}
 @contents
 
 @ifnottex
-@node Top
+@node Top, Introduction, (dir), (dir)
 @top cffi
 @insertcopying
 @end ifnottex
@@ -208,7 +208,7 @@ Foreign Types
 * translate-from-foreign::      Defines a foreign-to-Lisp object translation.
 * translate-to-foreign::        Defines a Lisp-to-foreign object translation.
 * with-foreign-object::         Allocates a foreign object with dynamic extent.
-@c * with-foreign-objects::        Plural form of @code{with-foreign-object}.
+* with-foreign-objects::        Plural form of @code{with-foreign-object}.
 * with-foreign-slots::          Accesses the slots of a foreign structure.
 
 Pointers
@@ -236,7 +236,7 @@ Strings
 * foreign-string-to-lisp::      Converts a foreign string to a Lisp string.
 * lisp-string-to-foreign::      Copies a Lisp string into a foreign string.
 * with-foreign-string::         Allocates a foreign string with dynamic extent.
-@c * with-foreign-strings::        Plural form of @code{with-foreign-string}.
+* with-foreign-strings::        Plural form of @code{with-foreign-string}.
 * with-foreign-pointer-as-string::  Similar to CL's with-output-to-string.
 
 Variables
@@ -275,7 +275,7 @@ Callbacks
 @c ===================================================================
 @c CHAPTER: Introduction
 
-@node Introduction
+@node Introduction, Installation, Top, Top
 @chapter Introduction
 
 @cffi{} is the Common Foreign Function Interface for @acronym{ANSI}
@@ -325,7 +325,7 @@ for performance, use a compiler-macro instead.
 @c ===================================================================
 @c CHAPTER: Installation
 
-@node Installation
+@node Installation, Implementation Support, Introduction, Top
 @chapter Installation
 
 @cffi{} can be obtained through one of the following means available
@@ -378,7 +378,7 @@ dependencies.
 @c ===================================================================
 @c CHAPTER: Implementation Support
 
-@node Implementation Support
+@node Implementation Support, Tutorial, Installation, Top
 @chapter Implementation Support
 
 @cffi{} supports various free and commercial Lisp implementations:
@@ -472,7 +472,7 @@ http://www.cliki.net/CFFI
 @c in @examples &c.  So it is expanded below in some places.
 
 
-@node Tutorial
+@node Tutorial, Wrapper generators, Implementation Support, Top
 @chapter An Introduction to Foreign Interfaces and @acronym{CFFI}
 
 @c Above, I don't use the cffi macro because it breaks TeX.
@@ -513,7 +513,7 @@ Common Lisp and C, including the Common Lisp macro system.
 @end menu
 
 
-@node Tutorial-Comparison
+@node Tutorial-Comparison, Tutorial-Getting a URL, Tutorial, Tutorial
 @section What makes Lisp different
 
 The following sums up how bindings to foreign libraries are usually
@@ -601,7 +601,7 @@ language than Lisp.  However, someone who prefers C to Lisp is not a
 likely candidate for developing a Lisp interface to a C library.
 
 
-@node Tutorial-Getting a URL
+@node Tutorial-Getting a URL, Tutorial-Loading, Tutorial-Comparison, Tutorial
 @section Getting a @acronym{URL}
 
 @cindex c@acronym{URL}
@@ -632,7 +632,7 @@ installed in @file{/usr/include/curl/}, and the @command{man} pages
 may be accessed through your favorite @command{man} facility.
 
 
-@node Tutorial-Loading
+@node Tutorial-Loading, Tutorial-Initializing, Tutorial-Getting a URL, Tutorial
 @section Loading foreign libraries
 
 @cindex loading @cffi{}
@@ -674,7 +674,7 @@ clause @code{(t (:default "libcurl"))} should be satisfactory, and
 will adapt to various operating systems.
 
 
-@node Tutorial-Initializing
+@node Tutorial-Initializing, Tutorial-easy_setopt, Tutorial-Loading, Tutorial
 @section Initializing @code{libcurl}
 
 @cindex function definition
@@ -763,7 +763,7 @@ what Lisp you are using, but that doesn't make any difference to
 @cffi{}.
 
 
-@node Tutorial-easy_setopt
+@node Tutorial-easy_setopt, Tutorial-Abstraction, Tutorial-Initializing, Tutorial
 @section Setting download options
 
 The @code{libcurl} tutorial says we'll want to set many options before
@@ -877,7 +877,7 @@ Before we continue, we will take a look at what @cffi{} can and can't
 do, and why this is so.
 
 
-@node Tutorial-Abstraction
+@node Tutorial-Abstraction, Tutorial-Lisp easy_setopt, Tutorial-easy_setopt, Tutorial
 @section Breaking the abstraction
 
 @cindex breaking the abstraction
@@ -950,7 +950,7 @@ error is just as useful as any explicit error we could define here
 might be.
 
 
-@node Tutorial-Lisp easy_setopt
+@node Tutorial-Lisp easy_setopt, Tutorial-Memory, Tutorial-Abstraction, Tutorial
 @section Option functions in Lisp
 
 We could use @code{foreign-funcall} directly every time we wanted to
@@ -1104,7 +1104,7 @@ high-level to wash out some of the ugliness of the thinnest possible
 C bookkeeping details we will explore.
 
 
-@node Tutorial-Memory
+@node Tutorial-Memory, Tutorial-Callbacks, Tutorial-Lisp easy_setopt, Tutorial
 @section Memory management
 
 According to the documentation for @code{curl_easy_setopt}, the type
@@ -1351,7 +1351,7 @@ Be sure to once again set the options we've set thus far.  You may
 wish to define yet another wrapper function to do this.
 
 
-@node Tutorial-Callbacks
+@node Tutorial-Callbacks, Tutorial-Completion, Tutorial-Memory, Tutorial
 @section Calling Lisp from C
 
 If you have been reading
@@ -1476,7 +1476,7 @@ handle, using the @code{callback} macro to retrieve a @cffi{}
 @end example
 
 
-@node Tutorial-Completion
+@node Tutorial-Completion, Tutorial-Types, Tutorial-Callbacks, Tutorial
 @section A complete @acronym{FFI}?
 
 @c TeX goes insane on @uref{@clikicffi{}}
@@ -1515,7 +1515,7 @@ foreign function calls; some are very helpful when trying to develop a
 Lispy interface to C.
 
 
-@node Tutorial-Types
+@node Tutorial-Types, Tutorial-Conclusion, Tutorial-Completion, Tutorial
 @section Defining new types
 
 We've occasionally used the @code{defctype} macro in previous sections
@@ -1676,7 +1676,7 @@ rather than the powerful, yet domain-specific, type translator
 interface.
 
 
-@node Tutorial-Conclusion
+@node Tutorial-Conclusion,  , Tutorial-Types, Tutorial
 @section What's next?
 
 @cffi{} provides a rich and powerful foundation for communicating with
@@ -1695,7 +1695,7 @@ know which ones you care about.}
 @c ===================================================================
 @c CHAPTER: Wrapper generators
 
-@node Wrapper generators
+@node Wrapper generators, Foreign Types, Tutorial, Top
 @chapter Wrapper generators
 
 @cffi{}'s interface is designed for human programmers, being aimed at
@@ -1760,7 +1760,7 @@ this proportion below that for languages like Python.
 @c ===================================================================
 @c CHAPTER: Foreign Types
 
-@node Foreign Types
+@node Foreign Types, Pointers, Wrapper generators, Top
 @chapter Foreign Types
 
 Foreign types describe how data is translated back and forth between C
@@ -1806,7 +1806,7 @@ Dictionary
 * with-foreign-slots::          
 @end menu
 
-@node Built-In Types
+@node Built-In Types, Other Types, Foreign Types, Foreign Types
 @section Built-In Types
 
 @ForeignType{:char}
@@ -1894,7 +1894,7 @@ with that information yet, it is useful for documentation purposes.
 
 No type at all. Only valid as the return type of a function.
 
-@node Other Types
+@node Other Types, Defining Foreign Types, Built-In Types, Foreign Types
 @section Other Types
 
 @cffi{} also provides a few useful types that aren't built-in C
@@ -1973,7 +1973,7 @@ terms of @code{:wrapper}.
 (convert-from-foreign 1 'my-bool) @result{} t
 @end lisp
 
-@node Defining Foreign Types
+@node Defining Foreign Types, Foreign Type Translators, Other Types, Foreign Types
 @section Defining Foreign Types
 
 You can define simple C-like @code{typedef}s through the
@@ -2018,7 +2018,7 @@ instance of @code{my-string-type}.  We do that with
 The next section describes how make this type actually translate
 between C and Lisp strings.
 
-@node Foreign Type Translators
+@node Foreign Type Translators, Optimizing Type Translators, Defining Foreign Types, Foreign Types
 @section Foreign Type Translators
 
 Type translators are used to automatically convert Lisp values to or
@@ -2093,7 +2093,7 @@ only, and you should not call them directly.  Use
 @xref{Tutorial-Types,, Defining new types}, for another example of
 type translators.
 
-@node Optimizing Type Translators
+@node Optimizing Type Translators, Foreign Structure Types, Foreign Type Translators, Foreign Types
 @section Optimizing Type Translators
 
 @cindex type translators, optimizing
@@ -2230,7 +2230,7 @@ before compiling files with forms that ought to use them.  Otherwise,
 they will not be found and the runtime translators will be used
 instead.
 
-@node Foreign Structure Types
+@node Foreign Structure Types, Allocating Foreign Objects, Optimizing Type Translators, Foreign Types
 @section Foreign Structure Types
 
 For more involved C types than simple aliases to built-in types, such
@@ -2265,7 +2265,7 @@ translation.
 
 @ref{defcstruct} for more details.
 
-@node Allocating Foreign Objects
+@node Allocating Foreign Objects, convert-from-foreign, Foreign Structure Types, Foreign Types
 @section Allocating Foreign Objects
 
 @c I moved this because I moved with-foreign-object to the Pointers
@@ -2278,8 +2278,8 @@ translation.
 @c CONVERT-FROM-FOREIGN
 
 @page
-@node convert-from-foreign
-@unnumberedsec convert-from-foreign
+@node convert-from-foreign, convert-to-foreign, Allocating Foreign Objects, Foreign Types
+@heading convert-from-foreign
 @subheading Syntax
 @Function{convert-from-foreign foreign-value type @res{} value}
 
@@ -2331,8 +2331,8 @@ CFFI-USER> (convert-from-foreign * :string)
 @c CONVERT-TO-FOREIGN
 
 @page
-@node convert-to-foreign
-@unnumberedsec convert-to-foreign
+@node convert-to-foreign, defbitfield, convert-from-foreign, Foreign Types
+@heading convert-to-foreign
 @subheading Syntax
 @Function{convert-to-foreign value type @res{} foreign-value, alloc-params}
 
@@ -2392,8 +2392,8 @@ CFFI-USER> (code-char (mem-aref * :char 5))
 @c DEFBITFIELD
 
 @page
-@node defbitfield
-@unnumberedsec defbitfield
+@node defbitfield, defcstruct, convert-to-foreign, Foreign Types
+@heading defbitfield
 @subheading Syntax
 @Macro{defbitfield name-and-options &body masks}
 
@@ -2477,8 +2477,8 @@ CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
 @c DEFCSTRUCT
 
 @page
-@node defcstruct
-@unnumberedsec defcstruct
+@node defcstruct, defcunion, defbitfield, Foreign Types
+@heading defcstruct
 @subheading Syntax
 @Macro{defcstruct name-and-options &body doc-and-slots @res{} name}
 
@@ -2549,7 +2549,7 @@ classes with (far) fewer features.
 @subheading Examples
 @lisp
 (defcstruct point
-  "Pointer structure."
+  "Point structure."
   (x :int)
   (y :int))
 
@@ -2597,8 +2597,8 @@ CFFI> (foreign-type-size 'foo)
 @c DEFCUNION
 
 @page
-@node defcunion
-@unnumberedsec defcunion
+@node defcunion, defctype, defcstruct, Foreign Types
+@heading defcunion
 @subheading Syntax
 @Macro{defcunion name &body doc-and-slots @res{} name}
 
@@ -2645,8 +2645,8 @@ usual foreign structure operations for accessing a union's slots.
 @c DEFCTYPE
 
 @page
-@node defctype
-@unnumberedsec defctype
+@node defctype, defcenum, defcunion, Foreign Types
+@heading defctype
 @subheading Syntax
 @Macro{defctype name base-type &optional documentation}
 
@@ -2687,8 +2687,8 @@ that, you should use @ref{define-foreign-type}.
 @c DEFCENUM
 
 @page
-@node defcenum
-@unnumberedsec defcenum
+@node defcenum, define-foreign-type, defctype, Foreign Types
+@heading defcenum
 @subheading Syntax
 @Macro{defcenum name-and-options &body enum-list}
 
@@ -2759,8 +2759,8 @@ CFFI> (foreign-enum-keyword 'numbers 2)
 @c DEFINE-FOREIGN-TYPE
 
 @page
-@node define-foreign-type
-@unnumberedsec define-foreign-type
+@node define-foreign-type, define-parse-method, defcenum, Foreign Types
+@heading define-foreign-type
 @subheading Syntax
 @Macro{define-foreign-type class-name supers slots &rest options @res{} class-name}
 
@@ -2826,8 +2826,8 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @c DEFINE-PARSE-METHOD
 
 @page
-@node define-parse-method
-@unnumberedsec define-parse-method
+@node define-parse-method, foreign-bitfield-symbols, define-foreign-type, Foreign Types
+@heading define-parse-method
 @subheading Syntax
 @Macro{define-parse-method name lambda-list &body body @res{} name}
 
@@ -2879,7 +2879,7 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @c EXPLAIN-FOREIGN-SLOT-VALUE
 
 @c @node explain-foreign-slot-value
-@c @unnumberedsec explain-foreign-slot-value
+@c @heading explain-foreign-slot-value
 @c @subheading Syntax
 @c @Macro{explain-foreign-slot-value ptr type &rest slot-names}
 
@@ -2919,8 +2919,8 @@ CFFI> (canonicalize-foreign-type '(:boolean :float))
 @c FOREIGN-BITFIELD-SYMBOLS
 
 @page
-@node foreign-bitfield-symbols
-@unnumberedsec foreign-bitfield-symbols
+@node foreign-bitfield-symbols, foreign-bitfield-value, define-parse-method, Foreign Types
+@heading foreign-bitfield-symbols
 @subheading Syntax
 @Function{foreign-bitfield-symbols type value @res{} symbols}
 
@@ -2962,8 +2962,8 @@ CFFI> (foreign-bitfield-symbols 'boolean #b101)
 @c FOREIGN-BITFIELD-VALUE
 
 @page
-@node foreign-bitfield-value
-@unnumberedsec foreign-bitfield-value
+@node foreign-bitfield-value, foreign-enum-keyword, foreign-bitfield-symbols, Foreign Types
+@heading foreign-bitfield-value
 @subheading Syntax
 @Function{foreign-bitfield-value type symbols @res{} value}
 
@@ -3004,8 +3004,8 @@ CFFI> (foreign-bitfield-value 'flags '(flag-a flag-c))
 @c FOREIGN-ENUM-KEYWORD
 
 @page
-@node foreign-enum-keyword
-@unnumberedsec foreign-enum-keyword
+@node foreign-enum-keyword, foreign-enum-value, foreign-bitfield-value, Foreign Types
+@heading foreign-enum-keyword
 @subheading Syntax
 @Function{foreign-enum-keyword type value &key errorp @res{} keyword}
 
@@ -3053,8 +3053,8 @@ CFFI> (foreign-enum-keyword 'boolean 1)
 @c FOREIGN-ENUM-VALUE
 
 @page
-@node foreign-enum-value
-@unnumberedsec foreign-enum-value
+@node foreign-enum-value, foreign-slot-names, foreign-enum-keyword, Foreign Types
+@heading foreign-enum-value
 @subheading Syntax
 @Function{foreign-enum-value type keyword &key errorp @res{} value}
 
@@ -3102,8 +3102,8 @@ CFFI> (foreign-enum-value 'boolean :yes)
 @c FOREIGN-SLOT-NAMES
 
 @page
-@node foreign-slot-names
-@unnumberedsec foreign-slot-names
+@node foreign-slot-names, foreign-slot-offset, foreign-enum-value, Foreign Types
+@heading foreign-slot-names
 @subheading Syntax
 @Function{foreign-slot-names type @res{} names}
 
@@ -3143,8 +3143,8 @@ CFFI> (foreign-slot-names 'timeval)
 @c FOREIGN-SLOT-OFFSET
 
 @page
-@node foreign-slot-offset
-@unnumberedsec foreign-slot-offset
+@node foreign-slot-offset, foreign-slot-pointer, foreign-slot-names, Foreign Types
+@heading foreign-slot-offset
 @subheading Syntax
 @Function{foreign-slot-offset type slot-name @res{} offset}
 
@@ -3188,8 +3188,8 @@ CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
 @c FOREIGN-SLOT-POINTER
 
 @page
-@node foreign-slot-pointer
-@unnumberedsec foreign-slot-pointer
+@node foreign-slot-pointer, foreign-slot-value, foreign-slot-offset, Foreign Types
+@heading foreign-slot-pointer
 @subheading Syntax
 @Function{foreign-slot-pointer ptr type slot-name @res{} pointer}
 
@@ -3242,8 +3242,8 @@ CFFI> (with-foreign-object (ptr 'point)
 @c FOREIGN-SLOT-VALUE
 
 @page
-@node foreign-slot-value
-@unnumberedsec foreign-slot-value
+@node foreign-slot-value, foreign-type-alignment, foreign-slot-pointer, Foreign Types
+@heading foreign-slot-value
 @subheading Syntax
 @Accessor{foreign-slot-value ptr type slot-name @res{} object}
 
@@ -3306,8 +3306,8 @@ CFFI> (with-foreign-object (ptr 'point)
 @c FOREIGN-TYPE-ALIGNMENT
 
 @page
-@node foreign-type-alignment
-@unnumberedsec foreign-type-alignment
+@node foreign-type-alignment, foreign-type-size, foreign-slot-value, Foreign Types
+@heading foreign-type-alignment
 @subheading Syntax
 @c XXX: This is actually a generic function.
 @Function{foreign-type-alignment type @res{} alignment}
@@ -3352,8 +3352,8 @@ CFFI> (foreign-type-alignment 'foo)
 @c FOREIGN-TYPE-SIZE
 
 @page
-@node foreign-type-size
-@unnumberedsec foreign-type-size
+@node foreign-type-size, free-converted-object, foreign-type-alignment, Foreign Types
+@heading foreign-type-size
 @subheading Syntax
 @c XXX: this is actually a generic function.
 @Function{foreign-type-size type @res{} size}
@@ -3396,8 +3396,8 @@ CFFI> (foreign-type-size 'foo)
 @c FREE-CONVERTED-OBJECT
 
 @page
-@node free-converted-object
-@unnumberedsec free-converted-object
+@node free-converted-object, free-translated-object, foreign-type-size, Foreign Types
+@heading free-converted-object
 @subheading Syntax
 @Function{free-converted-object foreign-value type params}
 
@@ -3453,8 +3453,8 @@ CFFI-USER> (free-converted-object * :string '(t))
 @c TODO: update
 
 @page
-@node free-translated-object
-@unnumberedsec free-translated-object
+@node free-translated-object, translate-from-foreign, free-converted-object, Foreign Types
+@heading free-translated-object
 @subheading Syntax
 @GenericFunction{free-translated-object value type-name param}
 
@@ -3491,8 +3491,8 @@ the @code{defctype} macro.
 @c TODO: update
 
 @page
-@node translate-from-foreign
-@unnumberedsec translate-from-foreign
+@node translate-from-foreign, translate-to-foreign, free-translated-object, Foreign Types
+@heading translate-from-foreign
 @subheading Syntax
 @GenericFunction{translate-from-foreign foreign-value type-name @
                                         @res{} lisp-value}
@@ -3538,8 +3538,8 @@ defined for built-in types.
 @c TODO: update
 
 @page
-@node translate-to-foreign
-@unnumberedsec translate-to-foreign
+@node translate-to-foreign, with-foreign-slots, translate-from-foreign, Foreign Types
+@heading translate-to-foreign
 @subheading Syntax
 @GenericFunction{translate-to-foreign lisp-value type-name @
                                       @res{} foreign-value, alloc-param}
@@ -3598,8 +3598,8 @@ defined for built-in types.
 @c WITH-FOREIGN-SLOTS
 
 @page
-@node with-foreign-slots
-@unnumberedsec with-foreign-slots
+@node with-foreign-slots,  , translate-to-foreign, Foreign Types
+@heading with-foreign-slots
 @subheading Syntax
 @Macro{with-foreign-slots (vars ptr type) &body body}
 
@@ -3659,7 +3659,7 @@ CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
 @c ===================================================================
 @c CHAPTER: Pointers
 
-@node Pointers
+@node Pointers, Strings, Foreign Types, Top
 @chapter Pointers
 
 All C data in @cffi{} is referenced through pointers.  This includes
@@ -3703,10 +3703,11 @@ Dictionary
 * pointer-address::             
 * pointer-eq::                  
 * with-foreign-object::         
+* with-foreign-objects::        
 * with-foreign-pointer::        
 @end menu
 
-@node Basic Pointer Operations
+@node Basic Pointer Operations, Allocating Foreign Memory, Pointers, Pointers
 @section Basic Pointer Operations
 
 Manipulating pointers proper can be accomplished through most of the
@@ -3722,7 +3723,7 @@ provides a portable type alias to each of these types.
 @end deftp
 
 
-@node Allocating Foreign Memory
+@node Allocating Foreign Memory, Accessing Foreign Memory, Basic Pointer Operations, Pointers
 @section Allocating Foreign Memory
 
 @cffi{} provides support for stack and heap C memory allocation.
@@ -3737,7 +3738,7 @@ allocation is done with @code{foreign-alloc}, creating objects that
 exist until freed with @code{foreign-free}.
 
 
-@node Accessing Foreign Memory
+@node Accessing Foreign Memory, foreign-free, Allocating Foreign Memory, Pointers
 @section Accessing Foreign Memory
 
 When manipulating raw C data, consider that all pointers are pointing
@@ -3761,8 +3762,8 @@ dereference @code{*} in C; use @code{mem-aref} for array indexing and
 @c FOREIGN-FREE
 
 @page
-@node foreign-free
-@unnumberedsec foreign-free
+@node foreign-free, foreign-alloc, Accessing Foreign Memory, Pointers
+@heading foreign-free
 @subheading Syntax
 @Function{foreign-free ptr @res{} undefined}
 
@@ -3796,8 +3797,8 @@ CFFI> (foreign-free *)
 @c FOREIGN-ALLOC
 
 @page
-@node foreign-alloc
-@unnumberedsec foreign-alloc
+@node foreign-alloc, foreign-symbol-pointer, foreign-free, Pointers
+@heading foreign-alloc
 @subheading Syntax
 @Function{foreign-alloc type &key initial-element initial-contents (count 1) @
                         null-terminated-p @res{} pointer}
@@ -3909,8 +3910,8 @@ CFFI> (progn
 @c FOREIGN-SYMBOL-POINTER
 
 @page
-@node foreign-symbol-pointer
-@unnumberedsec foreign-symbol-pointer
+@node foreign-symbol-pointer, inc-pointer, foreign-alloc, Pointers
+@heading foreign-symbol-pointer
 @subheading Syntax
 @Function{foreign-symbol-pointer foreign-name &key library @res{} pointer}
 
@@ -3967,8 +3968,8 @@ CFFI> (foreign-symbol-pointer "inexistent symbol")
 @c INC-POINTER
 
 @page
-@node inc-pointer
-@unnumberedsec inc-pointer
+@node inc-pointer, incf-pointer, foreign-symbol-pointer, Pointers
+@heading inc-pointer
 @subheading Syntax
 @Function{inc-pointer pointer offset @res{} new-pointer}
 
@@ -4010,8 +4011,8 @@ CFFI> (foreign-string-to-lisp *)
 @c INCF-POINTER
 
 @page
-@node incf-pointer
-@unnumberedsec incf-pointer
+@node incf-pointer, make-pointer, inc-pointer, Pointers
+@heading incf-pointer
 @subheading Syntax
 @Macro{incf-pointer place &optional (offset 1) @res{} new-pointer}
 
@@ -4060,8 +4061,8 @@ CFFI> (foreign-string-to-lisp *two-words*)
 @c MAKE-POINTER
 
 @page
-@node make-pointer
-@unnumberedsec make-pointer
+@node make-pointer, mem-aref, incf-pointer, Pointers
+@heading make-pointer
 @subheading Syntax
 @Function{make-pointer address @res{} ptr}
 
@@ -4110,8 +4111,8 @@ CFFI> (typep ** 'foreign-pointer)
 @c MEM-AREF
 
 @page
-@node mem-aref
-@unnumberedsec mem-aref
+@node mem-aref, mem-ref, make-pointer, Pointers
+@heading mem-aref
 @subheading Syntax
 @Accessor{mem-aref ptr type &optional (index 0)}
 
@@ -4169,8 +4170,8 @@ CFFI> (with-foreign-object (array :int 10)
 @c MEM-REF
 
 @page
-@node mem-ref
-@unnumberedsec mem-ref
+@node mem-ref, null-pointer, mem-aref, Pointers
+@heading mem-ref
 @subheading Syntax
 @Accessor{mem-ref ptr type &optional offset @res{} object}
 
@@ -4217,8 +4218,8 @@ CFFI> (mem-ref ptr-to-int :int)
 @c NULL-POINTER
 
 @page
-@node null-pointer
-@unnumberedsec null-pointer
+@node null-pointer, null-pointer-p, mem-ref, Pointers
+@heading null-pointer
 @subheading Syntax
 @Function{null-pointer @res{} pointer}
 
@@ -4250,8 +4251,8 @@ CFFI> (pointerp *)
 @c NULL-POINTER-P
 
 @page
-@node null-pointer-p
-@unnumberedsec null-pointer-p
+@node null-pointer-p, pointerp, null-pointer, Pointers
+@heading null-pointer-p
 @subheading Syntax
 @Function{null-pointer-p ptr @res{} boolean}
 
@@ -4296,8 +4297,8 @@ CFFI> (contains-str-p "Popcorns" "salt")
 @c POINTERP
 
 @page
-@node pointerp
-@unnumberedsec pointerp
+@node pointerp, pointer-address, null-pointer-p, Pointers
+@heading pointerp
 @subheading Syntax
 @Function{pointerp ptr @res{} boolean}
 
@@ -4339,8 +4340,8 @@ CFFI> (pointerp "this is not a pointer")
 @c POINTER-ADDRESS
 
 @page
-@node pointer-address
-@unnumberedsec pointer-address
+@node pointer-address, pointer-eq, pointerp, Pointers
+@heading pointer-address
 @subheading Syntax
 @Function{pointer-address ptr @res{} address}
 
@@ -4381,8 +4382,8 @@ CFFI> (pointer-address (make-pointer 123))
 @c POINTER-EQ
 
 @page
-@node pointer-eq
-@unnumberedsec pointer-eq
+@node pointer-eq, with-foreign-object, pointer-address, Pointers
+@heading pointer-eq
 @subheading Syntax
 @Function{pointer-eq ptr1 ptr2 @res{} boolean}
 
@@ -4429,11 +4430,12 @@ CFFI> (pointer-eq (null-pointer) (null-pointer))
 @c WITH-FOREIGN-OBJECT
 
 @page
-@node with-foreign-object
-@unnumberedsec with-foreign-object
+@node with-foreign-object, with-foreign-pointer, pointer-eq, Pointers
+@heading with-foreign-object, with-foreign-objects
 @subheading Syntax
 @Macro{with-foreign-object (var type &optional count) &body body}
 
+@anchor{with-foreign-objects}
 @Macro{with-foreign-objects (bindings) &body body}
 
 bindings ::= @{(var type &optional count)@}*
@@ -4476,8 +4478,8 @@ CFFI> (with-foreign-object (array :int 10)
 @c WITH-FOREIGN-POINTER
 
 @page
-@node with-foreign-pointer
-@unnumberedsec with-foreign-pointer
+@node with-foreign-pointer,  , with-foreign-object, Pointers
+@heading with-foreign-pointer
 @subheading Syntax
 @Macro{with-foreign-pointer (var size &optional size-var) &body body}
 
@@ -4523,7 +4525,7 @@ CFFI> (with-foreign-pointer (string 4 size)
 @c ===================================================================
 @c CHAPTER: Strings
 
-@node Strings
+@node Strings, Variables, Pointers, Top
 @chapter Strings
 
 As with many languages, Lisp and C have special support for logical
@@ -4545,6 +4547,7 @@ Dictionary
 * foreign-string-to-lisp::      
 * lisp-string-to-foreign::      
 * with-foreign-string::         
+* with-foreign-strings::        
 * with-foreign-pointer-as-string::
 @end menu
 
@@ -4553,8 +4556,8 @@ Dictionary
 @c *DEFAULT-FOREIGN-ENCODING*
 
 @page
-@node *default-foreign-encoding*
-@unnumberedsec *default-foreign-encoding*
+@node *default-foreign-encoding*, foreign-string-alloc, Strings, Strings
+@heading *default-foreign-encoding*
 @subheading Syntax
 
 @Variable{*default-foreign-encoding*}
@@ -4597,8 +4600,8 @@ CFFI> (let ((*default-foreign-encoding* :utf-16))
 @c FOREIGN-STRING-ALLOC
 
 @page
-@node foreign-string-alloc
-@unnumberedsec foreign-string-alloc
+@node foreign-string-alloc, foreign-string-free, *default-foreign-encoding*, Strings
+@heading foreign-string-alloc
 @subheading Syntax
 @Function{foreign-string-alloc string &key encoding null-terminated-p @
                                start end @res{} pointer}
@@ -4654,8 +4657,8 @@ CFFI> (foreign-funcall "strlen" :pointer *str* :int)
 @c FOREIGN-STRING-FREE
 
 @page
-@node foreign-string-free
-@unnumberedsec foreign-string-free
+@node foreign-string-free, foreign-string-to-lisp, foreign-string-alloc, Strings
+@heading foreign-string-free
 @subheading Syntax
 @Function{foreign-string-free pointer}
 
@@ -4680,8 +4683,8 @@ allocated by @code{foreign-string-alloc}.
 @c FOREIGN-STRING-TO-LISP
 
 @page
-@node foreign-string-to-lisp
-@unnumberedsec foreign-string-to-lisp
+@node foreign-string-to-lisp, lisp-string-to-foreign, foreign-string-free, Strings
+@heading foreign-string-to-lisp
 @subheading Syntax
 @Function{foreign-string-to-lisp ptr &optional offset count max-chars @
                                  encoding @res{} string}
@@ -4741,8 +4744,8 @@ CFFI> (foreign-string-to-lisp *)
 @c LISP-STRING-TO-FOREIGN
 
 @page
-@node lisp-string-to-foreign
-@unnumberedsec lisp-string-to-foreign
+@node lisp-string-to-foreign, with-foreign-string, foreign-string-to-lisp, Strings
+@heading lisp-string-to-foreign
 @subheading Syntax
 @Function{lisp-string-to-foreign string buffer bufsize &key start @
                                  end offset encoding @res{} buffer}
@@ -4798,10 +4801,12 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @c WITH-FOREIGN-STRING
 
 @page
-@node with-foreign-string
-@unnumberedsec with-foreign-string
+@node with-foreign-string, with-foreign-pointer-as-string, lisp-string-to-foreign, Strings
+@heading with-foreign-string, with-foreign-strings
 @subheading Syntax
 @Macro{with-foreign-string (var-or-vars string &rest args) &body body}
+
+@anchor{with-foreign-strings}
 @Macro{with-foreign-strings (bindings) &body body}
 
 var-or-vars ::= var | (var &optional octet-size-var)
@@ -4851,8 +4856,8 @@ CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
 @c WITH-FOREIGN-POINTER-AS-STRING
 
 @page
-@node with-foreign-pointer-as-string
-@unnumberedsec with-foreign-pointer-as-string
+@node with-foreign-pointer-as-string,  , with-foreign-string, Strings
+@heading with-foreign-pointer-as-string
 @subheading Syntax
 @Macro{with-foreign-pointer-as-string (var size &optional size-var @
                                       &rest args) &body body @res{} string}
@@ -4892,7 +4897,7 @@ CFFI> (with-foreign-pointer-as-string (str 6 str-size :encoding :ascii)
 @c ===================================================================
 @c CHAPTER: Variables
 
-@node Variables
+@node Variables, Functions, Strings, Top
 @chapter Variables
 
 @menu
@@ -4907,8 +4912,8 @@ Dictionary
 @c DEFCVAR
 
 @page
-@node defcvar
-@unnumberedsec defcvar
+@node defcvar, get-var-pointer, Variables, Variables
+@heading defcvar
 @subheading Syntax
 @Macro{defcvar name-and-options type &optional documentation @res{} lisp-name}
 
@@ -4985,8 +4990,8 @@ implementation of the C standard library.}
 @c GET-VAR-POINTER
 
 @page
-@node get-var-pointer
-@unnumberedsec get-var-pointer
+@node get-var-pointer,  , defcvar, Variables
+@heading get-var-pointer
 @subheading Syntax
 @Function{get-var-pointer symbol @res{} pointer}
 
@@ -5025,7 +5030,7 @@ CFFI> (mem-ref * :int)
 @c ===================================================================
 @c CHAPTER: Functions
 
-@node Functions
+@node Functions, Libraries, Variables, Top
 @chapter Functions
 
 @menu
@@ -5050,8 +5055,8 @@ Dictionary
 @c DEFCFUN
 
 @page
-@node defcfun
-@unnumberedsec defcfun
+@node defcfun, foreign-funcall, Functions, Functions
+@heading defcfun
 @subheading Syntax
 @Macro{defcfun name-and-options return-type &body [docstring] arguments [&rest] @
                @res{} lisp-name}
@@ -5162,8 +5167,8 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @c FOREIGN-FUNCALL
 
 @page
-@node foreign-funcall
-@unnumberedsec foreign-funcall
+@node foreign-funcall, foreign-funcall-pointer, defcfun, Functions
+@heading foreign-funcall
 @subheading Syntax
 @Macro{foreign-funcall name-and-options &rest arguments @res{} return-value}
 
@@ -5260,8 +5265,8 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @c FOREIGN-FUNCALL-POINTER
 
 @page
-@node foreign-funcall-pointer
-@unnumberedsec foreign-funcall-pointer
+@node foreign-funcall-pointer,  , foreign-funcall, Functions
+@heading foreign-funcall-pointer
 @subheading Syntax
 @Macro{foreign-funcall-pointer pointer options &rest arguments @res{} return-value}
 
@@ -5323,7 +5328,7 @@ CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs") ()
 @c ===================================================================
 @c CHAPTER: Libraries
 
-@node Libraries
+@node Libraries, Callbacks, Functions, Top
 @chapter Libraries
 
 @menu
@@ -5342,7 +5347,7 @@ Dictionary
 @end menu
 
 
-@node Defining a library
+@node Defining a library, Library definition style, Libraries, Libraries
 @section Defining a library
 
 Almost all foreign code you might want to access exists in some kind
@@ -5370,7 +5375,7 @@ Load the library so defined with either a top-level
 example of the above two steps.
 
 
-@node Library definition style
+@node Library definition style, close-foreign-library, Defining a library, Libraries
 @section Library definition style
 
 Looking at the @code{libcurl} library definition presented earlier,
@@ -5410,8 +5415,8 @@ little about.  --stephen}
 @c CLOSE-FOREIGN-LIBRARY
 
 @page
-@node close-foreign-library
-@unnumberedsec close-foreign-library
+@node close-foreign-library, *darwin-framework-directories*, Library definition style, Libraries
+@heading close-foreign-library
 @subheading Syntax
 @Function{close-foreign-library library @res{} success}
 
@@ -5445,8 +5450,8 @@ define through @code{define-foreign-library} or an instance of
 @c *DARWIN-FRAMEWORK-DIRECTORIES*
 
 @page
-@node *darwin-framework-directories*
-@unnumberedsec *darwin-framework-directories*
+@node *darwin-framework-directories*, define-foreign-library, close-foreign-library, Libraries
+@heading *darwin-framework-directories*
 @subheading Syntax
 
 @Variable{*darwin-framework-directories*}
@@ -5487,8 +5492,8 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 @c DEFINE-FOREIGN-LIBRARY
 
 @page
-@node define-foreign-library
-@unnumberedsec define-foreign-library
+@node define-foreign-library, *foreign-library-directories*, *darwin-framework-directories*, Libraries
+@heading define-foreign-library
 
 @subheading Syntax
 
@@ -5586,8 +5591,8 @@ global library options (the @var{name-and-options} argument)
 @c *FOREIGN-LIBRARY-DIRECTORIES*
 
 @page
-@node *foreign-library-directories*
-@unnumberedsec *foreign-library-directories*
+@node *foreign-library-directories*, load-foreign-library, define-foreign-library, Libraries
+@heading *foreign-library-directories*
 @subheading Syntax
 
 @Variable{*foreign-library-directories*}
@@ -5683,8 +5688,8 @@ The following example would achieve the same effect:
 @c LOAD-FOREIGN-LIBRARY
 
 @page
-@node load-foreign-library
-@unnumberedsec load-foreign-library
+@node load-foreign-library, load-foreign-library-error, *foreign-library-directories*, Libraries
+@heading load-foreign-library
 @subheading Syntax
 @Function{load-foreign-library library @res{} handler}
 
@@ -5767,8 +5772,8 @@ own @code{ffi:load-foreign-library} with a constant string argument.
 @c LOAD-FOREIGN-LIBRARY-ERROR
 
 @page
-@node load-foreign-library-error
-@unnumberedsec load-foreign-library-error
+@node load-foreign-library-error, use-foreign-library, load-foreign-library, Libraries
+@heading load-foreign-library-error
 
 @subheading Syntax
 
@@ -5798,8 +5803,8 @@ a different foreign library designator.
 @c USE-FOREIGN-LIBRARY
 
 @page
-@node use-foreign-library
-@unnumberedsec use-foreign-library
+@node use-foreign-library,  , load-foreign-library-error, Libraries
+@heading use-foreign-library
 
 @subheading Syntax
 
@@ -5840,7 +5845,7 @@ time.@footnote{Namely, @acronym{CMUCL}.  See
 @c ===================================================================
 @c CHAPTER: Callbacks
 
-@node Callbacks
+@node Callbacks, The Groveller, Libraries, Top
 @chapter Callbacks
 
 @menu
@@ -5856,8 +5861,8 @@ Dictionary
 @c CALLBACK
 
 @page
-@node callback
-@unnumberedsec callback
+@node callback, defcallback, Callbacks, Callbacks
+@heading callback
 @subheading Syntax
 @Macro{callback symbol @res{} pointer}
 
@@ -5896,8 +5901,8 @@ CFFI> (callback sum)
 @c DEFCALLBACK
 
 @page
-@node defcallback
-@unnumberedsec defcallback
+@node defcallback, get-callback, callback, Callbacks
+@heading defcallback
 @subheading Syntax
 @Macro{defcallback name-and-options return-type arguments &body body @res{} name}
 
@@ -5972,8 +5977,8 @@ CFFI> (with-foreign-object (array :int 10)
 @c GET-CALLBACK
 
 @page
-@node get-callback
-@unnumberedsec get-callback
+@node get-callback,  , defcallback, Callbacks
+@heading get-callback
 @subheading Syntax
 @Accessor{get-callback symbol @res{} pointer}
 
@@ -6010,7 +6015,7 @@ CFFI> (get-callback 'sum)
 @c ===================================================================
 @c CHAPTER: The Groveller
 
-@node The Groveller
+@node The Groveller, Limitations, Callbacks, Top
 @chapter The Groveller
 
 @c Manual and software copyright @copyright{} 2005, 2006 Matthew Backes
@@ -6056,7 +6061,7 @@ necessary calls to the C compiler and resulting file management.
 * Groveller Implementation Notes:: Implementation notes.
 @end menu
 
-@node Groveller Syntax
+@node Groveller Syntax, Groveller ASDF Integration, The Groveller, The Groveller
 @section Specification File Syntax
 
 The specification files are read by the normal Lisp reader, so they
@@ -6191,7 +6196,7 @@ signalled if the platform supports neither @code{AF_PACKET} nor
 @c ===================================================================
 @c SECTION: Groveller ASDF Integration
 
-@node Groveller ASDF Integration
+@node Groveller ASDF Integration, Groveller Implementation Notes, Groveller Syntax, The Groveller
 @section ASDF Integration
 
 An example software project might contain four files; an
@@ -6241,7 +6246,7 @@ exampleint.lisp, the exampleint.cffi.lisp file will contain the
 @cffi{} definitions needed by the rest of your project.
 @xref{Groveller Syntax}.
 
-@node Groveller Implementation Notes
+@node Groveller Implementation Notes,  , Groveller ASDF Integration, The Groveller
 @section Implementation Notes
 
 @impnote{This info might not be up-to-date.}
@@ -6274,7 +6279,7 @@ between the implementations running on a given system.}
 @c ===================================================================
 @c CHAPTER: Limitations
 
-@node Limitations
+@node Limitations, Platform-specific features, The Groveller, Top
 @chapter Limitations
 
 These are @cffi{}'s limitations across all platforms; for information
@@ -6294,7 +6299,7 @@ C @code{struct}s cannot be passed by value.
 @end itemize
 
 
-@node Platform-specific features
+@node Platform-specific features, Glossary, Limitations, Top
 @appendix Platform-specific features
 
 Whenever a backend doesn't support one of @cffi{}'s features, a
@@ -6336,7 +6341,7 @@ platforms.
 @end table
 
 
-@node Glossary
+@node Glossary, Comprehensive Index, Platform-specific features, Top
 @appendix Glossary
 
 @table @dfn
@@ -6368,7 +6373,7 @@ A @cffi{} type that is ultimately represented as a builtin type;
 code or data.
 @end table
 
-@node Comprehensive Index
+@node Comprehensive Index,  , Glossary, Top
 @unnumbered Index
 @printindex cp
 
