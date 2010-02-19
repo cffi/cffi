@@ -11,7 +11,6 @@
 #define indirect_stringify(x) stringify(x)
 
 #define SIGNEDP(x) (((x)-1)<0)
-#define SIGNED_(x) (SIGNEDP(x)?"":"un")
 #define SIGNED64P(x) ( x <= 0x7FFFFFFFFFFFFFFFLL )
 
 void type_name(FILE *output, int signed_p, int size) {
