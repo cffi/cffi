@@ -582,3 +582,8 @@
        (pointerp p)
        (typep p 'foreign-pointer)))
   t t)
+
+(deftest mem-ref.setf.1
+    (with-foreign-object (p :char)
+      (setf (mem-ref p :char) 42))
+  42)

@@ -165,23 +165,6 @@ WITH-POINTER-TO-VECTOR-DATA."
   `(let ((,ptr-var (make-pointer (%vector-address ,vector))))
      ,@body))
 
-;;;# Dereferencing
-
-(defun %mem-ref (ptr type &optional (offset 0))
-  "Dereference an object of TYPE at OFFSET bytes from PTR."
-  (let* ((type (cffi-type->ecl-type type))
-         (type-size (ffi:size-of-foreign-type type)))
-    (si:foreign-data-ref-elt
-     (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
-
-(defun %mem-set (value ptr type &optional (offset 0))
-  "Set an object of TYPE at OFFSET bytes from PTR."
-  (let* ((type (cffi-type->ecl-type type))
-         (type-size (ffi:size-of-foreign-type type)))
-    (si:foreign-data-set-elt
-     (si:foreign-data-recast ptr (+ offset type-size) :void)
-     offset type value)))
-
 ;;;# Type Operations
 
 (defconstant +translation-table+
@@ -221,6 +204,55 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Return the alignment in bytes of a foreign type."
   (nth-value 1 (ffi:size-of-foreign-type
                 (cffi-type->ecl-type type-keyword))))
+
+;;;# Dereferencing
+
+(defun %mem-ref (ptr type &optional (offset 0))
+  "Dereference an object of TYPE at OFFSET bytes from PTR."
+  (let* ((type (cffi-type->ecl-type type))
+         (type-size (ffi:size-of-foreign-type type)))
+    (si:foreign-data-ref-elt
+     (si:foreign-data-recast ptr (+ offset type-size) :void) offset type)))
+
+(defun %mem-set (value ptr type &optional (offset 0))
+  "Set an object of TYPE at OFFSET bytes from PTR."
+  (let* ((type (cffi-type->ecl-type type))
+         (type-size (ffi:size-of-foreign-type type)))
+    (si:foreign-data-set-elt
+     (si:foreign-data-recast ptr (+ offset type-size) :void)
+     offset type value)))
+
+;;; Inline versions that use C expressions instead of function calls.
+
+(defparameter +mem-ref-strings+
+  (loop for (cffi-type ecl-type c-string) in +translation-table+
+        for string = (format nil "*((~A *)(((char*)#0)+#1))" c-string)
+        collect (list cffi-type ecl-type string)))
+
+(defparameter +mem-set-strings+
+  (loop for (cffi-type ecl-type c-string) in +translation-table+
+        for string = (format nil "*((~A *)(((char*)#0)+#1))=#2" c-string)
+        collect (list cffi-type ecl-type string)))
+
+(define-compiler-macro %mem-ref (&whole whole ptr type &optional (offset 0))
+  (if (and (constantp type) (constantp offset))
+      (let ((record (assoc (eval type) +mem-ref-strings+)))
+        `(ffi:c-inline (,ptr ,offset)
+                       (:pointer-void :cl-index) ; argument types
+                       ,(second record)          ; return type
+                       ,(third record)  ; the precomputed expansion
+                       :one-liner t))
+      whole))
+
+(define-compiler-macro %mem-set (&whole whole value ptr type &optional (offset 0))
+  (if (and (constantp type) (constantp offset))
+      (let ((record (assoc (eval type) +mem-set-strings+)))
+        `(ffi:c-inline (,ptr ,offset ,value) ; arguments with type translated
+                       (:pointer-void :cl-index ,(second record))
+                       :void            ; does not return anything
+                       ,(third record)  ; precomputed expansion
+                       :one-liner t))
+      whole))
 
 ;;;# Calling Foreign Functions
 
