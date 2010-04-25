@@ -134,9 +134,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   #+(version>= 8 1)
   (when (and (constantp size) (<= (eval size) ff:*max-stack-fobject-bytes*))
     (return-from with-foreign-pointer
-      `(let ((,size-var ,size))
+      `(let ((,size-var ,(eval size)))
          (declare (ignorable ,size-var))
-         (ff:with-static-fobject (,var (list :array :char size)
+         (ff:with-static-fobject (,var '(:array :char ,(eval size))
                                        :allocation :foreign-static-gc)
            ;; (excl::stack-allocated-p var) => T
            (let ((,var (ff:fslot-address ,var)))

@@ -164,13 +164,22 @@
       (mem-ref str :unsigned-char))
   0)
 
-;; regression test. with-foreign-pointer shouldn't evaluate
-;; the size argument twice.
+;;; regression test. with-foreign-pointer shouldn't evaluate
+;;; the size argument twice.
 (deftest with-foreign-pointer.evalx2
     (let ((count 0))
       (with-foreign-pointer (x (incf count) size-var)
         (values count size-var)))
   1 1)
+
+(defconstant +two+ 2)
+
+;;; regression test. cffi-allegro's with-foreign-pointer wasn't
+;;; handling constants properly.
+(deftest with-foreign-pointer.constant-size
+    (with-foreign-pointer (p +two+ size)
+      size)
+  2)
 
 (deftest mem-ref.left-to-right
     (let ((i 0))
