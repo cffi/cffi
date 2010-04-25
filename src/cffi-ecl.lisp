@@ -29,6 +29,7 @@
 
 (defpackage #:cffi-sys
   (:use #:common-lisp #:alexandria)
+  (:import-from #:si #:null-pointer-p)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -100,10 +101,6 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun null-pointer ()
   "Construct and return a null pointer."
   (si:allocate-foreign-data :void 0))
-
-(defun null-pointer-p (ptr)
-  "Return true if PTR is a null pointer."
-  (si:null-pointer-p ptr))
 
 (defun inc-pointer (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
