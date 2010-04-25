@@ -133,36 +133,9 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 WITH-POINTER-TO-VECTOR-DATA."
   (make-array size :element-type '(unsigned-byte 8)))
 
-;;; ECL, built with the Boehm GC never moves allocated data, so this
-;;; isn't nearly as hard to do. In fact, we support a bunch of vector
-;;; types that other backends don't.
-(defun %vector-address (vector)
-  "Return the address of VECTOR's data."
-  (check-type vector
-              (or (vector (unsigned-byte 8))
-                  (vector (signed-byte 8))
-                  #+uint16-t (vector (unsigned-byte 16))
-                  #+uint16-t (vector (signed-byte 16))
-                  #+uint32-t (vector (unsigned-byte 32))
-                  #+uint32-t (vector (signed-byte 32))
-                  #+uint64-t (vector (unsigned-byte 64))
-                  #+uint64-t (vector (signed-byte 64))
-                  (vector single-float)
-                  (vector double-float)
-                  (vector bit)
-                  (vector base-char)
-                  #+unicode (vector character)))
-  ;; ecl_array_data is a union, so we don't have to pick the specific
-  ;; fields out of it, so long as we know the array has the expected
-  ;; type.
-  (ffi:c-inline (vector) (object) :unsigned-long
-                "(unsigned long) #0->vector.self.b8"
-                :side-effects nil
-                :one-liner t))
-
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  `(let ((,ptr-var (make-pointer (%vector-address ,vector))))
+  `(let ((,ptr-var (si:make-foreign-data-from-array ,vector)))
      ,@body))
 
 ;;;# Type Operations
