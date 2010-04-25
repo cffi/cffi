@@ -226,30 +226,49 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defconstant +ecl-inline-codes+ "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z")
 
-(defun produce-function-pointer-call (pointer types values return-type)
-  #-dffi
-  (if (stringp pointer)
-      (produce-function-pointer-call
-       `(%foreign-symbol-pointer ,pointer nil) types values return-type)
-      `(ffi:c-inline
-        ,(list* pointer values)
-        ,(list* :pointer-void types) ,return-type
-        ,(with-output-to-string (s)
-           (let ((types (mapcar #'ecl-type->c-type types)))
-             ;; On AMD64, the following code only works with the extra
-             ;; argument ",...". If this is not present, functions
-             ;; like sprintf do not work
-             (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
-                     (ecl-type->c-type return-type) types
-                     (subseq +ecl-inline-codes+ 3
-                             (max 3 (+ 2 (* (length values) 3)))))))
-        :one-liner t :side-effects t))
-  #+dffi
-  (progn
-    (when (stringp pointer)
-      (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
-    `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values))))
+(defun c-inline-function-pointer-call (pointer types values return-type)
+  (when (stringp pointer)
+    (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
+  `(ffi:c-inline
+    ,(list* pointer values)
+    ,(list* :pointer-void types) ,return-type
+    ,(with-output-to-string (s)
+       (let ((types (mapcar #'ecl-type->c-type types)))
+         ;; On AMD64, the following code only works with the extra
+         ;; argument ",...". If this is not present, functions
+         ;; like sprintf do not work
+         (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
+                 (ecl-type->c-type return-type) types
+                 (subseq +ecl-inline-codes+ 3
+                         (max 3 (+ 2 (* (length values) 3)))))))
+    :one-liner t :side-effects t))
 
+(defun dffi-function-pointer-call (pointer types values return-type)
+  (when (stringp pointer)
+    (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
+  `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values)))
+
+#.(cl:when (>= ext:+ecl-version-number+ 100402)
+    (cl:pushnew :ecl-with-backend cl:*features*)
+    cl:nil)
+
+(defun produce-function-pointer-call (pointer types values return-type)
+  #-ecl-with-backend
+  (progn
+    #-dffi
+    (dffi-function-pointer-call pointer types values return-type)
+    #+dffi
+    (c-inline-function-pointer-call pointer types values return-type))
+  #+ecl-with-backend
+  `(ext:with-backend
+     :bytecodes
+     #-dffi
+     (error "In interpreted code, attempted to call a foreign function~% ~A~%~
+             but ECL was built without support for that." pointer)
+     #+dffi
+     ,(dffi-function-pointer-call pointer types values return-type)
+     :c/c++
+     ,(c-inline-function-pointer-call pointer types values return-type)))
 
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
