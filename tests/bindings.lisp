@@ -92,3 +92,7 @@
         (*package* (find-package '#:cffi-tests)))
     (format t "~&;;; running tests (~Acompiled)" (if compiled "" "un"))
     (do-tests)))
+
+(defmacro expecting-error (&body body)
+  `(handler-case (progn ,@body :no-error)
+     (error () :error)))

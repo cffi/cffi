@@ -583,7 +583,43 @@
        (typep p 'foreign-pointer)))
   t t)
 
+(deftest pointerp.3
+    (pointerp 'not-a-pointer)
+  nil)
+
+(deftest pointerp.4
+    (pointerp 42)
+  nil)
+
+(deftest pointerp.5
+    (pointerp 0)
+  nil)
+
+(deftest pointerp.6
+    (pointerp nil)
+  nil)
+
 (deftest mem-ref.setf.1
     (with-foreign-object (p :char)
       (setf (mem-ref p :char) 42))
   42)
+
+(deftest pointer-eq.non-pointers.1
+    (expecting-error (pointer-eq 1 2))
+  :error)
+
+(deftest pointer-eq.non-pointers.2
+    (expecting-error (pointer-eq 'a 'b))
+  :error)
+
+(deftest null-pointer-p.non-pointer.1
+    (expecting-error (null-pointer-p 'not-a-pointer))
+  :error)
+
+(deftest null-pointer-p.non-pointer.2
+    (expecting-error (null-pointer-p 0))
+  :error)
+
+(deftest null-pointer-p.non-pointer.3
+    (expecting-error (null-pointer-p nil))
+  :error)
