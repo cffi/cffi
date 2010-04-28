@@ -29,10 +29,12 @@
 
 (defcfun ("my_strdup" strdup) :string+ptr (str :string))
 
+(defcfun ("my_strfree" strfree) :void (str :pointer))
+
 (deftest misc-types.string+ptr
     (destructuring-bind (string pointer)
         (strdup "foo")
-      (foreign-free pointer)
+      (strfree pointer)
       string)
   "foo")
 
@@ -41,7 +43,7 @@
     (destructuring-bind (string pointer)
         (strdup (make-array 3 :element-type '(unsigned-byte 8)
                             :initial-contents (map 'list #'char-code "foo")))
-      (foreign-free pointer)
+      (strfree pointer)
       string)
   "foo")
 
@@ -124,7 +126,7 @@
 (deftest misc-types.wrapper
     (destructuring-bind (string ptr)
         (funky-strdup "code")
-      (foreign-free ptr)
+      (strfree ptr)
       string)
   "Strdup says: MORE CODE")
 

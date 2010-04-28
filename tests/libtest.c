@@ -72,6 +72,12 @@ char *my_strdup(const char *str)
 }
 
 DLLEXPORT
+void my_strfree(const char *str)
+{
+    free(str);
+}
+
+DLLEXPORT
 long long my_llabs(long long n)
 {
     return n < 0 ? -n : n;
