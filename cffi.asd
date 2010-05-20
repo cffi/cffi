@@ -25,17 +25,19 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+(in-package :asdf)
+
 #-(or openmcl sbcl cmu scl clisp lispworks ecl allegro cormanlisp abcl)
 (error "Sorry, this Lisp is not yet supported.  Patches welcome!")
 
-(defsystem cffi
+(defsystem :cffi
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :version "0.10.5"
   :licence "MIT"
-  :depends-on (alexandria trivial-features babel)
+  :depends-on (:alexandria :trivial-features :babel)
   :components
-  ((:module src
+  ((:module "src"
     :serial t
     :components
     (#+openmcl    (:file "cffi-openmcl")
