@@ -263,6 +263,11 @@ int main(int argc, char**argv) {
            "-fPIC" "-o"
            ,(native-namestring output-file)
            ,(native-namestring input-file))))
+    (when library
+      ;; if it's a library that may be used, remove it
+      ;; so we won't possibly be overwriting the code of any existing process
+      (ignore-some-conditions (file-error)
+        (delete-file output-file)))
     (apply #'invoke arglist)))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
