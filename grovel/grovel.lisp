@@ -497,7 +497,7 @@ int main(int argc, char**argv) {
            (c-printf out " :count %i"
                      (format nil "~A" count))
            (format out "~&#endif~%")))
-        (c-printf out " :offset %i)"
+        (c-printf out " :offset %li)"
                   (format nil "offsetof(~A, ~A)"
                           struct-c-name
                           slot-c-name))))
