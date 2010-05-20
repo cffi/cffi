@@ -4,7 +4,7 @@
 #include <string.h>
 
 #ifndef offsetof
-#define offsetof(type, slot) ((int) ((char *) &(((type *) 0)->slot)))
+#define offsetof(type, slot) ((long) ((char *) &(((type *) 0)->slot)))
 #endif
 #define sizeofslot(type, slot) (sizeof(((type *) 0)->slot))
 #define stringify(x) #x
