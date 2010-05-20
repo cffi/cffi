@@ -45,13 +45,14 @@
 
 ;;;# ASDF component: GROVEL-FILE
 
-(defclass grovel-file (asdf:cl-source-file cc-flags-mixin)
-  ()
-  (:documentation
-   "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defclass grovel-file (asdf:cl-source-file cc-flags-mixin)
+    ()
+    (:documentation
+      "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
 operations that take care of calling PROCESS-GROVEL-FILE in order
 to generate a Lisp file that is subsequently compiled and/or
-loaded."))
+loaded.")))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c grovel-file))
   (let ((output-file (ensure-pathname (car (asdf:output-files op c)))))
@@ -66,13 +67,14 @@ loaded."))
 
 ;;;# ASDF component: WRAPPER-FILE
 
-(defclass wrapper-file (asdf:cl-source-file cc-flags-mixin)
-  ((soname :initform nil :initarg :soname :accessor soname-of))
-  (:documentation
-   "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defclass wrapper-file (asdf:cl-source-file cc-flags-mixin)
+    ((soname :initform nil :initarg :soname :accessor soname-of))
+    (:documentation
+      "This ASDF component defines COMPILE-OP and LOAD-SOURCE-OP
 operations that take care of calling PROCESS-WRAPPER-FILE in
 order to generate a foreign library and matching CFFI bindings
-that are subsequently compiled and/or loaded."))
+that are subsequently compiled and/or loaded.")))
 
 (defun %perform-process-wrapper-file (op c)
   (let ((fasl-file (ensure-pathname (car (asdf:output-files op c)))))
