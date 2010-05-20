@@ -10,8 +10,8 @@
 #define stringify(x) #x
 #define indirect_stringify(x) stringify(x)
 
-#define SIGNEDP(x) (((x)-1)<0)
-#define SIGNED64P(x) ( x <= 0x7FFFFFFFFFFFFFFFLL )
+#define TYPE_SIGNED_P(type) (((type)-1)<0LL)
+#define _64_BIT_VALUE_FITS_SIGNED_P(value) ( (value) <= 0x7FFFFFFFFFFFFFFFLL )
 
 void type_name(FILE *output, int signed_p, int size) {
   if (signed_p) {

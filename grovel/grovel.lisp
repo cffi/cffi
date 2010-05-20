@@ -321,7 +321,7 @@ int main(int argc, char**argv) {
   (c-format out "(cffi:defctype ")
   (c-print-symbol out lisp-name t)
   (c-format out " ")
-  (format out "~&  type_name(output, SIGNEDP(~A), ~:[sizeof(~A)~;~D~]);~%"
+  (format out "~&  type_name(output, TYPE_SIGNED_P(~A), ~:[sizeof(~A)~;~D~]);~%"
           size-designator
           (etypecase size-designator
             (string nil)
@@ -353,7 +353,7 @@ int main(int argc, char**argv) {
     (c-format out " ")
     (ecase type
       (integer
-       (format out "~&  if(SIGNED64P(~A))~%" c-name)
+       (format out "~&  if(_64_BIT_VALUE_FITS_SIGNED_P(~A))~%" c-name)
        (format out "    fprintf(output, \"%lli\", (int64_t) ~A);" c-name)
        (format out "~&  else~%")
        (format out "    fprintf(output, \"%llu\", (uint64_t) ~A);" c-name))
