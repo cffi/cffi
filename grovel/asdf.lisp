@@ -91,3 +91,8 @@ that are subsequently compiled and/or loaded."))
 
 (defmethod asdf:perform ((op asdf:load-source-op) (c wrapper-file))
   (load (%perform-process-wrapper-file op c)))
+
+;; Allow for naked :grovel-file and :wrapper-file in asdf definitions.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf (find-class 'asdf::cffi-grovel-file) (find-class 'grovel-file))
+  (setf (find-class 'asdf::cffi-wrapper-file) (find-class 'wrapper-file)))
