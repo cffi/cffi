@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2009-05-03 22:16:06EDT functions.lisp>
+;; Time-stamp: <2010-06-11 11:13:33EDT functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -89,16 +89,27 @@
 	  `(cffi:foreign-funcall ,name-and-options ,@arguments)))))
 
 (defmacro defcfun (name-and-options return-type &body args)
-  "Define a Lisp function that calls a foreign function."
+  "Define a Lisp function that calls a foreign function.
+   If the specified Lisp name has no home package (apparently
+   uninterned), then the Lisp function is not made, but property
+   'prepared for the function symbol is bound to the prepared
+   function, through which the foreign function can be called."
   (multiple-value-bind (lisp-name foreign-name foreign-options)
       (cffi::parse-name-and-options name-and-options)
     (declare (ignore foreign-options))
     (let ((docstring (when (stringp (car args)) (pop args)))
-	  (argsymbs (mapcar 'first args)))
-      `(progn
-	 (setf (get ',lisp-name 'prepared)
-	       ,(prepare-function
-		 foreign-name return-type (mapcar 'second args)))
-	 (defun ,lisp-name ,argsymbs
-	   ,@(if docstring (list docstring))
-	   (funcall (get ',lisp-name 'prepared) ,@argsymbs))))))
+	  (argsymbs (mapcar 'first args))
+	  (set-property
+	   `(setf (get ',lisp-name 'prepared)
+		  ,(prepare-function
+		    foreign-name return-type (mapcar 'second args)))))
+      (if (symbol-package lisp-name)
+	  `(progn
+	     ,set-property
+	     (defun ,lisp-name ,argsymbs
+	       ,@(if docstring (list docstring))
+	       (funcall (get ',lisp-name 'prepared) ,@argsymbs)))
+	  ;; The symbol used for the lisp-name is apparently
+	  ;; uninterned, so don't bother with the defun, because it
+	  ;; could never be referenced.
+	  set-property))))
