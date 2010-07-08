@@ -1,6 +1,6 @@
 ;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2009-05-19 14:13:31EDT cstruct.lisp>
+;; Time-stamp: <2010-07-08 09:25:23EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -52,14 +52,17 @@
 	    (funcall form field fn gn)
 	  (incf gn)))))
 
-(defun structure-slot-form (field name fn)
-  "A form for getting or setting the foreign slot value."
-  (if (field-count field nil)		; aggregate slot
-      `(object
-	(cffi:foreign-slot-value object ',name ',(first field))
-	,(second field) ,fn)
-      ;; simple slot
-      `(cffi:foreign-slot-value object ',name ',(first field))))
+(defun structure-slot-form (field structure-name fn)
+  "A form for getting or setting the foreign slot value.
+   The variables 'object and 'index are captured."
+  (let ((form
+	 `(cffi:foreign-slot-value
+	   (cffi:mem-aref object ',structure-name index)
+	   ',structure-name ',(first field))))
+    (if (field-count field nil)		; aggregate slot
+	`(object ,form ,(second field) ,fn)
+	;; simple slot
+	form)))
 
 (defmacro defcstruct (name-and-options &body fields)
   "A macro to define the struct to CFFI and to libffi simultaneously.
@@ -98,7 +101,6 @@
 	       ptr)
 	     (get ',name 'foreign-object-components)
 	     (lambda (object &optional (index 0))
-	       (declare (ignore index))
 	       (,(option-from-name-and-options name-and-options :constructor 'list)
 		 ,@(iterate-foreign-structure
 		    fields
@@ -107,7 +109,6 @@
 		      `(,(structure-slot-form field name fn))))))
 	     (get ',name 'setf-foreign-object-components)
 	     (lambda (value object &optional (index 0))
-	       (declare (ignore index))
 	       (setf
 		,@(iterate-foreign-structure
 		   fields
