@@ -4,6 +4,8 @@
 *.dll
 *.bundle
 *.so
+*.fasl
+.DS_Store
 doc/*.aux
 doc/manual/
 doc/spec/
