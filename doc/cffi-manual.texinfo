@@ -116,6 +116,8 @@
 Copyright @copyright{} 2005 James Bielman <jamesjb at jamesjb.com> @*
 Copyright @copyright{} 2005-2010 Lu@'{@dotless{i}}s Oliveira
   <loliveira at common-lisp.net> @*
+Copyright @copyright{} 2005-2006 Dan Knapp <danka at accela.net>
+Copyright @copyright{} 2005-2006 Emily Backes <lucca at accela.net>
 Copyright @copyright{} 2006 Stephen Compall <s11 at member.fsf.org>
 
 @quotation
@@ -6018,9 +6020,6 @@ CFFI> (get-callback 'sum)
 
 @node The Groveller, Limitations, Callbacks, Top
 @chapter The Groveller
-
-@c Manual and software copyright @copyright{} 2005, 2006 Matthew Backes
-@c <lucca@@accela.net> and Dan Knapp <dankna@@accela.net>.
 
 @cffi{}-Grovel is a tool which makes it easier to write @cffi{}
 declarations for libraries that are implemented in C.  That is, it
