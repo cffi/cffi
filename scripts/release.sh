@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$(uname -s)" = "Darwin" ]; then
+    echo "Darwin not supported due to incompatible texinfo, sed, and expr."
+    exit
+fi
+
 ### Configuration
 
 PROJECT_NAME='cffi'
@@ -39,7 +44,7 @@ done
 
 ### Check for unrecorded changes
 
-if darcs whatsnew; then
+if ! git diff --exit-code; then
     echo -n "Unrecorded changes. "
     if [ "$FORCE" -ne 1  ]; then
         echo "Aborting."
@@ -53,7 +58,7 @@ fi
 ### Determine new version number
 
 if [ -z "$VERSION" ]; then
-    CURRENT_VERSION=$(grep :version $ASDF_FILE | cut -d\" -f2)
+    CURRENT_VERSION=$(git tag -l v\*.\*.\* | head -n1 | cut -dv -f2)
 
     dots=$(echo "$CURRENT_VERSION" | tr -cd '.')
     count=$(expr length "$dots" + 1)
@@ -86,24 +91,31 @@ fi
 
 ### Do it
 
-TARBALL_NAME="${PROJECT_NAME}_${VERSION}"
-TARBALL="$TARBALL_NAME.tar.gz"
+DIST_NAME="${PROJECT_NAME}_${VERSION}"
+TARBALL="$DIST_NAME.tar.gz"
 SIGNATURE="$TARBALL.asc"
 
-echo "Updating $ASDF_FILE with new version: $VERSION"
-sed -e "s/:version \"$CURRENT_VERSION\"/:version \"$VERSION\"/" \
-    "$ASDF_FILE" > "$ASDF_FILE.tmp"
-mv "$ASDF_FILE.tmp" "$ASDF_FILE"
-
-darcs record -m "update $ASDF_FILE for version $VERSION"
+#echo "Updating $ASDF_FILE with new version: $VERSION"
+#sed -e "s/:version \"$CURRENT_VERSION\"/:version \"$VERSION\"/" \
+#    "$ASDF_FILE" > "$ASDF_FILE.tmp"
+#mv "$ASDF_FILE.tmp" "$ASDF_FILE"
+#
+#darcs record -m "update $ASDF_FILE for version $VERSION"
 
 echo "Tagging the tree..."
-darcs tag "$VERSION"
+git tag "v$VERSION"
 
 echo "Creating distribution..."
-darcs dist -d "$TARBALL_NAME"
+mkdir "$DIST_NAME"
+git archive master | tar xC "$DIST_NAME"
 
-echo "Signing tarball..."
+echo "Updating $ASDF_FILE with new version: $VERSION"
+sed -e "s/^(defsystem \(.*\)/(defsystem \1\n  :version \"$VERSION\"/" \
+    "$DIST_NAME/$ASDF_FILE" > "$DIST_NAME/$ASDF_FILE.tmp"
+mv "$DIST_NAME/$ASDF_FILE.tmp" "$DIST_NAME/$ASDF_FILE"
+
+echo "Creating and signing tarball..."
+tar czf "$TARBALL" "$DIST_NAME"
 gpg -b -a "$TARBALL"
 
 echo "Copying tarball to web server..."
@@ -143,4 +155,4 @@ echo "Building and uploading documentation..."
 make -C doc upload-docs
 
 echo "Pushing changes..."
-darcs push
+git push --tags origin master

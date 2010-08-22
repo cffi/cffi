@@ -337,12 +337,13 @@ through its @uref{http://common-lisp.net/project/cffi/,,website}:
 tarballs}
 
 @item
-@uref{http://common-lisp.net/project/cffi/darcs/cffi,,darcs
+@uref{http://common-lisp.net/gitweb?p=projects/cffi/cffi.git,,git
 repository}
 
-@item
-@uref{http://common-lisp.net/project/cffi/tarballs/?M=D,,nightly-generated
-snapshots}
+@c snapshots have been disabled as of
+@c @item
+@c @uref{http://common-lisp.net/project/cffi/tarballs/?M=D,,nightly-generated
+@c snapshots}
 
 @end itemize
 

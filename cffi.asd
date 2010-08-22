@@ -3,6 +3,7 @@
 ;;; cffi.asd --- ASDF system definition for CFFI.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2010, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -33,7 +34,7 @@
 (defsystem :cffi
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
-  :version "0.10.5"
+  :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
   :depends-on (:alexandria :trivial-features :babel)
   :components
