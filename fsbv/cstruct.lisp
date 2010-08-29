@@ -1,15 +1,37 @@
-;; Defining C structures.
-;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2010-08-28 22:03:48EDT cstruct.lisp>
-;; $Id: $
+;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
+;;;
+;;; cstruct.lisp --- Hook to defcstruct
+;;;
+;;; Copyright (C) 2009, 2010, Liam Healy  <lhealy@common-lisp.net>
+;;;
+;;; Permission is hereby granted, free of charge, to any person
+;;; obtaining a copy of this software and associated documentation
+;;; files (the "Software"), to deal in the Software without
+;;; restriction, including without limitation the rights to use, copy,
+;;; modify, merge, publish, distribute, sublicense, and/or sell copies
+;;; of the Software, and to permit persons to whom the Software is
+;;; furnished to do so, subject to the following conditions:
+;;;
+;;; The above copyright notice and this permission notice shall be
+;;; included in all copies or substantial portions of the Software.
+;;;
+;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;; NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+;;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;;; DEALINGS IN THE SOFTWARE.
+;;;
 
 (in-package :fsbv)
 
-(export '(defcstruct defined-type-p))
+(export '(defined-type-p))
 
-;;; These macros are designed to make the interface to functions that
-;;; get and/or return structs as transparent as possible, mimicking
-;;; the CFFI definitions.
+;;; The hook defcstruct-hook is provided to add definitions need to
+;;; use structures by value in function calls.  It will be called when
+;;; defcstruct is expanded, inserting some forms at the end.
 
 ;;; Potential efficiency improvement: when a filed has count > 1,
 ;;; define a pointer to the first element, and reference from that,
