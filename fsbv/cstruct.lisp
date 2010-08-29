@@ -1,6 +1,6 @@
 ;; Defining C structures.
 ;; Liam Healy 2009-04-07 22:42:15EDT interface.lisp
-;; Time-stamp: <2010-07-08 09:25:23EDT cstruct.lisp>
+;; Time-stamp: <2010-08-28 22:03:48EDT cstruct.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -64,60 +64,57 @@
 	;; simple slot
 	form)))
 
-(defmacro defcstruct (name-and-options &body fields)
-  "A macro to define the struct to CFFI and to libffi simultaneously.
-   Syntax is exactly that of cffi:defcstruct."
+(defun defcstruct-hook (name-and-options &rest fields)
+  "A function to produce forms in defcstruct to define the struct to
+  CFFI and to libffi simultaneously."
   (let ((total-number-of-elements (apply '+ (mapcar 'field-count fields)))
 	(name (name-from-name-and-options name-and-options)))
     (pushnew name *libffi-struct-defs*)
-    `(progn
-       (cffi:defcstruct
-	   ,(name-from-name-and-options name-and-options)
-	 ,@fields)
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-	 (pushnew ',name *libffi-struct-defs*))
-       (setf (libffi-type-pointer ,name)
-	     (let ((ptr (cffi:foreign-alloc 'ffi-type))
-		   (elements (cffi:foreign-alloc
-			      :pointer
-			      :count
-			      ,(1+ total-number-of-elements))))
-	       (setf
-		;; The elements
+    `((pushnew ',name *libffi-struct-defs*)
+      (setf (libffi-type-pointer ,name)
+	    (let ((ptr (cffi:foreign-alloc 'ffi-type))
+		  (elements (cffi:foreign-alloc
+			     :pointer
+			     :count
+			     ,(1+ total-number-of-elements))))
+	      (setf
+	       ;; The elements
+	       ,@(iterate-foreign-structure
+		  fields
+		  (lambda (field fn gn)
+		    (declare (ignore fn))
+		    (list
+		     `(cffi:mem-aref elements :pointer ,gn)
+		     (lookup-type (second field)))))
+	       (cffi:mem-aref elements :pointer ,total-number-of-elements)
+	       (cffi:null-pointer)
+	       ;; The ffi-type
+	       (cffi:foreign-slot-value ptr 'ffi-type 'size) 0
+	       (cffi:foreign-slot-value ptr 'ffi-type 'alignment) 0
+	       (cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
+	       (cffi:foreign-slot-value ptr 'ffi-type 'elements) elements)
+	      ptr)
+	    (get ',name 'foreign-object-components)
+	    (lambda (object &optional (index 0))
+	      (,(option-from-name-and-options name-and-options :constructor 'list)
 		,@(iterate-foreign-structure
 		   fields
 		   (lambda (field fn gn)
-		     (declare (ignore fn))
-		     (list
-		      `(cffi:mem-aref elements :pointer ,gn)
-		      (lookup-type (second field)))))
-		(cffi:mem-aref elements :pointer ,total-number-of-elements)
-		(cffi:null-pointer)
-		;; The ffi-type
-		(cffi:foreign-slot-value ptr 'ffi-type 'size) 0
-		(cffi:foreign-slot-value ptr 'ffi-type 'alignment) 0
-		(cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
-		(cffi:foreign-slot-value ptr 'ffi-type 'elements) elements)
-	       ptr)
-	     (get ',name 'foreign-object-components)
-	     (lambda (object &optional (index 0))
-	       (,(option-from-name-and-options name-and-options :constructor 'list)
-		 ,@(iterate-foreign-structure
-		    fields
-		    (lambda (field fn gn)
-		      (declare (ignore gn))
-		      `(,(structure-slot-form field name fn))))))
-	     (get ',name 'setf-foreign-object-components)
-	     (lambda (value object &optional (index 0))
-	       (setf
-		,@(iterate-foreign-structure
-		   fields
-		   (lambda (field fn gn)
-		     `(,(structure-slot-form field name fn)
-			,(let ((decon
-				(option-from-name-and-options
-				 name-and-options :deconstructor 'elt)))
-			      (if (listp decon)
-				  `(,(nth gn decon) value)
-				  `(,decon value ,gn)))))))))
-       ',name)))
+		     (declare (ignore gn))
+		     `(,(structure-slot-form field name fn))))))
+	    (get ',name 'setf-foreign-object-components)
+	    (lambda (value object &optional (index 0))
+	      (setf
+	       ,@(iterate-foreign-structure
+		  fields
+		  (lambda (field fn gn)
+		    `(,(structure-slot-form field name fn)
+		       ,(let ((decon
+			       (option-from-name-and-options
+				name-and-options :deconstructor 'elt)))
+			     (if (listp decon)
+				 `(,(nth gn decon) value)
+				 `(,decon value ,gn))))))))))))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf cffi::*defcstruct-hook* 'defcstruct-hook))

@@ -586,6 +586,8 @@ The foreign array must be freed with foreign-array-free."
         collect `(defun (setf ,accessor) (value ,pointer-arg)
                    (foreign-slot-set value ,pointer-arg ',name ',slot))))
 
+(defvar *defcstruct-hook* nil)
+
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
   (discard-docstring fields)
@@ -596,11 +598,16 @@ The foreign array must be freed with foreign-array-free."
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
          ,(when-let (class (getf options :class))
-            `(defclass ,class (foreign-struct-type) ()))
+                    `(defclass ,class (foreign-struct-type) ()))
          (notice-foreign-struct-definition ',name ',options ',fields)
          ,@(when conc-name
-             (generate-struct-accessors name conc-name
-                                        (mapcar #'car fields)))
+                 (generate-struct-accessors name conc-name
+                                            (mapcar #'car fields)))
+         ,@(when *defcstruct-hook*
+                 ;; If non-nil, *defcstruct-hook* should be a function
+                 ;; of the arguments that returns NIL or a list of
+                 ;; forms to include in the expansion.
+                 (apply *defcstruct-hook* name-and-options fields))
          ',name))))
 
 ;;;## Accessing Foreign Structure Slots
