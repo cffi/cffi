@@ -239,9 +239,12 @@ int main(int argc, char**argv) {
   #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
 
 (defparameter *cc-flags*
-  ;; For MacPorts
-  #+darwin (list "-I" "/opt/local/include/")
-  #-darwin nil)
+  (append
+   ;; For MacPorts
+   #+darwin (list "-I" "/opt/local/include/")
+   #-darwin nil
+   ;; ECL internal flags
+   #+ecl (list c::*cc-flags*)))
 
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
