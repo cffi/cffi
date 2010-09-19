@@ -48,12 +48,6 @@
 
 ;;;# Grovelling
 
-(defparameter *cc*
-  #+(or cygwin (not windows)) "cc"
-  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
-
-(defparameter *cc-flags* nil)
-
 ;;; The header of the intermediate C file.
 (defparameter *header*
   "/*
@@ -238,6 +232,16 @@ int main(int argc, char**argv) {
 
 (cffi:defcfun "getenv" :string
   (name :string))
+
+
+(defparameter *cc*
+  #+(or cygwin (not windows)) "cc"
+  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
+
+(defparameter *cc-flags*
+  ;; For MacPorts
+  #+darwin (list "-I" "/opt/local/include/")
+  #-darwin nil)
 
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
