@@ -27,6 +27,54 @@
 
 (in-package #:cffi-tests)
 
+(deftest defcfun.parse-name-and-options.1
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options "foo_bar")
+      (list lisp-name foreign-name))
+  (foo-bar "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.2
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options "foo_bar" t)
+      (list lisp-name foreign-name))
+  (*foo-bar* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.3
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options 'foo-bar)
+      (list lisp-name foreign-name))
+  (foo-bar "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.4
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '*foo-bar* t)
+      (list lisp-name foreign-name))
+  (*foo-bar* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.5
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '("foo_bar" foo-baz))
+      (list lisp-name foreign-name))
+  (foo-baz "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.6
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '("foo_bar" *foo-baz*) t)
+      (list lisp-name foreign-name))
+  (*foo-baz* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.7
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '(foo-baz "foo_bar"))
+      (list lisp-name foreign-name))
+  (foo-baz "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.8
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '(*foo-baz* "foo_bar") t)
+      (list lisp-name foreign-name))
+  (*foo-baz* "foo_bar"))
+
 ;;;# Calling with built-in c types
 ;;;
 ;;; Tests calling standard C library functions both passing

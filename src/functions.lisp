@@ -218,48 +218,60 @@ arguments and does type promotion for the variadic arguments."
 ;;; present, its name is derived from the other. See the user
 ;;; documentation for an explanation of the derivation rules.
 
-(defun lisp-name (spec &optional varp)
-  (etypecase spec
-    (list (if (keywordp (second spec))
-              (lisp-name (first spec) varp)
-              (if (symbolp (first spec))
-                  (first spec)
-                  (lisp-name (second spec) varp))))
-    (string (intern
-             (format nil (if varp "*~A*" "~A")
-                     (canonicalize-symbol-name-case
-                      (substitute #\- #\_ spec)))))
-    (symbol spec)))
+(defun lisp-name (spec varp)
+  (intern
+   (format nil (if varp "*~A*" "~A")
+           (canonicalize-symbol-name-case
+            (substitute #\- #\_ spec)))))
 
-(defun foreign-name (spec &optional varp)
-  (etypecase spec
-    (cons
-       (if (stringp (second spec))
-           (second spec)
-           (foreign-name (first spec) varp)))
-    (string
-       spec)
-    ((and symbol (not null))
-       (let ((name (substitute #\_ #\-
-                               (string-downcase (symbol-name spec)))))
-         (if varp
-             (string-trim '(#\*) name)
-             name)))))
-
-(defun foreign-options (spec varp)
-  (let ((opts (if (listp spec)
-                  (if (keywordp (second spec))
-                      (cdr spec)
-                      (cddr spec))
-                  nil)))
+(defun foreign-name (spec varp)
+  (let ((name (substitute #\_ #\- (string-downcase spec))))
     (if varp
-        (funcall 'parse-defcvar-options opts)
-        (parse-function-options opts))))
+        (string-trim "*" name)
+        name)))
+
+(defun foreign-options (opts varp)
+  (if varp
+      (funcall 'parse-defcvar-options opts)
+      (parse-function-options opts)))
+
+(defun lisp-name-p (name)
+  (and name (symbolp name) (not (keywordp name))))
+
+(defun %parse-name-and-options (spec varp)
+  (cond
+    ((stringp spec)
+     (values (lisp-name spec varp) spec nil))
+    ((symbolp spec)
+     (assert (not (null spec)))
+     (values spec (foreign-name spec varp) nil))
+    ((and (consp spec) (stringp (first spec)))
+     (destructuring-bind (foreign-name &rest options)
+         spec
+       (cond
+         ((or (null options)
+              (keywordp (first options)))
+          (values (lisp-name foreign-name varp) foreign-name options))
+         (t
+          (assert (lisp-name-p (first options)))
+          (values (first options) foreign-name (rest options))))))
+    ((and (consp spec) (lisp-name-p (first spec)))
+     (destructuring-bind (lisp-name &rest options)
+         spec
+       (cond
+         ((or (null options)
+              (keywordp (first options)))
+          (values lisp-name (foreign-name spec varp) options))
+         (t
+          (assert (stringp (first options)))
+          (values lisp-name (first options) (rest options))))))
+    (t
+     (error "Not a valid foreign function specifier: ~A" spec))))
 
 (defun parse-name-and-options (spec &optional varp)
-  (values (lisp-name spec varp)
-          (foreign-name spec varp)
-          (foreign-options spec varp)))
+  (multiple-value-bind (lisp-name foreign-name options)
+      (%parse-name-and-options spec varp)
+    (values lisp-name foreign-name (foreign-options options varp))))
 
 ;;; If we find a &REST token at the end of ARGS, it means this is a
 ;;; varargs foreign function therefore we define a lisp macro using
