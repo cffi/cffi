@@ -247,7 +247,9 @@ int main(int argc, char**argv) {
     (8 (list "-m64"))))
 
 (defparameter *platform-library-flags*
-  (list #+darwin "-bundle" #-darwin "-shared"))
+  (list #+darwin "-bundle"
+        #-darwin "-shared"
+        #-windows "-fPIC"))
 
 (defun cc-compile-and-link (input-file output-file &key library)
   (let ((arglist
@@ -260,8 +262,7 @@ int main(int argc, char**argv) {
                      (truename
                       (asdf:system-definition-pathname :cffi-grovel))))
            ,@(when library *platform-library-flags*)
-           "-fPIC" "-o"
-           ,(native-namestring output-file)
+           "-o" ,(native-namestring output-file)
            ,(native-namestring input-file))))
     (when library
       ;; if it's a library that may be used, remove it
