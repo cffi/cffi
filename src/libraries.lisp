@@ -102,19 +102,33 @@
   "Hashtable of defined libraries.")
 
 (defclass foreign-library ()
-  ((type :initform :system :initarg :type)
+  ((name :initform nil :initarg :name :accessor foreign-library-name)
+   (type :initform :system :initarg :type)
    (spec :initarg :spec)
    (options :initform nil :initarg :options)
-   (handle :initform nil :initarg :handle
-           :accessor foreign-library-handle)
+   (handle :initform nil :initarg :handle :accessor foreign-library-handle)
    (pathname :initform nil)))
+
+(defmethod print-object ((library foreign-library) stream)
+  (with-slots (name pathname) library
+    (print-unreadable-object (library stream :type t)
+      (when name
+        (format stream "~A" name))
+      (when pathname
+        (format stream " ~S" (file-namestring pathname))))))
+
+(define-condition foreign-library-undefined-error (error)
+  ((name :initarg :name :reader fl-name))
+  (:report (lambda (c s)
+             (format s "Undefined foreign library: ~S"
+                     (fl-name c)))))
 
 (defun get-foreign-library (lib)
   "Look up a library by NAME, signalling an error if not found."
   (if (typep lib 'foreign-library)
       lib
       (or (gethash lib *foreign-libraries*)
-          (error "Undefined foreign library: ~S" lib))))
+          (error 'foreign-library-undefined-error :name lib))))
 
 (defun (setf get-foreign-library) (value name)
   (setf (gethash name *foreign-libraries*) value))
@@ -209,17 +223,25 @@ all libraries are returned."
         (set-option :search-path
                     (mapcar #'pathname (ensure-list search-path)))))))
 
-;;; FIXME: re-evaluating DEFINE-FOREIGN-LIBRARY overwrites the current entry
-;;;        breaking FOREIGN-LIBRARY-LOADED-P if already loaded
+(defun register-foreign-library (name spec &rest options)
+  (let ((old-handle
+         (when-let ((old-lib (gethash name *foreign-libraries*)))
+           (foreign-library-handle old-lib))))
+    (setf (get-foreign-library name)
+          (apply #'make-instance 'foreign-library
+                 :name name
+                 :spec spec
+                 :handle old-handle
+                 options))
+    name))
+
 (defmacro define-foreign-library (name-and-options &body pairs)
   "Defines a foreign library NAME that can be posteriorly used with
 the USE-FOREIGN-LIBRARY macro."
   (destructuring-bind (name . options)
       (ensure-list name-and-options)
-    `(progn
-       (setf (get-foreign-library ',name)
-             (make-instance 'foreign-library :spec ',pairs ,@options))
-       ',name)))
+    (check-type name symbol)
+    `(register-foreign-library ',name ',pairs ,@options)))
 
 ;;;# LOAD-FOREIGN-LIBRARY-ERROR condition
 ;;;
@@ -332,19 +354,27 @@ This will need to be extended as we test on more OSes."
                (setf (slot-value lib 'handle) handle
                      (slot-value lib 'pathname) pathname)))
            lib))
-    (typecase library
+    (etypecase library
       (symbol
        (let* ((lib (get-foreign-library library))
               (spec (foreign-library-spec lib)))
          (%do-load lib library spec)))
-      (t
-       (let* ((lib-name (gensym (string '#:library-)))
+      (string
+       (let* ((lib-name
+               (gensym (concatenate 'string
+                                    (string-upcase
+                                     (file-namestring library))
+                                    "-")))
               (lib
-               (make-instance 'foreign-library :type :system
+               (make-instance 'foreign-library
+                              :type :system
+                              :name lib-name
                               :spec `((t ,library))
                               :search-path search-path)))
-         (setf (get-foreign-library lib-name) lib)
-         (%do-load lib lib-name library))))))
+         ;; first try to load the anonymous library
+         ;; and register it only if that worked
+         (%do-load lib lib-name library)
+         (setf (get-foreign-library lib-name) lib))))))
 
 (defun load-foreign-library (library &key search-path)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
@@ -352,7 +382,10 @@ through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
 load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
   (restart-case
-      (%do-load-foreign-library library search-path)
+      (progn
+        (alexandria:ignore-some-conditions (foreign-library-undefined-error)
+          (close-foreign-library library))
+        (%do-load-foreign-library library search-path))
     ;; Offer these restarts that will retry the call to
     ;; %LOAD-FOREIGN-LIBRARY.
     (retry ()

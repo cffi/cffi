@@ -5502,8 +5502,8 @@ CFFI> (load-foreign-library '(:framework "OpenGL"))
 
 @Macro{define-foreign-library name-and-options @{ load-clause @}* @res{} name}
 
-name-and-options ::= name | (name &key convention)
-load-clause ::= (feature library &key convention)
+name-and-options ::= name | (name &key convention search-path)
+load-clause ::= (feature library &key convention search-path)
 
 @subheading Arguments and Values
 
@@ -5519,6 +5519,12 @@ A library designator.
 
 @item convention
 One of @code{:cdecl} (default) or @code{:stdcall}
+
+@item search-path
+A path or list of paths where the library will be searched if not found in
+system-global directories. Paths specified in a load clause take priority over
+paths specified as library option, with *foreign-library-directories* having
+lowest priority.
 @end table
 
 @subheading Description
