@@ -35,9 +35,11 @@ SHLIB_EXT      := .so
 
 ifneq ($(if $(filter Linux %BSD,$(OSTYPE)),OK), OK)
 ifeq ($(OSTYPE), Darwin)
-SHLIB_CFLAGS   := -bundle
+SHLIB_CFLAGS   := -dynamiclib
+SHLIB_EXT      := .dylib
 ifeq ($(shell sysctl -n hw.optional.x86_64), 1)
 ARCH           := x86_64
+CFLAGS_64      := -m64
 endif
 else
 ifeq ($(OSTYPE), SunOS)

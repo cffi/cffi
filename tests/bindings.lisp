@@ -28,13 +28,14 @@
 (in-package #:cffi-tests)
 
 (define-foreign-library (libtest :type :test)
+  (:darwin (:or "libtest.dylib" "libtest32.dylib"))
   (:unix (:or "libtest.so" "libtest32.so"))
   (:windows "libtest.dll")
   (t (:default "libtest")))
 
 (define-foreign-library (libtest2 :type :test)
+  (:darwin (:or "libtest2.dylib" "libtest2_32.dylib"))
   (:unix (:or "libtest2.so" "libtest2_32.so"))
-  (:darwin "libtest2.so")
   (t (:default "libtest2")))
 
 (define-foreign-library libc

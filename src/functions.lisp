@@ -233,15 +233,18 @@ arguments and does type promotion for the variadic arguments."
 
 (defun foreign-name (spec &optional varp)
   (etypecase spec
-    (list (if (stringp (second spec))
-              (second spec)
-              (foreign-name (first spec) varp)))
-    (string spec)
-    (symbol (let ((name (substitute #\_ #\-
-                                    (string-downcase (symbol-name spec)))))
-              (if varp
-                  (string-trim '(#\*) name)
-                  name)))))
+    (cons
+       (if (stringp (second spec))
+           (second spec)
+           (foreign-name (first spec) varp)))
+    (string
+       spec)
+    ((and symbol (not null))
+       (let ((name (substitute #\_ #\-
+                               (string-downcase (symbol-name spec)))))
+         (if varp
+             (string-trim '(#\*) name)
+             name)))))
 
 (defun foreign-options (spec varp)
   (let ((opts (if (listp spec)

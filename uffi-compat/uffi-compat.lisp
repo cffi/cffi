@@ -111,8 +111,11 @@
     (:cstring :pointer)
     (:pointer-void :pointer)
     (:pointer-self :pointer)
-    (:char '(uffi-char :char))
-    (:unsigned-char '(uffi-char :unsigned-char))
+    ;; Although UFFI's documentation claims dereferencing :CHAR and
+    ;; :UNSIGNED-CHAR returns characters, it actually returns
+    ;; integers.
+    (:char :char)
+    (:unsigned-char :unsigned-char)
     (:byte :char)
     (:unsigned-byte :unsigned-char)
     (t
@@ -148,15 +151,19 @@
   t)
 
 ;; UFFI's :(unsigned-)char
+#+#:ignore
 (cffi:define-foreign-type uffi-char ()
   ())
 
+#+#:ignore
 (cffi:define-parse-method uffi-char (base-type)
   (make-instance 'uffi-char :actual-type base-type))
 
+#+#:ignore
 (defmethod cffi:translate-to-foreign ((value character) (type uffi-char))
   (char-code value))
 
+#+#:ignore
 (defmethod cffi:translate-from-foreign (obj (type uffi-char))
   (code-char obj))
 
