@@ -219,12 +219,14 @@ arguments and does type promotion for the variadic arguments."
 ;;; documentation for an explanation of the derivation rules.
 
 (defun lisp-name (spec varp)
+  (check-type spec string)
   (intern
    (format nil (if varp "*~A*" "~A")
            (canonicalize-symbol-name-case
             (substitute #\- #\_ spec)))))
 
 (defun foreign-name (spec varp)
+  (check-type spec (and symbol (not null)))
   (let ((name (substitute #\_ #\- (string-downcase spec))))
     (if varp
         (string-trim "*" name)

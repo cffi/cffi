@@ -774,6 +774,10 @@ int main(int argc, char**argv) {
       (second typespec)
       typespec))
 
+(defun symbol* (s)
+  (check-type s (and symbol (not null)))
+  s)
+
 (define-wrapper-syntax defwrapper (name-and-options rettype &rest args)
   (multiple-value-bind (lisp-name foreign-name options)
       (cffi::parse-name-and-options name-and-options)
@@ -791,7 +795,7 @@ int main(int argc, char**argv) {
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
                ,@(mapcar (lambda (arg)
-                           (list (cffi::lisp-name (first arg) nil)
+                           (list (symbol* (first arg))
                                  (cffi-type (second arg))))
                          args))
             *lisp-forms*))))
@@ -813,7 +817,7 @@ int main(int argc, char**argv) {
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
                ,@(mapcar (lambda (arg)
-                           (list (cffi::lisp-name (first arg) nil)
+                           (list (symbol* (first arg))
                                  (cffi-type (second arg))))
                          args))
             *lisp-forms*))))
