@@ -330,8 +330,6 @@ This will need to be extended as we test on more OSes."
   (etypecase thing
     (string
      (load-foreign-library-path name thing search-path))
-    (pathname
-     (load-foreign-library-path name (namestring thing) search-path))
     (cons
      (ecase (first thing)
        (:framework (load-darwin-framework name (second thing)))
@@ -376,25 +374,31 @@ This will need to be extended as we test on more OSes."
          (%do-load lib lib-name library)
          (setf (get-foreign-library lib-name) lib))))))
 
+(defun filter-pathname (thing)
+  (typecase thing
+    (pathname (namestring thing))
+    (t        thing)))
+
 (defun load-foreign-library (library &key search-path)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
 load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
-  (restart-case
-      (progn
-        (alexandria:ignore-some-conditions (foreign-library-undefined-error)
-          (close-foreign-library library))
-        (%do-load-foreign-library library search-path))
-    ;; Offer these restarts that will retry the call to
-    ;; %LOAD-FOREIGN-LIBRARY.
-    (retry ()
-      :report "Try loading the foreign library again."
-      (load-foreign-library library :search-path search-path))
-    (use-value (new-library)
-      :report "Use another library instead."
-      :interactive read-new-value
-      (load-foreign-library new-library :search-path search-path))))
+  (let ((library (filter-pathname library)))
+    (restart-case
+        (progn
+          (alexandria:ignore-some-conditions (foreign-library-undefined-error)
+            (close-foreign-library library))
+          (%do-load-foreign-library library search-path))
+      ;; Offer these restarts that will retry the call to
+      ;; %LOAD-FOREIGN-LIBRARY.
+      (retry ()
+        :report "Try loading the foreign library again."
+        (load-foreign-library library :search-path search-path))
+      (use-value (new-library)
+        :report "Use another library instead."
+        :interactive read-new-value
+        (load-foreign-library new-library :search-path search-path)))))
 
 (defmacro use-foreign-library (name)
   `(load-foreign-library ',name))
@@ -403,7 +407,8 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
 
 (defun close-foreign-library (library)
   "Closes a foreign library."
-  (let* ((lib (get-foreign-library library))
+  (let* ((library (filter-pathname library))
+         (lib (get-foreign-library library))
          (handle (foreign-library-handle lib)))
     (when handle
       (%close-foreign-library handle)
