@@ -1,6 +1,6 @@
 ;; Calling foreign functions
 ;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2010-06-11 11:13:33EDT functions.lisp>
+;; Time-stamp: <2010-11-27 22:24:20EST functions.lisp>
 ;; $Id: $
 
 (in-package :fsbv)
@@ -56,9 +56,7 @@
 		   ,(if no-return-p '(cffi:null-pointer) 'result)
 		   argvalues)
 	     ,(unless no-return-p
-		      (if (defined-type-p return-type)
-			  `(object (cffi:mem-aref result ',return-type) ',return-type)
-			  `(cffi:mem-aref result ',return-type)))))))))
+		(convert-from-pointer 'result return-type))))))))
 
 (defun defcfun-args-from-ff-args (arguments)
   "Convert the argument format from foreign-funcall to defcfun form.

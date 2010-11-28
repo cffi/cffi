@@ -1,6 +1,6 @@
 ;; ADSF file for fsbv
 ;; Liam Healy 2009-02-22 09:42:23EST fsbv.asd
-;; Time-stamp: <2009-05-02 14:00:40EDT fsbv.asd>
+;; Time-stamp: <2010-11-27 21:19:29EST fsbv.asd>
 ;; $Id: $
 
 (in-package :common-lisp-user)
@@ -17,6 +17,7 @@
   :serial t
   :components
   ((:file "init")
+   (:file "convert")
    (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
    (:file "defs" :depends-on ("libffi"))
    (:file "foreign-object-components")
