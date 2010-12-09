@@ -305,13 +305,17 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro %defcallback (name rettype arg-names arg-types body
                         &key convention)
-  (declare (ignore convention))
+  (check-type convention (member :stdcall :cdecl))
   `(setf (gethash ',name *callbacks*)
          (alien-sap
-          (sb-alien::alien-lambda ,(convert-foreign-type rettype)
-              ,(mapcar (lambda (sym type)
-                         (list sym (convert-foreign-type type)))
-                       arg-names arg-types)
+          (sb-alien::alien-lambda
+            #+alien-callback-conventions
+            (,convention ,(convert-foreign-type rettype))
+            #-alien-callback-conventions
+            ,(convert-foreign-type rettype)
+            ,(mapcar (lambda (sym type)
+                       (list sym (convert-foreign-type type)))
+               arg-names arg-types)
             ,body))))
 
 (defun %callback (name)
