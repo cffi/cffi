@@ -260,6 +260,7 @@ Libraries
 * *foreign-library-directories*::  Search path for shared libraries.
 * load-foreign-library::        Load a foreign library.
 * load-foreign-library-error::  Signalled on failure of its namesake.
+* reload-foreign-libraries::    Reload foreign libraries.
 * use-foreign-library::         Load a foreign library when needed.
 
 Callbacks

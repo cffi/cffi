@@ -86,6 +86,7 @@
    #:load-foreign-library-error
    #:use-foreign-library
    #:close-foreign-library
+   #:reload-foreign-libraries
 
    ;; Callbacks.
    #:callback

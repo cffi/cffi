@@ -414,3 +414,12 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
       (%close-foreign-library handle)
       (setf (foreign-library-handle lib) nil)
       t)))
+
+(defun reload-foreign-libraries &key (test #'foreign-library-loaded-p)
+  "(Re)load all currently loaded foreign libraries."
+  (let ((libs (list-foreign-libraries)))
+    (loop :for l :in libs
+          :for name := (foreign-library-name l) :do
+      (when (funcall test name)
+        (load-foreign-library name)))
+    libs))
