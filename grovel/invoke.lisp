@@ -86,10 +86,6 @@
     (values exit-code output)))
 
 #+allegro
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (require '#:osi))
-
-#+allegro
 (defun %invoke (command arglist)
   (let ((cmd #-mswindows (concatenate 'vector (list command command) arglist)
              #+mswindows (format nil "~A~{ ~A~}" command arglist)))

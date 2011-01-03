@@ -38,6 +38,12 @@
      (:file "invoke")
      (:static-file "common.h")
      (:file "grovel")
-     (:file "asdf")))))
+     (:file "asdf"))))
+  :perform (asdf:compile-op :before (o c)
+             #+allegro (require "osi"))
+  :perform (asdf:load-op :before (o c)
+             #+allegro (require "osi"))
+  :perform (asdf:load-source-op :before (o c)
+             #+allegro (require "osi")))
 
 ;; vim: ft=lisp et
