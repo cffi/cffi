@@ -248,6 +248,7 @@ WITH-POINTER-TO-VECTOR-DATA."
                          (max 3 (+ 2 (* (length values) 3)))))))
     :one-liner t :side-effects t))
 
+#+dffi
 (defun dffi-function-pointer-call (pointer types values return-type)
   (when (stringp pointer)
     (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
@@ -260,9 +261,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun produce-function-pointer-call (pointer types values return-type)
   #-ecl-with-backend
   (progn
-    #-dffi
-    (dffi-function-pointer-call pointer types values return-type)
     #+dffi
+    (dffi-function-pointer-call pointer types values return-type)
+    #-dffi
     (c-inline-function-pointer-call pointer types values return-type))
   #+ecl-with-backend
   `(ext:with-backend
@@ -361,4 +362,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
-  (si:find-foreign-symbol name :default :pointer-void 0))
+  (handler-case
+      (si:find-foreign-symbol name :default :pointer-void 0)
+    (error (c) nil)))
