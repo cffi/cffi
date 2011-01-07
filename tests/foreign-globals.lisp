@@ -294,3 +294,16 @@
 (deftest defcvar.docstring
     (documentation '*var-char-ro* 'variable)
   "docstring")
+
+;;;# Other tests
+
+;;; RT: FOREIGN-SYMBOL-POINTER shouldn't signal an error when passed
+;;; an undefined variable.
+(deftest foreign-globals.undefined.1
+    (foreign-symbol-pointer "surely-undefined?")
+  nil)
+
+(deftest foreign-globals.error.1
+    (handler-case (foreign-symbol-pointer 'not-a-string)
+      (type-error () t))
+  t)

@@ -41,6 +41,7 @@
 
 ;;; Note: this will lookup not only variables but also functions.
 (defun foreign-symbol-pointer (name &key (library :default))
+  (check-type name string)
   (%foreign-symbol-pointer
    name (if (eq library :default)
             :default
