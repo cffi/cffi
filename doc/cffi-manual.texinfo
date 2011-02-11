@@ -6199,6 +6199,23 @@ signalled if the platform supports neither @code{AF_PACKET} nor
    :optional t))
 @end lisp
 
+@deffn {Grovel Form} bitfield name-and-opts &rest elements
+
+Defines a bitfield, with elements specified as @code{((lisp-name
+c-name) &key documentation)}.  @var{name-and-opts} can be either a
+symbol as name, or a list @code{(name &key base-type)}.  For example:
+@end deffn
+
+@lisp
+(bitfield flags-ctype
+  ((:flag-a "FLAG_A")
+    :documentation "DOCU_A")
+  ((:flag-b "FLAG_B")
+    :documentation "DOCU_B")
+  ((:flag-c "FLAG_C")
+    :documentation "DOCU_C"))
+@end lisp
+
 
 @c ===================================================================
 @c SECTION: Groveller ASDF Integration
