@@ -640,6 +640,32 @@ int main(int argc, char**argv) {
        'constant out
        `((,(intern (string lisp-name)) ,(car c-names))
          ,@options)))))
+
+;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
+;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
+;; or a list (NAME &key BASE-TYPE).
+(define-grovel-syntax bitfield (name-and-opts &rest masks)
+  (destructuring-bind (name &key base-type)
+      (ensure-list name-and-opts)
+    (c-section-header out "bitfield" name)
+    (c-export out name)
+    (c-format out "(cffi:defbitfield (")
+    (c-print-symbol out name t)
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
+    (dolist (mask masks)
+      (destructuring-bind ((lisp-name c-name) &key documentation) mask
+        (declare (ignore documentation))
+        (check-type lisp-name symbol)
+        (check-type c-name string)
+        (c-format out "~%  (")
+        (c-print-symbol out lisp-name)
+        (c-format out " ")
+        (c-printf out "%i" c-name)
+        (c-format out ")")))
+    (c-format out ")~%")))
 
 
 ;;;# Wrapper Generation
