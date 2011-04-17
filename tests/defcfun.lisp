@@ -29,13 +29,15 @@
 
 (deftest defcfun.parse-name-and-options.1
     (multiple-value-bind (lisp-name foreign-name)
-        (cffi::parse-name-and-options "foo_bar")
+        (let ((*package* (find-package '#:cffi-tests)))
+          (cffi::parse-name-and-options "foo_bar"))
       (list lisp-name foreign-name))
   (foo-bar "foo_bar"))
 
 (deftest defcfun.parse-name-and-options.2
     (multiple-value-bind (lisp-name foreign-name)
-        (cffi::parse-name-and-options "foo_bar" t)
+        (let ((*package* (find-package '#:cffi-tests)))
+          (cffi::parse-name-and-options "foo_bar" t))
       (list lisp-name foreign-name))
   (*foo-bar* "foo_bar"))
 
