@@ -251,6 +251,10 @@ Functions
 * defcfun::                     Defines a foreign function.
 * foreign-funcall::             Performs a call to a foreign function.
 * foreign-funcall-pointer::     Performs a call through a foreign pointer.
+* translate-camelcase-name::    Converts a camelCase foreign name to/from a Lisp name.
+* translate-name-from-foreign::  Converts a foreign name to a Lisp name.
+* translate-name-to-foreign::   Converts a Lisp name to a foreign name.
+* translate-underscore-separated-name::  Converts an underscore_separated foreign name to/from a Lisp name.
 
 Libraries
 
@@ -5046,6 +5050,10 @@ Dictionary
 * defcfun::                     
 * foreign-funcall::             
 * foreign-funcall-pointer::     
+* translate-camelcase-name::
+* translate-name-from-foreign::
+* translate-name-to-foreign::
+* translate-underscore-separated-name::
 @end menu
 
 @c @node Calling Foreign Functions
@@ -5269,7 +5277,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @c FOREIGN-FUNCALL-POINTER
 
 @page
-@node foreign-funcall-pointer,  , foreign-funcall, Functions
+@node foreign-funcall-pointer,  translate-camelcase-name, foreign-funcall, Functions
 @heading foreign-funcall-pointer
 @subheading Syntax
 @Macro{foreign-funcall-pointer pointer options &rest arguments @res{} return-value}
@@ -5327,6 +5335,220 @@ CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs") ()
 @subheading See Also
 @seealso{defcfun} @*
 @seealso{foreign-funcall}
+
+
+@c ===================================================================
+@c TRANSLATE-CAMELCASE-NAME
+
+@page
+@node translate-camelcase-name, translate-name-from-foreign, foreign-funcall-pointer, Functions
+@heading translate-camelcase-name
+@subheading Syntax
+@Function{translate-camelcase-name name &key upper-initial-p special-words @res{} return-value}
+
+@subheading Arguments and Values
+
+@table @var
+@item name
+Either a symbol or a string.
+
+@item upper-initial-p
+A generalized boolean.
+
+@item special words
+A list of strings.
+
+@item return-value
+If @var{name} is a symbol, this is a string, and vice versa.
+@end table
+
+@subheading Description
+@code{translate-camelcase-name} is a helper function for
+specializations of @code{translate-name-from-foreign} and
+@code{translate-name-to-foreign}. It handles the common case of
+converting between foreign camelCase names and lisp
+names. @var{upper-initial-p} indicates whether the first letter of the
+foreign name should be uppercase. @var{special-words} is a list of
+strings that should be treated atomically in translation. This list is
+case-sensitive.
+
+@subheading Examples
+
+@lisp
+CFFI> (translate-camelcase-name some-xml-function)
+@result{} "someXmlFunction"
+CFFI> (translate-camelcase-name some-xml-function :upper-initial-p t)
+@result{} "SomeXmlFunction"
+CFFI> (translate-camelcase-name some-xml-function :special-words '("XML"))
+@result{} "someXMLFunction"
+CFFI> (translate-camelcase-name "someXMLFunction")
+@result{} SOME-X-M-L-FUNCTION
+CFFI> (translate-camelcase-name "someXMLFunction" :special-words '("XML"))
+@result{} SOME-XML-FUNCTION
+@end lisp
+
+@subheading See Also
+@seealso{translate-name-from-foreign} @*
+@seealso{translate-name-to-foreign} @*
+@seealso{translate-underscore-separated-name}
+
+
+@c ===================================================================
+@c TRANSLATE-NAME-FROM-FOREIGN
+
+@page
+@node translate-name-from-foreign, translate-name-to-foreign, translate-camelcase-name, Functions
+@heading translate-name-from-foreign
+@subheading Syntax
+@Function{translate-name-from-foreign foreign-name package &optional varp @res{} symbol}
+
+@subheading Arguments and Values
+
+@table @var
+@item foreign-name
+A string denoting a foreign function.
+
+@item package
+A Lisp package
+
+@item varp
+A generalized boolean.
+
+@item symbol
+The Lisp symbol to be used a function name.
+@end table
+
+@subheading Description
+@code{translate-name-from-foreign} is used by @code{@seealso{defcfun}}
+to handle the conversion of foreign names to lisp names. By default,
+it translates using
+@code{@seealso{translate-underscore-separated-name}}. However, you can
+create specialized methods on this function to make translating more
+closely match the foreign library's naming conventions.
+
+Specialize @var{package} on some package. This allows other packages
+to load libraries with different naming conventions.
+
+@subheading Examples
+
+@lisp
+CFFI> (defcfun "someXmlFunction" ...)
+@result{} SOMEXMLFUNCTION
+CFFI> (defmethod translate-name-from-foreign ((spec string)
+                                              (package (eql *package*))
+                                              &optional varp)
+        (let ((name (translate-camelcase-name spec)))
+          (if varp (intern "*~a*" name) name)))
+@result{} #<STANDARD-METHOD TRANSLATE-NAME-FROM-FOREIGN (STRING (EQL #<Package "SOME-PACKAGE">))>
+CFFI> (defcfun "someXmlFunction" ...)
+@result{} SOME-XML-FUNCTION
+@end lisp
+
+@subheading See Also
+@seealso{defcfun} @*
+@seealso{translate-camelcase-name} @*
+@seealso{translate-name-to-foreign} @*
+@seealso{translate-underscore-separated-name}
+
+
+@c ===================================================================
+@c TRANSLATE-NAME-TO-FOREIGN
+
+@page
+@node translate-name-to-foreign, translate-underscore-separated-name, translate-name-from-foreign, Functions
+@heading translate-name-to-foreign
+@subheading Syntax
+@Function{translate-name-to-foreign lisp-name package &optional varp @res{} string}
+
+@subheading Arguments and Values
+
+@table @var
+@item lisp-name
+A symbol naming the Lisp function to be created.
+
+@item package
+A Lisp package
+
+@item varp
+A generalized boolean.
+
+@item string
+The string representing the foreign function name.
+@end table
+
+@subheading Description
+@code{translate-name-to-foreign} is used by @code{@seealso{defcfun}}
+to handle the conversion of lisp names to foreign names. By default,
+it translates using
+@code{@seealso{translate-underscore-separated-name}}. However, you can
+create specialized methods on this function to make translating more
+closely match the foreign library's naming conventions.
+
+Specialize @var{package} on some package. This allows other packages
+to load libraries with different naming conventions.
+
+@subheading Examples
+
+@lisp
+CFFI> (defcfun some-xml-function ...)
+@result{} "some_xml_function"
+CFFI> (defmethod translate-name-to-foreign ((spec symbol)
+                                            (package (eql *package*))
+                                            &optional varp)
+        (let ((name (translate-camelcase-name spec)))
+          (if varp (subseq name 1 (1- (length name))) name)))
+@result{} #<STANDARD-METHOD TRANSLATE-NAME-TO-FOREIGN (STRING (EQL #<Package "SOME-PACKAGE">))>
+CFFI> (defcfun some-xml-function ...)
+@result{} "someXmlFunction"
+@end lisp
+
+@subheading See Also
+@seealso{defcfun} @*
+@seealso{translate-camelcase-name} @*
+@seealso{translate-name-from-foreign} @*
+@seealso{translate-underscore-separated-name}
+
+
+@c ===================================================================
+@c TRANSLATE-UNDERSCORE-SEPARATED-NAME
+
+@page
+@node translate-underscore-separated-name,  , translate-name-to-foreign, Functions
+@heading translate-underscore-separated-name
+@subheading Syntax
+@Function{translate-underscore-separated-name name @res{} return-value}
+
+@subheading Arguments and Values
+
+@table @var
+@item name
+Either a symbol or a string.
+
+@item return-value
+If @var{name} is a symbol, this is a string, and vice versa.
+@end table
+
+@subheading Description
+@code{translate-underscore-separated-name} is a helper function for
+specializations of
+@code{@seealso{translate-name-from-foreign}} and
+@code{@seealso{translate-name-to-foreign}}. It handles the common
+case of converting between foreign underscore_separated names and lisp
+names.
+
+@subheading Examples
+
+@lisp
+CFFI> (translate-underscore-separated-name some-xml-function)
+@result{} "some_xml_function"
+CFFI> (translate-camelcase-name "some_xml_function")
+@result{} SOME-XML-FUNCTION
+@end lisp
+
+@subheading See Also
+@seealso{translate-name-from-foreign} @*
+@seealso{translate-name-to-foreign} @*
+@seealso{translate-camelcase-name}
 
 
 @c ===================================================================

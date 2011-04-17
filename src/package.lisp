@@ -71,6 +71,10 @@
    #:defcfun
    #:foreign-funcall
    #:foreign-funcall-pointer
+   #:translate-camelcase-name
+   #:translate-name-from-foreign
+   #:translate-name-to-foreign
+   #:translate-underscore-separated-name
 
    ;; Foreign library operations.
    #:*foreign-library-directories*

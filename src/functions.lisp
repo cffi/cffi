@@ -205,32 +205,92 @@ arguments and does type promotion for the variadic arguments."
            ,@,varargs
            ,',return-type)))))
 
-;;; The following four functions take care of parsing DEFCFUN's first
-;;; argument whose syntax can be one of:
-;;;
-;;;     1.  string
-;;;     2.  symbol
-;;;     3.  \( string [symbol] options* )
-;;;     4.  \( symbol [string] options* )
-;;;
-;;; The string argument denotes the foreign function's name. The
-;;; symbol argument is used to name the Lisp function. If one isn't
-;;; present, its name is derived from the other. See the user
-;;; documentation for an explanation of the derivation rules.
+(defgeneric translate-underscore-separated-name (name)
+  (:method ((name string))
+    (values (intern (canonicalize-symbol-name-case (substitute #\- #\_ name)))))
+  (:method ((name symbol))
+    (substitute #\_ #\- (string-downcase (symbol-name name)))))
+
+(defun collapse-prefix (l special-words)
+  (unless (null l)
+    (multiple-value-bind (newpre skip) (check-prefix l special-words)
+      (cons newpre (collapse-prefix (nthcdr skip l) special-words)))))
+
+(defun check-prefix (l special-words)
+  (let ((pl (loop for i from (1- (length l)) downto 0
+                  collect (apply #'concatenate 'simple-string (butlast l i)))))
+    (loop for w in special-words
+          for p = (position-if #'(lambda (s) (string= s w)) pl)
+          when p do (return-from check-prefix (values (nth p pl) (1+ p))))
+    (values (first l) 1)))
+
+(defun split-if (test seq &optional (dir :before))
+  (remove-if #'(lambda (x) (equal x (subseq seq 0 0)))
+             (loop for start fixnum = 0
+                     then (if (eq dir :before)
+                              stop
+                              (the fixnum (1+ (the fixnum stop))))
+                   while (< start (length seq))
+                   for stop = (position-if test seq
+                                           :start (if (eq dir :elide)
+                                                      start
+                                                      (the fixnum (1+ start))))
+                   collect (subseq seq start
+                                   (if (and stop (eq dir :after))
+                                       (the fixnum (1+ (the fixnum stop)))
+                                       stop))
+                   while stop)))
+
+(defgeneric translate-camelcase-name (name &key upper-initial-p special-words)
+  (:method ((name string) &key upper-initial-p special-words)
+    (declare (ignore upper-initial-p))
+    (values (intern (reduce #'(lambda (s1 s2)
+                                (concatenate 'simple-string s1 "-" s2))
+                            (mapcar #'string-upcase
+                                    (collapse-prefix
+                                     (split-if #'(lambda (ch)
+                                                   (or (upper-case-p ch)
+                                                       (digit-char-p ch)))
+                                               name)
+                                     special-words))))))
+  (:method ((name symbol) &key upper-initial-p special-words)
+    (apply #'concatenate
+           'string
+           (loop for str in (split-if #'(lambda (ch) (eq ch #\-))
+                                          (string name)
+                                      :elide)
+                 for first-word-p = t then nil
+                 for e = (member str special-words
+                                 :test #'equal :key #'string-upcase)
+                 collect (cond
+                           ((and first-word-p (not upper-initial-p))
+                            (string-downcase str))
+                           (e (first e))
+                           (t (string-capitalize str)))))))
+
+(defgeneric translate-name-from-foreign (foreign-name package &optional varp)
+  (:method (foreign-name package &optional varp)
+    (declare (ignore package))
+    (let ((sym (translate-underscore-separated-name foreign-name)))
+      (if varp
+          (values (intern (format nil "*~A*" sym)))
+          sym))))
+
+(defgeneric translate-name-to-foreign (lisp-name package &optional varp)
+  (:method (lisp-name package &optional varp)
+    (declare (ignore package))
+    (let ((name (translate-underscore-separated-name lisp-name)))
+      (if varp
+          (string-trim '(#\*) name)
+          name))))
 
 (defun lisp-name (spec varp)
   (check-type spec string)
-  (intern
-   (format nil (if varp "*~A*" "~A")
-           (canonicalize-symbol-name-case
-            (substitute #\- #\_ spec)))))
+  (translate-name-from-foreign spec *package* varp))
 
 (defun foreign-name (spec varp)
   (check-type spec (and symbol (not null)))
-  (let ((name (substitute #\_ #\- (string-downcase spec))))
-    (if varp
-        (string-trim "*" name)
-        name)))
+  (translate-name-to-foreign spec *package* varp))
 
 (defun foreign-options (opts varp)
   (if varp
@@ -270,6 +330,17 @@ arguments and does type promotion for the variadic arguments."
     (t
      (error "Not a valid foreign function specifier: ~A" spec))))
 
+;;; DEFCFUN's first argument has can have the following syntax:
+;;;
+;;;     1.  string
+;;;     2.  symbol
+;;;     3.  \( string [symbol] options* )
+;;;     4.  \( symbol [string] options* )
+;;;
+;;; The string argument denotes the foreign function's name. The
+;;; symbol argument is used to name the Lisp function. If one isn't
+;;; present, its name is derived from the other. See the user
+;;; documentation for an explanation of the derivation rules.
 (defun parse-name-and-options (spec &optional varp)
   (multiple-value-bind (lisp-name foreign-name options)
       (%parse-name-and-options spec varp)
