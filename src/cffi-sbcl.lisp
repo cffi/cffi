@@ -320,11 +320,31 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 ;;;# Loading and Closing Foreign Libraries
 
+#+darwin
+(defun call-within-initial-thread (fn &rest args)
+  (let (result
+        error
+        (sem (sb-thread:make-semaphore)))
+    (sb-thread:interrupt-thread
+     ;; KLUDGE: find a better way to get the initial thread.
+     (car (last (sb-thread:list-all-threads)))
+     (lambda ()
+       (multiple-value-setq (result error)
+         (ignore-errors (apply fn args)))
+       (sb-thread:signal-semaphore sem)))
+    (sb-thread:wait-on-semaphore sem)
+    (if error
+        (signal error)
+        result)))
+
 (declaim (inline %load-foreign-library))
 (defun %load-foreign-library (name path)
   "Load a foreign library."
   (declare (ignore name))
-  (load-shared-object path))
+  ;; As of MacOS X 10.6.6, loading things like CoreFoundation from a
+  ;; thread other than the initial one results in a crash.
+  #+darwin (call-within-initial-thread 'load-shared-object path)
+  #-darwin (load-shared-object path))
 
 ;;; SBCL 1.0.21.15 renamed SB-ALIEN::SHARED-OBJECT-FILE but introduced
 ;;; SB-ALIEN:UNLOAD-SHARED-OBJECT which we can use instead.
