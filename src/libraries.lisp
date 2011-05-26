@@ -328,8 +328,8 @@ This will need to be extended as we test on more OSes."
 
 (defun load-foreign-library-helper (name thing &optional search-path)
   (etypecase thing
-    (string
-     (load-foreign-library-path name thing search-path))
+    ((or pathname string)
+     (load-foreign-library-path (filter-pathname name) thing search-path))
     (cons
      (ecase (first thing)
        (:framework (load-darwin-framework name (second thing)))
@@ -346,29 +346,27 @@ This will need to be extended as we test on more OSes."
 (defun %do-load-foreign-library (library search-path)
   (flet ((%do-load (lib name spec)
            (when (foreign-library-spec lib)
-             (multiple-value-bind (handle pathname)
-                 (load-foreign-library-helper
-                  name spec (foreign-library-search-path lib))
-               (setf (slot-value lib 'handle) handle
-                     (slot-value lib 'pathname) pathname)))
+             (with-slots (handle pathname) lib
+               (setf (values handle pathname)
+                     (load-foreign-library-helper
+                      name spec (foreign-library-search-path lib)))))
            lib))
     (etypecase library
       (symbol
        (let* ((lib (get-foreign-library library))
               (spec (foreign-library-spec lib)))
          (%do-load lib library spec)))
-      (string
-       (let* ((lib-name
-               (gensym (concatenate 'string
-                                    (string-upcase
-                                     (file-namestring library))
-                                    "-")))
-              (lib
-               (make-instance 'foreign-library
-                              :type :system
-                              :name lib-name
-                              :spec `((t ,library))
-                              :search-path search-path)))
+      ((or string list)
+       (let* ((lib-name (gensym
+                         (format nil "~:@(~A~)-"
+                                 (if (listp library)
+                                     (first library)
+                                     (file-namestring library)))))
+              (lib (make-instance 'foreign-library
+                                  :type :system
+                                  :name lib-name
+                                  :spec `((t ,library))
+                                  :search-path search-path)))
          ;; first try to load the anonymous library
          ;; and register it only if that worked
          (%do-load lib lib-name library)
@@ -387,7 +385,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
   (let ((library (filter-pathname library)))
     (restart-case
         (progn
-          (alexandria:ignore-some-conditions (foreign-library-undefined-error)
+          (ignore-some-conditions (foreign-library-undefined-error)
             (close-foreign-library library))
           (%do-load-foreign-library library search-path))
       ;; Offer these restarts that will retry the call to
