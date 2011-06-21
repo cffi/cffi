@@ -654,5 +654,5 @@ output to *trace-output*.  Returns the shell's exit code."
     :encoding (or ,encoding cffi:*default-foreign-encoding*)))
 
 (defun foreign-encoded-octet-count (str &key encoding)
-  `(babel:string-size-in-octets
-    ,str :encoding (or ,encoding cffi:*default-foreign-encoding*)))
+  (babel:string-size-in-octets
+   str :encoding (or encoding cffi:*default-foreign-encoding*)))
