@@ -1,6 +1,6 @@
 ;; Convert foreign objects to and from Lisp
 ;; Liam Healy 2010-11-27 17:46:55EST convert.lisp
-;; Time-stamp: <2010-11-27 22:29:47EST convert.lisp>
+;; Time-stamp: <2011-08-18 22:47:49EDT convert.lisp>
 
 ;;; This file depends on nothing else and could be split off from the
 ;;; rest of FSBV, for anyone that wanted to do conversions to and from
@@ -21,11 +21,13 @@
    Syntax is exactly that of cffi:defcstruct."
   (let ((name (name-from-name-and-options name-and-options)))
     (pushnew name *converter-types*)
-    `(setf
-      (get ',name 'foreign-object-components)
-      ,(convert-function name-and-options fields)
-      (get ',name 'setf-foreign-object-components)
-      ,(convert-setf-function name-and-options fields))))
+    `(progn
+       (pushnew ',name *converter-types*)
+       (setf
+	(get ',name 'foreign-object-components)
+	,(convert-function name-and-options fields)
+	(get ',name 'setf-foreign-object-components)
+	,(convert-setf-function name-and-options fields)))))
 
 (defun name-from-name-and-options (name-and-options)
   (if (listp name-and-options)
