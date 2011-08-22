@@ -48,44 +48,6 @@
   "This structure has been defined for call-by-value."
   (member name *libffi-struct-defs*))
 
-(defun field-count (field &optional (default 1))
-  (getf field :count default))
-
-(defun name-from-name-and-options (name-and-options)
-  (if (listp name-and-options)
-      (first name-and-options)
-      name-and-options))
-
-(defun option-from-name-and-options (name-and-options option default)
-  (if (listp name-and-options)
-      (getf (rest name-and-options) option default)
-      default))
-
-(defun iterate-foreign-structure (fields form)
-  "Iterate over the foreign structure, generating forms
-   with form-function, a function of field, fn and gn.
-   The argument fn is the count within the field, and
-   gn is the overall count from 0."
-  (loop for field in fields with gn = 0
-     append
-     (loop for fn from 0 below (field-count field)
-	append
-	(prog1
-	    (funcall form field fn gn)
-	  (incf gn)))))
-
-(defun structure-slot-form (field structure-name fn)
-  "A form for getting or setting the foreign slot value.
-   The variables 'object and 'index are captured."
-  (let ((form
-	 `(cffi:foreign-slot-value
-	   (cffi:mem-aref object ',structure-name index)
-	   ',structure-name ',(first field))))
-    (if (field-count field nil)		; aggregate slot
-	`(object ,form ,(second field) ,fn)
-	;; simple slot
-	form)))
-
 (defun defcstruct-hook (name-and-options &rest fields)
   "A function to produce forms in defcstruct to define the struct to
   CFFI and to libffi simultaneously."
