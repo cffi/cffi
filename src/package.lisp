@@ -30,10 +30,20 @@
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys #:babel-encodings)
   (:import-from #:alexandria
-                #:ensure-list #:featurep #:format-symbol #:if-let
-                #:make-gensym-list #:once-only #:parse-body #:symbolicate
-                #:when-let #:with-unique-names #:lastcar
-                #:hash-table-values #:make-keyword)
+                #:ensure-list
+                #:featurep
+                #:format-symbol
+                #:hash-table-values
+                #:if-let
+                #:ignore-some-conditions
+                #:lastcar
+                #:make-gensym-list
+                #:make-keyword
+                #:once-only
+                #:parse-body
+                #:symbolicate
+                #:when-let
+                #:with-unique-names)
   (:export
    ;; Types.
    #:foreign-pointer
@@ -71,11 +81,16 @@
    #:defcfun
    #:foreign-funcall
    #:foreign-funcall-pointer
+   #:translate-camelcase-name
+   #:translate-name-from-foreign
+   #:translate-name-to-foreign
+   #:translate-underscore-separated-name
 
    ;; Foreign library operations.
    #:*foreign-library-directories*
    #:*darwin-framework-directories*
    #:foreign-library
+   #:foreign-library-name
    #:foreign-library-pathname
    #:foreign-library-type
    #:foreign-library-loaded-p
@@ -85,6 +100,7 @@
    #:load-foreign-library-error
    #:use-foreign-library
    #:close-foreign-library
+   #:reload-foreign-libraries
 
    ;; Callbacks.
    #:callback

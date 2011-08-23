@@ -299,7 +299,9 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun %close-foreign-library (name)
   "Close the foreign library NAME."
-  (close-shared-library name)) ; :completely t ?
+  ;; C-S-L sometimes ends in an endless loop
+  ;; with :COMPLETELY T
+  (close-shared-library name :completely nil))
 
 (defun native-namestring (pathname)
   (ccl::native-translated-namestring pathname))

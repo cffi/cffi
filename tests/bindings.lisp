@@ -28,13 +28,14 @@
 (in-package #:cffi-tests)
 
 (define-foreign-library (libtest :type :test)
+  (:darwin (:or "libtest.dylib" "libtest32.dylib"))
   (:unix (:or "libtest.so" "libtest32.so"))
   (:windows "libtest.dll")
   (t (:default "libtest")))
 
 (define-foreign-library (libtest2 :type :test)
+  (:darwin (:or "libtest2.dylib" "libtest2_32.dylib"))
   (:unix (:or "libtest2.so" "libtest2_32.so"))
-  (:darwin "libtest2.so")
   (t (:default "libtest2")))
 
 (define-foreign-library libc
@@ -44,6 +45,30 @@
   #+(and lispworks darwin) ; not sure why the full path is necessary
   (:darwin "/usr/lib/libm.dylib")
   (t (:default "libm")))
+
+(defun call-within-new-thread (fn &rest args)
+  (let (result
+        error
+        (cv (bordeaux-threads:make-condition-variable))
+        (lock (bordeaux-threads:make-lock)))
+    (bordeaux-threads:with-lock-held (lock)
+      (bordeaux-threads:make-thread
+       (lambda ()
+         (multiple-value-setq (result error)
+           (ignore-errors (apply fn args)))
+         (bordeaux-threads:with-lock-held (lock)
+           (bordeaux-threads:condition-notify cv))))
+      (bordeaux-threads:condition-wait cv lock)
+      (values result error))))
+
+;;; As of OSX 10.6.6, loading CoreFoundation on something other than
+;;; the initial thread results in a crash.
+(deftest load-core-foundation
+    (progn
+      (call-within-new-thread 'load-foreign-library
+                              '(:framework "CoreFoundation"))
+      t)
+  t)
 
 ;;; Return the directory containing the source when compiling or
 ;;; loading this file.  We don't use *LOAD-TRUENAME* because the fasl

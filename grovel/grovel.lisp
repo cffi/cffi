@@ -48,12 +48,6 @@
 
 ;;;# Grovelling
 
-(defparameter *cc*
-  #+(or cygwin (not windows)) "cc"
-  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
-
-(defparameter *cc-flags* nil)
-
 ;;; The header of the intermediate C file.
 (defparameter *header*
   "/*
@@ -238,6 +232,19 @@ int main(int argc, char**argv) {
 
 (cffi:defcfun "getenv" :string
   (name :string))
+
+
+(defparameter *cc*
+  #+(or cygwin (not windows)) "cc"
+  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
+
+(defparameter *cc-flags*
+  (append
+   ;; For MacPorts
+   #+darwin (list "-I" "/opt/local/include/")
+   #-darwin nil
+   ;; ECL internal flags
+   #+ecl (list c::*cc-flags*)))
 
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
@@ -247,7 +254,9 @@ int main(int argc, char**argv) {
     (8 (list "-m64"))))
 
 (defparameter *platform-library-flags*
-  (list #+darwin "-bundle" #-darwin "-shared"))
+  (list #+darwin "-bundle"
+        #-darwin "-shared"
+        #-windows "-fPIC"))
 
 (defun cc-compile-and-link (input-file output-file &key library)
   (let ((arglist
@@ -260,8 +269,7 @@ int main(int argc, char**argv) {
                      (truename
                       (asdf:system-definition-pathname :cffi-grovel))))
            ,@(when library *platform-library-flags*)
-           "-fPIC" "-o"
-           ,(native-namestring output-file)
+           "-o" ,(native-namestring output-file)
            ,(native-namestring input-file))))
     (when library
       ;; if it's a library that may be used, remove it
@@ -632,6 +640,32 @@ int main(int argc, char**argv) {
        'constant out
        `((,(intern (string lisp-name)) ,(car c-names))
          ,@options)))))
+
+;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
+;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
+;; or a list (NAME &key BASE-TYPE).
+(define-grovel-syntax bitfield (name-and-opts &rest masks)
+  (destructuring-bind (name &key base-type)
+      (ensure-list name-and-opts)
+    (c-section-header out "bitfield" name)
+    (c-export out name)
+    (c-format out "(cffi:defbitfield (")
+    (c-print-symbol out name t)
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
+    (dolist (mask masks)
+      (destructuring-bind ((lisp-name c-name) &key documentation) mask
+        (declare (ignore documentation))
+        (check-type lisp-name symbol)
+        (check-type c-name string)
+        (c-format out "~%  (")
+        (c-print-symbol out lisp-name)
+        (c-format out " ")
+        (c-printf out "%i" c-name)
+        (c-format out ")")))
+    (c-format out ")~%")))
 
 
 ;;;# Wrapper Generation
@@ -759,12 +793,16 @@ int main(int argc, char**argv) {
           ((:unsigned-long-long :ullong) "unsigned long long")
           (:pointer "void*")
           (:string "char*")
-          (t (cffi::foreign-name (car spec)))))))
+          (t (cffi::foreign-name (car spec) nil))))))
 
 (defun cffi-type (typespec)
   (if (and (listp typespec) (stringp (car typespec)))
       (second typespec)
       typespec))
+
+(defun symbol* (s)
+  (check-type s (and symbol (not null)))
+  s)
 
 (define-wrapper-syntax defwrapper (name-and-options rettype &rest args)
   (multiple-value-bind (lisp-name foreign-name options)
@@ -772,7 +810,7 @@ int main(int argc, char**argv) {
     (let* ((foreign-name-wrap (strcat foreign-name "_cffi_wrap"))
            (fargs (mapcar (lambda (arg)
                             (list (c-type-name (second arg))
-                                  (cffi::foreign-name (first arg))))
+                                  (cffi::foreign-name (first arg) nil)))
                           args))
            (fargnames (mapcar #'second fargs)))
       ;; output C code
@@ -783,7 +821,7 @@ int main(int argc, char**argv) {
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
                ,@(mapcar (lambda (arg)
-                           (list (cffi::lisp-name (first arg))
+                           (list (symbol* (first arg))
                                  (cffi-type (second arg))))
                          args))
             *lisp-forms*))))
@@ -795,7 +833,7 @@ int main(int argc, char**argv) {
     (let ((foreign-name-wrap (strcat foreign-name "_cffi_wrap"))
           (fargs (mapcar (lambda (arg)
                            (list (c-type-name (second arg))
-                                 (cffi::foreign-name (first arg))))
+                                 (cffi::foreign-name (first arg) nil)))
                          args)))
       (format out "~A ~A" (c-type-name rettype)
               foreign-name-wrap)
@@ -805,7 +843,7 @@ int main(int argc, char**argv) {
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
                ,@(mapcar (lambda (arg)
-                           (list (cffi::lisp-name (first arg))
+                           (list (symbol* (first arg))
                                  (cffi-type (second arg))))
                          args))
             *lisp-forms*))))

@@ -27,6 +27,107 @@
 
 (in-package #:cffi-tests)
 
+(deftest defcfun.parse-name-and-options.1
+    (multiple-value-bind (lisp-name foreign-name)
+        (let ((*package* (find-package '#:cffi-tests)))
+          (cffi::parse-name-and-options "foo_bar"))
+      (list lisp-name foreign-name))
+  (foo-bar "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.2
+    (multiple-value-bind (lisp-name foreign-name)
+        (let ((*package* (find-package '#:cffi-tests)))
+          (cffi::parse-name-and-options "foo_bar" t))
+      (list lisp-name foreign-name))
+  (*foo-bar* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.3
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options 'foo-bar)
+      (list lisp-name foreign-name))
+  (foo-bar "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.4
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '*foo-bar* t)
+      (list lisp-name foreign-name))
+  (*foo-bar* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.5
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '("foo_bar" foo-baz))
+      (list lisp-name foreign-name))
+  (foo-baz "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.6
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '("foo_bar" *foo-baz*) t)
+      (list lisp-name foreign-name))
+  (*foo-baz* "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.7
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '(foo-baz "foo_bar"))
+      (list lisp-name foreign-name))
+  (foo-baz "foo_bar"))
+
+(deftest defcfun.parse-name-and-options.8
+    (multiple-value-bind (lisp-name foreign-name)
+        (cffi::parse-name-and-options '(*foo-baz* "foo_bar") t)
+      (list lisp-name foreign-name))
+  (*foo-baz* "foo_bar"))
+
+;;;# Name translation
+
+(deftest translate-underscore-separated-name.to-symbol
+    (let ((*package* (find-package '#:cffi-tests)))
+      (translate-underscore-separated-name "some_name_with_underscores"))
+  some-name-with-underscores)
+
+(deftest translate-underscore-separated-name.to-string
+    (translate-underscore-separated-name 'some-name-with-underscores)
+  "some_name_with_underscores")
+
+(deftest translate-camelcase-name.to-symbol
+    (let ((*package* (find-package '#:cffi-tests)))
+      (translate-camelcase-name "someXmlFunction"))
+  some-xml-function)
+
+(deftest translate-camelcase-name.to-string
+    (translate-camelcase-name 'some-xml-function)
+  "someXmlFunction")
+
+(deftest translate-camelcase-name.to-string-upper
+    (translate-camelcase-name 'some-xml-function :upper-initial-p t)
+  "SomeXmlFunction")
+
+(deftest translate-camelcase-name.to-symbol-special
+    (let ((*package* (find-package '#:cffi-tests)))
+      (translate-camelcase-name "someXMLFunction" :special-words '("XML")))
+  some-xml-function)
+
+(deftest translate-camelcase-name.to-string-special
+    (translate-camelcase-name 'some-xml-function :special-words '("XML"))
+  "someXMLFunction")
+
+(deftest translate-name-from-foreign.function
+    (let ((*package* (find-package '#:cffi-tests)))
+      (translate-name-from-foreign "some_xml_name" *package*))
+  some-xml-name)
+
+(deftest translate-name-from-foreign.var
+    (let ((*package* (find-package '#:cffi-tests)))
+      (translate-name-from-foreign "some_xml_name" *package* t))
+  *some-xml-name*)
+
+(deftest translate-name-to-foreign.function
+    (translate-name-to-foreign 'some-xml-name *package*)
+  "some_xml_name")
+
+(deftest translate-name-to-foreign.var
+    (translate-name-to-foreign '*some-xml-name* *package* t)
+  "some_xml_name")
+
 ;;;# Calling with built-in c types
 ;;;
 ;;; Tests calling standard C library functions both passing
