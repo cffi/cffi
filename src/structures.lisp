@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-08-28 22:48:54EDT structures.lisp>
+;;; Time-stamp: <2011-08-29 22:58:13PDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -31,32 +31,39 @@
 ;;; Definitions for conversion of foreign structures.
 
 (defmacro define-structure-conversion
-    (value type slot-names to-body from-body &optional (struct-name type))
+    (value type lisp-class slot-names to-body from-body &optional (struct-name type))
   "Define the functions necessary to convert to and from a foreign structure."
-  `(progn
-     (defmethod translate-to-foreign ((,value ,stuct-name) (type ,type))
+  `(flet ((map-slots (fn)
+           (maphash
+            (lambda (name slot-struct)
+              (funcall fn (slot-value value name) (slot-type slot-struct)))
+            (slots (follow-typedefs (parse-type ',type))))))
+    ;;; Test that this is right.
+    ;;; (alexandria:hash-table-plist (slots (follow-typedefs (parse-type 'complex-double-c))))
+    ;;; (IMAG #<SIMPLE-STRUCT-SLOT {1005B24941}> REAL #<SIMPLE-STRUCT-SLOT {1005B24961}>)
+     ;;; Convert this to a separate function so it doesn't have to be recomputed on the fly each time.
+     (defmethod translate-to-foreign ((,value ,lisp-class) (type ,type))
        (let ((p (foreign-alloc ',struct-name)))
-	 (maphash #'translate-to-foreign (slots ,struct-name)) ; recursive translation of slots
-	 (iterate-slots (slot slot-type p ,type) )
+	 (map-slots #'translate-to-foreign) ; recursive translation of slots
 	 (with-foreign-slots (,slot-names p ',struct-name)
 	   ,@to-body)
 	 (values p t))) ; second value is passed to FREE-TRANSLATED-OBJECT
      (defmethod free-translated-object (,value (p ,type) freep)
        (when freep
-	 (maphash #'free-translated-object (slots ,struct-name)) ; recursively free slots
+	 (map-slots #'free-translated-object) ; recursively free slots
 	 (foreign-free ,value)))
      (defmethod translate-from-foreign (,value (type ,type))
-       ,@from-body)))
+       ,@from-body))))
 
 #| Example
 (defcstruct (complex-double-c :class complex-double-c)
  (real :double)
  (imag :double))
 
-(define-structure-conversion value complex-double-c (real imag)
+(define-structure-conversion value complex-double-c complex (real imag)
   ((setf real (realpart value)
 	 imag (imagpart value)))
-  ((complex (foreign-slot-value value complex-double-c real)
-	    (foreign-slot-value value complex-double-c imag))))
+  ((complex (foreign-slot-value value 'complex-double-c 'real)
+	    (foreign-slot-value value 'complex-double-c 'imag))))
 |#
 
