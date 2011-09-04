@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-08-29 22:58:13PDT structures.lisp>
+;;; Time-stamp: <2011-09-03 22:06:44EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -31,29 +31,28 @@
 ;;; Definitions for conversion of foreign structures.
 
 (defmacro define-structure-conversion
-    (value type lisp-class slot-names to-body from-body &optional (struct-name type))
-  "Define the functions necessary to convert to and from a foreign structure."
-  `(flet ((map-slots (fn)
-           (maphash
-            (lambda (name slot-struct)
-              (funcall fn (slot-value value name) (slot-type slot-struct)))
-            (slots (follow-typedefs (parse-type ',type))))))
-    ;;; Test that this is right.
-    ;;; (alexandria:hash-table-plist (slots (follow-typedefs (parse-type 'complex-double-c))))
-    ;;; (IMAG #<SIMPLE-STRUCT-SLOT {1005B24941}> REAL #<SIMPLE-STRUCT-SLOT {1005B24961}>)
-     ;;; Convert this to a separate function so it doesn't have to be recomputed on the fly each time.
-     (defmethod translate-to-foreign ((,value ,lisp-class) (type ,type))
+    (value-symbol type lisp-class slot-names to-form from-form &optional (struct-name type))
+  "Define the functions necessary to convert to and from a foreign structure.  The to-form sets each of the foreign slots in succession, assume the foreign object exists.  The from-form creates the Lisp object, making it with the correct value by reference to foreign slots."
+  `(flet ((map-slots (fn val)
+            (maphash
+             (lambda (name slot-struct)
+               (funcall fn (foreign-slot-value val ',type name) (slot-type slot-struct)))
+             (slots (follow-typedefs (parse-type ',type))))))
+     ;; Convert this to a separate function so it doesn't have to be recomputed on the fly each time.
+     (defmethod translate-to-foreign ((,value-symbol ,lisp-class) (type ,type))
        (let ((p (foreign-alloc ',struct-name)))
-	 (map-slots #'translate-to-foreign) ; recursive translation of slots
-	 (with-foreign-slots (,slot-names p ',struct-name)
-	   ,@to-body)
-	 (values p t))) ; second value is passed to FREE-TRANSLATED-OBJECT
-     (defmethod free-translated-object (,value (p ,type) freep)
+         ;;(map-slots #'translate-to-foreign ,value-symbol) ; recursive translation of slots
+         (with-foreign-slots (,slot-names p ,struct-name)
+           ,to-form)
+         (values p t))) ; second value is passed to FREE-TRANSLATED-OBJECT
+     (defmethod free-translated-object (,value-symbol (p ,type) freep)
        (when freep
-	 (map-slots #'free-translated-object) ; recursively free slots
-	 (foreign-free ,value)))
-     (defmethod translate-from-foreign (,value (type ,type))
-       ,@from-body))))
+         ;; Is this redundant?
+         (map-slots #'free-translated-object value) ; recursively free slots
+         (foreign-free ,value-symbol)))
+     (defmethod translate-from-foreign (,value-symbol (type ,type))
+       (with-foreign-slots (,slot-names ,value-symbol ,struct-name)
+         ,from-form))))
 
 #| Example
 (defcstruct (complex-double-c :class complex-double-c)
@@ -61,9 +60,49 @@
  (imag :double))
 
 (define-structure-conversion value complex-double-c complex (real imag)
-  ((setf real (realpart value)
-	 imag (imagpart value)))
-  ((complex (foreign-slot-value value 'complex-double-c 'real)
-	    (foreign-slot-value value 'complex-double-c 'imag))))
+  (setf real (realpart value) imag (imagpart value))
+  (complex real imag))
+
+CFFI> (convert-to-foreign #c(3.0d0 4.0d0) 'complex-double-c)
+#.(SB-SYS:INT-SAP #X006678E0)
+T
+CFFI> (convert-from-foreign * 'complex-double-c)
+#C(3.0d0 4.0d0)
+
+;;; Test recursive conversion:
+(defcstruct (real-and-complex :class real-and-complex)
+ (x :double)
+ (c complex-double-c))
+
+(define-structure-conversion value real-and-complex list (x c)
+  ;; Make foreign
+  ;;(setf x (first value) c (convert-to-foreign (second value) 'complex-double-c))
+  (setf x (first value) c (second value))
+  ;; Make CL
+  (list x c))
+
+(convert-to-foreign '(5.0d0 #c(3.0d0 4.0d0)) 'real-and-complex)
+
+CFFI> (defparameter rac-ptr (FOREIGN-ALLOC 'REAL-AND-COMPLEX))
+RAC-PTR
+CFFI> rac-ptr
+#.(SB-SYS:INT-SAP #X006679C0)
+CFFI> (foreign-slot-value rac-ptr 'real-and-complex 'x)
+0.0d0
+CFFI> (foreign-slot-value rac-ptr 'real-and-complex 'c)
+#C(3.2345726853444733d-317 6.9531942826387884d-310)
+CFFI> rac-ptr
+#.(SB-SYS:INT-SAP #X006679C0)
+CFFI> (setf (foreign-slot-value rac-ptr 'real-and-complex 'x) 33.0d0)
+33.0d0
+CFFI> (foreign-slot-value rac-ptr 'real-and-complex 'x)
+33.0d0
+CFFI> (setf (foreign-slot-value rac-ptr 'real-and-complex 'c) #c(2.0d0 -8.0d0))
+; Evaluation aborted on #<SIMPLE-ERROR "~@<There is no applicable method for the generic function ~2I~_~S~ .. {10060A92E1}>.
+CFFI> (foreign-slot-value rac-ptr 'real-and-complex 'c)
+#C(3.2345726853444733d-317 6.9531942826387884d-310)
+CFFI> (foreign-slot-pointer rac-ptr 'real-and-complex 'c)
+#.(SB-SYS:INT-SAP #X006679C8)
+;;; But the pointer and foreign structure already exists, I can't use translate-to-foreign here.
 |#
 
