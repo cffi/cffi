@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-03 22:06:44EDT structures.lisp>
+;;; Time-stamp: <2011-09-05 23:00:48EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -104,5 +104,99 @@ CFFI> (foreign-slot-value rac-ptr 'real-and-complex 'c)
 CFFI> (foreign-slot-pointer rac-ptr 'real-and-complex 'c)
 #.(SB-SYS:INT-SAP #X006679C8)
 ;;; But the pointer and foreign structure already exists, I can't use translate-to-foreign here.
+|#
+
+
+#|
+
+;;;;****************************************************************************
+;;; Luis' approach
+;;;;****************************************************************************
+
+;;; Hold off on the macros and do it all by hand at the start.
+;;; There are two new functions needed:
+;;; translate-into-foreign-memory
+;;; convert-into-foreign-memory
+;;; I assume the latter can be a regular function and bear the same relationship to translate-into-foreign-memory as convert-to-foreign does to translate-to-foreign.
+
+(defgeneric translate-into-foreign-memory (value type p)
+  (:documentation
+   "Translate the Lisp value into the foreign type, writing the answers at the pointer p."))
+
+(defun convert-into-foreign-memory (value type ptr)
+  (translate-into-foreign-memory value (parse-type type) ptr)
+  ptr)
+
+;;; In order to avoid overwriting the existing T method for t-t-f, we define these specifically for foreign structures.
+(defmethod translate-to-foreign (value (type foreign-struct-type))
+  (let ((ptr (foreign-alloc type)))
+    (translate-into-foreign-memory value type ptr)
+    ptr))
+
+;;; Complex
+(defcstruct (complex :class complex-type)
+ (real :double)
+ (imag :double))
+
+(defmethod translate-into-foreign-memory ((value complex) (type complex-type) p)
+ (with-foreign-slots ((real imag) p complex)
+   (setf real (realpart value)
+         imag (imagpart value))))
+
+(defmethod translate-from-foreign (p (type complex-type))
+ (with-foreign-slots ((real imag) p complex)
+   (complex real imag)))
+
+;;; What about free-translated-object?
+
+;;; Test of recursive conversion: real and complex
+(defcstruct (real-and-complex :class real-and-complex-type)
+ (x :double)
+ (c complex))
+
+(defmethod translate-into-foreign-memory (value (type real-and-complex-type) p)
+  (setf (foreign-slot-value p 'real-and-complex 'x) (first value))
+  (convert-into-foreign-memory
+   (second value)
+   'complex
+   (foreign-slot-pointer p 'real-and-complex 'c)))
+
+;;; Luis' form; this does not work, it doesn't translate the complex
+(defmethod translate-from-foreign (p (type real-and-complex-type))
+ (with-foreign-slots ((x c) p real-and-complex)
+   (list x c)))
+
+;;; My form; this does not work, it doesn't translate the complex
+(defmethod translate-from-foreign (p (type real-and-complex-type))
+  (declare (ignore type))
+  (list
+   (foreign-slot-value p 'real-and-complex 'x)
+   (foreign-slot-value p 'real-and-complex 'c)))
+
+;;; Plain function; this does not work, it doesn't translate the complex
+(defun tff-fn (p)
+  (list
+   (foreign-slot-value p 'real-and-complex 'x)
+   (foreign-slot-value p 'real-and-complex 'c)))
+
+;;; This works
+(defmacro tff-macro (p)
+  `(list
+    (foreign-slot-value ,p 'real-and-complex 'x)
+    (foreign-slot-value ,p 'real-and-complex 'c)))
+
+;;; ????
+
+CFFI> (convert-to-foreign #C(2.0d0 3.0d0) 'complex)
+#.(SB-SYS:INT-SAP #X0063E060)
+CFFI> (convert-from-foreign * 'complex)
+#C(2.0d0 3.0d0)
+CFFI> (defparameter rac-foreign (convert-to-foreign '(1.0d0 #C(2.0d0 3.0d0)) 'real-and-complex))
+;;; So far, so good, but converting back to Lisp is hard.
+
+(convert-from-foreign rac-foreign 'real-and-complex) ; no
+(tff-fn rac-foreign) ; no
+(tff-macro rac-foreign) ;yes
+
 |#
 
