@@ -72,7 +72,7 @@ char *my_strdup(const char *str)
 }
 
 DLLEXPORT
-void my_strfree(const char *str)
+void my_strfree(char *str)
 {
     free(str);
 }
