@@ -235,3 +235,27 @@
       (etracker-abs -1)
       .fto-called.)
   t)
+
+(define-foreign-type misc-type.expand.7 ()
+  ()
+  (:actual-type :int)
+  (:simple-parser misc-type.expand.7))
+
+(defmethod translate-to-foreign (value (type misc-type.expand.7))
+  (values value 'second-value))
+
+;; Auxiliary function to test CONVERT-TO-FOREIGN's compiler macro.
+(defun misc-type.expand.7-aux ()
+  (convert-to-foreign "foo" 'misc-type.expand.7))
+
+;; Checking that expand-to-foreign doesn't ignore the second value of
+;; translate-to-foreign.
+(deftest misc-type.expand.7
+    (misc-type.expand.7-aux)
+  "foo" second-value)
+
+;; Like MISC-TYPE.EXPAND.7 but doesn't depend on compiler macros
+;; kicking in.
+(deftest misc-type.expand.8
+    (eval (expand-to-foreign "foo" (cffi::parse-type 'misc-type.expand.7)))
+  "foo" second-value)

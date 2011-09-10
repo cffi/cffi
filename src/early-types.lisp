@@ -395,8 +395,7 @@ Signals an error if the type cannot be resolved."
     (values value t)))
 
 (defmethod expand-to-foreign :around (value (type enhanced-foreign-type))
-  (let ((*runtime-translator-form*
-         `(values (translate-to-foreign ,value ,type))))
+  (let ((*runtime-translator-form* `(translate-to-foreign ,value ,type)))
     (call-next-method)))
 
 (defmethod expand-to-foreign (value (type enhanced-foreign-type))
