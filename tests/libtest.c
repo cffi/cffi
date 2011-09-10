@@ -494,9 +494,24 @@ int pair_sum(struct pair p)
 }
 
 DLLEXPORT
+int pair_pointer_sum(struct pair *p)
+{
+    return p->a + p->b;
+}
+
+DLLEXPORT
 struct pair make_pair(int a, int b)
 {
     return (struct pair) { a, b };
+}
+
+DLLEXPORT
+struct pair *alloc_pair(int a, int b)
+{
+    struct pair *p = malloc(sizeof(struct pair));
+    p->a = a;
+    p->b = b;
+    return p;
 }
 
 /*

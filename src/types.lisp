@@ -598,7 +598,9 @@ The foreign array must be freed with foreign-array-free."
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
          ,(when-let (class (getf options :class))
-                    `(defclass ,class (foreign-struct-type) ()))
+            `(defclass ,class (foreign-struct-type
+                               translatable-foreign-type)
+               ()))
          (notice-foreign-struct-definition ',name ',options ',fields)
          ,@(when conc-name
                  (generate-struct-accessors name conc-name

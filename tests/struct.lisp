@@ -345,14 +345,9 @@
 
 ;;;# Structures as Values
 
-(defcstruct struct-pair
+(defcstruct (struct-pair :class pair)
   (a :int)
   (b :int))
-
-(define-foreign-type pair ()
-  ()
-  (:actual-type struct-pair)
-  (:simple-parser pair))
 
 (defmethod translate-from-foreign (pointer (type pair))
   (with-foreign-slots ((a b) pointer struct-pair)
@@ -371,11 +366,29 @@
 
 (deftest struct-values.translation.1
     (multiple-value-bind (p freep)
-        (convert-to-foreign '(1 . 2) 'pair)
+        (convert-to-foreign '(1 . 2) 'struct-pair)
       (assert freep)
       (unwind-protect
-           (convert-from-foreign p 'pair)
-        (free-converted-object p 'pair freep)))
+           (convert-from-foreign p 'struct-pair)
+        (free-converted-object p 'struct-pair freep)))
+  (1 . 2))
+
+(defcfun "pair_pointer_sum" :int
+  (p struct-pair))   ; XXX: to be changed to (:pointer (:struct pair))
+
+(deftest struct-values.translation.2
+    (pair-pointer-sum '(1 . 2))
+  3)
+
+;;; should the return type be something along the lines of
+;;; (:pointer (:struct pair) :free t)?
+(defcfun "alloc_pair" struct-pair
+  (a :int)
+  (b :int))
+
+#+#:bogus ; doesn't free() pointer
+(deftest struct-values.translation.3
+    (alloc-pair 1 2)
   (1 . 2))
 
 #+#:unimplemented
