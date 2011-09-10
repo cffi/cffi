@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-05 23:00:48EDT structures.lisp>
+;;; Time-stamp: <2011-09-07 23:28:51EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -197,6 +197,29 @@ CFFI> (defparameter rac-foreign (convert-to-foreign '(1.0d0 #C(2.0d0 3.0d0)) 're
 (convert-from-foreign rac-foreign 'real-and-complex) ; no
 (tff-fn rac-foreign) ; no
 (tff-macro rac-foreign) ;yes
+
+(defun tff1 () ; no
+   (foreign-slot-value rac-foreign 'real-and-complex 'c))
+
+(defun tff2 ()                          ; yes
+  (foreign-struct-slot-value rac-foreign (get-slot-info 'real-and-complex 'c)))
+
+;;; macroexpansion of tff1
+(defun tff3 ()                          ; no
+  (CONVERT-FROM-FOREIGN (INC-POINTER RAC-FOREIGN 8) 'COMPLEX))
+
+;;; macro expansion of tff3 body
+;;;(INC-POINTER RAC-FOREIGN 8)
+
+;;   0: (EXPAND-FROM-FOREIGN (INC-POINTER RAC-FOREIGN 8) #<COMPLEX-TYPE COMPLEX>)
+;;   0: EXPAND-FROM-FOREIGN returned (INC-POINTER RAC-FOREIGN 8)
+
+CFFI> (class-of (parse-type 'complex))
+#<STANDARD-CLASS COMPLEX-TYPE>
+
+;;; The problem is that expand-from-foreign just returns the first argument because complex-type is not of class enhanced-foreign-type or enhanced-typedef.
+
+;; (define-compiler-macro convert-from-foreign (value type)
 
 |#
 
