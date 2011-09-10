@@ -2324,7 +2324,7 @@ documentation.
 @lisp
 CFFI-USER> (convert-to-foreign "a boat" :string)
 @result{} #<FOREIGN-ADDRESS #x097ACDC0>
-@result{} (T)
+@result{} T
 CFFI-USER> (convert-from-foreign * :string)
 @result{} "a boat"
 @end lisp
@@ -2382,10 +2382,10 @@ documentation.
 @lisp
 CFFI-USER> (convert-to-foreign t :boolean)
 @result{} 1
-@result{} (NIL)
+@result{} NIL
 CFFI-USER> (convert-to-foreign "hello, world" :string)
 @result{} #<FOREIGN-ADDRESS #x097C5F80>
-@result{} (T)
+@result{} T
 CFFI-USER> (code-char (mem-aref * :char 5))
 @result{} #\,
 @end lisp
@@ -3444,8 +3444,8 @@ documentation.
 @lisp
 CFFI-USER> (convert-to-foreign "a boat" :string)
 @result{} #<FOREIGN-ADDRESS #x097ACDC0>
-@result{} (T)
-CFFI-USER> (free-converted-object * :string '(t))
+@result{} T
+CFFI-USER> (free-converted-object * :string t)
 @result{} NIL
 @end lisp
 
