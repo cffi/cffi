@@ -342,3 +342,69 @@
       (let ((obj (make-instance 'timeval2 :pointer ptr)))
         (timeval2-tv-secs obj)))
   42)
+
+;;;# Structures as Values
+
+(defcstruct struct-pair
+  (a :int)
+  (b :int))
+
+(define-foreign-type pair ()
+  ()
+  (:actual-type struct-pair)
+  (:simple-parser pair))
+
+(defmethod translate-from-foreign (pointer (type pair))
+  (with-foreign-slots ((a b) pointer struct-pair)
+    (cons a b)))
+
+(defmethod translate-to-foreign ((object cons) (type pair))
+  (let ((p (foreign-alloc 'struct-pair)))
+    (with-foreign-slots ((a b) p struct-pair)
+      (setf a (car object)
+            b (cdr object)))
+    (values p t)))
+
+(defmethod free-translated-object (pointer (type pair) freep)
+  (when freep
+    (foreign-free pointer)))
+
+(deftest struct-values.translation.1
+    (multiple-value-bind (p freep)
+        (convert-to-foreign '(1 . 2) 'pair)
+      (assert freep)
+      (unwind-protect
+           (convert-from-foreign p 'pair)
+        (free-converted-object p 'pair freep)))
+  (1 . 2))
+
+#+#:unimplemented
+(defcfun "pair_sum" :int
+  (p (:struct pair)))
+
+#+#:unimplemented
+(defcfun "make_pair" (:struct pair)
+  (a :int)
+  (b :int))
+
+(deftest struct-values.fn.1
+    (with-foreign-object (p '(:struct pair))
+      (with-foreign-slots ((a b) p (:struct pair))
+        (setf a -1 b 2)
+        (pair-sum p)))
+  1)
+
+(deftest struct-values.fn.2
+    (pair-sum '(3 . 5))
+  8)
+
+(deftest struct-values.fn.3
+    (with-foreign-object (p '(:struct pair))
+      (make-pair 7 11 :result-pointer p)
+      (with-foreign-slots ((a b) p (:struct pair))
+        (cons a b)))
+  (7 . 11))
+
+(deftest struct-values.fn.4
+    (make-pair 13 17)
+  (13 . 17))

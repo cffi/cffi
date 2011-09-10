@@ -482,6 +482,24 @@ struct with_empty_struct the_with_empty_struct = { {}, 42 };
 */
 
 /*
+ * STRUCT-VALUES.*
+ */
+
+struct pair { int a, b; };
+
+DLLEXPORT
+int pair_sum(struct pair p)
+{
+    return p.a + p.b;
+}
+
+DLLEXPORT
+struct pair make_pair(int a, int b)
+{
+    return (struct pair) { a, b };
+}
+
+/*
  * DEFCFUN.NOARGS and DEFCFUN.NOOP
  */
 
