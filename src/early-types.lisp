@@ -278,13 +278,18 @@ Signals an error if FOREIGN-TYPE is undefined."))
 ;;;# Type Translators
 ;;;
 ;;; Type translation is done with generic functions at runtime for
-;;; subclasses of ENHANCED-FOREIGN-TYPE/
+;;; subclasses of TRANSLATABLE-FOREIGN-TYPE.
 ;;;
 ;;; The main interface for defining type translations is through the
 ;;; generic functions TRANSLATE-{TO,FROM}-FOREIGN and
 ;;; FREE-TRANSLATED-OBJECT.
 
-(defclass enhanced-foreign-type (foreign-type-alias)
+(defclass translatable-foreign-type (foreign-type) ())
+
+;;; ENHANCED-FOREIGN-TYPE is used to define translations on top of
+;;; previously defined foreign types.
+(defclass enhanced-foreign-type (translatable-foreign-type
+                                 foreign-type-alias)
   ((unparsed-type :accessor unparsed-type)))
 
 ;;; If actual-type isn't parsed already, let's parse it.  This way we
@@ -325,9 +330,9 @@ Signals an error if the type cannot be resolved."
   (canonicalize (parse-type type)))
 
 ;;; Translate VALUE to a foreign object of the type represented by
-;;; TYPE, which will be a subclass of ENHANCED-FOREIGN-TYPE.  Returns
-;;; the foreign value and an optional second value which will be
-;;; passed to FREE-TRANSLATED-OBJECT as the PARAM argument.
+;;; TYPE, which will be a subclass of TRANSLATABLE-FOREIGN-TYPE.
+;;; Returns the foreign value and an optional second value which will
+;;; be passed to FREE-TRANSLATED-OBJECT as the PARAM argument.
 (defgeneric translate-to-foreign (value type)
   (:method (value type)
     (declare (ignore type))
@@ -338,8 +343,8 @@ Signals an error if the type cannot be resolved."
 (defgeneric translate-aggregate-to-foreign (ptr value type))
 
 ;;; Translate the foreign object VALUE from the type repsented by
-;;; TYPE, which will be a subclass of ENHANCED-FOREIGN-TYPE.  Returns
-;;; the converted Lisp value.
+;;; TYPE, which will be a subclass of TRANSLATABLE-FOREIGN-TYPE.
+;;; Returns the converted Lisp value.
 (defgeneric translate-from-foreign (value type)
   (:method (value type)
     (declare (ignore type))
@@ -347,8 +352,8 @@ Signals an error if the type cannot be resolved."
 
 ;;; Free an object allocated by TRANSLATE-TO-FOREIGN.  VALUE is a
 ;;; foreign object of the type represented by TYPE, which will be a
-;;; ENHANCED-FOREIGN-TYPE subclass.  PARAM, if present, contains the
-;;; second value returned by TRANSLATE-TO-FOREIGN, and is used to
+;;; TRANSLATABLE-FOREIGN-TYPE subclass.  PARAM, if present, contains
+;;; the second value returned by TRANSLATE-TO-FOREIGN, and is used to
 ;;; communicate between the two functions.
 ;;;
 ;;; FIXME: I don't think this PARAM argument is necessary anymore
@@ -377,11 +382,11 @@ Signals an error if the type cannot be resolved."
     (declare (ignore type))
     value))
 
-(defmethod expand-from-foreign :around (value (type enhanced-foreign-type))
+(defmethod expand-from-foreign :around (value (type translatable-foreign-type))
   (let ((*runtime-translator-form* `(translate-from-foreign ,value ,type)))
     (call-next-method)))
 
-(defmethod expand-from-foreign (value (type enhanced-foreign-type))
+(defmethod expand-from-foreign (value (type translatable-foreign-type))
   (declare (ignore value))
   *runtime-translator-form*)
 
@@ -394,11 +399,11 @@ Signals an error if the type cannot be resolved."
     (declare (ignore type))
     (values value t)))
 
-(defmethod expand-to-foreign :around (value (type enhanced-foreign-type))
+(defmethod expand-to-foreign :around (value (type translatable-foreign-type))
   (let ((*runtime-translator-form* `(translate-to-foreign ,value ,type)))
     (call-next-method)))
 
-(defmethod expand-to-foreign (value (type enhanced-foreign-type))
+(defmethod expand-to-foreign (value (type translatable-foreign-type))
   (declare (ignore value))
   (values *runtime-translator-form* t))
 
@@ -410,7 +415,7 @@ Signals an error if the type cannot be resolved."
     `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn :around
-    (value var body (type enhanced-foreign-type))
+    (value var body (type translatable-foreign-type))
   (let ((*runtime-translator-form*
          (with-unique-names (param)
            `(multiple-value-bind (,var ,param)
@@ -428,7 +433,7 @@ Signals an error if the type cannot be resolved."
 ;;; above *RUNTIME-TRANSLATOR-FORM* which includes a call to
 ;;; FREE-TRANSLATED-OBJECT.  (Or else there would occur no translation
 ;;; at all.)
-(defmethod expand-to-foreign-dyn (value var body (type enhanced-foreign-type))
+(defmethod expand-to-foreign-dyn (value var body (type translatable-foreign-type))
   (multiple-value-bind (expansion default-etp-p)
       (expand-to-foreign value type)
     (if default-etp-p
