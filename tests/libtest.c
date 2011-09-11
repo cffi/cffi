@@ -514,6 +514,39 @@ struct pair *alloc_pair(int a, int b)
     return p;
 }
 
+struct pair_plus_one {
+    struct pair p;
+    int c;
+};
+
+DLLEXPORT
+int pair_plus_one_sum(struct pair_plus_one p)
+{
+    return p.p.a + p.p.b + p.c;
+}
+
+DLLEXPORT
+int pair_plus_one_pointer_sum(struct pair_plus_one *p)
+{
+    return p->p.a + p->p.b + p->c;
+}
+
+DLLEXPORT
+struct pair_plus_one make_pair_plus_one(int a, int b, int c)
+{
+    return (struct pair_plus_one) { { a, b }, c };
+}
+
+DLLEXPORT
+struct pair_plus_one *alloc_pair_plus_one(int a, int b, int c)
+{
+    struct pair_plus_one *p = malloc(sizeof(struct pair_plus_one));
+    p->p.a = a;
+    p->p.b = b;
+    p->c = c;
+    return p;
+}
+
 /*
  * DEFCFUN.NOARGS and DEFCFUN.NOOP
  */
