@@ -25,15 +25,13 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package :fsbv)
-
-(export '(defined-type-p))
+(in-package #:cffi-fsbv)
 
 ;;; The hook defcstruct-hook is provided to add definitions need to
 ;;; use structures by value in function calls.  It will be called when
 ;;; defcstruct is expanded, inserting some forms at the end.
 
-;;; Potential efficiency improvement: when a filed has count > 1,
+;;; Potential efficiency improvement: when a field has count > 1,
 ;;; define a pointer to the first element, and reference from that,
 ;;; instead of recomputing the pointer each element.
 
@@ -41,21 +39,38 @@
   (or `(libffi-type-pointer ,symbol)
       (error "Element type ~a is not known to libffi." symbol)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *libffi-struct-defs* nil))
+(defun name-from-name-and-options (name-and-options)
+  (if (listp name-and-options)
+      (first name-and-options)
+      name-and-options))
 
-(defun defined-type-p (name)
-  "This structure has been defined for call-by-value."
-  (member name *libffi-struct-defs*))
+(defun option-from-name-and-options (name-and-options option default)
+  (if (listp name-and-options)
+      (getf (rest name-and-options) option default)
+      default))
 
-(defun defcstruct-hook (name-and-options &rest fields)
+(defun field-count (field &optional (default 1))
+  (getf field :count default))
+
+(defun iterate-foreign-structure (fields form)
+  "Iterate over the foreign structure, generating forms
+   with form-function, a function of field, fn and gn.
+   The argument fn is the count within the field, and
+   gn is the overall count from 0."
+  (loop for field in fields with gn = 0
+     append
+     (loop for fn from 0 below (field-count field)
+	append
+	(prog1
+	    (funcall form field fn gn)
+	  (incf gn)))))
+
+(defun cstruct-libffi-hook (name-and-options &rest fields)
   "A function to produce forms in defcstruct to define the struct to
   CFFI and to libffi simultaneously."
   (let ((total-number-of-elements (apply '+ (mapcar 'field-count fields)))
 	(name (name-from-name-and-options name-and-options)))
-    (pushnew name *libffi-struct-defs*)
-    `((pushnew ',name *libffi-struct-defs*)
-      (setf (libffi-type-pointer ,name)
+    `((setf (libffi-type-pointer ,name)
 	    (let ((ptr (cffi:foreign-alloc 'ffi-type))
 		  (elements (cffi:foreign-alloc
 			     :pointer
@@ -77,28 +92,7 @@
 	       (cffi:foreign-slot-value ptr 'ffi-type 'alignment) 0
 	       (cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
 	       (cffi:foreign-slot-value ptr 'ffi-type 'elements) elements)
-	      ptr)
-	    (get ',name 'foreign-object-components)
-	    (lambda (object &optional (index 0))
-	      (,(option-from-name-and-options name-and-options :constructor 'list)
-		,@(iterate-foreign-structure
-		   fields
-		   (lambda (field fn gn)
-		     (declare (ignore gn))
-		     `(,(structure-slot-form field name fn))))))
-	    (get ',name 'setf-foreign-object-components)
-	    (lambda (value object &optional (index 0))
-	      (setf
-	       ,@(iterate-foreign-structure
-		  fields
-		  (lambda (field fn gn)
-		    `(,(structure-slot-form field name fn)
-		       ,(let ((decon
-			       (option-from-name-and-options
-				name-and-options :deconstructor 'elt)))
-			     (if (listp decon)
-				 `(,(nth gn decon) value)
-				 `(,decon value ,gn))))))))))))
+	      ptr)))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (setf cffi::*defcstruct-hook* 'defcstruct-hook))
+  (setf cffi::*defcstruct-hook* 'cstruct-libffi-hook))

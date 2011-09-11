@@ -58,6 +58,7 @@
      (:file "types")
      (:file "enum")
      (:file "strings")
+     (:file "structures")
      (:file "functions")
      (:file "foreign-vars")
      (:file "features")))))

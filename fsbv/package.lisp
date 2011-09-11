@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi
+;;; package.lisp --- Define foreign structures by value package
 ;;;
-;;; Copyright (C) 2009, 2011 Liam M. Healy
+;;; Copyright (C) 2011 Liam M. Healy
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,8 +25,10 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cl-user)
 
-(cffi:load-foreign-library
- #+darwin "libffi.dylib"
- #+(and (not darwin) unix) "libffi.so")
+(defpackage #:cffi-fsbv
+  (:use #:common-lisp)
+  ;;(:import-from #:cffi-sys #:native-namestring)
+  ;;(:export)
+  )

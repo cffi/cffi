@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi
+;;; cffi-fsbv.asd --- Foreign Structures By Value
 ;;;
-;;; Copyright (C) 2009, 2011 Liam M. Healy
+;;; Copyright (C) 2011 Liam M. Healy
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,8 +25,25 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package :asdf)
 
-(cffi:load-foreign-library
- #+darwin "libffi.dylib"
- #+(and (not darwin) unix) "libffi.so")
+;;; Shouldn't the :defsystem-depends-on take care of loading cffi-grovel?
+(eval-when (:compile-toplevel :execute)
+  (asdf:oos 'asdf:load-op :cffi-grovel))
+
+(defsystem cffi-fsbv
+  :description "Foreign structures by value"
+  :author "Liam Healy <lhealy@common-lisp.net>"
+  :maintainer "Liam Healy <lhealy@common-lisp.net>"
+  :defsystem-depends-on (#:cffi-grovel #:trivial-features)
+  :components
+  ((:module fsbv
+    :serial t
+    :components
+    ((:file "package")
+     (:file "init")
+     (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
+     (:file "type-pointers")
+     (:file "cif")
+     (:file "cstruct"))))
+  :depends-on (#:cffi #:cffi-grovel #:trivial-features))

@@ -1,9 +1,9 @@
 ;; CFFI-Grovel definitions for unix systems.
 ;; Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
-;; Time-stamp: <2009-08-23 09:51:01EDT libffi-unix.lisp>
+;; Time-stamp: <2011-09-10 22:25:10EDT libffi-unix.lisp>
 ;; $Id: $
 
-(in-package :fsbv)
+(in-package #:cffi-fsbv)
 
 #+linux
 (define "_GNU_SOURCE")

@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi
+;;; cif.lisp --- Structure and function call function in libffi
 ;;;
-;;; Copyright (C) 2009, 2011 Liam M. Healy
+;;; Copyright (C) 2009, 2010, 2011 Liam Healy  <lhealy@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -27,6 +27,28 @@
 
 (in-package #:cffi-fsbv)
 
-(cffi:load-foreign-library
- #+darwin "libffi.dylib"
- #+(and (not darwin) unix) "libffi.so")
+;;; Structs
+
+(cffi:defcstruct ffi-cif
+  (abi ffi-abi)
+  (number-of-arguments unsigned)
+  (argument-types :pointer)
+  (return-type :pointer)
+  (bytes unsigned)
+  (flags unsigned))
+
+;;; Functions
+;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
+
+(cffi:defcfun ("ffi_prep_cif" prep-cif) status
+    (ffi-cif :pointer)
+    (ffi-abi abi)
+    (nargs :uint)
+    (rtype :pointer)
+    (argtypes :pointer))
+
+(cffi:defcfun ("ffi_call" call) :void
+    (ffi-cif :pointer)
+    (function :pointer)
+    (rvalue :pointer)
+    (avalues :pointer))
