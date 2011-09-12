@@ -275,6 +275,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
       (follow-typedefs (actual-type type))
       type))
 
+(defun structure-slots (type)
+  "The hash table of slots for the structure type."
+  (slots (follow-typedefs (parse-type type))))
+
 ;;;# Type Translators
 ;;;
 ;;; Type translation is done with generic functions at runtime for

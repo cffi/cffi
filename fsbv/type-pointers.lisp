@@ -41,10 +41,21 @@
 (cffi:defcvar ("ffi_type_uint8" +size-uint8+ :read-only t) :int)
 (cffi:defcvar ("ffi_type_void" +size-void+ :read-only t) :int)
 
+(defun type-pointer-null-and-warn (type)
+  ;; Unfortunately SBCL converts warnings into errors when compiling, so this will be fatal.
+  (warn "The type ~a does not have a libffi type definition, either it is undefined or was defined before CFFI-FSBV was loaded." type)
+  (cffi:null-pointer))
+
 (defmacro libffi-type-pointer (symbol)
-  "Get the pointer into the libffi library that represents the type
+  "Get or set the pointer into the libffi library that represents the type
    for the given symbol."
-  `(get ',symbol 'type-pointer))
+  `(get ',symbol 'type-pointer nil))
+
+(defun libffi-type-pointer-or-not (symbol)
+  "Get the pointer into the libffi library that represents the type
+   for the given symbol.  If there is no pointer, warn and return the null pointer."
+  (or (libffi-type-pointer symbol)
+      (type-pointer-null-and-warn symbol)))
 
 (defmacro defsynonym (name type)
   "Define a new name for an existing type."
@@ -82,6 +93,8 @@
 (defcbuiltin :uint64)
 (defcbuiltin :void)
 
+;;;; This information is already in CFFI , use defctype?
+
 ;;; Assign these more accurately?
 (defsynonym :char :int8)
 (defsynonym :uchar :uint8)
@@ -94,3 +107,4 @@
 (defsynonym :long :int64)
 (defsynonym :ulong :uint64)
 (defsynonym :unsigned-long :uint64)
+
