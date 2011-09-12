@@ -3,6 +3,7 @@
 ;;; struct.lisp --- Foreign structure type tests.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2005-2011, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -353,11 +354,14 @@
   (with-foreign-slots ((a b) pointer struct-pair)
     (cons a b)))
 
+(defmethod translate-into-foreign-memory (object (type pair) pointer)
+  (with-foreign-slots ((a b) pointer struct-pair)
+    (setf a (car object)
+          b (cdr object))))
+
 (defmethod translate-to-foreign ((object cons) (type pair))
   (let ((p (foreign-alloc 'struct-pair)))
-    (with-foreign-slots ((a b) p struct-pair)
-      (setf a (car object)
-            b (cdr object)))
+    (translate-into-foreign-memory object type p)
     (values p t)))
 
 (defmethod free-translated-object (pointer (type pair) freep)
@@ -386,10 +390,72 @@
   (a :int)
   (b :int))
 
-#+#:bogus ; doesn't free() pointer
+;; bogus: doesn't free() pointer.
 (deftest struct-values.translation.3
     (alloc-pair 1 2)
   (1 . 2))
+
+(defcstruct (struct-pair+1 :class pair+1)
+  (p struct-pair)
+  (c :int))
+
+(defmethod translate-from-foreign (pointer (type pair+1))
+  (with-foreign-slots ((p c) pointer struct-pair+1)
+    (cons p c)))
+
+(defmethod translate-into-foreign-memory (object (type pair+1) pointer)
+  (with-foreign-slots ((c) pointer struct-pair+1)
+    (convert-into-foreign-memory (car object)
+                                 'struct-pair
+                                 (foreign-slot-pointer pointer
+                                                       'struct-pair+1
+                                                       'p))
+    (setf c (cdr object))))
+
+(defmethod translate-to-foreign ((object cons) (type pair+1))
+  (let ((p (foreign-alloc 'struct-pair+1)))
+    (translate-into-foreign-memory object type p)
+    (values p t)))
+
+(defmethod free-translated-object (pointer (type pair+1) freep)
+  (when freep
+    (foreign-free pointer)))
+
+(deftest struct-values.translation.ppo.1
+    (multiple-value-bind (p freep)
+        (convert-to-foreign '((1 . 2) . 3) 'struct-pair+1)
+      (assert freep)
+      (unwind-protect
+           (convert-from-foreign p 'struct-pair+1)
+        (free-converted-object p 'struct-pair+1 freep)))
+  ((1 . 2) . 3))
+
+#+#:unimplemented
+(defcfun "pair_plus_one_sum" :int
+  (p (:struct pair+1)))
+
+(defcfun "pair_plus_one_pointer_sum" :int
+  (p struct-pair+1)) ; XXX: to be changed to (:pointer (:struct pair))
+
+(deftest struct-values.translation.ppo.2
+    (pair-plus-one-pointer-sum '((1 . 2) . 3))
+  6)
+
+#+#:unimplemented
+(defcfun "make_pair_plus_one" (:struct pair+1)
+  (a :int)
+  (b :int)
+  (c :int))
+
+(defcfun "alloc_pair_plus_one" struct-pair+1
+  (a :int)
+  (b :int)
+  (c :int))
+
+;; bogus: doesn't free() pointer.
+(deftest struct-values.translation.ppo.3
+    (alloc-pair-plus-one 1 2 3)
+  ((1 . 2) . 3))
 
 #+#:unimplemented
 (defcfun "pair_sum" :int

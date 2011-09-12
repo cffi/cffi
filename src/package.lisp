@@ -133,15 +133,18 @@
    #:with-foreign-slots
    #:convert-to-foreign
    #:convert-from-foreign
+   #:convert-into-foreign-memory
    #:free-converted-object
 
    ;; Extensible foreign type operations.
    #:translate-to-foreign
    #:translate-from-foreign
+   #:translate-into-foreign-memory
    #:free-translated-object
    #:expand-to-foreign-dyn
    #:expand-to-foreign
    #:expand-from-foreign
+   #:expand-into-foreign-memory
 
    ;; Foreign globals.
    #:defcvar
