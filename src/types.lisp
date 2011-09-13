@@ -917,3 +917,35 @@ The buffer has dynamic extent and may be stack allocated."
                   (:uintptr . :pointer))
                  (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
                   :unsigned-long-long))))
+
+(defun builtin-type-association ()
+  (flet ((match-types (sized-types mtypes)
+           (loop for (type . size-or-type) in sized-types
+                 for m = (car (member (if (keywordp size-or-type)
+                                          (foreign-type-size size-or-type)
+                                          size-or-type)
+                                      mtypes :key #'foreign-type-size))
+                 when m collect (list type m size-or-type))))
+    (append
+     ;; signed
+     (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8)
+                    (:intptr . :pointer))
+                  '(:char :short :int :long :long-long))
+     ;; unsigned
+     (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8)
+                    (:uintptr . :pointer))
+                  '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
+                    :unsigned-long-long)))))
+
+#|
+;;; Results:
+((:INT8 :CHAR 1) (:INT16 :SHORT 2) (:INT32 :INT 4) (:INT64 :LONG 8)
+ (:INTPTR :LONG :POINTER) (:UINT8 :UNSIGNED-CHAR 1) (:UINT16 :UNSIGNED-SHORT 2)
+ (:UINT32 :UNSIGNED-INT 4) (:UINT64 :UNSIGNED-LONG 8)
+ (:UINTPTR :UNSIGNED-LONG :POINTER))
+
+grid::*cstd-integer-types*
+(:CHAR :UNSIGNED-CHAR :SHORT :UNSIGNED-SHORT :INT :UNSIGNED-INT :LONG
+ :UNSIGNED-LONG)
+
+|#
