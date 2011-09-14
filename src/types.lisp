@@ -917,8 +917,10 @@ The buffer has dynamic extent and may be stack allocated."
                   (:uintptr . :pointer))
                  (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
                   :unsigned-long-long))))
+#|
 
-(defun builtin-type-association ()
+(defun integer-type-association ()
+  "Associate the various foreign integer type names and sizes."
   (flet ((match-types (sized-types mtypes)
            (loop for (type . size-or-type) in sized-types
                  for m = (car (member (if (keywordp size-or-type)
@@ -937,7 +939,6 @@ The buffer has dynamic extent and may be stack allocated."
                   '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
                     :unsigned-long-long)))))
 
-#|
 ;;; Results:
 ((:INT8 :CHAR 1) (:INT16 :SHORT 2) (:INT32 :INT 4) (:INT64 :LONG 8)
  (:INTPTR :LONG :POINTER) (:UINT8 :UNSIGNED-CHAR 1) (:UINT16 :UNSIGNED-SHORT 2)

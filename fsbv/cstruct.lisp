@@ -28,6 +28,7 @@
 (in-package #:cffi-fsbv)
 
 (defun number-of-slots (structure-type)
+  "Number of slots in the foreign structure."
   (hash-table-count (structure-slots structure-type)))
 
 (defun cstruct-libffi-type-pointer (type)

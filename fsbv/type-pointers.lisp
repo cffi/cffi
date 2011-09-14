@@ -51,47 +51,27 @@
 	    (if (string= str "int" :end1 3) "s" "")
 	    str))))
 
+#|
 (defparameter *libffi-builtin-type-assoc*
-  '((:STRING+PTR
-     :STRING
-     :UINTPTR
-     :UINT64
-     :UINT32
-     :UINT16
-     :UINT8
+  '((:STRING+PTR :STRING :UINTPTR :UINT64 :UINT32 :UINT16 :UINT8
      :INTPTR ; ??? Check does this depend on hardware 32/64?
-     :INT64
-     :INT32
-     :INT16
-     :INT8
-     :ULLONG
-     :LLONG
-     :ULONG
-     :UINT
-     :USHORT
-     :UCHAR
-     :BOOLEAN
-     :WRAPPER
-     :ARRAY
-     :UNSIGNED-LONG-LONG
-     :LONG-LONG
-     :VOID
-     :DOUBLE
-     :FLOAT
-     :UNSIGNED-LONG
-     :LONG
-     :UNSIGNED-INT
-     :INT
-     :UNSIGNED-SHORT
-     :SHORT
-     :UNSIGNED-CHAR
-     :CHAR
+     :INT64 :INT32 :INT16 :INT8
+     :ULLONG :LLONG :ULONG :UINT :USHORT :UCHAR
+     :BOOLEAN :WRAPPER :ARRAY
+     :UNSIGNED-LONG-LONG :LONG-LONG
+     :VOID :DOUBLE :FLOAT
+     :UNSIGNED-LONG :LONG
+     :UNSIGNED-INT :INT
+     :UNSIGNED-SHORT :SHORT
+     :UNSIGNED-CHAR :CHAR
      :POINTER)
     ))
 
 (dolist (assoc *libffi-builtin-type-assoc*)
   (setf (libffi-type-pointer (first assoc))
         (rest assoc)))
+|#
+
 
 
 #|
