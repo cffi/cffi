@@ -73,7 +73,7 @@
 	       for symb in fo-symbols
 	       for i from 0
 	       collect
-	       `(cffi:convert-into-foreign-memory (nth args ,i) ,type ,symb))
+	       `(cffi:convert-into-foreign-memory (nth args ,i) ',type ',symb))
 	   (setf
 	    ,@(loop for symb in fo-symbols
 		    for i from 0

@@ -32,14 +32,14 @@
   (hash-table-count (cffi::structure-slots structure-type)))
 
 (defmethod libffi-type-pointer :around ((type foreign-struct-type))
-  (or (libffi-type-pointer type)
+  (or (call-next-method)
       (setf (slot-value type 'libffi-type-pointer)
             (let* ((ptr (cffi:foreign-alloc 'ffi-type))
                    (number-of-slots (number-of-slots type))
                    (type-pointer-array
                      (cffi:foreign-alloc :pointer :count (1+ number-of-slots)))
                    (slot-counter 0))
-              (with-hash-table-iterator (next-slot (structure-slots type))
+              (with-hash-table-iterator (next-slot (cffi::structure-slots type))
                 (multiple-value-bind (resultp slot-name slot)
                     (next-slot)
                   (setf (cffi:mem-aref type-pointer-array :pointer slot-counter)
@@ -56,3 +56,14 @@
                (cffi:foreign-slot-value ptr 'ffi-type 'type) +type-struct+
                (cffi:foreign-slot-value ptr 'ffi-type 'elements) type-pointer-array)
               ptr))))
+
+;;; Example
+;;; :pa cffi-fsbv
+;;; (libffi-type-pointer 'complex)
+;;; #.(SB-SYS:INT-SAP #X0063DED0)
+;;; (cffi:foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'size)
+;;; 0
+;;; (cffi:foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'alignment)
+;;; 0
+;;; (foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'type)
+;;; 13

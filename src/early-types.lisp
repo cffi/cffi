@@ -105,6 +105,11 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (:documentation
    "Unparse FOREIGN-TYPE to a type specification (symbol or list)."))
 
+(defgeneric libffi-type-pointer (object)
+  (:documentation "The type pointer defined by libffi.")
+  (:method ((object symbol))
+    (libffi-type-pointer (parse-type object))))
+
 ;;;# Foreign Types
 
 (defclass foreign-type ()
@@ -231,7 +236,8 @@ Signals an error if FOREIGN-TYPE is undefined."))
     :accessor alignment)))
 
 (defmethod canonicalize ((type foreign-struct-type))
-  `(:struct ,(name type)))
+  "Returns the type name, since structures can be passed by value."
+  (unparse-type type))
 
 (defmethod aggregatep ((type foreign-struct-type))
   "Returns true, structure types are aggregate."
@@ -286,7 +292,7 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 (defun structure-slots (type)
   "The hash table of slots for the structure type."
-  (slots (follow-typedefs (parse-type type))))
+  (slots (follow-typedefs type)))
 
 ;;;# Type Translators
 ;;;
