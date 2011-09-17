@@ -100,7 +100,8 @@
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
   (let ((name (car (ensure-list name-and-options)))
-        (options (cdr (ensure-list name-and-options))))
+        (options (cdr (ensure-list name-and-options)))
+        (*parse-bare-structs-as-pointers* t))
     (foreign-funcall-form name options args nil)))
 
 (defmacro foreign-funcall-pointer (pointer options &rest args)
@@ -181,7 +182,8 @@ arguments and does type promotion for the variadic arguments."
 (defun %defcfun (lisp-name foreign-name return-type args options docstring)
   (let ((arg-names (mapcar #'car args))
         (arg-types (mapcar #'cadr args))
-        (syms (make-gensym-list (length args))))
+        (syms (make-gensym-list (length args)))
+        (*parse-bare-structs-as-pointers* t))
     (multiple-value-bind (prelude caller)
         (defcfun-helper-forms
           foreign-name lisp-name (canonicalize-foreign-type return-type)
@@ -195,7 +197,8 @@ arguments and does type promotion for the variadic arguments."
 
 (defun %defcfun-varargs (lisp-name foreign-name return-type args options doc)
   (with-unique-names (varargs)
-    (let ((arg-names (mapcar #'car args)))
+    (let ((arg-names (mapcar #'car args))
+          (*parse-bare-structs-as-pointers* t))
       `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
          ,@(ensure-list doc)
          `(foreign-funcall-varargs
@@ -387,7 +390,8 @@ arguments and does type promotion for the variadic arguments."
     (let ((arg-names (mapcar #'car args))
           (arg-types (mapcar #'cadr args))
           (name (car (ensure-list name-and-options)))
-          (options (cdr (ensure-list name-and-options))))
+          (options (cdr (ensure-list name-and-options)))
+          (*parse-bare-structs-as-pointers* t))
       `(progn
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)

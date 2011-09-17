@@ -41,6 +41,7 @@
                 #:make-keyword
                 #:once-only
                 #:parse-body
+                #:simple-style-warning
                 #:symbolicate
                 #:when-let
                 #:with-unique-names)

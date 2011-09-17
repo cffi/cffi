@@ -50,17 +50,19 @@
 ;;; Type parsers, defined with DEFINE-PARSE-METHOD should return a
 ;;; subtype of the foreign-type class.
 
-(defvar *type-parsers* (make-hash-table)
+(defvar *type-parsers* (make-hash-table :test 'equal)
   "Hash table of defined type parsers.")
 
-(defun find-type-parser (symbol)
+(defun find-type-parser (symbol &optional (namespace :default))
   "Return the type parser for SYMBOL."
-  (or (gethash symbol *type-parsers*)
-      (error "Unknown CFFI type: ~S." symbol)))
+  (or (gethash (cons namespace symbol) *type-parsers*)
+      (if (eq namespace :default)
+          (error "unknown CFFI type: ~S." symbol)
+          (error "unknown CFFI type: (~S ~S)." namespace symbol))))
 
-(defun (setf find-type-parser) (func symbol)
+(defun (setf find-type-parser) (func symbol &optional (namespace :default))
   "Set the type parser for SYMBOL."
-  (setf (gethash symbol *type-parsers*) func))
+  (setf (gethash (cons namespace symbol) *type-parsers*) func))
 
 ;;; Using a generic function would have been nicer but generates lots
 ;;; of style warnings in SBCL.  (Silly reason, yes.)
@@ -75,15 +77,16 @@
 
 ;;; Utility function for the simple case where the type takes no
 ;;; arguments.
-(defun notice-foreign-type (name type)
-  (setf (find-type-parser name) (lambda () type))
+(defun notice-foreign-type (name type &optional (namespace :default))
+  (setf (find-type-parser name namespace) (lambda () type))
   name)
 
 ;;;# Generic Functions on Types
 
 (defgeneric canonicalize (foreign-type)
   (:documentation
-   "Return the built-in foreign type for FOREIGN-TYPE.
+   "Return the most primitive foreign type for FOREIGN-TYPE, either a built-in
+type--a keyword--or a struct/union type--a list of the form (:STRUCT/:UNION name).
 Signals an error if FOREIGN-TYPE is undefined."))
 
 (defgeneric aggregatep (foreign-type)
@@ -225,12 +228,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
    (alignment
     ;; This struct's alignment requirements
     :initarg :alignment
-    :accessor alignment))
-  (:documentation "Hash table of plists containing slot information."))
+    :accessor alignment)))
 
 (defmethod canonicalize ((type foreign-struct-type))
-  "Returns :POINTER, since structures can not be passed by value."
-  :pointer)
+  `(:struct ,(name type)))
 
 (defmethod aggregatep ((type foreign-struct-type))
   "Returns true, structure types are aggregate."
@@ -243,6 +244,11 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defmethod foreign-type-alignment ((type foreign-struct-type))
   "Return the alignment requirements for this struct."
   (alignment type))
+
+(defclass foreign-union-type (foreign-struct-type) ())
+
+(defmethod canonicalize ((type foreign-union-type))
+  `(:union ,(name type)))
 
 ;;;# Foreign Typedefs
 
