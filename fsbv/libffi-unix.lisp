@@ -1,7 +1,29 @@
-;; CFFI-Grovel definitions for unix systems.
-;; Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
-;; Time-stamp: <2011-09-10 22:25:10EDT libffi-unix.lisp>
-;; $Id: $
+;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
+;;;
+;;; libffi-unix.lisp -- libffi CFFI-Grovel definitions for unix systems.
+;;;
+;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
+;;;
+;;; Permission is hereby granted, free of charge, to any person
+;;; obtaining a copy of this software and associated documentation
+;;; files (the "Software"), to deal in the Software without
+;;; restriction, including without limitation the rights to use, copy,
+;;; modify, merge, publish, distribute, sublicense, and/or sell copies
+;;; of the Software, and to permit persons to whom the Software is
+;;; furnished to do so, subject to the following conditions:
+;;;
+;;; The above copyright notice and this permission notice shall be
+;;; included in all copies or substantial portions of the Software.
+;;;
+;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;; NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+;;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;;; DEALINGS IN THE SOFTWARE.
+;;;
 
 (in-package #:cffi-fsbv)
 
@@ -26,7 +48,9 @@
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
  ((:sysv "FFI_SYSV"))
- ((:unix64 "FFI_UNIX64")))
+ ((:unix64 "FFI_UNIX64"))
+ ;;((:stdcall "FFI_STDCALL"))
+       )
 
 (ctype ffi-abi "ffi_abi")
 

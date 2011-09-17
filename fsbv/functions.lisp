@@ -1,12 +1,31 @@
-;; Calling foreign functions
-;; Liam Healy 2009-04-17 13:04:15EDT functions.lisp
-;; Time-stamp: <2010-11-27 22:24:20EST functions.lisp>
-;; $Id: $
+;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
+;;;
+;;; functions.lisp -- Calling foreign functions
+;;;
+;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
+;;;
+;;; Permission is hereby granted, free of charge, to any person
+;;; obtaining a copy of this software and associated documentation
+;;; files (the "Software"), to deal in the Software without
+;;; restriction, including without limitation the rights to use, copy,
+;;; modify, merge, publish, distribute, sublicense, and/or sell copies
+;;; of the Software, and to permit persons to whom the Software is
+;;; furnished to do so, subject to the following conditions:
+;;;
+;;; The above copyright notice and this permission notice shall be
+;;; included in all copies or substantial portions of the Software.
+;;;
+;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;; NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+;;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;;; DEALINGS IN THE SOFTWARE.
+;;;
 
-(in-package :fsbv)
-
-(export '(foreign-funcall defcfun foreign-function-not-prepared
-	  defcfun-args-from-ff-args))
+(in-package #:cffi-fsbv)
 
 (define-condition foreign-function-not-prepared (error)
   ((foreign-function-name
@@ -18,45 +37,64 @@
   (:documentation
    "A condition that has been signalled by the FSBV library."))
 
-(defun prepare-function (foreign-function-name return-type argument-types)
+(defun prepare-function
+    (foreign-function-name return-type argument-types &optional (abi :default-abi))
   "Generate a closure that can be called on the Lisp objects and will return
    a Lisp object."
   (let* ((number-of-arguments (length argument-types))
-	 (no-return-p (member return-type *no-value*))
+	 (no-return-p (eql return-type :void))
 	 (fo-symbols (loop for i from 0 below number-of-arguments
-			collect (make-symbol (format nil "ARG~d" i)))))
+			   collect (make-symbol (format nil "ARG~d" i)))))
     `(let ((cif (cffi:foreign-alloc 'ffi-cif))
 	   (ffi-argtypes (cffi:foreign-alloc :pointer :count ,number-of-arguments)))
-       (setf ,@(loop for argtype in argument-types
-		  for argc from 0
-		  append
-		  `((cffi:mem-aref ffi-argtypes :pointer ,argc)
-		    (libffi-type-pointer ,argtype))))
+       (setf ,@(loop for type in argument-types
+		     for i from 0
+		     append
+		     `((cffi:mem-aref ffi-argtypes :pointer ,i)
+		       (libffi-type-pointer ',type))))
        (unless
 	   (eql :OK
-		(prep-cif cif :default-abi ,number-of-arguments
-			  (libffi-type-pointer ,return-type)
+		(prep-cif cif ,abi ,number-of-arguments
+			  (libffi-type-pointer ',return-type)
 			  ffi-argtypes))
 	 (error
 	  'foreign-function-not-prepared
 	  :foreign-function-name ',foreign-function-name))
        (lambda (&rest args)
 	 (with-foreign-objects
-	     ,(loop for i from 0 below number-of-arguments
-		 collect `(,(nth i fo-symbols) ',(nth i argument-types) (nth ,i args)))
-	   (cffi:with-foreign-objects
-	       ((argvalues :pointer ,number-of-arguments)
-		,@(unless no-return-p `((result ',return-type))))
-	     (setf ,@(loop for argc from 0 below number-of-arguments
-			append
-			`((cffi:mem-aref argvalues :pointer ,argc)
-			  ,(nth argc fo-symbols))))
-	     (call cif
-		   (cffi:foreign-symbol-pointer ,foreign-function-name)
-		   ,(if no-return-p '(cffi:null-pointer) 'result)
-		   argvalues)
-	     ,(unless no-return-p
-		(convert-from-pointer 'result return-type))))))))
+	     ,(append
+	       (loop for type in argument-types
+		     for symb in fo-symbols
+		     collect `(,symb ',type))
+	       `((argvalues :pointer ,number-of-arguments))
+	       (unless no-return-p `((result ',return-type))))
+	   ,@(loop
+	       for type in argument-types
+	       for symb in fo-symbols
+	       for i from 0
+	       collect
+	       `(cffi:convert-into-foreign-memory (nth args ,i) ,type ,symb))
+	   (setf
+	    ,@(loop for symb in fo-symbols
+		    for i from 0
+		    append
+		    `((cffi:mem-aref argvalues :pointer ,i) ,symb))))
+	 (call cif
+	       (cffi:foreign-symbol-pointer ,foreign-function-name)
+	       ,(if no-return-p '(cffi:null-pointer) 'result)
+	       argvalues)
+	 ,(unless no-return-p `(cffi:convert-from-foreign result ',return-type))))))
+
+;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(COMPLEX C :DOUBLE R COMPLEX) NIL)
+;; If there are any foreign structs in args or return,
+;; defcfun should fbind the result of prepare-function
+;; foreign-funcall should just funcall it
+
+;; (prepare-function "gsl_complex_add_real" 'complex '(complex :double))
+
+#|
+
+;;;;;;;;;;;; OBSOLETE
 
 (defun defcfun-args-from-ff-args (arguments)
   "Convert the argument format from foreign-funcall to defcfun form.
@@ -111,3 +149,4 @@
 	  ;; uninterned, so don't bother with the defun, because it
 	  ;; could never be referenced.
 	  set-property))))
+|#

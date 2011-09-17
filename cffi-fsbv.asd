@@ -45,5 +45,6 @@
      (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
      (:file "built-in-types")
      (:file "cstruct")
-     (:file "cif"))))
+     (:file "cif")
+     (:file "functions"))))
   :depends-on (#:cffi #:cffi-grovel #:trivial-features))
