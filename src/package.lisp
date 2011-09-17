@@ -47,6 +47,7 @@
   (:export
    ;; Types.
    #:foreign-pointer
+   #:*built-in-foreign-types*
 
    ;; Primitive pointer operations.
    #:foreign-free

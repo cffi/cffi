@@ -170,9 +170,12 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (type-keyword type))))
 
+(defvar *built-in-foreign-types* nil)
+
 (defmacro define-built-in-foreign-type (keyword)
   "Defines a built-in foreign-type."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (pushnew ,keyword *built-in-foreign-types*)
      (notice-foreign-type
       ,keyword (make-instance 'foreign-built-in-type :type-keyword ,keyword))))
 
