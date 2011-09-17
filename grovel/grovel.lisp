@@ -526,8 +526,9 @@ int main(int argc, char**argv) {
                    (setf (readtable-case *readtable*) :preserve)
                    (read-from-string str))))
     (typecase c-parse
-      (symbol `(cffi:defcvar (,(symbol-name c-parse) ,name) ,type
-                 :read-only ,read-only))
+      (symbol `(cffi:defcvar (,(symbol-name c-parse) ,name
+                               :read-only ,read-only)
+                   ,type))
       (list (unless (and (= (length c-parse) 2)
                          (null (second c-parse))
                          (symbolp (first c-parse))
