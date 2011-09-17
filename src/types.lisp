@@ -99,6 +99,27 @@
 ;;; use #-cffi-sys::no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
 
+;;; Lists of built-in types
+;;; LMH should these be added to documentation?
+(export '(*other-builtin-types* *built-in-integer-types* *built-in-float-types*))
+
+(defparameter *possible-float-types* '(:float :double :long-double))
+
+(defparameter *other-builtin-types* '(:pointer :void)
+  "List of types other than integer or float built in to CFFI.")
+
+(defparameter *built-in-integer-types*
+  (set-difference
+   cffi:*built-in-foreign-types*
+   (append *possible-float-types* *other-builtin-types*))
+  "List of integer types supported by CFFI.")
+
+(defparameter *built-in-float-types*
+  (set-difference
+   cffi:*built-in-foreign-types*
+   (append *built-in-integer-types* *other-builtin-types*))
+  "List of real float types supported by CFFI.")
+
 ;;;# Foreign Pointers
 
 (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
@@ -917,36 +938,3 @@ The buffer has dynamic extent and may be stack allocated."
                   (:uintptr . :pointer))
                  (:unsigned-char :unsigned-short :unsigned-int :unsigned-long
                   :unsigned-long-long))))
-#|
-
-(defun integer-type-association ()
-  "Associate the various foreign integer type names and sizes."
-  (flet ((match-types (sized-types mtypes)
-           (loop for (type . size-or-type) in sized-types
-                 for m = (car (member (if (keywordp size-or-type)
-                                          (foreign-type-size size-or-type)
-                                          size-or-type)
-                                      mtypes :key #'foreign-type-size))
-                 when m collect (list type m size-or-type))))
-    (append
-     ;; signed
-     (match-types '((:int8 . 1) (:int16 . 2) (:int32 . 4) (:int64 . 8)
-                    (:intptr . :pointer))
-                  '(:char :short :int :long :long-long))
-     ;; unsigned
-     (match-types '((:uint8 . 1) (:uint16 . 2) (:uint32 . 4) (:uint64 . 8)
-                    (:uintptr . :pointer))
-                  '(:unsigned-char :unsigned-short :unsigned-int :unsigned-long
-                    :unsigned-long-long)))))
-
-;;; Results:
-((:INT8 :CHAR 1) (:INT16 :SHORT 2) (:INT32 :INT 4) (:INT64 :LONG 8)
- (:INTPTR :LONG :POINTER) (:UINT8 :UNSIGNED-CHAR 1) (:UINT16 :UNSIGNED-SHORT 2)
- (:UINT32 :UNSIGNED-INT 4) (:UINT64 :UNSIGNED-LONG 8)
- (:UINTPTR :UNSIGNED-LONG :POINTER))
-
-grid::*cstd-integer-types*
-(:CHAR :UNSIGNED-CHAR :SHORT :UNSIGNED-SHORT :INT :UNSIGNED-INT :LONG
- :UNSIGNED-LONG)
-
-|#

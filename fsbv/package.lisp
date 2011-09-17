@@ -29,6 +29,6 @@
 
 (defpackage #:cffi-fsbv
   (:use #:common-lisp)
-  ;;(:import-from #:cffi-sys #:native-namestring)
-  ;;(:export)
-  )
+  (:import-from
+   #:cffi
+   #:libffi-type-pointer #:parse-type #:foreign-struct-type))

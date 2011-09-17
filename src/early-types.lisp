@@ -105,7 +105,7 @@ Signals an error if FOREIGN-TYPE is undefined."))
 ;;;# Foreign Types
 
 (defclass foreign-type ()
-  ()
+  ((libffi-type-pointer :initform nil :reader libffi-type-pointer))
   (:documentation "Base class for all foreign types."))
 
 (defmethod make-load-form ((type foreign-type) &optional env)

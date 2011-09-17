@@ -43,7 +43,7 @@
     ((:file "package")
      (:file "init")
      (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
-     (:file "type-pointers")
+     (:file "built-in-types")
      (:file "cstruct")
      (:file "cif"))))
   :depends-on (#:cffi #:cffi-grovel #:trivial-features))
