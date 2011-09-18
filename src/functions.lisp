@@ -107,11 +107,11 @@
       (translate-objects
        syms fargs types rettype
        `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-         (if sbvp
-             ;; Divert to prepare-function result
-             (funcall *foreign-structures-by-value* thing)
-             ;; No structures by value, direct call
-             ,thing)
+         ,(if sbvp
+              ;; Divert to prepare-function result
+              (funcall *foreign-structures-by-value* thing)
+              ;; No structures by value, direct call
+              thing)
          (,@(mapcan #'list ctypes syms)
             ,(canonicalize-foreign-type rettype))
          ,@(parse-function-options options :pointer pointerp))))))
