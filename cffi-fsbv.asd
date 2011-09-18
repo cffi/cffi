@@ -35,7 +35,7 @@
   :description "Foreign structures by value"
   :author "Liam Healy <lhealy@common-lisp.net>"
   :maintainer "Liam Healy <lhealy@common-lisp.net>"
-  :defsystem-depends-on (#:cffi-grovel #:trivial-features)
+  :defsystem-depends-on (#:trivial-features #:cffi-grovel)
   :components
   ((:module fsbv
     :serial t
