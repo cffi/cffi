@@ -236,8 +236,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
     :accessor alignment)))
 
 (defmethod canonicalize ((type foreign-struct-type))
-  "Returns the type name, since structures can be passed by value."
-  (unparse-type type))
+  `(:struct ,(name type)))
+
+(defmethod unparse-type ((type foreign-struct-type))
+  (canonicalize type))
 
 (defmethod aggregatep ((type foreign-struct-type))
   "Returns true, structure types are aggregate."

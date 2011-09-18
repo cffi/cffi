@@ -350,6 +350,55 @@
   (a :int)
   (b :int))
 
+(defctype struct-pair-typedef1 (:struct struct-pair))
+(defctype struct-pair-typedef2 struct-pair)
+
+(deftest struct.unparse.1
+    (mapcar (alexandria:compose #'cffi::unparse-type #'cffi::parse-type)
+            '(struct-pair
+              (:struct struct-pair)
+              struct-pair-typedef1
+              struct-pair-typedef2))
+  ((:struct struct-pair)
+   (:struct struct-pair)
+   struct-pair-typedef1
+   struct-pair-typedef2))
+
+(deftest struct.unparse.2
+    (let ((cffi::*parse-bare-structs-as-pointers* t))
+      (mapcar (alexandria:compose #'cffi::unparse-type #'cffi::parse-type)
+              '(struct-pair
+                (:struct struct-pair)
+                struct-pair-typedef1
+                struct-pair-typedef2)))
+  ((:pointer (:struct struct-pair))
+   (:struct struct-pair)
+   struct-pair-typedef1
+   struct-pair-typedef2))
+
+(deftest struct.canonicalize.1
+    (mapcar #'cffi::canonicalize-foreign-type
+            '(struct-pair
+              (:struct struct-pair)
+              struct-pair-typedef1
+              struct-pair-typedef2))
+  ((:struct struct-pair)
+   (:struct struct-pair)
+   (:struct struct-pair)
+   (:struct struct-pair)))
+
+(deftest struct.canonicalize.2
+    (let ((cffi::*parse-bare-structs-as-pointers* t))
+      (mapcar #'cffi::canonicalize-foreign-type
+              '(struct-pair
+                (:struct struct-pair)
+                struct-pair-typedef1
+                struct-pair-typedef2)))
+  (:pointer
+   (:struct struct-pair)
+   (:struct struct-pair)
+   :pointer)) ; XXX: fails.
+
 (defmethod translate-from-foreign (pointer (type pair))
   (with-foreign-slots ((a b) pointer struct-pair)
     (cons a b)))
