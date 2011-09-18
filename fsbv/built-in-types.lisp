@@ -52,3 +52,10 @@
   (or (call-next-method)
       (setf (slot-value type 'libffi-type-pointer)
             (libffi-type-pointer (cffi::follow-typedefs type)))))
+
+(defmethod libffi-type-pointer :around ((type cffi::foreign-enum))
+  (or (slot-value type 'libffi-type-pointer)
+      ;;(call-next-method) ; doesn't work, wants to go to the foreign-type-alias method
+      (setf (slot-value type 'libffi-type-pointer)
+            (libffi-type-pointer (cffi::actual-type type)))))
+
