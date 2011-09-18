@@ -427,7 +427,7 @@
   (1 . 2))
 
 (defcfun "pair_pointer_sum" :int
-  (p struct-pair))   ; XXX: to be changed to (:pointer (:struct pair))
+  (p (:pointer (:struct struct-pair))))
 
 (deftest struct-values.translation.2
     (pair-pointer-sum '(1 . 2))
@@ -445,7 +445,7 @@
   (1 . 2))
 
 (defcstruct (struct-pair+1 :class pair+1)
-  (p struct-pair)
+  (p (:pointer (:struct struct-pair)))
   (c :int))
 
 (defmethod translate-from-foreign (pointer (type pair+1))
@@ -484,7 +484,7 @@
   (p (:struct pair+1)))
 
 (defcfun "pair_plus_one_pointer_sum" :int
-  (p struct-pair+1)) ; XXX: to be changed to (:pointer (:struct pair))
+  (p (:pointer (:struct struct-pair+1))))
 
 (deftest struct-values.translation.ppo.2
     (pair-plus-one-pointer-sum '((1 . 2) . 3))
