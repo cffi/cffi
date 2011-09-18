@@ -41,14 +41,15 @@
 ;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
 
 (cffi:defcfun ("ffi_prep_cif" prep-cif) status
-    (ffi-cif :pointer)
-    (ffi-abi abi)
-    (nargs :uint)
-    (rtype :pointer)
-    (argtypes :pointer))
+  (ffi-cif :pointer)
+  ;;(ffi-abi (:pointer (:struct abi))) ; this doesn't work
+  (ffi-abi :pointer)
+  (nargs :uint)
+  (rtype :pointer)
+  (argtypes :pointer))
 
 (cffi:defcfun ("ffi_call" call) :void
-    (ffi-cif :pointer)
-    (function :pointer)
-    (rvalue :pointer)
-    (avalues :pointer))
+  (ffi-cif :pointer)
+  (function :pointer)
+  (rvalue :pointer)
+  (avalues :pointer))

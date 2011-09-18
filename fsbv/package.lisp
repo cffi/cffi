@@ -31,4 +31,5 @@
   (:use #:common-lisp)
   (:import-from
    #:cffi
-   #:libffi-type-pointer #:parse-type #:foreign-struct-type))
+   #:libffi-type-pointer #:parse-type #:foreign-struct-type
+   #:*foreign-structures-by-value*))

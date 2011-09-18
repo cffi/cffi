@@ -85,14 +85,33 @@
            (unless pointer
              (list :library library)))))
 
+(defun call-by-value-p (ctype)
+  "A structure or union is to be called or returned by value."
+  (member (alexandria:ensure-car ctype) '(:struct :union)))
+
+(defvar *foreign-structures-by-value*
+  (lambda (&rest args)
+    (declare (ignore args))
+    (error "Unable to call structures by value; load CFFI-FSBV."))
+  "A function that produces a form suitable for calling structures by value.")
+
+;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(COMPLEX C :DOUBLE R COMPLEX) NIL)
+;; (prepare-function "gsl_complex_add_real" 'complex '(complex :double))
+
 (defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
-    (let ((syms (make-gensym-list (length fargs))))
+    (let ((syms (make-gensym-list (length fargs)))
+          (sbvp (or (some 'call-by-value-p ctypes)
+                    (call-by-value-p rettype))))
       (translate-objects
        syms fargs types rettype
        `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-         ,thing
+         (if sbvp
+             ;; Divert to prepare-function result
+             (funcall *foreign-structures-by-value* thing)
+             ;; No structures by value, direct call
+             ,thing)
          (,@(mapcan #'list ctypes syms)
             ,(canonicalize-foreign-type rettype))
          ,@(parse-function-options options :pointer pointerp))))))
