@@ -27,9 +27,9 @@
 
 (in-package :asdf)
 
-;;; Shouldn't the :defsystem-depends-on take care of loading cffi-grovel?
 (eval-when (:compile-toplevel :execute)
-  (asdf:oos 'asdf:load-op :cffi-grovel))
+  (asdf:oos 'asdf:load-op :cffi-grovel)
+  (asdf:oos 'asdf:load-op :trivial-features))
 
 (defsystem cffi-fsbv
   :description "Foreign structures by value"
