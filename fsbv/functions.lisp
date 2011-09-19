@@ -61,7 +61,7 @@
 	  'foreign-function-not-prepared
 	  :foreign-function-name ',foreign-function-name))
        (lambda (&rest args)
-	 (with-foreign-objects
+	 (cffi:with-foreign-objects
 	     ,(append
 	       (loop for type in argument-types
 		     for symb in fo-symbols

@@ -95,8 +95,25 @@
     (error "Unable to call structures by value; load CFFI-FSBV."))
   "A function that produces a form suitable for calling structures by value.")
 
-;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(COMPLEX C :DOUBLE R COMPLEX) NIL)
-;; (prepare-function "gsl_complex_add_real" 'complex '(complex :double))
+;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(complex-double C :DOUBLE R complex-double) NIL)
+;; (prepare-function "gsl_complex_add_real" '(:struct complex-double) '((:struct complex-double) :double))
+;;; results in a lambda form, this form is the function to be called
+
+#|
+(FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(:pointer C :DOUBLE R :pointer) NIL)
+(LET ((#:G1132 C))
+  (LET ((#:G1133 R))
+    (%FOREIGN-FUNCALL "gsl_complex_add_real"
+                      (:POINTER #:G1132 :DOUBLE #:G1133 :POINTER) :CONVENTION
+                      :CDECL :LIBRARY :DEFAULT)))
+(FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '((:struct complex-double) C :DOUBLE R (:struct complex-double)) NIL)
+... error... 
+(parse-args-and-types '((:struct complex-double) C :DOUBLE R (:struct complex-double)))
+(setf *foreign-structures-by-value* 'cffi-fsbv::prepare-function)
+
+This is now OK-ish, but we have double converts here.  I don't think I want
+
+|#
 
 (defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
@@ -106,15 +123,20 @@
                     (call-by-value-p rettype))))
       (translate-objects
        syms fargs types rettype
-       `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-         ,(if sbvp
-              ;; Divert to prepare-function result
-              (funcall *foreign-structures-by-value* thing)
-              ;; No structures by value, direct call
-              thing)
-         (,@(mapcan #'list ctypes syms)
-            ,(canonicalize-foreign-type rettype))
-         ,@(parse-function-options options :pointer pointerp))))))
+       (if sbvp
+           ;; Divert to prepare-function result
+           `(funcall ;; should this be the %foreign-funcall?
+             ,(funcall *foreign-structures-by-value*
+                       thing
+                       rettype
+                       ctypes)
+             ,@fargs)
+           `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+             ;; No structures by value, direct call
+             thing
+             (,@(mapcan #'list ctypes syms)
+              ,(canonicalize-foreign-type rettype))
+             ,@(parse-function-options options :pointer pointerp)))))))
 
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
