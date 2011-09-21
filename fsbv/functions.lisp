@@ -27,6 +27,9 @@
 
 (in-package #:cffi-fsbv)
 
+(defvar *cif-table* (make-hash-table :test 'equal)
+  "A hash table of foreign functions and pointers to the forign cif (Call InterFace) structure for that function.")
+
 (define-condition foreign-function-not-prepared (error)
   ((foreign-function-name
     :initarg :foreign-function-name :reader foreign-function-name))
@@ -36,6 +39,95 @@
 	     (foreign-function-name condition))))
   (:documentation
    "A condition that has been signalled by the FSBV library."))
+
+(defun prepare-function
+    (foreign-function-name return-type argument-types &optional (abi :default-abi))
+  "Generate or retrieve the CIF needed to call the function through libffi."
+  (or (gethash foreign-function-name *cif-table*)
+      (let* ((number-of-arguments (length argument-types)))
+        (let ((cif (cffi:foreign-alloc '(:struct ffi-cif)))
+              (ffi-argtypes (cffi:foreign-alloc :pointer :count number-of-arguments)))
+          (loop for type in argument-types
+                for i from 0
+                do
+                   (setf (cffi:mem-aref ffi-argtypes :pointer i)
+                         (libffi-type-pointer (parse-type type))))
+          (unless
+              (eql :OK
+                   (prep-cif cif abi number-of-arguments
+                             (libffi-type-pointer (parse-type return-type))
+                             ffi-argtypes))
+            (error
+             'foreign-function-not-prepared
+             :foreign-function-name foreign-function-name))
+          (setf (gethash foreign-function-name *cif-table*) cif)
+          cif))))
+
+(defun unprepare-function (foreign-function-name)
+  "Remove prepared definitions for the named foreign function.  Returns foreign-function-name if function had been prepared, NIL otherwise."
+  (let ((ptr (gethash foreign-function-name *cif-table*)))
+    (when ptr
+      (cffi:foreign-free
+       (cffi:foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
+      (cffi:foreign-free ptr)
+      (remhash foreign-function-name *cif-table*)
+      foreign-function-name)))
+
+;;; Test previous definitions
+;;; in CFFI
+;;; (cffi-fsbv::prepare-function "gsl_complex_add_real" '(:struct complex-double) '((:struct complex-double) :double))
+;;; (alexandria:hash-table-alist cffi-fsbv::*cif-table*)
+;;; (cffi-fsbv::unprepare-function "gsl_complex_add_real")
+
+#|
+
+(defun callable-function  (function return-type argument-types &optional (abi :default-abi))
+  "Return a lambda that will call the function."
+  (let ((cif (prepare-function function return-type argument-types abi)))
+    (lambda (&rest args)
+      (let ((argvalues ()))
+        ;; Make all the foreign objects, set the values then call
+        (call cif
+              (cffi:foreign-symbol-pointer ,foreign-function-name)
+              ,(if no-return-p '(cffi:null-pointer) 'result)
+              argvalues)
+        ;; free all the foreign objects in an unwind-protect
+        )))
+
+(setf *foreign-structures-by-value* 'callable-function)
+
+;;; old approach
+(defun call-function (function arguments)
+  "Call the prepared foreign function."
+  ;; (no-return-p (eql return-type :void))
+  ;; (fo-symbols (loop for i from 0 below number-of-arguments collect (make-symbol (format nil "ARG~d" i))))
+  (cffi:with-foreign-objects
+      ,(append
+        (loop for type in argument-types
+              for symb in fo-symbols
+              collect `(,symb ',type))
+        `((argvalues :pointer ,number-of-arguments))
+        (unless no-return-p `((result ',return-type))))
+    ,@(loop
+        for type in argument-types
+        for symb in fo-symbols
+        for i from 0
+        collect
+        `(cffi:convert-into-foreign-memory (nth args ,i) ',type ',symb))
+    (setf
+     ,@(loop for symb in fo-symbols
+             for i from 0
+             append
+             `((cffi:mem-aref argvalues :pointer ,i) ,symb))))
+  (call cif
+        (cffi:foreign-symbol-pointer ,foreign-function-name)
+        ,(if no-return-p '(cffi:null-pointer) 'result)
+        argvalues)
+  ,(unless no-return-p `(cffi:convert-from-foreign result ',return-type)))
+
+|#
+#|
+;;;;;;;;; old
 
 (defun prepare-function
     (foreign-function-name return-type argument-types &optional (abi :default-abi))
@@ -84,13 +176,13 @@
 	       ,(if no-return-p '(cffi:null-pointer) 'result)
 	       argvalues)
 	 ,(unless no-return-p `(cffi:convert-from-foreign result ',return-type))))))
+|#
+
 
 ;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(COMPLEX C :DOUBLE R COMPLEX) NIL)
 ;; If there are any foreign structs in args or return,
 ;; defcfun should fbind the result of prepare-function
 ;; foreign-funcall should just funcall it
-
-;; (prepare-function "gsl_complex_add_real" 'complex '(complex :double))
 
 #|
 
