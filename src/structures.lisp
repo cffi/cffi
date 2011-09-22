@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-17 19:30:32EDT structures.lisp>
+;;; Time-stamp: <2011-09-21 23:26:38EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -42,25 +42,6 @@
   (let ((ptr (foreign-alloc type)))
     (translate-into-foreign-memory value type ptr)
     ptr))
-
-;;; Example with complex
-
-(defcstruct (complex-double :class complex-type)
- (real :double)
- (imag :double))
-
-(defmethod translate-into-foreign-memory ((value complex) (type complex-type) p)
- (with-foreign-slots ((real imag) p complex-double)
-   (setf real (realpart value)
-         imag (imagpart value))))
-
-(defmethod translate-from-foreign (p (type complex-type))
- (with-foreign-slots ((real imag) p complex-double)
-   (complex real imag)))
-
-(defmethod free-translated-object (value (p complex-type) freep)
-  (declare (ignore freep))
-  (foreign-free value))
 
 #|
 

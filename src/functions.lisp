@@ -133,7 +133,7 @@ This is now OK-ish, but we have double converts here.  I don't think I want
              ,@fargs)
            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
              ;; No structures by value, direct call
-             thing
+             ,thing
              (,@(mapcan #'list ctypes syms)
               ,(canonicalize-foreign-type rettype))
              ,@(parse-function-options options :pointer pointerp)))))))

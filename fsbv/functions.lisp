@@ -44,24 +44,24 @@
     (foreign-function-name return-type argument-types &optional (abi :default-abi))
   "Generate or retrieve the CIF needed to call the function through libffi."
   (or (gethash foreign-function-name *cif-table*)
-      (let* ((number-of-arguments (length argument-types)))
-        (let ((cif (cffi:foreign-alloc '(:struct ffi-cif)))
-              (ffi-argtypes (cffi:foreign-alloc :pointer :count number-of-arguments)))
-          (loop for type in argument-types
-                for i from 0
-                do
-                   (setf (cffi:mem-aref ffi-argtypes :pointer i)
-                         (libffi-type-pointer (parse-type type))))
-          (unless
-              (eql :OK
-                   (prep-cif cif abi number-of-arguments
-                             (libffi-type-pointer (parse-type return-type))
-                             ffi-argtypes))
-            (error
-             'foreign-function-not-prepared
-             :foreign-function-name foreign-function-name))
-          (setf (gethash foreign-function-name *cif-table*) cif)
-          cif))))
+      (let* ((number-of-arguments (length argument-types))
+             (cif (cffi:foreign-alloc '(:struct ffi-cif)))
+             (ffi-argtypes (cffi:foreign-alloc :pointer :count number-of-arguments)))
+        (loop for type in argument-types
+              for i from 0
+              do
+                 (setf (cffi:mem-aref ffi-argtypes :pointer i)
+                       (libffi-type-pointer (parse-type type))))
+        (unless
+            (eql :OK
+                 (prep-cif cif abi number-of-arguments
+                           (libffi-type-pointer (parse-type return-type))
+                           ffi-argtypes))
+          (error
+           'foreign-function-not-prepared
+           :foreign-function-name foreign-function-name))
+        (setf (gethash foreign-function-name *cif-table*) cif)
+        cif)))
 
 (defun unprepare-function (foreign-function-name)
   "Remove prepared definitions for the named foreign function.  Returns foreign-function-name if function had been prepared, NIL otherwise."
@@ -79,23 +79,36 @@
 ;;; (alexandria:hash-table-alist cffi-fsbv::*cif-table*)
 ;;; (cffi-fsbv::unprepare-function "gsl_complex_add_real")
 
-#|
-
-(defun callable-function  (function return-type argument-types &optional (abi :default-abi))
+;;; It's not possible to specify what the pointers in argvalues point to, as they vary.  Can we suppress the style warning?
+(defun callable-function (function return-type argument-types &optional (abi :default-abi))
   "Return a lambda that will call the function."
-  (let ((cif (prepare-function function return-type argument-types abi)))
-    (lambda (&rest args)
-      (let ((argvalues ()))
-        ;; Make all the foreign objects, set the values then call
-        (call cif
-              (cffi:foreign-symbol-pointer ,foreign-function-name)
-              ,(if no-return-p '(cffi:null-pointer) 'result)
-              argvalues)
-        ;; free all the foreign objects in an unwind-protect
-        )))
+  (let ((cif (prepare-function function return-type argument-types abi))
+        (number-of-arguments (length argument-types)))
+    `(lambda (&rest args)
+       (cffi:with-foreign-objects
+           ((argvalues :pointer ,number-of-arguments)
+            (result ,return-type))
+         (unwind-protect
+              (progn
+                (loop for arg in args
+                      for type in ,argument-types
+                      for count from 0
+                      do (setf (cffi:mem-aref argvalues :pointer count)
+                               (cffi:convert-to-foreign arg type)))
+                ;; Make all the foreign objects, set the values then call
+                (call ,cif
+                      (cffi:foreign-symbol-pointer ,function)
+                      ,(if (eql return-type :void) '(cffi:null-pointer) 'result)
+                      argvalues))
+           (loop for type in ,argument-types
+                 for count from 0
+                 do (cffi:free-converted-object
+                     (cffi:mem-aref argvalues :pointer count)
+                     type nil)))))))
 
 (setf *foreign-structures-by-value* 'callable-function)
 
+#|
 ;;; old approach
 (defun call-function (function arguments)
   "Call the prepared foreign function."

@@ -1,9 +1,8 @@
-;; Examples of using FSBV
+;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2009-05-02 21:18:21EDT examples.lisp>
-;; $Id: $
+;; Time-stamp: <2011-09-21 23:32:16EDT examples.lisp>
 
-(in-package :fsbv)
+(in-package :cffi)			; cffi-test ?  doesn't load
 
 ;;; These examples are based on GSL functions using and returning complex numbers
 ;;; http://www.gnu.org/software/gsl/manual/html_node/Properties-of-complex-numbers.html
@@ -19,9 +18,39 @@
 (cffi:load-foreign-library #+unix "libgslcblas.so")
 (cffi:load-foreign-library #+unix "libgsl.so")
 
+(defcstruct (complex-double :class complex-type)
+ (real :double)
+ (imag :double))
+
 ;;; Define the foreign struct; see /usr/include/gsl/gsl_complex.h
-(defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
-  (dat :double :count 2))
+;;(defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
+;;  (dat :double :count 2))
+
+(defmethod translate-into-foreign-memory ((value complex) (type complex-type) p)
+  (with-foreign-slots ((real imag) p (:struct complex-double))
+    (setf real (realpart value)
+	  imag (imagpart value))))
+
+(defmethod translate-from-foreign (p (type complex-type))
+ (with-foreign-slots ((real imag) p (:struct complex-double))
+   (complex real imag)))
+
+(defmethod free-translated-object (value (p complex-type) freep)
+  (declare (ignore freep))
+  (foreign-free value))
+
+(foreign-funcall
+  "gsl_complex_abs"
+  (:struct complex-double) #C(3.0d0 4.0d0)
+  (:struct complex-double))
+
+;;; Shouldn't this autoconvert?
+(convert-from-foreign
+ (foreign-funcall
+  "gsl_complex_abs"
+  (:struct complex-double) (convert-to-foreign #C(3.0d0 4.0d0) '(:struct complex-double))
+  (:struct complex-double))
+ '(:struct complex-double))
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
