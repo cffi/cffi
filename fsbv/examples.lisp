@@ -1,6 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2011-09-21 23:32:16EDT examples.lisp>
+;; Time-stamp: <2011-09-23 22:33:46EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -40,9 +40,14 @@
   (foreign-free value))
 
 (foreign-funcall
-  "gsl_complex_abs"
+  "gsl_complex_conjugate"
   (:struct complex-double) #C(3.0d0 4.0d0)
   (:struct complex-double))
+
+(foreign-funcall
+  "gsl_complex_abs"
+  (:struct complex-double) #C(3.0d0 4.0d0)
+  :double)
 
 ;;; Shouldn't this autoconvert?
 (convert-from-foreign

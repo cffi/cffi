@@ -82,25 +82,24 @@
 ;;; It's not possible to specify what the pointers in argvalues point to, as they vary.  Can we suppress the style warning?
 (defun callable-function (function return-type argument-types &optional (abi :default-abi))
   "Return a lambda that will call the function."
-  (let ((cif (prepare-function function return-type argument-types abi))
-        (number-of-arguments (length argument-types)))
+  (let ((number-of-arguments (length argument-types)))
     `(lambda (&rest args)
        (cffi:with-foreign-objects
            ((argvalues :pointer ,number-of-arguments)
-            (result ,return-type))
+            (result ',return-type))
          (unwind-protect
               (progn
                 (loop for arg in args
-                      for type in ,argument-types
+                      for type in ',argument-types
                       for count from 0
                       do (setf (cffi:mem-aref argvalues :pointer count)
                                (cffi:convert-to-foreign arg type)))
                 ;; Make all the foreign objects, set the values then call
-                (call ,cif
+                (call (prepare-function ,function ',return-type ',argument-types ',abi)
                       (cffi:foreign-symbol-pointer ,function)
                       ,(if (eql return-type :void) '(cffi:null-pointer) 'result)
                       argvalues))
-           (loop for type in ,argument-types
+           (loop for type in ',argument-types
                  for count from 0
                  do (cffi:free-converted-object
                      (cffi:mem-aref argvalues :pointer count)
