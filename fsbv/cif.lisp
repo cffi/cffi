@@ -42,7 +42,6 @@
 
 (cffi:defcfun ("ffi_prep_cif" prep-cif) status
   (ffi-cif :pointer)
-  ;;(ffi-abi (:pointer (:struct abi))) ; this doesn't work
   (ffi-abi abi)
   (nargs :uint)
   (rtype :pointer)

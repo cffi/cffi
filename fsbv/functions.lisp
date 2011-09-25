@@ -81,7 +81,7 @@
 
 ;;; It's not possible to specify what the pointers in argvalues point to, as they vary.  Can we suppress the style warning?
 (defun callable-function (function return-type argument-types &optional (abi :default-abi))
-  "Return a lambda that will call the function."
+  "Return a lambda that will call the libffi function #'call (ffi_call)."
   (let ((number-of-arguments (length argument-types)))
     `(lambda (&rest args)
        (cffi:with-foreign-objects
@@ -95,10 +95,14 @@
                       do (setf (cffi:mem-aref argvalues :pointer count)
                                (cffi:convert-to-foreign arg type)))
                 ;; Make all the foreign objects, set the values then call
-                (call (prepare-function ,function ',return-type ',argument-types ',abi)
-                      (cffi:foreign-symbol-pointer ,function)
-                      ,(if (eql return-type :void) '(cffi:null-pointer) 'result)
-                      argvalues))
+                (call
+                 (prepare-function ,function ',return-type ',argument-types ',abi)
+                 (cffi:foreign-symbol-pointer ,function)
+                 result
+                 argvalues)
+                ,(if (eql return-type :void)
+                     '(values)
+                     `(cffi:mem-aref result ',return-type)))
            (loop for type in ',argument-types
                  for count from 0
                  do (cffi:free-converted-object
@@ -108,125 +112,8 @@
 (setf *foreign-structures-by-value* 'callable-function)
 
 #|
-;;; old approach
-(defun call-function (function arguments)
-  "Call the prepared foreign function."
-  ;; (no-return-p (eql return-type :void))
-  ;; (fo-symbols (loop for i from 0 below number-of-arguments collect (make-symbol (format nil "ARG~d" i))))
-  (cffi:with-foreign-objects
-      ,(append
-        (loop for type in argument-types
-              for symb in fo-symbols
-              collect `(,symb ',type))
-        `((argvalues :pointer ,number-of-arguments))
-        (unless no-return-p `((result ',return-type))))
-    ,@(loop
-        for type in argument-types
-        for symb in fo-symbols
-        for i from 0
-        collect
-        `(cffi:convert-into-foreign-memory (nth args ,i) ',type ',symb))
-    (setf
-     ,@(loop for symb in fo-symbols
-             for i from 0
-             append
-             `((cffi:mem-aref argvalues :pointer ,i) ,symb))))
-  (call cif
-        (cffi:foreign-symbol-pointer ,foreign-function-name)
-        ,(if no-return-p '(cffi:null-pointer) 'result)
-        argvalues)
-  ,(unless no-return-p `(cffi:convert-from-foreign result ',return-type)))
 
-|#
-#|
-;;;;;;;;; old
-
-(defun prepare-function
-    (foreign-function-name return-type argument-types &optional (abi :default-abi))
-  "Generate a closure that can be called on the Lisp objects and will return
-   a Lisp object."
-  (let* ((number-of-arguments (length argument-types))
-	 (no-return-p (eql return-type :void))
-	 (fo-symbols (loop for i from 0 below number-of-arguments
-			   collect (make-symbol (format nil "ARG~d" i)))))
-    `(let ((cif (cffi:foreign-alloc 'ffi-cif))
-	   (ffi-argtypes (cffi:foreign-alloc :pointer :count ,number-of-arguments)))
-       (setf ,@(loop for type in argument-types
-		     for i from 0
-		     append
-		     `((cffi:mem-aref ffi-argtypes :pointer ,i)
-		       (libffi-type-pointer ',type))))
-       (unless
-	   (eql :OK
-		(prep-cif cif ,abi ,number-of-arguments
-			  (libffi-type-pointer ',return-type)
-			  ffi-argtypes))
-	 (error
-	  'foreign-function-not-prepared
-	  :foreign-function-name ',foreign-function-name))
-       (lambda (&rest args)
-	 (cffi:with-foreign-objects
-	     ,(append
-	       (loop for type in argument-types
-		     for symb in fo-symbols
-		     collect `(,symb ',type))
-	       `((argvalues :pointer ,number-of-arguments))
-	       (unless no-return-p `((result ',return-type))))
-	   ,@(loop
-	       for type in argument-types
-	       for symb in fo-symbols
-	       for i from 0
-	       collect
-	       `(cffi:convert-into-foreign-memory (nth args ,i) ',type ',symb))
-	   (setf
-	    ,@(loop for symb in fo-symbols
-		    for i from 0
-		    append
-		    `((cffi:mem-aref argvalues :pointer ,i) ,symb))))
-	 (call cif
-	       (cffi:foreign-symbol-pointer ,foreign-function-name)
-	       ,(if no-return-p '(cffi:null-pointer) 'result)
-	       argvalues)
-	 ,(unless no-return-p `(cffi:convert-from-foreign result ',return-type))))))
-|#
-
-
-;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(COMPLEX C :DOUBLE R COMPLEX) NIL)
-;; If there are any foreign structs in args or return,
-;; defcfun should fbind the result of prepare-function
-;; foreign-funcall should just funcall it
-
-#|
-
-;;;;;;;;;;;; OBSOLETE
-
-(defun defcfun-args-from-ff-args (arguments)
-  "Convert the argument format from foreign-funcall to defcfun form.
-   Returns a list of input arguments, and the return type."
-  (values 
-   (loop for (type symbol) on (butlast arguments) by #'cddr
-      collect (list symbol type))
-   (first (last arguments))))
-
-(defmacro foreign-funcall (name-and-options &rest arguments)
-  "Call the foreign function with or without structs-by-value."
-  (multiple-value-bind (arguments-symbol-type return-type)
-      (defcfun-args-from-ff-args arguments)
-    (let ((name (name-from-name-and-options name-and-options)))
-      (if (or (defined-type-p return-type)
-	      (some 'defined-type-p (mapcar 'second arguments-symbol-type)))
-	  `(funcall
-	    ,(if (symbolp name)
-		 `(get ',name 'prepared)
-		 (prepare-function
-		  ;; We do not use the "options" in name-and-options yet
-		  name
-		  return-type
-		  (mapcar 'second arguments-symbol-type)))
-	    ,@(mapcar 'first arguments-symbol-type))
-	  ;; If there are no call or return by value structs, simply use
-	  ;; cffi:foreign-funcall.
-	  `(cffi:foreign-funcall ,name-and-options ,@arguments)))))
+;;; Not ported yet
 
 (defmacro defcfun (name-and-options return-type &body args)
   "Define a Lisp function that calls a foreign function.

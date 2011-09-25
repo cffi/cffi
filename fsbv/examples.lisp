@@ -1,6 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2011-09-23 22:33:46EDT examples.lisp>
+;; Time-stamp: <2011-09-25 19:30:06EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -8,54 +8,33 @@
 ;;; http://www.gnu.org/software/gsl/manual/html_node/Properties-of-complex-numbers.html
 ;;; http://www.gnu.org/software/gsl/manual/html_node/Complex-arithmetic-operators.html
 
-;;; Install the GSL libraries, load this file, then try
-;;; (complex-abs #c(1.0d0 2.0d0))
-;;; (complex-conjugate #c(1.0d0 2.0d0))
-;;; (complex-add #c(1.0d0 2.0d0) #c(3.0d0 4.0d0))
-;;; (complex-add-real #c(1.0d0 2.0d0) 3.0d0)
-
 ;;; Load the libraries
 (cffi:load-foreign-library #+unix "libgslcblas.so")
 (cffi:load-foreign-library #+unix "libgsl.so")
 
-(defcstruct (complex-double :class complex-type)
- (real :double)
- (imag :double))
-
 ;;; Define the foreign struct; see /usr/include/gsl/gsl_complex.h
-;;(defcstruct (complex :constructor complex :deconstructor (realpart imagpart))
-;;  (dat :double :count 2))
+(defcstruct (complex-double :class complex-type)
+  (dat :double :count 2))
 
 (defmethod translate-into-foreign-memory ((value complex) (type complex-type) p)
-  (with-foreign-slots ((real imag) p (:struct complex-double))
-    (setf real (realpart value)
-	  imag (imagpart value))))
+  (with-foreign-slots ((dat) p (:struct complex-double))
+    (setf (cffi:mem-aref dat :double 0) (realpart value)
+	  (cffi:mem-aref dat :double 1) (imagpart value))))
 
 (defmethod translate-from-foreign (p (type complex-type))
- (with-foreign-slots ((real imag) p (:struct complex-double))
-   (complex real imag)))
+  (with-foreign-slots ((dat) p (:struct complex-double))
+    (complex (cffi:mem-aref dat :double 0)
+	     (cffi:mem-aref dat :double 1))))
 
 (defmethod free-translated-object (value (p complex-type) freep)
   (declare (ignore freep))
   (foreign-free value))
 
-(foreign-funcall
-  "gsl_complex_conjugate"
-  (:struct complex-double) #C(3.0d0 4.0d0)
-  (:struct complex-double))
+(foreign-funcall "gsl_complex_conjugate"
+		 (:struct complex-double) #C(3.0d0 4.0d0) (:struct complex-double))
+(foreign-funcall "gsl_complex_abs" (:struct complex-double) #C(3.0d0 4.0d0) :double)
 
-(foreign-funcall
-  "gsl_complex_abs"
-  (:struct complex-double) #C(3.0d0 4.0d0)
-  :double)
-
-;;; Shouldn't this autoconvert?
-(convert-from-foreign
- (foreign-funcall
-  "gsl_complex_abs"
-  (:struct complex-double) (convert-to-foreign #C(3.0d0 4.0d0) '(:struct complex-double))
-  (:struct complex-double))
- '(:struct complex-double))
+;;;;;;;; Not yet checked:
 
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
