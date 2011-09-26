@@ -73,39 +73,29 @@
       (remhash foreign-function-name *cif-table*)
       foreign-function-name)))
 
-(defun callable-function
-    (function return-type argument-types &optional pointerp (abi :default-abi))
-  "Return a lambda that will call the libffi function #'call (ffi_call)."
+(defun ffcall-body-libffi
+    (function symbols return-type argument-types &optional pointerp (abi :default-abi))
+  "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
   (let ((number-of-arguments (length argument-types)))
-    `(lambda (&rest args)
-       (cffi:with-foreign-objects
-           ((argvalues :pointer ,number-of-arguments)
-            (result ',return-type))
-         (unwind-protect
-              (progn
-                (loop for arg in args
-                      for type in ',argument-types
-                      for count from 0
-                      do (setf (cffi:mem-aref argvalues :pointer count)
-                               (cffi:convert-to-foreign arg type)))
-                ;; Make all the foreign objects, set the values then call
-                (call
-                 (prepare-function ,function ',return-type ',argument-types ',abi)
-                 (if ,pointerp
-                     ,function
-                     (cffi:foreign-symbol-pointer ,function))
-                 result
-                 argvalues)
-                ,(if (eql return-type :void)
-                     '(values)
-                     `(cffi:mem-aref result ',return-type)))
-           (loop for type in ',argument-types
-                 for count from 0
-                 do (cffi:free-converted-object
-                     (cffi:mem-aref argvalues :pointer count)
-                     type nil)))))))
+    `(cffi:with-foreign-objects
+         ((argvalues :pointer ,number-of-arguments)
+          (result ',return-type))
+       (loop :for arg :in (list ,@symbols)
+             :for type :in ',argument-types
+             :for count :from 0
+             :do (setf (cffi:mem-aref argvalues :pointer count) arg))
+       (call
+        (prepare-function ,function ',return-type ',argument-types ',abi)
+        ,(if pointerp
+             function
+             `(cffi:foreign-symbol-pointer ,function))
+        result
+        argvalues)
+       ,(if (eql return-type :void)
+            '(values)
+            `(cffi:mem-aref result ',return-type)))))
 
-(setf *foreign-structures-by-value* 'callable-function)
+(setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
 #|
 

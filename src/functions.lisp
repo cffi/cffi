@@ -105,13 +105,12 @@
        syms fargs types rettype
        (if sbvp
            ;; Divert to prepare-function result
-           `(funcall ;; should this be the %foreign-funcall?
-             ,(funcall *foreign-structures-by-value*
-                       thing
-                       rettype
-                       ctypes
-                       pointerp)
-             ,@fargs)
+           (funcall *foreign-structures-by-value*
+                    thing
+                    syms
+                    rettype
+                    ctypes
+                    pointerp)
            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
              ;; No structures by value, direct call
              ,thing
