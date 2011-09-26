@@ -73,14 +73,8 @@
       (remhash foreign-function-name *cif-table*)
       foreign-function-name)))
 
-;;; Test previous definitions
-;;; in CFFI
-;;; (cffi-fsbv::prepare-function "gsl_complex_add_real" '(:struct complex-double) '((:struct complex-double) :double))
-;;; (alexandria:hash-table-alist cffi-fsbv::*cif-table*)
-;;; (cffi-fsbv::unprepare-function "gsl_complex_add_real")
-
-;;; It's not possible to specify what the pointers in argvalues point to, as they vary.  Can we suppress the style warning?
-(defun callable-function (function return-type argument-types &optional (abi :default-abi))
+(defun callable-function
+    (function return-type argument-types &optional pointerp (abi :default-abi))
   "Return a lambda that will call the libffi function #'call (ffi_call)."
   (let ((number-of-arguments (length argument-types)))
     `(lambda (&rest args)
@@ -97,7 +91,9 @@
                 ;; Make all the foreign objects, set the values then call
                 (call
                  (prepare-function ,function ',return-type ',argument-types ',abi)
-                 (cffi:foreign-symbol-pointer ,function)
+                 (if ,pointerp
+                     ,function
+                     (cffi:foreign-symbol-pointer ,function))
                  result
                  argvalues)
                 ,(if (eql return-type :void)

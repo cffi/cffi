@@ -79,14 +79,3 @@
                (cffi:foreign-slot-value ptr '(:struct ffi-type) 'elements)
                type-pointer-array)
               ptr))))
-
-;;; Example
-;;; :pa cffi-fsbv
-;;; (libffi-type-pointer 'complex)
-;;; #.(SB-SYS:INT-SAP #X0063DED0)
-;;; (cffi:foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'size)
-;;; 0
-;;; (cffi:foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'alignment)
-;;; 0
-;;; (foreign-slot-value (libffi-type-pointer 'complex) 'ffi-type 'type)
-;;; 13

@@ -95,26 +95,6 @@
     (error "Unable to call structures by value; load CFFI-FSBV."))
   "A function that produces a form suitable for calling structures by value.")
 
-;; (FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(complex-double C :DOUBLE R complex-double) NIL)
-;; (prepare-function "gsl_complex_add_real" '(:struct complex-double) '((:struct complex-double) :double))
-;;; results in a lambda form, this form is the function to be called
-
-#|
-(FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '(:pointer C :DOUBLE R :pointer) NIL)
-(LET ((#:G1132 C))
-  (LET ((#:G1133 R))
-    (%FOREIGN-FUNCALL "gsl_complex_add_real"
-                      (:POINTER #:G1132 :DOUBLE #:G1133 :POINTER) :CONVENTION
-                      :CDECL :LIBRARY :DEFAULT)))
-(FOREIGN-FUNCALL-FORM "gsl_complex_add_real" NIL '((:struct complex-double) C :DOUBLE R (:struct complex-double)) NIL)
-... error... 
-(parse-args-and-types '((:struct complex-double) C :DOUBLE R (:struct complex-double)))
-(setf *foreign-structures-by-value* 'cffi-fsbv::prepare-function)
-
-This is now OK-ish, but we have double converts here.  I don't think I want
-
-|#
-
 (defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
@@ -129,7 +109,8 @@ This is now OK-ish, but we have double converts here.  I don't think I want
              ,(funcall *foreign-structures-by-value*
                        thing
                        rettype
-                       ctypes)
+                       ctypes
+                       pointerp)
              ,@fargs)
            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
              ;; No structures by value, direct call
