@@ -1,6 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2011-09-25 19:30:06EDT examples.lisp>
+;; Time-stamp: <2011-09-26 09:17:24EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -33,6 +33,29 @@
 (foreign-funcall "gsl_complex_conjugate"
 		 (:struct complex-double) #C(3.0d0 4.0d0) (:struct complex-double))
 (foreign-funcall "gsl_complex_abs" (:struct complex-double) #C(3.0d0 4.0d0) :double)
+
+#|
+
+;;; Real-and-complex:
+
+(defcstruct (real-and-complex :class real-and-complex-type)
+ (r :double)
+ (c complex-double))
+(defmethod translate-into-foreign-memory (value (type real-and-complex-type) p)
+  (setf (foreign-slot-value p 'real-and-complex 'r) (first value))
+  (convert-into-foreign-memory
+   (second value)
+   'complex
+   (foreign-slot-pointer p 'real-and-complex 'c)))
+(defmethod translate-from-foreign (p (type real-and-complex-type))
+ (with-foreign-slots ((r c) p real-and-complex)
+   (list r c)))
+(convert-to-foreign '(7.0d0 #C(2.0d0 3.0d0)) 'real-and-complex)
+#.(SB-SYS:INT-SAP #X0063D450)
+(convert-from-foreign * 'real-and-complex)
+(7.0d0 #C(2.0d0 3.0d0))
+
+|#
 
 ;;;;;;;; Not yet checked:
 
