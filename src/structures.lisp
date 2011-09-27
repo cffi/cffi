@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-21 23:26:38EDT structures.lisp>
+;;; Time-stamp: <2011-09-26 09:17:24EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -42,35 +42,6 @@
   (let ((ptr (foreign-alloc type)))
     (translate-into-foreign-memory value type ptr)
     ptr))
-
-#|
-
-(convert-to-foreign #C(1.0d0 3.0d0) 'complex)
-#.(SB-SYS:INT-SAP #X0063D430)
-(convert-from-foreign * 'complex)
-#C(1.0d0 3.0d0)
-
-;;; Real-and-complex:
-
-(defcstruct (real-and-complex :class real-and-complex-type)
- (r :double)
- (c complex))
-(defmethod translate-into-foreign-memory (value (type real-and-complex-type) p)
-  (setf (foreign-slot-value p 'real-and-complex 'r) (first value))
-  (convert-into-foreign-memory
-   (second value)
-   'complex
-   (foreign-slot-pointer p 'real-and-complex 'c)))
-(defmethod translate-from-foreign (p (type real-and-complex-type))
- (with-foreign-slots ((r c) p real-and-complex)
-   (list r c)))
-(convert-to-foreign '(7.0d0 #C(2.0d0 3.0d0)) 'real-and-complex)
-#.(SB-SYS:INT-SAP #X0063D450)
-(convert-from-foreign * 'real-and-complex)
-(7.0d0 #C(2.0d0 3.0d0))
-
-|#
-
 
 #|
 (defmacro define-structure-conversion
