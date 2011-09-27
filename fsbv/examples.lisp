@@ -1,6 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2011-09-25 19:30:06EDT examples.lisp>
+;; Time-stamp: <2011-09-27 00:31:25EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -34,19 +34,18 @@
 		 (:struct complex-double) #C(3.0d0 4.0d0) (:struct complex-double))
 (foreign-funcall "gsl_complex_abs" (:struct complex-double) #C(3.0d0 4.0d0) :double)
 
-;;;;;;;; Not yet checked:
-
 ;;; gsl_complex_abs: an example of a function that takes a complex
 ;;; number and returns a double-float
 (defcfun (complex-abs "gsl_complex_abs") :double
-  "Find the absolute value of the complex number."
-  (complex-number complex))
+  (complex-number (:struct cffi::complex-double)))
 
 ;;; gsl_complex_conjugate: an example of a function that takes a complex
 ;;; number and returns another complex number
-(defcfun (complex-conjugate "gsl_complex_conjugate") complex
+(defcfun (complex-conjugate "gsl_complex_conjugate") (:struct cffi::complex-double)
   "Find the complex conjugate of the given complex number."
-  (c complex))
+  (c (:struct cffi::complex-double)))
+
+;;;;;;;; Not yet checked:
 
 ;;; gsl_complex_add: an example of a function that takes two complex
 ;;; numbers and returns another complex number

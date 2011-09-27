@@ -85,9 +85,14 @@
            (unless pointer
              (list :library library)))))
 
-(defun call-by-value-p (ctype)
+(defun structure-by-value-p (ctype)
   "A structure or union is to be called or returned by value."
   (member (alexandria:ensure-car ctype) '(:struct :union)))
+
+(defun fn-call-by-value-p (argument-types return-type)
+  "One or more structures in the arguments or return from the function are called by value."
+  (or (some 'structure-by-value-p argument-types)
+      (structure-by-value-p return-type)))
 
 (defvar *foreign-structures-by-value*
   (lambda (&rest args)
@@ -98,12 +103,10 @@
 (defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
-    (let ((syms (make-gensym-list (length fargs)))
-          (sbvp (or (some 'call-by-value-p ctypes)
-                    (call-by-value-p rettype))))
+    (let ((syms (make-gensym-list (length fargs))))
       (translate-objects
        syms fargs types rettype
-       (if sbvp
+       (if (fn-call-by-value-p ctypes rettype)
            ;; Divert to prepare-function result
            (funcall *foreign-structures-by-value*
                     thing
@@ -376,14 +379,21 @@ arguments and does type promotion for the variadic arguments."
 ;;; %DEFCFUN.
 (defmacro defcfun (name-and-options return-type &body args)
   "Defines a Lisp function that calls a foreign function."
-  (let ((docstring (when (stringp (car args)) (pop args))))
+  (let ((docstring (when (stringp (car args)) (pop args)))
+        (arg-types (mapcar #'cadr args)))
     (multiple-value-bind (lisp-name foreign-name options)
         (parse-name-and-options name-and-options)
-      (if (eq (car (last args)) '&rest)
-          (%defcfun-varargs lisp-name foreign-name return-type
-                            (butlast args) options docstring)
-          (%defcfun lisp-name foreign-name return-type args options
-                    docstring)))))
+      (if (fn-call-by-value-p arg-types return-type)
+          `(defun ,lisp-name ,(mapcar #'first args)
+             (foreign-funcall
+              ,(cons foreign-name options)
+              ,@(append (mapcan #'list arg-types (mapcar #'first args))
+                        (list return-type))))
+          (if (eq (car (last args)) '&rest)
+              (%defcfun-varargs lisp-name foreign-name return-type
+                                (butlast args) options docstring)
+              (%defcfun lisp-name foreign-name return-type args options
+                        docstring))))))
 
 ;;;# Defining Callbacks
 
