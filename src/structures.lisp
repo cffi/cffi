@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-26 09:17:24EDT structures.lisp>
+;;; Time-stamp: <2011-09-28 23:50:21EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -32,16 +32,42 @@
 
 (defgeneric translate-into-foreign-memory (value type p)
   (:documentation
-   "Translate the Lisp value into the foreign type, writing the answers at the pointer p."))
+   "Translate the Lisp value into the foreign type, writing the answers at the pointer p.")
+  (:method ((object list) (type foreign-struct-type) p)
+    ;; Iterate over plist, set slots
+    (loop for (name value) on object by #'cddr
+          for slot = (gethash name (slots type))
+          do (convert-into-foreign-memory
+              value
+              (slot-type slot)
+              (foreign-struct-slot-pointer p slot)))))
 
 (defun convert-into-foreign-memory (value type ptr)
-  (translate-into-foreign-memory value (parse-type type) ptr)
+  (let ((ptype (parse-type type)))
+    (if (typep ptype 'foreign-built-in-type)
+        value
+        (translate-into-foreign-memory value ptype ptr)))
   ptr)
 
 (defmethod translate-to-foreign (value (type foreign-struct-type))
   (let ((ptr (foreign-alloc type)))
     (translate-into-foreign-memory value type ptr)
     ptr))
+
+(defmethod translate-from-foreign (p (type foreign-struct-type))
+  ;; Iterate over slots, make plist
+  (let ((plist (list)))
+    (loop for slot being the hash-value of (structure-slots type)
+          for name = (name slot)
+          do (setf
+              (getf plist name)
+              (foreign-slot-value p type name)))
+    plist))
+
+(defmethod free-translated-object (value (p foreign-struct-type) freep)
+  (declare (ignore freep))
+  ;;; Recursively free structs
+  )
 
 #|
 (defmacro define-structure-conversion

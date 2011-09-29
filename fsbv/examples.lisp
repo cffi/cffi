@@ -1,10 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-<<<<<<< HEAD
-;; Time-stamp: <2011-09-27 00:31:25EDT examples.lisp>
-=======
-;; Time-stamp: <2011-09-26 09:17:24EDT examples.lisp>
->>>>>>> 2f0e52ea349ce6c31c1ca1ee60145d9496f5dfc1
+;; Time-stamp: <2011-09-28 22:42:01EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -38,15 +34,29 @@
 		 (:struct complex-double) #C(3.0d0 4.0d0) (:struct complex-double))
 (foreign-funcall "gsl_complex_abs" (:struct complex-double) #C(3.0d0 4.0d0) :double)
 
-<<<<<<< HEAD
-=======
+;;; gsl_complex_abs: an example of a function that takes a complex
+;;; number and returns a double-float
+(defcfun (complex-abs "gsl_complex_abs") :double
+  (complex-number (:struct cffi::complex-double)))
+
+;;; gsl_complex_conjugate: an example of a function that takes a complex
+;;; number and returns another complex number
+(defcfun (complex-conjugate "gsl_complex_conjugate") (:struct cffi::complex-double)
+  "Find the complex conjugate of the given complex number."
+  (c (:struct cffi::complex-double)))
+
+(defcstruct (real-and-complex :class real-and-complex-type)
+ (r :double)
+ (c (:struct complex-double)))
+
+;;; (convert-to-foreign '(r 7.0d0 c #C(2.0d0 3.0d0)) '(:struct real-and-complex))
+
+
 #|
 
 ;;; Real-and-complex:
 
-(defcstruct (real-and-complex :class real-and-complex-type)
- (r :double)
- (c complex-double))
+
 (defmethod translate-into-foreign-memory (value (type real-and-complex-type) p)
   (setf (foreign-slot-value p 'real-and-complex 'r) (first value))
   (convert-into-foreign-memory
@@ -62,20 +72,6 @@
 (7.0d0 #C(2.0d0 3.0d0))
 
 |#
-
-;;;;;;;; Not yet checked:
-
->>>>>>> 2f0e52ea349ce6c31c1ca1ee60145d9496f5dfc1
-;;; gsl_complex_abs: an example of a function that takes a complex
-;;; number and returns a double-float
-(defcfun (complex-abs "gsl_complex_abs") :double
-  (complex-number (:struct cffi::complex-double)))
-
-;;; gsl_complex_conjugate: an example of a function that takes a complex
-;;; number and returns another complex number
-(defcfun (complex-conjugate "gsl_complex_conjugate") (:struct cffi::complex-double)
-  "Find the complex conjugate of the given complex number."
-  (c (:struct cffi::complex-double)))
 
 ;;;;;;;; Not yet checked:
 
