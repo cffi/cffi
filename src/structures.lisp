@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-29 23:09:52EDT structures.lisp>
+;;; Time-stamp: <2011-09-30 00:00:50EDT structures.lisp>
 ;;;
 ;;; strings.lisp --- Operations on foreign strings.
 ;;;
@@ -36,11 +36,15 @@
   (:method ((object list) (type foreign-struct-type) p)
     ;; Iterate over plist, set slots
     (loop for (name value) on object by #'cddr
-          do (setf (foreign-slot-value p (unparse-type type) name)
-                   ;; does this work for aggregate slots?
-                   (convert-to-foreign
-                    value
-                    (slot-type (gethash name (structure-slots type))))))))
+          do (setf
+              (foreign-slot-value p (unparse-type type) name)
+              (let ((slot (gethash name (structure-slots type))))
+                (if (typep slot 'aggregate-struct-slot)
+                    (foreign-alloc
+                     (slot-type slot)
+                     :count (slot-count slot)
+                     :initial-contents value)
+                    (convert-to-foreign value (slot-type slot))))))))
 
 (defun convert-into-foreign-memory (value type ptr)
   (let ((ptype (parse-type type)))
@@ -61,7 +65,13 @@
           for name = (slot-name slot)
           do (setf
               (getf plist name)
-              (foreign-struct-slot-value p slot)))
+              (if (typep slot 'aggregate-struct-slot)
+                  (loop for i from 0 below (slot-count slot)
+                        with list = (make-list (slot-count slot))
+                        with slot-ptr = (foreign-slot-pointer p type name)
+                        do (setf (nth i list)
+                                 (mem-aref slot-ptr (slot-type slot) i)))
+                  (foreign-struct-slot-value p slot))))
     plist))
 
 (defmethod free-translated-object (value (p foreign-struct-type) freep)
