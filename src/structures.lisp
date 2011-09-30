@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-30 09:21:07EDT structures.lisp>
+;;; Time-stamp: <2011-09-30 10:47:30EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -78,6 +78,22 @@
   (declare (ignore freep))
   ;;; Recursively free structs
   )
+
+(defun translation-forms-for-class (class type-class)
+  "Make forms for translation of foreign structures to and from a standard class.  The class slots are assumed to have the same name as the foreign structure."
+  ;; Possible improvement: optional argument to map structure slot names to/from class slot names.
+  `(progn
+     (defmethod translate-from-foreign (pointer (type ,type-class))
+                ;; Make the instance from the plist
+                (apply 'make-instance ',class (call-next-method)))
+     (defmethod translate-into-foreign-memory ((object ,class) (type ,type-class) pointer)
+                (call-next-method
+                 ;; Translate into a plist and call the general method
+                 (loop for slot being the hash-value of (structure-slots type)
+                       for name = (slot-name slot)
+                       append (list slot-name (slot-value object slot-name)))
+                 type
+                 pointer))))
 
 #|
 (defmacro define-structure-conversion
