@@ -1,7 +1,7 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-30 00:00:50EDT structures.lisp>
+;;; Time-stamp: <2011-09-30 09:21:07EDT structures.lisp>
 ;;;
-;;; strings.lisp --- Operations on foreign strings.
+;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
 ;;; Copyright (C) 2011, Liam M. Healy  <lhealy@common-lisp.net>
 ;;;
