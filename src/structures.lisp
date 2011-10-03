@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-09-30 10:47:30EDT structures.lisp>
+;;; Time-stamp: <2011-10-02 22:05:37EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -39,12 +39,7 @@
           do (setf
               (foreign-slot-value p (unparse-type type) name)
               (let ((slot (gethash name (structure-slots type))))
-                (if (typep slot 'aggregate-struct-slot)
-                    (foreign-alloc
-                     (slot-type slot)
-                     :count (slot-count slot)
-                     :initial-contents value)
-                    (convert-to-foreign value (slot-type slot))))))))
+                (convert-to-foreign value (slot-type slot)))))))
 
 (defun convert-into-foreign-memory (value type ptr)
   (let ((ptype (parse-type type)))
@@ -65,35 +60,41 @@
           for name = (slot-name slot)
           do (setf
               (getf plist name)
-              (if (typep slot 'aggregate-struct-slot)
-                  (loop for i from 0 below (slot-count slot)
-                        with list = (make-list (slot-count slot))
-                        with slot-ptr = (foreign-slot-pointer p type name)
-                        do (setf (nth i list)
-                                 (mem-aref slot-ptr (slot-type slot) i)))
-                  (foreign-struct-slot-value p slot))))
+              (foreign-struct-slot-value p slot)))
     plist))
 
-(defmethod free-translated-object (value (p foreign-struct-type) freep)
-  (declare (ignore freep))
-  ;;; Recursively free structs
-  )
+(defmethod free-translated-object (ptr (type foreign-struct-type) freep)
+  ;; Look for any pointer slots and free them first
+  (loop for slot being the hash-value of (structure-slots type)
+        when (and (listp (slot-type slot)) (eq (first (slot-type slot)) :pointer))
+          do
+             ;; Free if the pointer is to a specific type, not generic :pointer
+             (free-translated-object
+              (foreign-slot-value ptr type (slot-name slot))
+              (rest (slot-type slot))
+              freep))
+  (foreign-free ptr))
 
 (defun translation-forms-for-class (class type-class)
   "Make forms for translation of foreign structures to and from a standard class.  The class slots are assumed to have the same name as the foreign structure."
   ;; Possible improvement: optional argument to map structure slot names to/from class slot names.
   `(progn
      (defmethod translate-from-foreign (pointer (type ,type-class))
-                ;; Make the instance from the plist
-                (apply 'make-instance ',class (call-next-method)))
+       ;; Make the instance from the plist
+       (apply 'make-instance ',class (call-next-method)))
      (defmethod translate-into-foreign-memory ((object ,class) (type ,type-class) pointer)
-                (call-next-method
-                 ;; Translate into a plist and call the general method
-                 (loop for slot being the hash-value of (structure-slots type)
-                       for name = (slot-name slot)
-                       append (list slot-name (slot-value object slot-name)))
-                 type
-                 pointer))))
+       (call-next-method
+        ;; Translate into a plist and call the general method
+        (loop for slot being the hash-value of (structure-slots type)
+              for name = (slot-name slot)
+              append (list slot-name (slot-value object slot-name)))
+        type
+        pointer))))
+
+;;; For a class already defined and loaded, and a defcstruct already defined, use
+;;; #.(translation-forms-for-class class type-class)
+;;; to connnect the two.  It would be nice to have a macro to do all three simultaneously.
+;;; (defmacro define-foreign-structure (class ))
 
 #|
 (defmacro define-structure-conversion

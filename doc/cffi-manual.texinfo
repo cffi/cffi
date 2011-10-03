@@ -5129,6 +5129,14 @@ care of doing argument promotion. Note that in this case
 function and will only work for Lisps that support
 @code{foreign-funcall.}
 
+If a foreign structure is to be passed or returned by value (that is,
+the type is of the form @code{(:struct ...)}), then the cffi-fsbv system
+must be loaded, which in turn depends on
+@uref{http://sourceware.org/libffi/,libffi}, including the header files.
+Failure to load that system will result in an error.
+Variadic functions cannot at present accept or return structures by
+value.
+
 @subheading Examples
 
 @lisp
@@ -5215,6 +5223,14 @@ One of @code{:cdecl} (default) or @code{:stdcall}.
 @subheading Description
 The @code{foreign-funcall} macro is the main primitive for calling
 foreign functions.
+
+If a foreign structure is to be passed or returned by value (that is,
+the type is of the form @code{(:struct ...)}), then the cffi-fsbv system
+must be loaded, which in turn depends on
+@uref{http://sourceware.org/libffi/,libffi}, including the header files.
+Failure to load that system will result in an error.
+Variadic functions cannot at present accept or return structures by
+value.  
 
 @emph{Note: The return value of foreign-funcall on functions with a
 :void return type is still undefined.}

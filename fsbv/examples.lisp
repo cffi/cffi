@@ -1,6 +1,6 @@
 ;; Examples of using CFFI-FSBV
 ;; Liam Healy 2009-04-07 22:13:34EDT examples.lisp
-;; Time-stamp: <2011-09-28 22:42:01EDT examples.lisp>
+;; Time-stamp: <2011-10-02 20:19:25EDT examples.lisp>
 
 (in-package :cffi)			; cffi-test ?  doesn't load
 
@@ -26,8 +26,8 @@
     (complex (cffi:mem-aref dat :double 0)
 	     (cffi:mem-aref dat :double 1))))
 
-(defmethod free-translated-object (value (p complex-type) freep)
-  (declare (ignore freep))
+(defmethod free-translated-object (value (type complex-type) freep)
+  (declare (ignore freep type))
   (foreign-free value))
 
 (foreign-funcall "gsl_complex_conjugate"
@@ -71,8 +71,6 @@
 (convert-from-foreign * 'real-and-complex)
 (7.0d0 #C(2.0d0 3.0d0))
 
-|#
-
 ;;;;;;;; Not yet checked:
 
 ;;; gsl_complex_add: an example of a function that takes two complex
@@ -95,3 +93,5 @@
 ;;; Definition of complex-add-real re-preparing each call.
 (defun complex-add-real-ff-noprep (c r)
   (foreign-funcall "gsl_complex_add_real" complex c :double r complex))
+|#
+
