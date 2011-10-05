@@ -120,6 +120,12 @@
    (append *built-in-integer-types* *other-builtin-types*))
   "List of real float types supported by CFFI.")
 
+;;; we use this special variable to support the (old, deprecated)
+;;; semantics of bare struct types. FOO means (:POINTER (:STRUCT FOO)
+;;; in functions declarations whereas FOO in a structure definition is
+;;; a proper aggregate type: (:STRUCT FOO).
+(defvar *parse-bare-structs-as-pointers* nil)
+
 ;;;# Foreign Pointers
 
 (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
@@ -522,12 +528,6 @@ The foreign array must be freed with foreign-array-free."
                      :name name :count count)
       (make-instance 'simple-struct-slot :offset offset :type type
                      :name name)))
-
-;;; we use this special variable to support the (old, deprecated)
-;;; semantics of bare struct types. FOO means (:POINTER (:STRUCT FOO)
-;;; in functions declarations whereas FOO in a structure definition is
-;;; a proper aggregate type: (:STRUCT FOO).
-(defvar *parse-bare-structs-as-pointers* nil)
 
 (defun parse-deprecated-struct-type (name struct-or-union)
   (check-type struct-or-union (member :struct :union))
