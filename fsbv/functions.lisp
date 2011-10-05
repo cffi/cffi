@@ -38,7 +38,7 @@
      (format stream "Foreign function ~a did not prepare correctly"
 	     (foreign-function-name condition))))
   (:documentation
-   "A condition that has been signalled by the FSBV library."))
+   "Preparation of foreign function did not succeed, according to return from libffi library."))
 
 (defun prepare-function
     (foreign-function-name return-type argument-types &optional (abi :default-abi))
