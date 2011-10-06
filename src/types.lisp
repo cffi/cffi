@@ -130,11 +130,15 @@
 
 (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
 
+(defun bare-struct-type-p (struct-type)
+  (let ((*parse-bare-structs-as-pointers* t))
+    (eq (canonicalize-foreign-type struct-type) :pointer)))
+
 (defun mem-ref (ptr type &optional (offset 0))
   "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
 we don't return its 'value' but a pointer to it, which is PTR itself."
   (let* ((ptype (parse-type type)))
-    (if (aggregatep ptype) ; FIXME
+    (if (and (aggregatep ptype) (bare-struct-type-p type))
         (inc-pointer ptr offset)
         (let ((ctype (canonicalize ptype)))
           #+cffi-sys::no-long-long
@@ -154,8 +158,10 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
         #+cffi-sys::no-long-long
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-ref form))
-        (if (aggregatep parsed-type) ; FIXME
-            `(inc-pointer ,ptr ,offset)
+        (if (aggregatep parsed-type)
+            (if (bare-struct-type-p (eval type))
+                `(inc-pointer ,ptr ,offset)
+                (expand-from-foreign `(inc-pointer ,ptr ,offset) parsed-type))
             (expand-from-foreign `(%mem-ref ,ptr ,ctype ,offset) parsed-type)))
       form))
 
@@ -169,7 +175,9 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
       (return-from mem-set
         (%emulated-mem-set-64 (translate-to-foreign value ptype)
                               ptr ctype offset)))
-    (%mem-set (translate-to-foreign value ptype) ptr ctype offset)))
+    (if (aggregatep ptype) ; XXX: backwards incompatible?
+        (translate-into-foreign-memory value ptype ptr)
+        (%mem-set (translate-to-foreign value ptype) ptr ctype offset))))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
   "SETF expander for MEM-REF that doesn't rebind TYPE.
@@ -209,7 +217,10 @@ to open-code (SETF MEM-REF) forms."
         #+cffi-sys::no-long-long
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-set form))
-        `(%mem-set ,(expand-to-foreign value parsed-type) ,ptr ,ctype ,offset))
+        (if (aggregatep parsed-type)    ; XXX: skip for now.
+            form      ; use expand-into-foreign-memory when available.
+            `(%mem-set ,(expand-to-foreign value parsed-type)
+                       ,ptr ,ctype ,offset)))
       form))
 
 ;;;# Dereferencing Foreign Arrays

@@ -444,6 +444,17 @@
     (alloc-pair 1 2)
   (1 . 2))
 
+(deftest struct-values.translation.mem-ref.1
+    (with-foreign-object (p '(:struct struct-pair))
+      (setf (mem-ref p '(:struct struct-pair)) '(1 . 2))
+      (with-foreign-slots ((a b) p (:struct struct-pair))
+        (values (mem-ref p '(:struct struct-pair))
+                a
+                b)))
+  (1 . 2)
+  1
+  2)
+
 (defcstruct (struct-pair+1 :class pair+1)
   (p (:pointer (:struct struct-pair)))
   (c :int))

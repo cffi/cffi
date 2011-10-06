@@ -604,6 +604,24 @@
       (setf (mem-ref p :char) 42))
   42)
 
+(define-foreign-type int+1 ()
+  ()
+  (:actual-type :int)
+  (:simple-parser int+1))
+
+(defmethod translate-to-foreign (value (type int+1))
+  (1+ value))
+
+(defmethod translate-from-foreign (value (type int+1))
+  (1+ value))
+
+(deftest mem-ref.setf.2
+    (with-foreign-object (p 'int+1)
+      (values (setf (mem-ref p 'int+1) 42)
+              (mem-ref p 'int+1)))
+  42 ; should this be 43?
+  44)
+
 (deftest pointer-eq.non-pointers.1
     (expecting-error (pointer-eq 1 2))
   :error)
