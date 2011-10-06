@@ -403,7 +403,7 @@
   (with-foreign-slots ((a b) pointer struct-pair)
     (cons a b)))
 
-(defmethod translate-into-foreign-memory (object (type pair) pointer)
+(defmethod translate-into-foreign-memory ((object cons) (type pair) pointer)
   (with-foreign-slots ((a b) pointer struct-pair)
     (setf a (car object)
           b (cdr object))))
@@ -452,7 +452,7 @@
   (with-foreign-slots ((p c) pointer struct-pair+1)
     (cons p c)))
 
-(defmethod translate-into-foreign-memory (object (type pair+1) pointer)
+(defmethod translate-into-foreign-memory ((object cons) (type pair+1) pointer)
   (with-foreign-slots ((c) pointer struct-pair+1)
     (convert-into-foreign-memory (car object)
                                  'struct-pair
