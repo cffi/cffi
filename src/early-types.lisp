@@ -367,6 +367,7 @@ Signals an error if the type cannot be resolved."
 ;;; TYPE, which will be a subclass of TRANSLATABLE-FOREIGN-TYPE.
 ;;; Returns the converted Lisp value.
 (defgeneric translate-from-foreign (value type)
+  (:argument-precedence-order type value)
   (:method (value type)
     (declare (ignore type))
     value))

@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-02 22:05:37EDT structures.lisp>
+;;; Time-stamp: <2011-10-08 21:57:23EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -33,6 +33,7 @@
 (defgeneric translate-into-foreign-memory (value type p)
   (:documentation
    "Translate the Lisp value into the foreign type, writing the answers at the pointer p.")
+  (:argument-precedence-order type value p)
   (:method ((object list) (type foreign-struct-type) p)
     ;; Iterate over plist, set slots
     (loop for (name value) on object by #'cddr
