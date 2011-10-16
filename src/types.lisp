@@ -147,7 +147,11 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
               (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
                                       ptype)))
           ;; normal branch
-          (translate-from-foreign (%mem-ref ptr ctype offset) ptype)))))
+          (translate-from-foreign
+           (if (bare-struct-type-p type)
+               (%mem-ref ptr ctype offset)
+               (inc-pointer ptr offset))
+           ptype)))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
