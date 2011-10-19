@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-08 21:57:23EDT structures.lisp>
+;;; Time-stamp: <2011-10-18 22:43:18EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -76,7 +76,7 @@
               freep))
   (foreign-free ptr))
 
-(defun translation-forms-for-class (class type-class)
+(defmacro translation-forms-for-class (class type-class)
   "Make forms for translation of foreign structures to and from a standard class.  The class slots are assumed to have the same name as the foreign structure."
   ;; Possible improvement: optional argument to map structure slot names to/from class slot names.
   `(progn

@@ -2264,6 +2264,21 @@ The equivalent @code{defcstruct} form follows:
   (reason :string))
 @end lisp
 
+@c LMH structure translation
+By default, @ref{convert-from-foreign} (and also @code{mem-aref}) will
+make a plist with slot names as keys, and @ref{convert-to-foreign} will
+translate such a plist to a foreign structure.  A user wishing to define
+other translations should use the @code{:class} argument to
+@code{defcstruct}, and then define methods for
+@code{translate-from-foreign} and
+@code{translate-into-foreign-pointer} that specialize on this class,
+possibly calling @code{call-next-method} to translate from and to the
+plists rather than provide a direct interface to the foreign object.
+The macro @code{translation-forms-for-class} will generate the forms
+necessary to translate a Lisp class into a foreign structure and vice
+versa. 
+@c Write separate function doc section for translation-forms-for-class?
+
 Please note that this interface is only for those that must know about
 the values contained in a relevant struct.  If the library you are
 interfacing returns an opaque pointer that needs only be passed to

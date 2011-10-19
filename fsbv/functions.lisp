@@ -96,3 +96,5 @@
             `(cffi:mem-aref result ',return-type)))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
+
+(pushnew :fsbv *features*)

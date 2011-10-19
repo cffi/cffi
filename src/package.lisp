@@ -137,6 +137,7 @@
    #:convert-from-foreign
    #:convert-into-foreign-memory
    #:free-converted-object
+   #:translation-forms-for-class
 
    ;; Extensible foreign type operations.
    #:translate-to-foreign
