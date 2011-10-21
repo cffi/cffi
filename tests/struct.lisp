@@ -455,6 +455,27 @@
   1
   2)
 
+;;; LMH test to test default translation of foreign structures
+(defcstruct (struct-pair-default-translate :class pair-default)
+  (a :int)
+  (b :int))
+
+;; (defparameter frpr (convert-to-foreign '(a 1 b 2) '(:struct struct-pair-default-translate)))
+
+(deftest struct-values-default.translation.mem-ref.1
+    (with-foreign-object (p '(:struct struct-pair-default-translate))
+      (setf (mem-ref p '(:struct struct-pair-default-translate)) '(a 1 b 2))
+      (with-foreign-slots ((a b) p (:struct struct-pair-default-translate))
+        (let ((plist (mem-ref p '(:struct struct-pair-default-translate))))
+          (values (getf plist 'a)
+                  (getf plist 'b)
+                  a
+                  b))))
+  1
+  2
+  1
+  2)
+
 (defcstruct (struct-pair+1 :class pair+1)
   (p (:pointer (:struct struct-pair)))
   (c :int))

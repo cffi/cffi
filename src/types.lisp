@@ -137,21 +137,19 @@
 (defun mem-ref (ptr type &optional (offset 0))
   "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
 we don't return its 'value' but a pointer to it, which is PTR itself."
-  (let* ((ptype (parse-type type)))
-    (if (and (aggregatep ptype) (bare-struct-type-p type))
-        (inc-pointer ptr offset)
-        (let ((ctype (canonicalize ptype)))
+  (let* ((parsed-type (parse-type type))
+         (ctype (canonicalize parsed-type)))
           #+cffi-sys::no-long-long
-          (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
+          (when (member ctype '(:long-long :unsigned-long-long))
             (return-from mem-ref
               (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
-                                      ptype)))
+                                      parsed-type)))
           ;; normal branch
-          (translate-from-foreign
-           (if (bare-struct-type-p type)
-               (%mem-ref ptr ctype offset)
-               (inc-pointer ptr offset))
-           ptype)))))
+    (if (aggregatep parsed-type)
+        (if (bare-struct-type-p type)
+            (inc-pointer ptr offset)
+            (translate-from-foreign (inc-pointer ptr offset) parsed-type))
+        (translate-from-foreign (%mem-ref ptr ctype offset) parsed-type))))
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
