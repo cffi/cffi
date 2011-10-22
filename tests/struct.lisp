@@ -476,6 +476,23 @@
   1
   2)
 
+;;; LMH recursive structure
+(defcstruct (struct-pair+double :class pair+double)
+  (pr (:struct struct-pair-default-translate))
+  (dbl :double))
+
+(deftest struct-values-default.translation.mem-ref.2
+    (with-foreign-object (p '(:struct struct-pair+double))
+      (setf (mem-ref p '(:struct struct-pair+double)) '(pr (a 4 b 5) dbl 2.5d0))
+      (with-foreign-slots ((pr dbl) p (:struct struct-pair+double))
+        (let ((plist (mem-ref p '(:struct struct-pair+double))))
+          (values (getf (getf plist 'pr) 'a)
+                  (getf (getf plist 'pr) 'b)
+                  (getf plist 'dbl)))))
+  4
+  5
+  2.5d0)
+
 (defcstruct (struct-pair+1 :class pair+1)
   (p (:pointer (:struct struct-pair)))
   (c :int))
