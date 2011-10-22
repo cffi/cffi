@@ -64,10 +64,10 @@ ifeq ($(ARCH), ppc970)
 CFLAGS_64 += -m64
 endif
 
-SHLIBS = libtest$(SHLIB_EXT) libtest2$(SHLIB_EXT)
+SHLIBS = libtest$(SHLIB_EXT) libtest2$(SHLIB_EXT) libfsbv$(SHLIB_EXT)
 
 ifeq ($(ARCH), x86_64)
-SHLIBS += libtest32$(SHLIB_EXT) libtest2_32$(SHLIB_EXT)
+SHLIBS += libtest32$(SHLIB_EXT) libtest2_32$(SHLIB_EXT) libfsbv_32$(SHLIB_EXT)
 endif
 
 shlibs: $(SHLIBS)
@@ -78,11 +78,17 @@ libtest$(SHLIB_EXT): libtest.c
 libtest2$(SHLIB_EXT): libtest2.c
 	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $(CFLAGS_64) $<
 
+libfsbv$(SHLIB_EXT): libfsbv.c
+	$(CC) -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $(CFLAGS_64) $<
+
 ifeq ($(ARCH), x86_64)
 libtest32$(SHLIB_EXT): libtest.c
 	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 libtest2_32$(SHLIB_EXT): libtest2.c
+	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+
+libfsbv_32$(SHLIB_EXT): libfsbv.c
 	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 endif
 

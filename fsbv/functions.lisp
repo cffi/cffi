@@ -93,7 +93,13 @@
         argvalues)
        ,(if (eql return-type :void)
             '(values)
-            `(cffi:mem-aref result ',return-type)))))
+            (if (typep (parse-type return-type) 'cffi::translatable-foreign-type)
+                ;; just return the pointer so that expand-from-foreign
+                ;; can apply translate-from-foreign
+                'result
+                ;; built-in types won't be translated by
+                ;; expand-from-foreign, we have to do it here
+                `(cffi:mem-aref result ',return-type))))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 

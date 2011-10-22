@@ -107,7 +107,7 @@
       (translate-objects
        syms fargs types rettype
        (if (fn-call-by-value-p ctypes rettype)
-           ;; Divert to prepare-function result
+           ;; Structures by value call through *foreign-structures-by-value*
            (funcall *foreign-structures-by-value*
                     thing
                     syms

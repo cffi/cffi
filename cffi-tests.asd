@@ -72,6 +72,7 @@
      (:file "memory")
      (:file "strings")
      (:file "struct")
+     #+fsbv (:file "fsbv")
      (:file "union")
      (:file "enum")
      (:file "misc-types")

@@ -38,6 +38,12 @@
   (:unix (:or "libtest2.so" "libtest2_32.so"))
   (t (:default "libtest2")))
 
+(define-foreign-library (libfsbv :type :test)
+  (:darwin (:or "libfsbv.dylib" "libfsbv32.dylib"))
+  (:unix (:or "libfsbv.so" "libfsbv32.so"))
+  (:windows "libfsbv.dll")
+  (t (:default "libfsbv")))
+
 (define-foreign-library libc
   (:windows "msvcrt.dll"))
 
@@ -83,6 +89,7 @@
   (let ((*foreign-library-directories* (list (load-directory))))
     (load-foreign-library 'libtest)
     (load-foreign-library 'libtest2)
+    #+fsbv (load-foreign-library 'libfsbv)
     (load-foreign-library 'libc)
     #+(or abcl lispworks) (load-foreign-library 'libm)))
 

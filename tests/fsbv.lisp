@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi
+;;; fsbv.lisp --- Tests of foreign structure by value calls.
 ;;;
-;;; Copyright (C) 2009, 2011 Liam M. Healy
+;;; Copyright (C) 2011, Liam M. Healy
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,12 +25,22 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi-tests)
 
-(cffi:define-foreign-library (libffi)
-  (:darwin (:or "libffi.dylib" "libffi32.dylib"))
-  (:unix (:or "libffi.so" "libffi32.so"))
-  (:windows "libffi.dll")
-  (t (:default "libffi")))
+;; Requires struct.lisp
 
-(cffi:load-foreign-library 'libffi)
+(defcfun "sumpair" :int
+  (p (:struct struct-pair)))
+
+(defcfun "doublepair" (:struct struct-pair)
+  (p (:struct struct-pair)))
+
+;;; Call struct by value
+(deftest fsbv.1
+    (sumpair '(1 . 2))
+  3)
+
+;;; Call and return struct by value
+(deftest fsbv.2
+    (doublepair '(1 . 2))
+  '(2 . 4))
