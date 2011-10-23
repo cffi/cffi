@@ -178,7 +178,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
         (%emulated-mem-set-64 (translate-to-foreign value ptype)
                               ptr ctype offset)))
     (if (aggregatep ptype) ; XXX: backwards incompatible?
-        (translate-into-foreign-memory value ptype ptr)
+        (translate-into-foreign-memory value ptype (inc-pointer ptr offset))
         (%mem-set (translate-to-foreign value ptype) ptr ctype offset))))
 
 (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
