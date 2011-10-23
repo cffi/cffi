@@ -58,8 +58,15 @@ struct struct_pair {
     int b;
 };
 
+struct struct_pair_double {
+    struct struct_pair pr;
+    double dbl;
+};
+
 int sumpair (struct struct_pair sp);
 struct struct_pair doublepair (struct struct_pair dp);
+double prodsumpair (struct struct_pair_double spd);
+struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
 
 DLLEXPORT
 int sumpair (struct struct_pair sp)
@@ -73,5 +80,20 @@ struct struct_pair doublepair (struct struct_pair dp)
   struct struct_pair ret;
   ret.a = 2*dp.a;
   ret.b = 2*dp.b;
+  return ret;
+}
+
+DLLEXPORT
+double prodsumpair (struct struct_pair_double pd)
+{
+  return pd.dbl * sumpair(pd.pr);
+}
+
+DLLEXPORT
+struct struct_pair_double doublepairdouble (struct struct_pair_double pd)
+{
+  struct struct_pair_double ret;
+  ret.pr = doublepair(pd.pr);
+  ret.dbl = 2*pd.dbl;
   return ret;
 }

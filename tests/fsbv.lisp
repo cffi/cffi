@@ -35,6 +35,12 @@
 (defcfun "doublepair" (:struct struct-pair)
   (p (:struct struct-pair)))
 
+(defcfun "prodsumpair" :double
+  (p (:struct struct-pair+double)))
+
+(defcfun "doublepairdouble" (:struct struct-pair+double)
+  (p (:struct struct-pair+double)))
+
 ;;; Call struct by value
 (deftest fsbv.1
     (sumpair '(1 . 2))
@@ -44,3 +50,18 @@
 (deftest fsbv.2
     (doublepair '(1 . 2))
   '(2 . 4))
+
+;;; Call recursive structure by value
+(deftest fsbv.3
+    (prodsumpair '(pr (a 4 b 5) dbl 2.5d0))
+  22.5d0)
+
+;;; Call and return recursive structure by value
+(deftest fsbv.4
+    (let ((ans (doublepairdouble '(pr (a 4 b 5) dbl 2.5d0))))
+      (values (getf (getf ans 'pr) 'a)
+	      (getf (getf ans 'pr) 'b)
+	      (getf ans 'dbl)))
+  8
+  10
+  5.0d0)

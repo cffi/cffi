@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-18 22:43:18EDT structures.lisp>
+;;; Time-stamp: <2011-10-22 22:37:54EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -93,7 +93,7 @@
         pointer))))
 
 ;;; For a class already defined and loaded, and a defcstruct already defined, use
-;;; #.(translation-forms-for-class class type-class)
+;;; (translation-forms-for-class class type-class)
 ;;; to connnect the two.  It would be nice to have a macro to do all three simultaneously.
 ;;; (defmacro define-foreign-structure (class ))
 
