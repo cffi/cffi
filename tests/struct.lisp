@@ -455,6 +455,16 @@
   1
   2)
 
+;;; LMH test multiple structs
+(deftest struct-values.translation.mem-aref.1
+    (with-foreign-object (p '(:struct struct-pair) 2)
+      (setf (mem-aref p '(:struct struct-pair) 0) '(1 . 2)
+            (mem-aref p '(:struct struct-pair) 1) '(3 . 4))
+      (values (mem-aref p '(:struct struct-pair) 0)
+              (mem-aref p '(:struct struct-pair) 1)))
+  (1 . 2)
+  (3 . 4))
+
 ;;; LMH test to test default translation of foreign structures
 (defcstruct (struct-pair-default-translate :class pair-default)
   (a :int)
