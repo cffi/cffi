@@ -655,7 +655,7 @@ The foreign array must be freed with foreign-array-free."
       (remf options :conc-name)
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
-         ,(when-let (class (getf options :class))
+         ,(when-let (class (or (getf options :class) (symbolicate name '-tclass)))
             `(defclass ,class (foreign-struct-type
                                translatable-foreign-type)
                ()))

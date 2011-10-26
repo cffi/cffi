@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-22 22:37:54EDT structures.lisp>
+;;; Time-stamp: <2011-10-25 22:59:58EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -75,6 +75,25 @@
               (rest (slot-type slot))
               freep))
   (foreign-free ptr))
+
+(export 'define-translation-method)
+(defmacro define-translation-method ((object type method) &body body)
+  "Define a translation method for the foreign structure type; 'method is one of :into, :from, or :to, meaning relation to foreign memory.  If :into, the variable 'pointer is the foreign pointer.  Note: type must be defined and loaded before this macro is expanded."
+  (let ((tclass (class-name (class-of (cffi::parse-type type)))))
+    (when (eq tclass 'foreign-struct-type)
+      (error "Won't replace existing translation method for foreign-struct-type"))
+    `(defmethod
+         ,(case method
+            (:into 'translate-into-foreign-memory)
+            (:from 'translate-from-foreign)
+            (:to 'translate-to-foreign))
+       ;; Arguments to the method
+       (,object
+        (type ,tclass)
+        ,@(when (eq method :into) '(pointer))) ; is intentional variable capture a good idea?
+       ;; The body
+       (declare (ignorable type)) ; I can't think of a reason why you'd want to use this
+       ,@body)))
 
 (defmacro translation-forms-for-class (class type-class)
   "Make forms for translation of foreign structures to and from a standard class.  The class slots are assumed to have the same name as the foreign structure."
