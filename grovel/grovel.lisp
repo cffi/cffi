@@ -516,9 +516,9 @@ int main(int argc, char**argv) {
       (c-format out "(cl:defconstant "
                 size-of-constant-name struct-lisp-name)
       (c-print-symbol out size-of-constant-name)
-      (c-format out " (cffi:foreign-type-size '")
+      (c-format out " (cffi:foreign-type-size '(:struct ")
       (c-print-symbol out struct-lisp-name)
-      (c-format out "))~%"))))
+      (c-format out ")))~%"))))
 
 (defmacro define-pseudo-cvar (str name type &key read-only)
   (let ((c-parse (let ((*read-eval* nil)

@@ -813,14 +813,17 @@ slots will be defined and stored."
 (define-parse-method :union (name)
   (funcall (find-type-parser name :union)))
 
-(defmacro defcunion (name &body fields)
+(defmacro defcunion (name-and-options &body fields)
   "Define the layout of a foreign union."
   (discard-docstring fields)
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (notice-foreign-union-definition ',name ',fields)
-     (define-parse-method ,name ()
-       (parse-deprecated-struct-type ',name :union))
-     '(:union ,name)))
+  (destructuring-bind (name &key size)
+      (ensure-list name-and-options)
+    (declare (ignore size))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (notice-foreign-union-definition ',name-and-options ',fields)
+       (define-parse-method ,name ()
+         (parse-deprecated-struct-type ',name :union))
+       '(:union ,name))))
 
 ;;;# Operations on Types
 
