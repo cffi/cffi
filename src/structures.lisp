@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-25 22:59:58EDT structures.lisp>
+;;; Time-stamp: <2011-10-29 17:48:06EDT structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -78,8 +78,8 @@
 
 (export 'define-translation-method)
 (defmacro define-translation-method ((object type method) &body body)
-  "Define a translation method for the foreign structure type; 'method is one of :into, :from, or :to, meaning relation to foreign memory.  If :into, the variable 'pointer is the foreign pointer.  Note: type must be defined and loaded before this macro is expanded."
-  (let ((tclass (class-name (class-of (cffi::parse-type type)))))
+  "Define a translation method for the foreign structure type; 'method is one of :into, :from, or :to, meaning relation to foreign memory.  If :into, the variable 'pointer is the foreign pointer.  Note: type must be defined and loaded before this macro is expanded, and just the bare name (without :struct) should be specified."
+  (let ((tclass (class-name (class-of (cffi::parse-type `(:struct ,type))))))
     (when (eq tclass 'foreign-struct-type)
       (error "Won't replace existing translation method for foreign-struct-type"))
     `(defmethod
