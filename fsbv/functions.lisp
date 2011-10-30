@@ -79,7 +79,8 @@
   (let ((number-of-arguments (length argument-types)))
     `(cffi:with-foreign-objects
          ((argvalues :pointer ,number-of-arguments)
-          (result ',return-type))
+          ,@(unless (eql return-type :void)
+              `((result ',return-type))))
        (loop :for arg :in (list ,@symbols)
              :for type :in ',argument-types
              :for count :from 0
@@ -89,7 +90,7 @@
         ,(if pointerp
              function
              `(cffi:foreign-symbol-pointer ,function))
-        result
+        ,(if (eql return-type :void) '(cffi:null-pointer) 'result)
         argvalues)
        ,(if (eql return-type :void)
             '(values)
