@@ -82,7 +82,6 @@
           ,@(unless (eql return-type :void)
               `((result ',return-type))))
        (loop :for arg :in (list ,@symbols)
-             :for type :in ',argument-types
              :for count :from 0
              :do (setf (cffi:mem-aref argvalues :pointer count) arg))
        (call

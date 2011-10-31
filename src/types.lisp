@@ -637,9 +637,9 @@ The foreign array must be freed with foreign-array-free."
         for slot in slot-names
         for accessor = (symbolicate conc-name slot)
         collect `(defun ,accessor (,pointer-arg)
-                   (foreign-slot-value ,pointer-arg ',name ',slot))
+                   (foreign-slot-value ,pointer-arg '(:struct ,name) ',slot))
         collect `(defun (setf ,accessor) (value ,pointer-arg)
-                   (foreign-slot-set value ,pointer-arg ',name ',slot))))
+                   (foreign-slot-set value ,pointer-arg '(:struct ,name) ',slot))))
 
 (define-parse-method :struct (name)
   (funcall (find-type-parser name :struct)))
