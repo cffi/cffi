@@ -40,15 +40,16 @@
 ;;; TRANSLATE-OBJECTS as the CALL-FORM argument) instead of
 ;;; CFFI-SYS:%FOREIGN-FUNCALL to call the foreign-function.
 
-(defun translate-objects (syms args types rettype call-form)
+(defun translate-objects (syms args types rettype call-form &optional indirect)
   "Helper function for FOREIGN-FUNCALL and DEFCFUN."
   (if (null args)
       (expand-from-foreign call-form (parse-type rettype))
       (expand-to-foreign-dyn
        (car args) (car syms)
        (list (translate-objects (cdr syms) (cdr args)
-                                (cdr types) rettype call-form))
-       (parse-type (car types)))))
+                                (cdr types) rettype call-form indirect))
+       (parse-type (car types))
+       indirect)))
 
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
@@ -97,16 +98,17 @@
 (defvar *foreign-structures-by-value*
   (lambda (&rest args)
     (declare (ignore args))
-    (error "Unable to call structures by value; load CFFI-FSBV."))
+    (error "Unable to call structures by value; load CFFI-FSBV and retry."))
   "A function that produces a form suitable for calling structures by value.")
 
 (defun foreign-funcall-form (thing options args pointerp)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
-    (let ((syms (make-gensym-list (length fargs))))
+    (let ((syms (make-gensym-list (length fargs)))
+          (fsbvp (fn-call-by-value-p ctypes rettype)))
       (translate-objects
        syms fargs types rettype
-       (if (fn-call-by-value-p ctypes rettype)
+       (if fsbvp
            ;; Structures by value call through *foreign-structures-by-value*
            (funcall *foreign-structures-by-value*
                     thing
@@ -119,7 +121,8 @@
              ,thing
              (,@(mapcan #'list ctypes syms)
               ,(canonicalize-foreign-type rettype))
-             ,@(parse-function-options options :pointer pointerp)))))))
+             ,@(parse-function-options options :pointer pointerp)))
+       fsbvp))))
 
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."

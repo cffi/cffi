@@ -359,6 +359,11 @@ Signals an error if the type cannot be resolved."
     (declare (ignore type))
     value))
 
+(defgeneric translate-into-foreign-memory (value type pointer)
+  (:documentation
+   "Translate the Lisp value into the foreign type, making the pointer point to the foreign object.")
+  (:argument-precedence-order type value pointer))
+
 ;;; Similar to TRANSLATE-TO-FOREIGN, used exclusively by
 ;;; (SETF FOREIGN-STRUCT-SLOT-VALUE).
 (defgeneric translate-aggregate-to-foreign (ptr value type))
@@ -431,20 +436,24 @@ Signals an error if the type cannot be resolved."
 
 ;;; EXPAND-TO-FOREIGN-DYN
 
-(defgeneric expand-to-foreign-dyn (value var body type)
-  (:method (value var body type)
-    (declare (ignore type))
+(defgeneric expand-to-foreign-dyn (value var body type &optional indirect)
+  (:method (value var body type &optional indirect)
+    (declare (ignore type indirect))
     `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn :around
-    (value var body (type translatable-foreign-type))
+    (value var body (type translatable-foreign-type) &optional indirect)
   (let ((*runtime-translator-form*
-         (with-unique-names (param)
-           `(multiple-value-bind (,var ,param)
-                (translate-to-foreign ,value ,type)
-              (unwind-protect
-                   (progn ,@body)
-                (free-translated-object ,var ,type ,param))))))
+          (if indirect
+              `(with-foreign-object (,var ',(unparse-type type))
+                 (translate-into-foreign-memory ,value ,type ,var)
+                 ,@body)
+              (with-unique-names (param)
+                `(multiple-value-bind (,var ,param)
+                     (translate-to-foreign ,value ,type)
+                   (unwind-protect
+                        (progn ,@body)
+                     (free-translated-object ,var ,type ,param)))))))
     (call-next-method)))
 
 ;;; If this method is called it means the user hasn't defined a
@@ -455,7 +464,9 @@ Signals an error if the type cannot be resolved."
 ;;; above *RUNTIME-TRANSLATOR-FORM* which includes a call to
 ;;; FREE-TRANSLATED-OBJECT.  (Or else there would occur no translation
 ;;; at all.)
-(defmethod expand-to-foreign-dyn (value var body (type translatable-foreign-type))
+
+(defmethod expand-to-foreign-dyn
+    (value var body (type translatable-foreign-type) &optional indirect)
   (multiple-value-bind (expansion default-etp-p)
       (expand-to-foreign value type)
     (if default-etp-p
@@ -506,8 +517,9 @@ Signals an error if the type cannot be resolved."
 (defmethod expand-to-foreign (value (type enhanced-typedef))
   (expand-to-foreign value (actual-type type)))
 
-(defmethod expand-to-foreign-dyn (value var body (type enhanced-typedef))
-  (expand-to-foreign-dyn value var body (actual-type type)))
+(defmethod expand-to-foreign-dyn
+    (value var body (type enhanced-typedef) &optional indirect)
+  (expand-to-foreign-dyn value var body (actual-type type) indirect))
 
 ;;;# User-defined Types and Translations.
 

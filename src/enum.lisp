@@ -121,6 +121,11 @@
       (%foreign-enum-value type value :errorp t)
       value))
 
+(defmethod translate-into-foreign-memory
+    (value (type foreign-enum) pointer)
+  (setf (mem-aref pointer (unparse-type (actual-type type)))
+        (translate-to-foreign value type)))
+
 (defmethod translate-from-foreign (value (type foreign-enum))
   (%foreign-enum-keyword type value :errorp t))
 

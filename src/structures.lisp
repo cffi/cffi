@@ -1,5 +1,5 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-10-29 17:48:06EDT structures.lisp>
+;;; Time-stamp: <2011-11-12 22:02:39EST structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -30,17 +30,14 @@
 
 ;;; Definitions for conversion of foreign structures.
 
-(defgeneric translate-into-foreign-memory (value type p)
-  (:documentation
-   "Translate the Lisp value into the foreign type, writing the answers at the pointer p.")
-  (:argument-precedence-order type value p)
-  (:method ((object list) (type foreign-struct-type) p)
-    ;; Iterate over plist, set slots
-    (loop for (name value) on object by #'cddr
-          do (setf
-              (foreign-slot-value p (unparse-type type) name)
-              (let ((slot (gethash name (structure-slots type))))
-                (convert-to-foreign value (slot-type slot)))))))
+(defmethod translate-into-foreign-memory
+    ((object list) (type foreign-struct-type) p)
+  ;; Iterate over plist, set slots
+  (loop for (name value) on object by #'cddr
+        do (setf
+            (foreign-slot-value p (unparse-type type) name)
+            (let ((slot (gethash name (structure-slots type))))
+              (convert-to-foreign value (slot-type slot))))))
 
 (defun convert-into-foreign-memory (value type ptr)
   (let ((ptype (parse-type type)))
