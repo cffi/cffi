@@ -361,7 +361,7 @@ Signals an error if the type cannot be resolved."
 
 (defgeneric translate-into-foreign-memory (value type pointer)
   (:documentation
-   "Translate the Lisp value into the foreign type, making the pointer point to the foreign object.")
+   "Translate the Lisp value into the foreign memory location given by pointer.  Return value is not used.")
   (:argument-precedence-order type value pointer))
 
 ;;; Similar to TRANSLATE-TO-FOREIGN, used exclusively by
@@ -456,6 +456,22 @@ Signals an error if the type cannot be resolved."
                      (free-translated-object ,var ,type ,param)))))))
     (call-next-method)))
 
+(defmethod expand-to-foreign-dyn
+    (value var body (type foreign-pointer-type) &optional indirect)
+  (if indirect
+      `(with-foreign-object (,var :pointer)
+         (translate-into-foreign-memory ,value ,type ,var)
+         ,@body)
+      `(let ((,var ,value)) ,@body)))
+
+(defmethod expand-to-foreign-dyn
+    (value var body (type foreign-built-in-type) &optional indirect)
+  (if indirect
+      `(with-foreign-object (,var :pointer)
+         (translate-into-foreign-memory ,value ,type ,var)
+         ,@body)
+      `(let ((,var ,value)) ,@body)))
+
 ;;; If this method is called it means the user hasn't defined a
 ;;; to-foreign-dyn expansion, so we use the to-foreign expansion.
 ;;;
@@ -504,6 +520,9 @@ Signals an error if the type cannot be resolved."
 
 (defmethod translate-to-foreign (value (type enhanced-typedef))
   (translate-to-foreign value (actual-type type)))
+
+(defmethod translate-into-foreign-memory (value (type enhanced-typedef) pointer)
+  (translate-into-foreign-memory value (actual-type type) pointer))
 
 (defmethod translate-from-foreign (value (type enhanced-typedef))
   (translate-from-foreign value (actual-type type)))

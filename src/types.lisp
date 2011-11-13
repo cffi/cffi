@@ -284,10 +284,13 @@ to open-code (SETF MEM-REF) forms."
                         (list index)
                         (list index-tmp)))))))
 
-
 (defmethod translate-into-foreign-memory
     (value (type foreign-pointer-type) pointer)
   (setf (mem-aref pointer :pointer) value))
+
+(defmethod translate-into-foreign-memory
+    (value (type foreign-built-in-type) pointer)
+  (setf (mem-aref pointer (unparse-type type)) value))
 
 (define-foreign-type foreign-array-type ()
   ((dimensions :reader dimensions :initarg :dimensions)
