@@ -212,40 +212,64 @@ WITH-POINTER-TO-VECTOR-DATA."
                                                  ,value)))))
            form))))
 
-(define-mem-accessors
-  (:char sb-sys:signed-sap-ref-8)
-  (:unsigned-char sb-sys:sap-ref-8)
-  (:short sb-sys:signed-sap-ref-16)
-  (:unsigned-short sb-sys:sap-ref-16)
-  (:int sb-sys:signed-sap-ref-32)
-  (:unsigned-int sb-sys:sap-ref-32)
-  (:long sb-sys:signed-sap-ref-word)
-  (:unsigned-long sb-sys:sap-ref-word)
-  (:long-long sb-sys:signed-sap-ref-64)
-  (:unsigned-long-long sb-sys:sap-ref-64)
-  (:float sb-sys:sap-ref-single)
-  (:double sb-sys:sap-ref-double)
-  (:pointer sb-sys:sap-ref-sap))
+;;; Look up alien type information and build both define-mem-accessors form
+;;; and convert-foreign-type function definition.
+(defmacro define-type-mapping (accessortable alientable)
+  (let* ((accessible-types
+           (remove 'void alientable :key #'second))
+         (size-and-signedp-forms
+           (mapcar (lambda (name)
+                     `(list (alien-size ,(second name))
+                            (typep -1 '(alien ,(second name)))))
+                   accessible-types)))
+    ;; alien-size doesn't evaluate type argument, so we have a choice among
+    ;; hairy backquotes and eval.
+    `(macrolet
+         ((generate ()
+            `(progn
+               (define-mem-accessors
+                 ,@(loop for (cffi-keyword alien-type fixed-accessor)
+                         in ',accessible-types
+                         and (alien-size signedp)
+                         in (list ,@size-and-signedp-forms)
+                         for (signed-ref unsigned-ref)
+                           = (cdr (assoc alien-size ',accessortable))
+                         collect
+                         `(,cffi-keyword
+                           ,(or fixed-accessor
+                                (if signedp signed-ref unsigned-ref)
+                                (error "No accessor found for ~S"
+                                       alien-type)))))
+               (defun convert-foreign-type (type-keyword)
+                 (ecase type-keyword
+                   ,@(loop for (cffi-keyword alien-type) in ',alientable
+                           collect `(,cffi-keyword (quote ,alien-type))))))))
+       (generate))))
+
+(define-type-mapping
+    ((8  sb-sys:signed-sap-ref-8  sb-sys:sap-ref-8)
+     (16 sb-sys:signed-sap-ref-16 sb-sys:sap-ref-16)
+     (32 sb-sys:signed-sap-ref-32 sb-sys:sap-ref-32)
+     (64 sb-sys:signed-sap-ref-32 sb-sys:sap-ref-64))
+    ((:char               char)
+     (:unsigned-char      unsigned-char)
+     (:short              short)
+     (:unsigned-short     unsigned-short)
+     (:int                int)
+     (:unsigned-int       unsigned-int)
+     (:long               long)
+     (:unsigned-long      unsigned-long)
+     (:long-long          long-long)
+     (:unsigned-long-long unsigned-long-long)
+     (:float              single-float
+                          sb-sys:sap-ref-single)
+     (:double             double-float
+                          sb-sys:sap-ref-double)
+     (:pointer            system-area-pointer
+                          sb-sys:sap-ref-sap)
+     (:void               void)))
 
 ;;;# Calling Foreign Functions
-
-(defun convert-foreign-type (type-keyword)
-  "Convert a CFFI type keyword to an SB-ALIEN type."
-  (ecase type-keyword
-    (:char               'char)
-    (:unsigned-char      'unsigned-char)
-    (:short              'short)
-    (:unsigned-short     'unsigned-short)
-    (:int                'int)
-    (:unsigned-int       'unsigned-int)
-    (:long               'long)
-    (:unsigned-long      'unsigned-long)
-    (:long-long          'long-long)
-    (:unsigned-long-long 'unsigned-long-long)
-    (:float              'single-float)
-    (:double             'double-float)
-    (:pointer            'system-area-pointer)
-    (:void               'void)))
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
