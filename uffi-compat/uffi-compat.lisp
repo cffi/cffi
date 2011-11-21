@@ -650,9 +650,11 @@ output to *trace-output*.  Returns the shell's exit code."
         "")))
 
 (defmacro octets-to-string (octets &key encoding)
-  `(babel:octets-to-string
-    :encoding (or ,encoding cffi:*default-foreign-encoding*)))
+  `(babel:octets-to-string ,octets
+                           :encoding (or ,encoding
+                                         cffi:*default-foreign-encoding*)))
 
 (defun foreign-encoded-octet-count (str &key encoding)
-  (babel:string-size-in-octets
-   str :encoding (or encoding cffi:*default-foreign-encoding*)))
+  (babel:string-size-in-octets str
+                               :encoding (or encoding
+                                             cffi:*default-foreign-encoding*)))
