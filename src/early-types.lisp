@@ -436,13 +436,13 @@ Signals an error if the type cannot be resolved."
 
 ;;; EXPAND-TO-FOREIGN-DYN
 
-(defgeneric expand-to-foreign-dyn (value var body type &optional indirect)
-  (:method (value var body type &optional indirect)
+(defgeneric expand-to-foreign-dyn (value var body type &key indirect)
+  (:method (value var body type &key indirect)
     (declare (ignore type indirect))
     `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn :around
-    (value var body (type translatable-foreign-type) &optional indirect)
+    (value var body (type translatable-foreign-type) &key indirect)
   (let ((*runtime-translator-form*
           (if indirect
               `(with-foreign-object (,var ',(unparse-type type))
@@ -457,7 +457,7 @@ Signals an error if the type cannot be resolved."
     (call-next-method)))
 
 (defmethod expand-to-foreign-dyn
-    (value var body (type foreign-pointer-type) &optional indirect)
+    (value var body (type foreign-pointer-type) &key indirect)
   (if indirect
       `(with-foreign-object (,var :pointer)
          (translate-into-foreign-memory ,value ,type ,var)
@@ -465,7 +465,7 @@ Signals an error if the type cannot be resolved."
       `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn
-    (value var body (type foreign-built-in-type) &optional indirect)
+    (value var body (type foreign-built-in-type) &key indirect)
   (if indirect
       `(with-foreign-object (,var :pointer)
          (translate-into-foreign-memory ,value ,type ,var)
@@ -482,7 +482,7 @@ Signals an error if the type cannot be resolved."
 ;;; at all.)
 
 (defmethod expand-to-foreign-dyn
-    (value var body (type translatable-foreign-type) &optional indirect)
+    (value var body (type translatable-foreign-type) &key indirect)
   (multiple-value-bind (expansion default-etp-p)
       (expand-to-foreign value type)
     (if default-etp-p
@@ -537,8 +537,8 @@ Signals an error if the type cannot be resolved."
   (expand-to-foreign value (actual-type type)))
 
 (defmethod expand-to-foreign-dyn
-    (value var body (type enhanced-typedef) &optional indirect)
-  (expand-to-foreign-dyn value var body (actual-type type) indirect))
+    (value var body (type enhanced-typedef) &key indirect)
+  (expand-to-foreign-dyn value var body (actual-type type) :indirect t))
 
 ;;;# User-defined Types and Translations.
 

@@ -49,7 +49,7 @@
        (list (translate-objects (cdr syms) (cdr args)
                                 (cdr types) rettype call-form indirect))
        (parse-type (car types))
-       indirect)))
+       :indirect indirect)))
 
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
