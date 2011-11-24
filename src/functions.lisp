@@ -54,7 +54,8 @@
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
   (let* ((len (length args))
-         (return-type (if (oddp len) (lastcar args) :void)))
+         (return-type (if (oddp len) (lastcar args) :void))
+         (*parse-bare-structs-as-pointers* t))
     (loop repeat (floor len 2)
           for (type arg) on args by #'cddr
           collect type into types
@@ -105,6 +106,7 @@
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs)))
+          (*parse-bare-structs-as-pointers* t)
           (fsbvp (fn-call-by-value-p ctypes rettype)))
       (translate-objects
        syms fargs types rettype
@@ -148,7 +150,8 @@
     (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
         (parse-args-and-types varargs)
       (let ((fixed-syms (make-gensym-list (length fixed-fargs)))
-            (varargs-syms (make-gensym-list (length varargs-fargs))))
+            (varargs-syms (make-gensym-list (length varargs-fargs)))
+            (*parse-bare-structs-as-pointers* t))
         (translate-objects
          (append fixed-syms varargs-syms)
          (append fixed-fargs varargs-fargs)
