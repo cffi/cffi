@@ -225,7 +225,7 @@ the bitfield TYPE."
   (%foreign-bitfield-symbols type value))
 
 (defmethod expand-to-foreign (value (type foreign-bitfield))
-  `(if (integerp ',value)
+  `(if (integerp ,value)
        ,value
        (%foreign-bitfield-value ,type (ensure-list ,value))))
 
