@@ -192,6 +192,15 @@
       (error "~S is not a foreign bitfield type." type)
       (%foreign-bitfield-value type-obj symbols))))
 
+(define-compiler-macro foreign-bitfield-value (&whole form type symbols)
+  "Optimize for when TYPE and SYMBOLS are constant."
+  (if (and (constantp type) (constantp symbols))
+      (let ((type-obj (parse-type (eval type))))
+        (if (not (typep type-obj 'foreign-bitfield))
+            (error "~S is not a foreign bitfield type." type)
+            (%foreign-bitfield-value type-obj (eval symbols))))
+      form))
+
 (defun %foreign-bitfield-symbols (type value)
   (check-type value integer)
   (loop for mask being the hash-keys in (value-symbols type)
@@ -214,3 +223,11 @@ the bitfield TYPE."
 
 (defmethod translate-from-foreign (value (type foreign-bitfield))
   (%foreign-bitfield-symbols type value))
+
+(defmethod expand-to-foreign (value (type foreign-bitfield))
+  `(if (integerp ',value)
+       ,value
+       (%foreign-bitfield-value ,type (ensure-list ,value))))
+
+(defmethod expand-from-foreign (value (type foreign-bitfield))
+  `(%foreign-bitfield-symbols ,type ,value))
