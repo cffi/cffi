@@ -216,6 +216,15 @@ the bitfield TYPE."
         (error "~S is not a foreign bitfield type." type)
         (%foreign-bitfield-symbols type-obj value))))
 
+(define-compiler-macro foreign-bitfield-symbols (&whole form type value)
+  "Optimize for when TYPE and SYMBOLS are constant."
+  (if (and (constantp type) (constantp value))
+      (let ((type-obj (parse-type (eval type))))
+        (if (not (typep type-obj 'foreign-bitfield))
+            (error "~S is not a foreign bitfield type." type)
+            (%foreign-bitfield-symbols type-obj (eval value))))
+      form))
+
 (defmethod translate-to-foreign (value (type foreign-bitfield))
   (if (integerp value)
       value
@@ -225,9 +234,17 @@ the bitfield TYPE."
   (%foreign-bitfield-symbols type value))
 
 (defmethod expand-to-foreign (value (type foreign-bitfield))
-  `(if (integerp ,value)
-       ,value
-       (%foreign-bitfield-value ,type (ensure-list ,value))))
+  (flet ((expander (value type)
+           `(if (integerp ,value)
+                ,value
+                (%foreign-bitfield-value ,type (ensure-list ,value)))))
+    (if (constantp value)
+        (eval (expander value type))
+        (expander value type))))
 
 (defmethod expand-from-foreign (value (type foreign-bitfield))
-  `(%foreign-bitfield-symbols ,type ,value))
+  (flet ((expander (value type)
+           `(%foreign-bitfield-symbols ,type ,value)))
+    (if (constantp value)
+        (eval (expander value type))
+        (expander value type))))
