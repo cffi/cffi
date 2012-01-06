@@ -252,7 +252,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun convert-to-lisp-type (type)
   (ecase type
-    ((:char :short :int :long)
+    ((:char :short :int :long :nat)
      `(signed-byte ,(* 8 (ff:sizeof-fobject type))))
     ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long :unsigned-nat)
      `(unsigned-byte ,(* 8 (ff:sizeof-fobject type))))
