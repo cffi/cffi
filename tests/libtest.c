@@ -83,13 +83,20 @@ long long my_llabs(long long n)
     return n < 0 ? -n : n;
 }
 
+
+DLLEXPORT
+unsigned long long ullong(unsigned long long n)
+{
+    return n == ULLONG_MAX ? n : -1;
+}
+
 /*
  * Foreign Globals
  *
  * (var_int is used in MISC-TYPES.EXPAND.3 as well)
  */
 
-DLLEXPORT char *         dll_version        = "20060907";
+DLLEXPORT char *         dll_version        = "20120107";
 
 /* TODO: look into signed char vs. unsigned char issue */
 DLLEXPORT char           var_char           = -127;

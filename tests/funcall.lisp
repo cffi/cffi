@@ -64,6 +64,14 @@
     (foreign-funcall "my_llabs" :long-long -9223372036854775807 :long-long)
   9223372036854775807)
 
+#-cffi-sys::no-long-long
+(deftest funcall.unsigned-long-long
+    (let ((ullong-max (1- (expt 2 (* 8 (foreign-type-size :unsigned-long-long))))))
+      (eql ullong-max
+           (foreign-funcall "ullong" :unsigned-long-long ullong-max
+                                     :unsigned-long-long)))
+  t)
+
 (deftest funcall.float
     (foreign-funcall "my_sqrtf" :float 16.0 :float)
   4.0)
