@@ -87,7 +87,7 @@ long long my_llabs(long long n)
 DLLEXPORT
 unsigned long long ullong(unsigned long long n)
 {
-    return n == ULLONG_MAX ? n : -1;
+    return n == ULLONG_MAX ? n : 42;
 }
 
 /*
