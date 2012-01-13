@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi)
 
 (defun slots-in-order (structure-type)
   "A list of the structure's slots in order."

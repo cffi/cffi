@@ -40,8 +40,7 @@
   ((:module fsbv
     :serial t
     :components
-    ((:file "package")
-     (:file "init")
+    ((:file "init")
      (cffi-grovel:grovel-file "libffi" :pathname #+unix "libffi-unix")
      (:file "built-in-types")
      (:file "cstruct")

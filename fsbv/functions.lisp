@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi)
 
 (defvar *cif-table* (make-hash-table :test 'equal)
   "A hash table of foreign functions and pointers to the foreign cif (Call InterFace) structure for that function.")

@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi)
 
 (cffi:define-foreign-library (libffi)
   (:darwin (:or "libffi.dylib" "libffi32.dylib"))

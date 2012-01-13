@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi)
 
 #+linux
 (define "_GNU_SOURCE")
@@ -54,12 +54,12 @@
 
 (ctype ffi-abi "ffi_abi")
 
-(ctype sizet "size_t")
+(ctype :sizet "size_t")
 (ctype ushort "unsigned short")
 (ctype unsigned "unsigned")
 
 (cstruct ffi-type "struct _ffi_type"
-  (size    "size"     :type sizet)
+  (size    "size"     :type :sizet)
   (alignment "alignment"     :type ushort)
   (type    "type"     :type ushort)
   (elements   "elements"   :type :pointer))

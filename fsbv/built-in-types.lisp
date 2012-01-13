@@ -25,7 +25,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi-fsbv)
+(in-package #:cffi)
 
 (defun set-libffi-type-pointer-for-built-in (type &optional (libffi-name type))
   (setf (slot-value (parse-type type) 'libffi-type-pointer)

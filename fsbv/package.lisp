@@ -32,5 +32,4 @@
   (:import-from
    #:cffi
    #:libffi-type-pointer #:parse-type #:foreign-struct-type
-   #:*foreign-structures-by-value*)
-  (:export #:sizet))
+   #:*foreign-structures-by-value*))
