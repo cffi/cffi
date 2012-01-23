@@ -32,7 +32,7 @@
   (asdf:oos 'asdf:load-op :trivial-features))
 
 (defsystem cffi-fsbv
-    :description "Foreign structures by value"
+  :description "Foreign structures by value"
   :author "Liam Healy <lhealy@common-lisp.net>"
   :maintainer "Liam Healy <lhealy@common-lisp.net>"
   :defsystem-depends-on (#:trivial-features #:cffi-grovel)
@@ -41,9 +41,9 @@
     :serial t
     :components
     ((:file "init")
-     (cffi-grovel:grovel-file "libffi"
-                              :pathname #+unix "libffi-unix"
-                              :pathname #+windows "libffi-win32")
+     (cffi-grovel:grovel-file
+      "libffi"
+      :pathname #+unix "libffi-unix" #+windows "libffi-win32")
      (:file "built-in-types")
      (:file "cstruct")
      (:file "cif")
