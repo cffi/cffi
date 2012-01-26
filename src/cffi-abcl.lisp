@@ -347,16 +347,16 @@ WITH-POINTER-TO-VECTOR-DATA."
           else do (setf return-type type)
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall (find-foreign-function ',name ',library)
                         (list ,@fargs) ',types ',rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(%%foreign-funcall (make-function-pointer ,ptr ',calling-convention)
+    `(%%foreign-funcall (make-function-pointer ,ptr ',convention)
                         (list ,@fargs) ',types ',rettype)))
 
 ;;;# Callbacks
@@ -366,7 +366,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; apparently no supported by ABCL as of June 2009.
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
+                        &key convention)
   (warn "callback support unimplemented"))
 
 (defun %callback (name)
