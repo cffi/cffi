@@ -235,6 +235,14 @@ Signals an error if FOREIGN-TYPE is undefined."))
     :initarg :alignment
     :accessor alignment)))
 
+(defun slots-in-order (structure-type)
+  "A list of the structure's slots in order."
+  (sort 
+   (loop for slots being the hash-value of (cffi::structure-slots structure-type)
+         collect slots)
+   #'<
+   :key 'cffi::slot-offset))
+
 (defmethod canonicalize ((type foreign-struct-type))
   `(:struct ,(name type)))
 

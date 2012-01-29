@@ -27,14 +27,6 @@
 
 (in-package #:cffi)
 
-(defun slots-in-order (structure-type)
-  "A list of the structure's slots in order."
-  (sort 
-   (loop for slots being the hash-value of (cffi::structure-slots structure-type)
-         collect slots)
-   #'<
-   :key 'cffi::slot-offset))
-
 (defun slot-multiplicity (slot)
   (if (typep slot 'cffi::aggregate-struct-slot)
       (cffi::slot-count slot)

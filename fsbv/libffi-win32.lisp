@@ -43,7 +43,7 @@
 
 (ctype ffi-abi "ffi_abi")
 
-(ctype sizet "size_t")
+(ctype :sizet "size_t")
 (ctype ushort "unsigned short")
 (ctype unsigned "unsigned")
 

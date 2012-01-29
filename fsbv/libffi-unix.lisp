@@ -48,9 +48,7 @@
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
  ((:sysv "FFI_SYSV"))
- ((:unix64 "FFI_UNIX64"))
- ;;((:stdcall "FFI_STDCALL"))
-       )
+ ((:unix64 "FFI_UNIX64")))
 
 (ctype ffi-abi "ffi_abi")
 
