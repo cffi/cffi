@@ -105,15 +105,10 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (:documentation
    "Unparse FOREIGN-TYPE to a type specification (symbol or list)."))
 
-(defgeneric libffi-type-pointer (object)
-  (:documentation "The type pointer defined by libffi.")
-  (:method ((object symbol))
-    (libffi-type-pointer (parse-type object))))
-
 ;;;# Foreign Types
 
 (defclass foreign-type ()
-  ((libffi-type-pointer :initform nil :reader libffi-type-pointer))
+  ()
   (:documentation "Base class for all foreign types."))
 
 (defmethod make-load-form ((type foreign-type) &optional env)

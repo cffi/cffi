@@ -28,9 +28,9 @@
 (in-package #:cffi)
 
 (defun set-libffi-type-pointer-for-built-in (type &optional (libffi-name type))
-  (setf (slot-value (parse-type type) 'libffi-type-pointer)
-        (cffi:foreign-symbol-pointer
-         (format nil "ffi_type_~(~a~)" libffi-name))))
+  (set-libffi-type-pointer
+   type
+   (cffi:foreign-symbol-pointer (format nil "ffi_type_~(~a~)" libffi-name))))
 
 ;;; Set the type pointers for non-integer built-in types
 (dolist (type (append cffi:*built-in-float-types* cffi:*other-builtin-types*))
@@ -48,14 +48,10 @@
     (* 8 (cffi:foreign-type-size type)))))
 
 ;;; Set the type pointer on demand for alias (e.g. typedef) types
-(defmethod libffi-type-pointer :around ((type cffi::foreign-type-alias))
-  (or (call-next-method)
-      (setf (slot-value type 'libffi-type-pointer)
-            (libffi-type-pointer (cffi::follow-typedefs type)))))
+(defmethod libffi-type-pointer ((type cffi::foreign-type-alias))
+  (libffi-type-pointer (cffi::follow-typedefs type)))
 
-(defmethod libffi-type-pointer :around ((type cffi::foreign-enum))
-  (or (slot-value type 'libffi-type-pointer)
-      ;;(call-next-method) ; doesn't work, wants to go to the foreign-type-alias method
-      (setf (slot-value type 'libffi-type-pointer)
-            (libffi-type-pointer (cffi::actual-type type)))))
-
+;;; Luis thinks this is unnecessary; FOREIGN-ENUM inherits from FOREIGN-TYPE-ALIAS.
+#+(or)
+(defmethod libffi-type-pointer ((type cffi::foreign-enum))
+  (libffi-type-pointer (cffi::actual-type type)))

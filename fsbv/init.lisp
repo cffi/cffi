@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi
+;;; init.lisp --- Load libffi and define #'libffi-type-pointer
 ;;;
 ;;; Copyright (C) 2009, 2011 Liam M. Healy
 ;;;
@@ -34,3 +34,18 @@
   (t (:default "libffi")))
 
 (cffi:load-foreign-library 'libffi)
+
+(defvar *libffi-type-pointer* (make-hash-table))
+
+(defgeneric libffi-type-pointer (object)
+  (:documentation "The type pointer defined by libffi.")
+  (:method ((object symbol))
+    (libffi-type-pointer (parse-type object)))
+  (:method (object)
+    (gethash object *libffi-type-pointer*)))
+
+(defun set-libffi-type-pointer (type pointer)
+  "Set the hash table entry for the libffi type pointer."
+  (setf (gethash (if (symbolp type) (parse-type type) type)
+                 *libffi-type-pointer*)
+        pointer))
