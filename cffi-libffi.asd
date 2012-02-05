@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi-fsbv.asd --- Foreign Structures By Value
+;;; cffi-libffi.asd --- Foreign Structures By Value
 ;;;
 ;;; Copyright (C) 2011 Liam M. Healy
 ;;;
@@ -31,13 +31,13 @@
   (asdf:oos 'asdf:load-op :cffi-grovel)
   (asdf:oos 'asdf:load-op :trivial-features))
 
-(defsystem cffi-fsbv
+(defsystem cffi-libffi
   :description "Foreign structures by value"
   :author "Liam Healy <lhealy@common-lisp.net>"
   :maintainer "Liam Healy <lhealy@common-lisp.net>"
   :defsystem-depends-on (#:trivial-features #:cffi-grovel)
   :components
-  ((:module fsbv
+  ((:module libffi
     :serial t
     :components
     ((:file "init")
