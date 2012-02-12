@@ -435,7 +435,8 @@
 
 ;;; should the return type be something along the lines of
 ;;; (:pointer (:struct pair) :free t)?
-(defcfun "alloc_pair" struct-pair
+;;; LMH: error on ":free t" option?
+(defcfun "alloc_pair" (:pointer (:struct struct-pair))
   (a :int)
   (b :int))
 
