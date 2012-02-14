@@ -285,6 +285,11 @@ buffer along with ARGS." ; fix wording, sigh
   (when free-p
     (foreign-string-free ptr)))
 
+(defmethod translate-into-foreign-memory (value (type foreign-string-type) ptr)
+  (unless (pointerp value)
+    (error "Must use a pointer (e.g., with-foreign-string) for by-value (:struct) calls"))
+  (setf (mem-ref ptr :pointer) value))
+
 ;;;# STRING+PTR
 
 (define-foreign-type foreign-string+ptr-type (foreign-string-type)
