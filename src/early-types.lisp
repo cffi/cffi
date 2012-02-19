@@ -156,11 +156,6 @@ Signals an error if FOREIGN-TYPE is undefined."))
   "Returns false, built-in types are never aggregate types."
   nil)
 
-(defmethod aggregatep ((type foreign-pointer-type))
-  ;; LMH this is necessary to be consistent with the deprecated "bare struct" specification of pointers to structs.
-  "A foreign pointer type is an aggregate type."
-  t)
-
 (defmethod foreign-type-alignment ((type foreign-built-in-type))
   "Return the alignment of a built-in type."
   (%foreign-type-alignment (type-keyword type)))
@@ -217,6 +212,11 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defmethod print-object ((type foreign-pointer-type) stream)
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (unparse-type type))))
+
+(defmethod aggregatep ((type foreign-pointer-type))
+  ;; LMH this is necessary to be consistent with the deprecated "bare struct" specification of pointers to structs.
+  "A foreign pointer type is an aggregate type."
+  t)
 
 ;;;# Structure Type
 
