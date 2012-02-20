@@ -215,8 +215,9 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 (defmethod aggregatep ((type foreign-pointer-type))
   ;; LMH this is necessary to be consistent with the deprecated "bare struct" specification of pointers to structs.
-  "A foreign pointer type is an aggregate type."
-  t)
+  ;; LMH put this to NIL to prevent serious breakage; Ryan's example still fails.
+  "A foreign pointer type is an aggregate type." 
+  nil)
 
 ;;;# Structure Type
 
