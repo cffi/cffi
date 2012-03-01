@@ -53,6 +53,7 @@
    ;; Primitive pointer operations.
    #:foreign-free
    #:foreign-alloc
+   #:mem-aptr
    #:mem-aref
    #:mem-ref
    #:pointerp

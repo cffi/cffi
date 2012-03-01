@@ -221,6 +221,7 @@ Pointers
 * inc-pointer::                 Increments the address held by a pointer.
 * incf-pointer::                Increments the pointer address in a place.
 * make-pointer::                Returns a pointer to a given address.
+* mem-aptr::                    The pointer to an element of an array.
 * mem-aref::                    Accesses the value of an index in an array.
 * mem-ref::                     Dereferences a pointer.
 * null-pointer::                Returns a NULL pointer.
@@ -3719,6 +3720,7 @@ Dictionary
 * inc-pointer::                 
 * incf-pointer::                
 * make-pointer::                
+* mem-aptr::
 * mem-aref::                    
 * mem-ref::                     
 * null-pointer::                
@@ -4085,7 +4087,7 @@ CFFI> (foreign-string-to-lisp *two-words*)
 @c MAKE-POINTER
 
 @page
-@node make-pointer, mem-aref, incf-pointer, Pointers
+@node make-pointer, mem-aptr, incf-pointer, Pointers
 @heading make-pointer
 @subheading Syntax
 @Function{make-pointer address @res{} ptr}
@@ -4132,10 +4134,62 @@ CFFI> (typep ** 'foreign-pointer)
 
 
 @c ===================================================================
+@c MEM-APTR
+
+@page
+@node mem-aptr, mem-aref, make-pointer, Pointers
+@heading mem-aptr
+@subheading Syntax
+@Accessor{mem-aptr ptr type &optional (index 0)}
+
+(setf (@strong{mem-aptr} @emph{ptr type &optional (index 0)) new-value})
+
+@subheading Arguments and Values
+
+@table @var
+@item ptr
+A foreign pointer.
+
+@item type
+A foreign type.
+
+@item index
+An integer.
+
+@item new-value
+A Lisp value compatible with @var{type}.
+@end table
+
+@subheading Description
+The @code{mem-aptr} function finds the pointer to an element of the array.
+
+@lisp
+(mem-aptr ptr type n)
+
+;; @lispcmt{is identical to:}
+
+(inc-pointer ptr (* n (foreign-type-size type)))
+@end lisp
+
+@subheading Examples
+
+@lisp
+CFFI> (with-foreign-string (str "Hello, foreign world!")
+        (mem-aptr str :char 6))
+@result{} ??
+
+CFFI> (with-foreign-object (array :int 10)
+        (loop for i below 10
+              do (setf (mem-aptr array :int i) (random 100)))
+        (loop for i below 10 collect (mem-aptr array :int i)))
+@result{} (?????????????)
+@end lisp
+
+@c ===================================================================
 @c MEM-AREF
 
 @page
-@node mem-aref, mem-ref, make-pointer, Pointers
+@node mem-aref, mem-ref, mem-aptr, Pointers
 @heading mem-aref
 @subheading Syntax
 @Accessor{mem-aref ptr type &optional (index 0)}

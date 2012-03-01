@@ -292,6 +292,10 @@ to open-code (SETF MEM-REF) forms."
     (value (type foreign-built-in-type) pointer)
   (setf (mem-aref pointer (unparse-type type)) value))
 
+(defun mem-aptr (ptr type &optional (index 0))
+  "The pointer to the element."
+  (inc-pointer ptr (* index (foreign-type-size type))))
+
 (define-foreign-type foreign-array-type ()
   ((dimensions :reader dimensions :initarg :dimensions)
    (element-type :reader element-type :initarg :element-type))
