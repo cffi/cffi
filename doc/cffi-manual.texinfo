@@ -1812,6 +1812,7 @@ Dictionary
 * free-translated-object::      
 * translate-from-foreign::      
 * translate-to-foreign::        
+* translate-into-foreign-memory::        
 * with-foreign-slots::          
 @end menu
 
@@ -2266,13 +2267,13 @@ The equivalent @code{defcstruct} form follows:
 @end lisp
 
 @c LMH structure translation
-By default, @ref{convert-from-foreign} (and also @code{mem-ref}) will
+By default, @ref{convert-from-foreign} (and also @ref{mem-ref}) will
 make a plist with slot names as keys, and @ref{convert-to-foreign} will
 translate such a plist to a foreign structure.  A user wishing to define
 other translations should use the @code{:class} argument to
-@code{defcstruct}, and then define methods for
-@code{translate-from-foreign} and
-@code{translate-into-foreign-pointer} that specialize on this class,
+@ref{defcstruct}, and then define methods for
+@ref{translate-from-foreign} and
+@ref{translate-into-foreign-memory} that specialize on this class,
 possibly calling @code{call-next-method} to translate from and to the
 plists rather than provide a direct interface to the foreign object.
 The macro @code{translation-forms-for-class} will generate the forms
@@ -2286,9 +2287,22 @@ the values contained in a relevant struct.  If the library you are
 interfacing returns an opaque pointer that needs only be passed to
 other C library functions, by all means just use @code{:pointer} or a
 type-safe definition munged together with @code{defctype} and type
-translation.
+translation.  To pass or return a structure by value to a function, specify it as @code{(:struct
+@var{structure-name})}.  To pass or return the pointer, you can use
+either @code{:pointer} or @code{(:pointer (:struct
+@var{structure-name}))}.
 
-@ref{defcstruct} for more details.
+@emph{Compatibility note:} Previous versions of CFFI accepted the
+``bare'' @var{structure-name} as a type specification, which was
+interpreted as a pointer to the structure.  This is deprecated and
+produces a deprecation warning.  Also, where @ref{mem-aref} will produce a
+pointer for a bare structure specification, it is consistent with other
+types for the current specification form @code{(:struct
+@var{structure-name})} and provides a Lisp object translated from the
+structure (by default a plist).  In order to obtain the pointer, you
+should use the new function @ref{mem-aptr}.
+
+@xref{defcstruct} for more details.
 
 @node Allocating Foreign Objects, convert-from-foreign, Foreign Structure Types, Foreign Types
 @section Allocating Foreign Objects
@@ -3563,7 +3577,7 @@ defined for built-in types.
 @c TODO: update
 
 @page
-@node translate-to-foreign, with-foreign-slots, translate-from-foreign, Foreign Types
+@node translate-to-foreign, translate-into-foreign-memory, translate-from-foreign, Foreign Types
 @heading translate-to-foreign
 @subheading Syntax
 @GenericFunction{translate-to-foreign lisp-value type-name @
@@ -3620,10 +3634,36 @@ defined for built-in types.
 
 
 @c ===================================================================
+@c TRANSLATE-INTO-FOREIGN-MEMORY
+
+@page
+@node translate-into-foreign-memory, with-foreign-slots, translate-to-foreign, Foreign Types
+@heading translate-into-foreign-memory
+@subheading Syntax
+@GenericFunction{translate-into-foreign-memory lisp-value type-name pointer}
+
+@subheading Arguments and Values
+
+@table @var
+@item lisp-value
+The Lisp value to convert to foreign representation.
+
+@item type-name
+A symbol or list @code{(:struct @var{structure-name})} naming a foreign type defined by @code{defctype}.
+
+@item pointer
+The foreign pointer where the translated object should be stored.
+@end table
+
+@subheading Description
+Translate the Lisp value into the foreign memory location given by
+pointer.  The return value is not used.
+
+@c ===================================================================
 @c WITH-FOREIGN-SLOTS
 
 @page
-@node with-foreign-slots,  , translate-to-foreign, Foreign Types
+@node with-foreign-slots,  , translate-into-foreign-memory, Foreign Types
 @heading with-foreign-slots
 @subheading Syntax
 @Macro{with-foreign-slots (vars ptr type) &body body}
@@ -4142,8 +4182,6 @@ CFFI> (typep ** 'foreign-pointer)
 @subheading Syntax
 @Accessor{mem-aptr ptr type &optional (index 0)}
 
-(setf (@strong{mem-aptr} @emph{ptr type &optional (index 0)) new-value})
-
 @subheading Arguments and Values
 
 @table @var
@@ -4176,13 +4214,7 @@ The @code{mem-aptr} function finds the pointer to an element of the array.
 @lisp
 CFFI> (with-foreign-string (str "Hello, foreign world!")
         (mem-aptr str :char 6))
-@result{} ??
-
-CFFI> (with-foreign-object (array :int 10)
-        (loop for i below 10
-              do (setf (mem-aptr array :int i) (random 100)))
-        (loop for i below 10 collect (mem-aptr array :int i)))
-@result{} (?????????????)
+@result{} #.(SB-SYS:INT-SAP #X0063D4B6)
 @end lisp
 
 @c ===================================================================
@@ -4240,9 +4272,18 @@ CFFI> (with-foreign-object (array :int 10)
 @result{} (22 7 22 52 69 1 46 93 90 65)
 @end lisp
 
-@subheading See Also
-@seealso{mem-ref}
+@subheading Compatibility Note
 
+For compatibility with older versions of CFFI, @ref{mem-aref} will
+produce a pointer for the deprecated bare structure specification, but
+it is consistent with other types for the current specification form
+@code{(:struct @var{structure-name})} and provides a Lisp object
+translated from the structure (by default a plist).  In order to obtain
+the pointer, you should use the new function @ref{mem-aptr}.
+
+@subheading See Also
+@seealso{mem-ref} @*
+@seealso{mem-aptr}
 
 @c ===================================================================
 @c MEM-REF
@@ -5200,7 +5241,7 @@ function and will only work for Lisps that support
 @code{foreign-funcall.}
 
 If a foreign structure is to be passed or returned by value (that is,
-the type is of the form @code{(:struct ...)}), then the cffi-fsbv system
+the type is of the form @code{(:struct ...)}), then the cffi-libffi system
 must be loaded, which in turn depends on
 @uref{http://sourceware.org/libffi/,libffi}, including the header files.
 Failure to load that system will result in an error.
@@ -5295,7 +5336,7 @@ The @code{foreign-funcall} macro is the main primitive for calling
 foreign functions.
 
 If a foreign structure is to be passed or returned by value (that is,
-the type is of the form @code{(:struct ...)}), then the cffi-fsbv system
+the type is of the form @code{(:struct ...)}), then the cffi-libffi system
 must be loaded, which in turn depends on
 @uref{http://sourceware.org/libffi/,libffi}, including the header files.
 Failure to load that system will result in an error.
