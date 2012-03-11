@@ -3,6 +3,7 @@
 ;;; cffi-abcl.lisp --- CFFI-SYS implementation for ABCL/JNA.
 ;;;
 ;;; Copyright (C) 2009, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2012, Mark Evenson  <evenson.not.org@gmail.com>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -27,11 +28,20 @@
 
 ;;; This implementation requires the Java Native Access (JNA) library.
 ;;; <http://jna.dev.java.net/>
+;;;
+;;; JNA may be automatically loaded into the current JVM process from
+;;; abcl-1.1.0-dev via
+;;;
+;;;   (require 'abcl-contrib)
+;;;   (require 'jna)
+
+(require 'abcl-contrib)
+(require 'jna)
 
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
-;;; tests except MAKE-POINTER.HIGH. Callbacks and Shareable Vectors
-;;; are not implemented yet.
+;;; tests except MAKE-POINTER.HIGH. Shareable Vectors are not
+;;; implemented yet.
 
 ;;;# Administrivia
 
@@ -347,16 +357,16 @@ WITH-POINTER-TO-VECTOR-DATA."
           else do (setf return-type type)
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (name args &key library convention)
+(defmacro %foreign-funcall (name args &key library calling-convention)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall (find-foreign-function ',name ',library)
                         (list ,@fargs) ',types ',rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key convention)
+(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(%%foreign-funcall (make-function-pointer ,ptr ',convention)
+    `(%%foreign-funcall (make-function-pointer ,ptr ',calling-convention)
                         (list ,@fargs) ',types ',rettype)))
 
 ;;;# Callbacks
@@ -366,7 +376,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; apparently no supported by ABCL as of June 2009.
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key convention)
+                        &key calling-convention)
   (warn "callback support unimplemented"))
 
 (defun %callback (name)
