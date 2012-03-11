@@ -307,14 +307,17 @@ WITH-POINTER-TO-VECTOR-DATA."
               when fn do (return fn))
         (find-it name (gethash library *loaded-libraries*)))))
 
+(defun convert-calling-convention (convention)
+  (ecase convention
+    (:stdcall "ALT_CONVENTION")
+    (:cdecl "C_CONVENTION")))
+
 (defun make-function-pointer (pointer cconv)
   (jnew (private-jconstructor "com.sun.jna.Function"
                               "com.sun.jna.Pointer" "int")
         pointer
         (jfield "com.sun.jna.Function"
-                (ecase cconv
-                  (:cdecl "C_CONVENTION")
-                  (:stdcall "ALT_CONVENTION")))))
+                (convert-calling-convention convention))))
 
 (defun lisp-value-to-java (value foreign-type)
   (if (eq foreign-type :pointer)
@@ -357,32 +360,133 @@ WITH-POINTER-TO-VECTOR-DATA."
           else do (setf return-type type)
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (name args &key library calling-convention)
+(defmacro %foreign-funcall (name args &key library convention)
+  (declare (ignore convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(%%foreign-funcall (find-foreign-function ',name ',library)
                         (list ,@fargs) ',types ',rettype)))
 
-(defmacro %foreign-funcall-pointer (ptr args &key calling-convention)
+(defmacro %foreign-funcall-pointer (ptr args &key convention)
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(%%foreign-funcall (make-function-pointer ,ptr ',calling-convention)
+    `(%%foreign-funcall (make-function-pointer ,ptr ',convention)
                         (list ,@fargs) ',types ',rettype)))
 
 ;;;# Callbacks
 
-;;; TODO. IIUC, implementing this functionality would require being
-;;; able to create new interface definitions at runtime, which is
-;;; apparently no supported by ABCL as of June 2009.
+(defun foreign-to-callback-type (type)
+  (ecase type
+    ((:int :unsigned-int)
+     :int)
+    ((:long :unsigned-long)
+     (jvm::make-jvm-class-name "com.sun.jna.NativeLong"))
+    ((:long-long :unsigned-long-long)
+     (jvm::make-jvm-class-name "java.lang.Long"))
+    (:pointer
+     (jvm::make-jvm-class-name "com.sun.jna.Pointer"))
+    (:float
+     :float)
+    (:double
+     :double)
+    ((:char :unsigned-char)
+     :byte)
+    ((:short :unsigned-short)
+     :short)
+    (:void
+     :void)))
 
-(defmacro %defcallback (name rettype arg-names arg-types body
-                        &key calling-convention)
-  (warn "callback support unimplemented"))
+(defvar *callbacks* (make-hash-table))
+
+(defmacro %defcallback (name return-type arg-names arg-types body
+                        &key convention)
+  (declare (ignore convention))
+  `(let ((interface-name ,(define-jna-callback-interface return-type arg-types)))
+     (setf (gethash ',name *callbacks*)
+           (jinterface-implementation interface-name "callback"
+                                      (lambda (,@arg-names)
+                                        ,body)))))
+
+(jvm::define-class-name +callback-object+ "com.sun.jna.Callback")
+(defconstant +dynamic-callback-package+
+  "org/armedbear/jna/dynamic/callbacks")
+
+(defun define-jna-callback-interface (returns args)
+  (multiple-value-bind (interface interface-name)
+      (%define-jna-callback-interface
+       (foreign-to-callback-type returns)
+       (mapcar (lambda (type) (foreign-to-callback-type type)) args))
+    (load-class interface)
+    interface-name))
+
+(defun %define-jna-callback-interface (returns args)
+  "Returns the Java byte[] array of a class representing a Java interface.
+
+The fully qualified dotted name of the generated class is returned as
+the second value."
+  (let ((name (symbol-name (gensym))))
+    (values
+     (define-java-interface name +dynamic-callback-package+
+       `(("callback" ,returns ,args))
+       `(,+callback-object+))
+     (format nil "~A.~A"
+             (substitute #\. #\/ +dynamic-callback-package+) name))))
+
+(defun define-java-interface (name package methods
+                              &optional (superinterfaces nil))
+"Define a class for a Java interface called NAME in PACKAGE with METHODS.
+
+METHODS is a list of (NAME RETURN-TYPE (ARG-TYPES)) entries.  NAME is
+a string.  The values of RETURN-TYPE and the list of ARG-TYPES for the
+defined method follow the are either references to Java objects as
+created by JVM::MAKE-JVM-CLASS-NAME, or keywords representing Java
+primtive types as contained in JVM::MAP-PRIMITIVE-TYPE.
+
+SUPERINTERFACES optionally contains a list of interfaces that this
+interface extends specified as fully qualifed dotted Java names."
+  (let* ((class-name-string (format nil "~A/~A" package name))
+         (class-name (jvm::make-jvm-class-name class-name-string))
+         (class (jvm::make-class-interface-file class-name)))
+    (dolist (superinterface superinterfaces)
+      (jvm::class-add-superinterface
+       class
+       (if (typep superinterface 'jvm::jvm-class-name)
+           superinterface
+           (jvm::make-jvm-class-name superinterface))))
+    (dolist (method methods)
+      (let ((name (first method))
+            (returns (second method))
+            (args (third method)))
+      (jvm::class-add-method
+       class
+       (jvm::make-jvm-method name returns args
+                             :flags '(:public :abstract)))))
+    (jvm::finalize-class-file class)
+    (let ((s (sys::%make-byte-array-output-stream)))
+      (jvm::write-class-file class s)
+      (sys::%get-output-stream-bytes s))))
+
+(defun load-class (class-bytes)
+  "Load the Java byte[] array CLASS-BYTES as a Java class."
+  (let ((load-class-method
+         (jmethod "org.armedbear.lisp.JavaClassLoader"
+                  "loadClassFromByteArray" "[B")))
+    (jcall load-class-method java::*classloader* class-bytes)))
+
+;;; Test function: unused in CFFI
+(defun write-class (class-bytes pathname)
+  "Write the Java byte[] array CLASS-BYTES to PATHNAME."
+  (with-open-file (stream pathname
+                          :direction :output
+                          :element-type '(signed-byte 8))
+    (dotimes (i (jarray-length class-bytes))
+      (write-byte (jarray-ref class-bytes i) stream))))
 
 (defun %callback (name)
-  (error "callback support unimplemented"))
+  (or (gethash name *callbacks*)
+      (error "Undefined callback: ~S" name)))
 
-;;;# Loading and Closign Foreign Libraries
+;;;# Loading and Closing Foreign Libraries
 
 (defparameter *loaded-libraries* (make-hash-table))
 
