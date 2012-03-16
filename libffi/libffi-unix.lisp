@@ -30,7 +30,7 @@
 #+linux
 (define "_GNU_SOURCE")
 
-;; When installed through Mac Ports, FSBV include files
+;; When installed through Mac Ports, libffi include files
 ;; will be found in /opt/local/include.
 #+darwin
 (cc-flags "-I/opt/local/include/")
