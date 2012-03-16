@@ -184,8 +184,12 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:unsigned-int     :unsigned-int)
     (:long             :long)
     (:unsigned-long    :unsigned-long)
-    #+64bit (:long-long :nat)
-    #+64bit (:unsigned-long-long :unsigned-nat)
+    (:long-long
+     #+64bit :nat
+     #-64bit (error "this platform does not support :long-long."))
+    (:unsigned-long-long
+     #+64bit :unsigned-nat
+     #-64bit (error "this platform does not support :unsigned-long-long"))
     (:float            :float)
     (:double           :double)
     (:pointer          :unsigned-nat)
@@ -252,7 +256,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun convert-to-lisp-type (type)
   (ecase type
-    ((:char :short :int :long)
+    ((:char :short :int :long :nat)
      `(signed-byte ,(* 8 (ff:sizeof-fobject type))))
     ((:unsigned-char :unsigned-short :unsigned-int :unsigned-long :unsigned-nat)
      `(unsigned-byte ,(* 8 (ff:sizeof-fobject type))))

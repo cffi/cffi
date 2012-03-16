@@ -249,7 +249,7 @@ int main(int argc, char**argv) {
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
 (defparameter *cpu-word-size-flags*
-  (ecase (cffi:foreign-type-size :long)
+  (ecase (cffi:foreign-type-size :pointer)
     (4 (list "-m32"))
     (8 (list "-m64"))))
 
@@ -526,8 +526,9 @@ int main(int argc, char**argv) {
                    (setf (readtable-case *readtable*) :preserve)
                    (read-from-string str))))
     (typecase c-parse
-      (symbol `(cffi:defcvar (,(symbol-name c-parse) ,name) ,type
-                 :read-only ,read-only))
+      (symbol `(cffi:defcvar (,(symbol-name c-parse) ,name
+                               :read-only ,read-only)
+                   ,type))
       (list (unless (and (= (length c-parse) 2)
                          (null (second c-parse))
                          (symbolp (first c-parse))

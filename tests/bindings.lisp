@@ -102,7 +102,7 @@
                   :defaults (or *compile-file-truename* *load-truename*)))
 
 ;;; check libtest version
-(defparameter *required-dll-version* "20060907")
+(defparameter *required-dll-version* "20120107")
 
 (defcvar "dll_version" :string)
 

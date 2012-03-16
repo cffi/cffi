@@ -169,7 +169,18 @@
 
   (deftest defcfun.long-long
       (my-llabs -9223372036854775807)
-    9223372036854775807))
+    9223372036854775807)
+
+  (defcfun "ullong" :unsigned-long-long
+    (n :unsigned-long-long))
+
+  #+allegro ; lp#914500
+  (pushnew 'defcfun.unsigned-long-long rt::*expected-failures*)
+
+  (deftest defcfun.unsigned-long-long
+      (let ((ullong-max (1- (expt 2 (* 8 (foreign-type-size :unsigned-long-long))))))
+        (eql ullong-max (ullong ullong-max)))
+    t))
 
 
 (defcfun "my_sqrtf" :float

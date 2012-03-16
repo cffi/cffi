@@ -5,6 +5,7 @@
 *.bundle
 *.so
 *.fasl
+*.xfasl
 .DS_Store
 doc/*.aux
 doc/manual/

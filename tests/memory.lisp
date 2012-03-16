@@ -366,11 +366,6 @@
        t))
   nil)
 
-;;; RT: FOREIGN-ALLOC with :COUNT 0 on CLISP signalled an error.
-(deftest foreign-alloc.6
-    (foreign-free (foreign-alloc :char :count 0))
-  nil)
-
 ;;; Regression test: FOREIGN-ALLOC shouldn't actually perform translation
 ;;; on initial-element/initial-contents since MEM-AREF will do that already.
 (define-foreign-type not-an-int ()
@@ -415,6 +410,11 @@
            (null-pointer-p (mem-ref ptr :pointer))
         (foreign-free ptr)))
   t)
+
+;;; RT: FOREIGN-ALLOC with :COUNT 0 on CLISP signalled an error.
+(deftest foreign-alloc.10
+    (foreign-free (foreign-alloc :char :count 0))
+  nil)
 
 ;;; Tests for mem-ref with a non-constant type. This is a way to test
 ;;; the functional interface (without compiler macros).
