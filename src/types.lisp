@@ -299,7 +299,11 @@ to open-code (SETF MEM-REF) forms."
 (define-compiler-macro mem-aptr (&whole form ptr type &optional (index 0))
   "The pointer to the element."
   (if (constantp type)
-      `(inc-pointer ptr (* index ,(foreign-type-size type)))
+      (if (constantp index)
+          (if (zerop (eval index))
+              ptr
+              `(inc-pointer ptr ,(* (eval index) (foreign-type-size (eval type)))))
+          `(inc-pointer ptr (* index ,(foreign-type-size (eval type)))))
       form))
 
 (define-foreign-type foreign-array-type ()
