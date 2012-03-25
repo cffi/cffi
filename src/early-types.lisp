@@ -439,41 +439,21 @@ Signals an error if the type cannot be resolved."
 
 ;;; EXPAND-TO-FOREIGN-DYN
 
-(defgeneric expand-to-foreign-dyn (value var body type &key indirect)
-  (:method (value var body type &key indirect)
-    (declare (ignore type indirect))
+(defgeneric expand-to-foreign-dyn (value var body type)
+  (:method (value var body type)
+    (declare (ignore type))
     `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn :around
-    (value var body (type translatable-foreign-type) &key indirect)
+    (value var body (type enhanced-foreign-type))
   (let ((*runtime-translator-form*
-          (if indirect
-              `(with-foreign-object (,var ',(unparse-type type))
-                 (translate-into-foreign-memory ,value ,type ,var)
-                 ,@body)
-              (with-unique-names (param)
-                `(multiple-value-bind (,var ,param)
-                     (translate-to-foreign ,value ,type)
-                   (unwind-protect
-                        (progn ,@body)
-                     (free-translated-object ,var ,type ,param)))))))
+         (with-unique-names (param)
+           `(multiple-value-bind (,var ,param)
+                (translate-to-foreign ,value ,type)
+              (unwind-protect
+                   (progn ,@body)
+                (free-translated-object ,var ,type ,param))))))
     (call-next-method)))
-
-(defmethod expand-to-foreign-dyn
-    (value var body (type foreign-pointer-type) &key indirect)
-  (if indirect
-      `(with-foreign-object (,var :pointer)
-         (translate-into-foreign-memory ,value ,type ,var)
-         ,@body)
-      `(let ((,var ,value)) ,@body)))
-
-(defmethod expand-to-foreign-dyn
-    (value var body (type foreign-built-in-type) &key indirect)
-  (if indirect
-      `(with-foreign-object (,var :pointer)
-         (translate-into-foreign-memory ,value ,type ,var)
-         ,@body)
-      `(let ((,var ,value)) ,@body)))
 
 ;;; If this method is called it means the user hasn't defined a
 ;;; to-foreign-dyn expansion, so we use the to-foreign expansion.
@@ -483,15 +463,46 @@ Signals an error if the type cannot be resolved."
 ;;; above *RUNTIME-TRANSLATOR-FORM* which includes a call to
 ;;; FREE-TRANSLATED-OBJECT.  (Or else there would occur no translation
 ;;; at all.)
-
-(defmethod expand-to-foreign-dyn
-    (value var body (type translatable-foreign-type) &key indirect)
+(defmethod expand-to-foreign-dyn (value var body (type enhanced-foreign-type))
   (multiple-value-bind (expansion default-etp-p)
       (expand-to-foreign value type)
     (if default-etp-p
         *runtime-translator-form*
         `(let ((,var ,expansion))
            ,@body))))
+
+;;; EXPAND-TO-FOREIGN-DYN-INDIRECT
+;;; Like expand-to-foreign-dyn, but always give form that returns a
+;;; pointer to the object, even if it's directly representable in
+;;; CL, e.g. numbers.
+
+(defgeneric expand-to-foreign-dyn-indirect (value var body type)
+  (:method (value var body type)
+    `(let ((,var ,value)) ,@body)))
+
+(defmethod expand-to-foreign-dyn-indirect :around
+    (value var body (type translatable-foreign-type))
+  (let ((*runtime-translator-form*
+          `(with-foreign-object (,var ',(unparse-type type))
+             (translate-into-foreign-memory ,value ,type ,var)
+             ,@body)))
+    (call-next-method)))
+
+(defmethod expand-to-foreign-dyn-indirect
+    (value var body (type foreign-pointer-type))
+  `(with-foreign-object (,var :pointer)
+     (translate-into-foreign-memory ,value ,type ,var)
+     ,@body))
+
+(defmethod expand-to-foreign-dyn-indirect
+    (value var body (type foreign-built-in-type))
+  `(with-foreign-object (,var :pointer)
+     (translate-into-foreign-memory ,value ,type ,var)
+     ,@body))
+
+(defmethod expand-to-foreign-dyn-indirect
+    (value var body (type translatable-foreign-type))
+  (expand-to-foreign-dyn value var body type))
 
 ;;; User interface for converting values from/to foreign using the
 ;;; type translators.  The compiler macros use the expanders when
@@ -539,9 +550,8 @@ Signals an error if the type cannot be resolved."
 (defmethod expand-to-foreign (value (type enhanced-typedef))
   (expand-to-foreign value (actual-type type)))
 
-(defmethod expand-to-foreign-dyn
-    (value var body (type enhanced-typedef) &key indirect)
-  (expand-to-foreign-dyn value var body (actual-type type) :indirect t))
+(defmethod expand-to-foreign-dyn (value var body (type enhanced-typedef))
+  (expand-to-foreign-dyn value var body (actual-type type)))
 
 ;;;# User-defined Types and Translations.
 

@@ -41,15 +41,17 @@
 ;;; CFFI-SYS:%FOREIGN-FUNCALL to call the foreign-function.
 
 (defun translate-objects (syms args types rettype call-form &optional indirect)
-  "Helper function for FOREIGN-FUNCALL and DEFCFUN."
+  "Helper function for FOREIGN-FUNCALL and DEFCFUN.  If 'indirect is T, all arguments are represented by foreign pointers, even those that can be represented by CL objects."
   (if (null args)
       (expand-from-foreign call-form (parse-type rettype))
-      (expand-to-foreign-dyn
+      (funcall
+       (if indirect
+           #'expand-to-foreign-dyn-indirect
+           #'expand-to-foreign-dyn)
        (car args) (car syms)
        (list (translate-objects (cdr syms) (cdr args)
                                 (cdr types) rettype call-form indirect))
-       (parse-type (car types))
-       :indirect indirect)))
+       (parse-type (car types)))))
 
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
