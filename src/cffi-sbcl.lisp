@@ -245,7 +245,7 @@ WITH-POINTER-TO-VECTOR-DATA."
     ((8  sb-sys:signed-sap-ref-8  sb-sys:sap-ref-8)
      (16 sb-sys:signed-sap-ref-16 sb-sys:sap-ref-16)
      (32 sb-sys:signed-sap-ref-32 sb-sys:sap-ref-32)
-     (64 sb-sys:signed-sap-ref-32 sb-sys:sap-ref-64))
+     (64 sb-sys:signed-sap-ref-64 sb-sys:sap-ref-64))
     ((:char               char)
      (:unsigned-char      unsigned-char)
      (:short              short)
