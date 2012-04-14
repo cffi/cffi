@@ -61,6 +61,7 @@
 
 ;;;# Mis-features
 
+#-long-long
 (pushnew 'no-long-long *features*)
 (pushnew 'flat-namespace *features*)
 
