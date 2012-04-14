@@ -128,25 +128,20 @@
 
 (defparameter *basic-latin-alphabet* "abcdefghijklmnopqrstuvwxyz")
 
-(defparameter *non-latin-compatible-encodings*
-  '())
-
-(defun list-latin-compatible-encodings ()
-  (remove-if (lambda (x) (member x *non-latin-compatible-encodings*))
-             (babel:list-character-encodings)))
-
-;;; FIXME: bogus wrt UTF-16. See STRING.ENCODING.UTF-16.BASIC.
-(pushnew 'string.encodings.all.basic rtest::*expected-failures*)
-
 (deftest string.encodings.all.basic
     (let (failed)
-      (dolist (encoding (list-latin-compatible-encodings) failed)
+      ;;; FIXME: UTF-{32,16} and friends fail due to lack of BOM. See
+      ;;; STRING.ENCODING.UTF-16.BASIC for more details.
+      (dolist (encoding (remove-if (lambda (x)
+                                     (member x '(:utf-32 :utf-16 :ucs-2)))
+                                   (babel:list-character-encodings)))
         ;; (format t "Testing ~S~%" encoding)
         (with-foreign-string (ptr *basic-latin-alphabet* :encoding encoding)
           (let ((string (foreign-string-to-lisp ptr :encoding encoding)))
             ;; (format t "  got ~S~%" string)
             (unless (string= *basic-latin-alphabet* string)
-              (push encoding failed))))))
+              (push encoding failed)))))
+      failed)
   nil)
 
 ;;; rt: make sure *default-foreign-enconding* binds to a keyword
