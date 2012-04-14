@@ -463,13 +463,16 @@ Signals an error if the type cannot be resolved."
 ;;; above *RUNTIME-TRANSLATOR-FORM* which includes a call to
 ;;; FREE-TRANSLATED-OBJECT.  (Or else there would occur no translation
 ;;; at all.)
-(defmethod expand-to-foreign-dyn (value var body (type enhanced-foreign-type))
+(defun foreign-expand-runtime-translator-or-binding (value var body type)
   (multiple-value-bind (expansion default-etp-p)
       (expand-to-foreign value type)
     (if default-etp-p
         *runtime-translator-form*
         `(let ((,var ,expansion))
            ,@body))))
+
+(defmethod expand-to-foreign-dyn (value var body (type enhanced-foreign-type))
+  (foreign-expand-runtime-translator-or-binding value var body type))
 
 ;;; EXPAND-TO-FOREIGN-DYN-INDIRECT
 ;;; Like expand-to-foreign-dyn, but always give form that returns a
@@ -502,7 +505,7 @@ Signals an error if the type cannot be resolved."
 
 (defmethod expand-to-foreign-dyn-indirect
     (value var body (type translatable-foreign-type))
-  (expand-to-foreign-dyn value var body type))
+  (foreign-expand-runtime-translator-or-binding value var body type))
 
 ;;; User interface for converting values from/to foreign using the
 ;;; type translators.  The compiler macros use the expanders when
