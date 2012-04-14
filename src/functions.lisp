@@ -273,7 +273,9 @@ arguments and does type promotion for the variadic arguments."
     (declare (ignore package))
     (let ((sym (translate-underscore-separated-name foreign-name)))
       (if varp
-          (values (intern (format nil "*~A*" sym)))
+          (values (intern (format nil "*~A*"
+                                  (canonicalize-symbol-name-case
+                                   (symbol-name sym)))))
           sym))))
 
 (defgeneric translate-name-to-foreign (lisp-name package &optional varp)
