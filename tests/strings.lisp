@@ -88,12 +88,22 @@
 ;;; Test UTF-16 conversion of a string back and forth.  Tests proper
 ;;; null terminator handling for wide character strings and ensures no
 ;;; byte order marks are added.  (Why no BOM? --luis)
+;;;
+;;; FIXME: an identical test using :UTF-16 wouldn't work because on
+;;; little-endian architectures, :UTF-16 defaults to little-endian
+;;; when writing and big-endian on reading because the BOM is
+;;; suppressed.
 #-babel::8-bit-chars
-(deftest string.encoding.utf-16.basic
-    (with-foreign-string (s *ascii-test-string* :encoding :utf-16)
-      (foreign-string-to-lisp s :encoding :utf-16))
-  #-ecl ; ECL (CVS 2008-06-19 17:09) chokes here, no idea why.
-  #.*ascii-test-string* 190)
+(progn
+  (deftest string.encoding.utf-16le.basic
+      (with-foreign-string (s *ascii-test-string* :encoding :utf-16le)
+        (foreign-string-to-lisp s :encoding :utf-16le))
+    #.*ascii-test-string* 190)
+
+  (deftest string.encoding.utf-16be.basic
+      (with-foreign-string (s *ascii-test-string* :encoding :utf-16be)
+        (foreign-string-to-lisp s :encoding :utf-16be))
+    #.*ascii-test-string* 190))
 
 ;;; Ensure that writing a long string into a short buffer does not
 ;;; attempt to write beyond the edge of the buffer, and that the
