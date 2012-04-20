@@ -2287,7 +2287,8 @@ the values contained in a relevant struct.  If the library you are
 interfacing returns an opaque pointer that needs only be passed to
 other C library functions, by all means just use @code{:pointer} or a
 type-safe definition munged together with @code{defctype} and type
-translation.  To pass or return a structure by value to a function, specify it as @code{(:struct
+translation.  To pass or return a structure by value to a function, load
+the cffi-libffi system and specify the structure as @code{(:struct
 @var{structure-name})}.  To pass or return the pointer, you can use
 either @code{:pointer} or @code{(:pointer (:struct
 @var{structure-name}))}.
@@ -2295,14 +2296,16 @@ either @code{:pointer} or @code{(:pointer (:struct
 @emph{Compatibility note:} Previous versions of CFFI accepted the
 ``bare'' @var{structure-name} as a type specification, which was
 interpreted as a pointer to the structure.  This is deprecated and
-produces a deprecation warning.  Also, where @ref{mem-aref} will produce a
-pointer for a bare structure specification, it is consistent with other
-types for the current specification form @code{(:struct
-@var{structure-name})} and provides a Lisp object translated from the
-structure (by default a plist).  In order to obtain the pointer, you
-should use the new function @ref{mem-aptr}.
+produces a style warning.  Using this deprecated form means that
+@ref{mem-aref} retains its prior meaning and returns a pointer.  Using
+the @code{(:struct @var{structure-name})} form for the type,
+@ref{mem-aref} provides a Lisp object translated from the
+structure (by default a plist).  Thus the semantics are consistent with all
+types in returning the object as represented in Lisp, and not a pointer,
+with the exception of the ``bare'' structure compatibility retained.
+In order to obtain the pointer, you should use the function @ref{mem-aptr}.
 
-@xref{defcstruct} for more details.
+See @ref{defcstruct} for more details.
 
 @node Allocating Foreign Objects, convert-from-foreign, Foreign Structure Types, Foreign Types
 @section Allocating Foreign Objects
