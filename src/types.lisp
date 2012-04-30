@@ -790,7 +790,7 @@ CLASS-AND-TYPE is either a list of the form (class-name
 struct-type) or a single symbol naming both.  The class will
 inherit SUPERS.  If a list of SLOTS is specified, only those
 slots will be defined and stored."
-  (destructuring-bind (class-name &optional (struct-type class-name))
+  (destructuring-bind (class-name &optional (struct-type (list :struct class-name)))
       (ensure-list class-and-type)
     (let ((slots (or slots (foreign-slot-names struct-type))))
       `(progn
