@@ -71,6 +71,7 @@
 ;;; the initial thread results in a crash.
 (deftest load-core-foundation
     (progn
+      #+bordeaux-threads
       (call-within-new-thread 'load-foreign-library
                               '(:framework "CoreFoundation"))
       t)

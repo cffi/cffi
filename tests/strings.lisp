@@ -88,12 +88,22 @@
 ;;; Test UTF-16 conversion of a string back and forth.  Tests proper
 ;;; null terminator handling for wide character strings and ensures no
 ;;; byte order marks are added.  (Why no BOM? --luis)
+;;;
+;;; FIXME: an identical test using :UTF-16 wouldn't work because on
+;;; little-endian architectures, :UTF-16 defaults to little-endian
+;;; when writing and big-endian on reading because the BOM is
+;;; suppressed.
 #-babel::8-bit-chars
-(deftest string.encoding.utf-16.basic
-    (with-foreign-string (s *ascii-test-string* :encoding :utf-16)
-      (foreign-string-to-lisp s :encoding :utf-16))
-  #-ecl ; ECL (CVS 2008-06-19 17:09) chokes here, no idea why.
-  #.*ascii-test-string* 190)
+(progn
+  (deftest string.encoding.utf-16le.basic
+      (with-foreign-string (s *ascii-test-string* :encoding :utf-16le)
+        (foreign-string-to-lisp s :encoding :utf-16le))
+    #.*ascii-test-string* 190)
+
+  (deftest string.encoding.utf-16be.basic
+      (with-foreign-string (s *ascii-test-string* :encoding :utf-16be)
+        (foreign-string-to-lisp s :encoding :utf-16be))
+    #.*ascii-test-string* 190))
 
 ;;; Ensure that writing a long string into a short buffer does not
 ;;; attempt to write beyond the edge of the buffer, and that the
@@ -118,25 +128,20 @@
 
 (defparameter *basic-latin-alphabet* "abcdefghijklmnopqrstuvwxyz")
 
-(defparameter *non-latin-compatible-encodings*
-  '())
-
-(defun list-latin-compatible-encodings ()
-  (remove-if (lambda (x) (member x *non-latin-compatible-encodings*))
-             (babel:list-character-encodings)))
-
-;;; FIXME: bogus wrt UTF-16. See STRING.ENCODING.UTF-16.BASIC.
-(pushnew 'string.encodings.all.basic rtest::*expected-failures*)
-
 (deftest string.encodings.all.basic
     (let (failed)
-      (dolist (encoding (list-latin-compatible-encodings) failed)
+      ;;; FIXME: UTF-{32,16} and friends fail due to lack of BOM. See
+      ;;; STRING.ENCODING.UTF-16.BASIC for more details.
+      (dolist (encoding (remove-if (lambda (x)
+                                     (member x '(:utf-32 :utf-16 :ucs-2)))
+                                   (babel:list-character-encodings)))
         ;; (format t "Testing ~S~%" encoding)
         (with-foreign-string (ptr *basic-latin-alphabet* :encoding encoding)
           (let ((string (foreign-string-to-lisp ptr :encoding encoding)))
             ;; (format t "  got ~S~%" string)
             (unless (string= *basic-latin-alphabet* string)
-              (push encoding failed))))))
+              (push encoding failed)))))
+      failed)
   nil)
 
 ;;; rt: make sure *default-foreign-enconding* binds to a keyword

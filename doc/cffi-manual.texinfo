@@ -5568,7 +5568,7 @@ CFFI> (defmethod translate-name-from-foreign ((spec string)
                                               (package (eql *package*))
                                               &optional varp)
         (let ((name (translate-camelcase-name spec)))
-          (if varp (intern "*~a*" name) name)))
+          (if varp (intern (format nil "*~a*" name)) name)))
 @result{} #<STANDARD-METHOD TRANSLATE-NAME-FROM-FOREIGN (STRING (EQL #<Package "SOME-PACKAGE">))>
 CFFI> (defcfun "someXmlFunction" ...)
 @result{} SOME-XML-FUNCTION
