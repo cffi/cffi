@@ -230,7 +230,8 @@ to open-code (SETF MEM-REF) forms."
 ;;; Maybe this should be named MEM-SVREF? [2007-02-28 LO]
 (defun mem-aref (ptr type &optional (index 0))
   "Like MEM-REF except for accessing 1d arrays."
-  (mem-ref ptr type (* index (foreign-type-size type))))
+  (let ((*parse-bare-structs-as-pointers* t))
+    (mem-ref ptr type (* index (foreign-type-size type)))))
 
 (define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
   "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
