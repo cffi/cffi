@@ -120,19 +120,9 @@
    (append *built-in-integer-types* *other-builtin-types*))
   "List of real float types supported by CFFI.")
 
-;;; we use this special variable to support the (old, deprecated)
-;;; semantics of bare struct types. FOO means (:POINTER (:STRUCT FOO)
-;;; in functions declarations whereas FOO in a structure definition is
-;;; a proper aggregate type: (:STRUCT FOO).
-(defvar *parse-bare-structs-as-pointers* nil)
-
 ;;;# Foreign Pointers
 
 (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
-
-(defun bare-struct-type-p (struct-type)
-  (let ((*parse-bare-structs-as-pointers* t))
-    (eq (canonicalize-foreign-type struct-type) :pointer)))
 
 (defun mem-ref (ptr type &optional (offset 0))
   "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
@@ -146,7 +136,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
                                       parsed-type)))
           ;; normal branch
     (if (aggregatep parsed-type)
-        (if (bare-struct-type-p type)
+        (if (bare-struct-type-p parsed-type)
             (inc-pointer ptr offset)
             (translate-from-foreign (inc-pointer ptr offset) parsed-type))
         (translate-from-foreign (%mem-ref ptr ctype offset) parsed-type))))
@@ -161,7 +151,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-ref form))
         (if (aggregatep parsed-type)
-            (if (bare-struct-type-p (eval type))
+            (if (bare-struct-type-p parsed-type)
                 `(inc-pointer ,ptr ,offset)
                 (expand-from-foreign `(inc-pointer ,ptr ,offset) parsed-type))
             (expand-from-foreign `(%mem-ref ,ptr ,ctype ,offset) parsed-type)))
@@ -169,8 +159,7 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
 
 (defun mem-set (value ptr type &optional (offset 0))
   "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
-  (let* ((*parse-bare-structs-as-pointers* t)
-         (ptype (parse-type type))
+  (let* ((ptype (parse-type type))
          (ctype (canonicalize ptype)))
     #+cffi-sys::no-long-long
     (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
@@ -212,8 +201,7 @@ to open-code (SETF MEM-REF) forms."
     (&whole form value ptr type &optional (offset 0))
   "Compiler macro to open-code (SETF MEM-REF) when type is constant."
   (if (constantp type)
-      (let* ((*parse-bare-structs-as-pointers* t)
-             (parsed-type (parse-type (eval type)))
+      (let* ((parsed-type (parse-type (eval type)))
              (ctype (canonicalize parsed-type)))
         ;; Bail out when using emulated long long types.
         #+cffi-sys::no-long-long
@@ -235,11 +223,10 @@ to open-code (SETF MEM-REF) forms."
 (define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
   "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
   (if (constantp type)
-      (let ((*parse-bare-structs-as-pointers* t))
-        (if (constantp index)
-            `(mem-ref ,ptr ,type
-                      ,(* (eval index) (foreign-type-size (eval type))))
-            `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type))))))
+      (if (constantp index)
+          `(mem-ref ,ptr ,type
+                    ,(* (eval index) (foreign-type-size (eval type))))
+          `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
       form))
 
 (define-setf-expander mem-aref (ptr type &optional (index 0) &environment env)
@@ -267,12 +254,11 @@ to open-code (SETF MEM-REF) forms."
        ;; or if not possible at least get the type size early.
        `(progn
           ,(if (constantp type)
-               (let ((*parse-bare-structs-as-pointers* t))
-                 (if (constantp index)
-                     `(mem-set ,store ,getter ,type
-                               ,(* (eval index) (foreign-type-size (eval type))))
-                     `(mem-set ,store ,getter ,type
-                               (* ,index-tmp ,(foreign-type-size (eval type))))))
+               (if (constantp index)
+                   `(mem-set ,store ,getter ,type
+                             ,(* (eval index) (foreign-type-size (eval type))))
+                   `(mem-set ,store ,getter ,type
+                             (* ,index-tmp ,(foreign-type-size (eval type)))))
                `(mem-set ,store ,getter ,type-tmp
                          (* ,index-tmp (foreign-type-size ,type-tmp))))
           ,store)
@@ -568,14 +554,18 @@ The foreign array must be freed with foreign-array-free."
 
 (defun parse-deprecated-struct-type (name struct-or-union)
   (check-type struct-or-union (member :struct :union))
-  (let* ((struct-type `(,struct-or-union ,name))
-         (final-type (if *parse-bare-structs-as-pointers*
-                         `(:pointer ,struct-type)
-                         struct-type)))
+  (let* ((struct-type-name `(,struct-or-union ,name))
+         (struct-type (parse-type struct-type-name)))
     (simple-style-warning
-     "bare references to struct types are deprecated. Please use ~S instead."
-     final-type)
-    (parse-type final-type)))
+     "bare references to struct types are deprecated. ~
+      Please use ~S or ~S instead."
+     `(:pointer ,struct-type-name) struct-type-name)
+    (make-instance (class-of struct-type)
+                   :alignment (alignment struct-type)
+                   :size (size struct-type)
+                   :slots (slots struct-type)
+                   :name (name struct-type)
+                   :bare t)))
 
 ;;; Regarding structure alignment, the following ABIs were checked:
 ;;;   - System-V ABI: x86, x86-64, ppc, arm, mips and itanium. (more?)
@@ -677,7 +667,6 @@ The foreign array must be freed with foreign-array-free."
       (ensure-list name-and-options)
     (let ((conc-name (getf options :conc-name)))
       (remf options :conc-name)
-      (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
          ,(when-let (class (getf options :class))

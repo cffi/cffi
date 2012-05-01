@@ -1,5 +1,4 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;; Time-stamp: <2011-11-12 22:02:39EST structures.lisp>
 ;;;
 ;;; structures.lisp --- Methods for translating foreign structures.
 ;;;
@@ -30,14 +29,14 @@
 
 ;;; Definitions for conversion of foreign structures.
 
-(defmethod translate-into-foreign-memory
-    ((object list) (type foreign-struct-type) p)
-  ;; Iterate over plist, set slots
-  (loop for (name value) on object by #'cddr
-        do (setf
-            (foreign-slot-value p (unparse-type type) name)
-            (let ((slot (gethash name (structure-slots type))))
-              (convert-to-foreign value (slot-type slot))))))
+(defmethod translate-into-foreign-memory ((object list)
+                                          (type foreign-struct-type)
+                                          p)
+  (unless (bare-struct-type-p type)
+    (loop for (name value) on object by #'cddr
+          do (setf (foreign-slot-value p (unparse-type type) name)
+                   (let ((slot (gethash name (structure-slots type))))
+                     (convert-to-foreign value (slot-type slot)))))))
 
 (defun convert-into-foreign-memory (value type ptr)
   (let ((ptype (parse-type type)))
@@ -53,25 +52,27 @@
 
 (defmethod translate-from-foreign (p (type foreign-struct-type))
   ;; Iterate over slots, make plist
-  (let ((plist (list)))
-    (loop for slot being the hash-value of (structure-slots type)
-          for name = (slot-name slot)
-          do (setf
-              (getf plist name)
-              (foreign-struct-slot-value p slot)))
-    plist))
+  (if (bare-struct-type-p type)
+      p
+      (let ((plist (list)))
+        (loop for slot being the hash-value of (structure-slots type)
+              for name = (slot-name slot)
+              do (setf (getf plist name)
+                       (foreign-struct-slot-value p slot)))
+        plist)))
 
 (defmethod free-translated-object (ptr (type foreign-struct-type) freep)
-  ;; Look for any pointer slots and free them first
-  (loop for slot being the hash-value of (structure-slots type)
-        when (and (listp (slot-type slot)) (eq (first (slot-type slot)) :pointer))
-          do
-             ;; Free if the pointer is to a specific type, not generic :pointer
-             (free-translated-object
-              (foreign-slot-value ptr type (slot-name slot))
-              (rest (slot-type slot))
-              freep))
-  (foreign-free ptr))
+  (unless (bare-struct-type-p type)
+    ;; Look for any pointer slots and free them first
+    (loop for slot being the hash-value of (structure-slots type)
+          when (and (listp (slot-type slot)) (eq (first (slot-type slot)) :pointer))
+            do
+               ;; Free if the pointer is to a specific type, not generic :pointer
+               (free-translated-object
+                (foreign-slot-value ptr type (slot-name slot))
+                (rest (slot-type slot))
+                freep))
+    (foreign-free ptr)))
 
 (export 'define-translation-method)
 (defmacro define-translation-method ((object type method) &body body)

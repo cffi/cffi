@@ -359,19 +359,7 @@
               (:struct struct-pair)
               struct-pair-typedef1
               struct-pair-typedef2))
-  ((:struct struct-pair)
-   (:struct struct-pair)
-   struct-pair-typedef1
-   struct-pair-typedef2))
-
-(deftest struct.unparse.2
-    (let ((cffi::*parse-bare-structs-as-pointers* t))
-      (mapcar (alexandria:compose #'cffi::unparse-type #'cffi::parse-type)
-              '(struct-pair
-                (:struct struct-pair)
-                struct-pair-typedef1
-                struct-pair-typedef2)))
-  ((:pointer (:struct struct-pair))
+  (struct-pair
    (:struct struct-pair)
    struct-pair-typedef1
    struct-pair-typedef2))
@@ -382,10 +370,10 @@
               (:struct struct-pair)
               struct-pair-typedef1
               struct-pair-typedef2))
-  ((:struct struct-pair)
+  (:pointer
    (:struct struct-pair)
    (:struct struct-pair)
-   (:struct struct-pair)))
+   :pointer))
 
 (deftest struct.canonicalize.2
     (let ((cffi::*parse-bare-structs-as-pointers* t))
@@ -397,7 +385,7 @@
   (:pointer
    (:struct struct-pair)
    (:struct struct-pair)
-   :pointer)) ; XXX: fails.
+   :pointer))
 
 (defmethod translate-from-foreign (pointer (type pair))
   (with-foreign-slots ((a b) pointer struct-pair)
@@ -429,6 +417,7 @@
 (defcfun "pair_pointer_sum" :int
   (p (:pointer (:struct struct-pair))))
 
+#+#:pointer-translation-not-yet-implemented
 (deftest struct-values.translation.2
     (pair-pointer-sum '(1 . 2))
   3)
@@ -441,6 +430,7 @@
   (b :int))
 
 ;; bogus: doesn't free() pointer.
+#+#:pointer-translation-not-yet-implemented
 (deftest struct-values.translation.3
     (alloc-pair 1 2)
   (1 . 2))
@@ -456,7 +446,6 @@
   1
   2)
 
-;;; LMH test multiple structs
 (deftest struct-values.translation.mem-aref.1
     (with-foreign-object (p '(:struct struct-pair) 2)
       (setf (mem-aref p '(:struct struct-pair) 0) '(1 . 2)
@@ -466,12 +455,9 @@
   (1 . 2)
   (3 . 4))
 
-;;; LMH test to test default translation of foreign structures
 (defcstruct (struct-pair-default-translate :class pair-default)
   (a :int)
   (b :int))
-
-;; (defparameter frpr (convert-to-foreign '(a 1 b 2) '(:struct struct-pair-default-translate)))
 
 (deftest struct-values-default.translation.mem-ref.1
     (with-foreign-object (p '(:struct struct-pair-default-translate))
@@ -487,7 +473,6 @@
   1
   2)
 
-;;; LMH recursive structure
 (defcstruct (struct-pair+double :class pair+double)
   (pr (:struct struct-pair-default-translate))
   (dbl :double))
@@ -530,6 +515,7 @@
   (when freep
     (foreign-free pointer)))
 
+#+#:pointer-translation-not-yet-implemented
 (deftest struct-values.translation.ppo.1
     (multiple-value-bind (p freep)
         (convert-to-foreign '((1 . 2) . 3) 'struct-pair+1)
@@ -546,6 +532,7 @@
 (defcfun "pair_plus_one_pointer_sum" :int
   (p (:pointer (:struct struct-pair+1))))
 
+#+#:pointer-translation-not-yet-implemented
 (deftest struct-values.translation.ppo.2
     (pair-plus-one-pointer-sum '((1 . 2) . 3))
   6)
@@ -562,6 +549,7 @@
   (c :int))
 
 ;; bogus: doesn't free() pointer.
+#+#:pointer-translation-not-yet-implemented
 (deftest struct-values.translation.ppo.3
     (alloc-pair-plus-one 1 2 3)
   ((1 . 2) . 3))
@@ -575,6 +563,7 @@
   (a :int)
   (b :int))
 
+#|| ; TODO: load cffi-libffi for these tests to work.
 (deftest struct-values.fn.1
     (with-foreign-object (p '(:struct pair))
       (with-foreign-slots ((a b) p (:struct pair))
@@ -596,3 +585,19 @@
 (deftest struct-values.fn.4
     (make-pair 13 17)
   (13 . 17))
+||#
+
+(defcstruct single-byte-struct
+  (a :uint8))
+
+(deftest bare-struct-types.1
+    (eql (foreign-type-size 'single-byte-struct)
+         (foreign-type-size '(:struct single-byte-struct)))
+  t)
+
+(defctype single-byte-struct-alias single-byte-struct)
+
+(deftest bare-struct-types.2
+    (eql (foreign-type-size 'single-byte-struct-alias)
+         (foreign-type-size '(:struct single-byte-struct)))
+  t)

@@ -228,21 +228,32 @@ Signals an error if FOREIGN-TYPE is undefined."))
    (alignment
     ;; This struct's alignment requirements
     :initarg :alignment
-    :accessor alignment)))
+    :accessor alignment)
+   (bare
+    ;; we use this flag to support the (old, deprecated) semantics of
+    ;; bare struct types. FOO means (:POINTER (:STRUCT FOO) in
+    ;; functions declarations whereas FOO in a structure definition is
+    ;; a proper aggregate type: (:STRUCT FOO), etc.
+    :initform nil
+    :initarg :bare
+    :reader bare-struct-type-p)))
 
 (defun slots-in-order (structure-type)
   "A list of the structure's slots in order."
-  (sort 
-   (loop for slots being the hash-value of (cffi::structure-slots structure-type)
-         collect slots)
-   #'<
-   :key 'cffi::slot-offset))
+  (sort (loop for slots being the hash-value of (structure-slots structure-type)
+              collect slots)
+        #'<
+        :key 'slot-offset))
 
 (defmethod canonicalize ((type foreign-struct-type))
-  `(:struct ,(name type)))
+  (if (bare-struct-type-p type)
+      :pointer
+      `(:struct ,(name type))))
 
 (defmethod unparse-type ((type foreign-struct-type))
-  (canonicalize type))
+  (if (bare-struct-type-p type)
+      (name type)
+      (canonicalize type)))
 
 (defmethod aggregatep ((type foreign-struct-type))
   "Returns true, structure types are aggregate."
@@ -259,7 +270,9 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defclass foreign-union-type (foreign-struct-type) ())
 
 (defmethod canonicalize ((type foreign-union-type))
-  `(:union ,(name type)))
+  (if (bare-struct-type-p type)
+      :pointer
+      `(:union ,(name type))))
 
 ;;;# Foreign Typedefs
 

@@ -260,6 +260,20 @@
         (mem-aref i :int 1)))
   1984)
 
+(cffi:defcstruct mem-aref.bare-struct
+  (a :uint8))
+
+;;; regression test: although mem-aref was dealing with bare struct
+;;; types as though they were pointers, it wasn't calculating the
+;;; proper offsets. The offsets for bare structs types should be
+;;; calculated as aggregate types.
+(deftest mem-aref.bare-struct
+    (with-foreign-object (a 'mem-aref.bare-struct 2)
+      (eql (- (pointer-address (cffi:mem-aref a 'mem-aref.bare-struct 1))
+              (pointer-address (cffi:mem-aref a 'mem-aref.bare-struct 0)))
+           (foreign-type-size '(:struct mem-aref.bare-struct))))
+  t)
+
 ;;; regression tests. dereferencing an aggregate type. dereferencing a
 ;;; struct should return a pointer to the struct itself, not return the
 ;;; first 4 bytes (or whatever the size of :pointer is) as a pointer.

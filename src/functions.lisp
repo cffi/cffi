@@ -56,8 +56,7 @@
 (defun parse-args-and-types (args)
   "Returns 4 values. Types, canonicalized types, args and return type."
   (let* ((len (length args))
-         (return-type (if (oddp len) (lastcar args) :void))
-         (*parse-bare-structs-as-pointers* t))
+         (return-type (if (oddp len) (lastcar args) :void)))
     (loop repeat (floor len 2)
           for (type arg) on args by #'cddr
           collect type into types
@@ -111,7 +110,6 @@
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs)))
-          (*parse-bare-structs-as-pointers* t)
           (fsbvp (fn-call-by-value-p ctypes rettype)))
       (translate-objects
        syms fargs types rettype
@@ -134,8 +132,7 @@
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
   (let ((name (car (ensure-list name-and-options)))
-        (options (cdr (ensure-list name-and-options)))
-        (*parse-bare-structs-as-pointers* t))
+        (options (cdr (ensure-list name-and-options))))
     (foreign-funcall-form name options args nil)))
 
 (defmacro foreign-funcall-pointer (pointer options &rest args)
@@ -155,8 +152,7 @@
     (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
         (parse-args-and-types varargs)
       (let ((fixed-syms (make-gensym-list (length fixed-fargs)))
-            (varargs-syms (make-gensym-list (length varargs-fargs)))
-            (*parse-bare-structs-as-pointers* t))
+            (varargs-syms (make-gensym-list (length varargs-fargs))))
         (translate-objects
          (append fixed-syms varargs-syms)
          (append fixed-fargs varargs-fargs)
@@ -218,7 +214,6 @@ arguments and does type promotion for the variadic arguments."
   (let* ((arg-names (mapcar #'first args))
          (arg-types (mapcar #'second args))
          (syms (make-gensym-list (length args)))
-         (*parse-bare-structs-as-pointers* t)
          (call-by-value (fn-call-by-value-p arg-types return-type)))
     (multiple-value-bind (prelude caller)
         (if call-by-value
@@ -240,8 +235,7 @@ arguments and does type promotion for the variadic arguments."
 
 (defun %defcfun-varargs (lisp-name foreign-name return-type args options doc)
   (with-unique-names (varargs)
-    (let ((arg-names (mapcar #'car args))
-          (*parse-bare-structs-as-pointers* t))
+    (let ((arg-names (mapcar #'car args)))
       `(defmacro ,lisp-name (,@arg-names &rest ,varargs)
          ,@(ensure-list doc)
          `(foreign-funcall-varargs
@@ -435,8 +429,7 @@ arguments and does type promotion for the variadic arguments."
     (let ((arg-names (mapcar #'car args))
           (arg-types (mapcar #'cadr args))
           (name (car (ensure-list name-and-options)))
-          (options (cdr (ensure-list name-and-options)))
-          (*parse-bare-structs-as-pointers* t))
+          (options (cdr (ensure-list name-and-options))))
       `(progn
          (%defcallback ,name ,(canonicalize-foreign-type return-type)
              ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
