@@ -376,12 +376,11 @@
    :pointer))
 
 (deftest struct.canonicalize.2
-    (let ((cffi::*parse-bare-structs-as-pointers* t))
-      (mapcar #'cffi::canonicalize-foreign-type
-              '(struct-pair
-                (:struct struct-pair)
-                struct-pair-typedef1
-                struct-pair-typedef2)))
+    (mapcar #'cffi::canonicalize-foreign-type
+            '(struct-pair
+              (:struct struct-pair)
+              struct-pair-typedef1
+              struct-pair-typedef2))
   (:pointer
    (:struct struct-pair)
    (:struct struct-pair)
