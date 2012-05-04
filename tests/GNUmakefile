@@ -86,10 +86,10 @@ libtest32$(SHLIB_EXT): libtest.c
 	-$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 libtest2_32$(SHLIB_EXT): libtest2.c
-	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+	-$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 
 libfsbv_32$(SHLIB_EXT): libfsbv.c
-	$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
+	-$(CC) -m32 -o $@ $(SHLIB_CFLAGS) $(CFLAGS) $<
 endif
 
 clean:
