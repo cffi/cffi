@@ -46,7 +46,7 @@
               (type-pointer-array
                 (cffi:foreign-alloc :pointer :count (1+ nitems))))
          (loop for slot in (slots-in-order type)
-               for ltp = (libffi-type-pointer (cffi::slot-type slot))
+               for ltp = (libffi-type-pointer (parse-type (slot-type slot)))
                with slot-counter = 0
                do (if ltp
                       (loop

@@ -49,7 +49,7 @@
 ;;; Call and return struct by value
 (deftest fsbv.2
     (doublepair '(1 . 2))
-  '(2 . 4))
+  (2 . 4))
 
 ;;; Call recursive structure by value
 (deftest fsbv.3
