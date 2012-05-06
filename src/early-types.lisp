@@ -497,6 +497,7 @@ Signals an error if the type cannot be resolved."
 
 (defgeneric expand-to-foreign-dyn-indirect (value var body type)
   (:method (value var body type)
+    (declare (ignore type))
     `(let ((,var ,value)) ,@body)))
 
 (defmethod expand-to-foreign-dyn-indirect :around
