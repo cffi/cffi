@@ -308,6 +308,9 @@ Signals an error if FOREIGN-TYPE is undefined."))
       (follow-typedefs (actual-type type))
       type))
 
+(defmethod bare-struct-type-p ((type foreign-typedef))
+  (bare-struct-type-p (follow-typedefs type)))
+
 (defun structure-slots (type)
   "The hash table of slots for the structure type."
   (slots (follow-typedefs type)))
