@@ -1,8 +1,12 @@
 #!/bin/bash
 
+function die() {
+    echo -e "$@" >&2
+    exit 1
+}
+
 if [ "$(uname -s)" = "Darwin" ]; then
-    echo "Darwin not supported due to incompatible texinfo, sed, and expr."
-    exit
+    die "Darwin not supported due to incompatible texinfo, sed, and expr."
 fi
 
 ### Configuration
@@ -36,8 +40,7 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
         *)
-            echo "Unrecognized argument '$1'"
-            exit 1
+            die "Unrecognized argument '$1'"
             ;;
     esac
 done
@@ -46,10 +49,8 @@ done
 
 if ! git diff --exit-code; then
     echo -n "Unrecorded changes. "
-    if [ "$FORCE" -ne 1  ]; then
-        echo "Aborting."
-        echo "Use -f or --force if you want to make a release anyway."
-        exit 1
+    if [ "$FORCE" -ne 1 ]; then
+        die "Aborting.\nUse -f or --force if you want to make a release anyway."
     else
         echo "Continuing anyway."
     fi
