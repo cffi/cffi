@@ -150,3 +150,9 @@ make -C doc upload-docs
 
 echo "Pushing changes..."
 git push --tags origin master
+
+DEV_VERSION="${VERSION}.99"
+echo "Updating ${VERSION_EXPR_FILE} with new development version: ${DEV_VERSION}"
+echo -e ";; -*- lisp -*-\n\"${DEV_VERSION}\"" > ${VERSION_EXPR_FILE}
+
+echo "Let the next cycle begin !"
