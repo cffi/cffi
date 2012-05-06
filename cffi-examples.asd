@@ -28,6 +28,10 @@
 (defsystem cffi-examples
   :description "CFFI Examples"
   :author "James Bielman  <jamesjb@jamesjb.com>"
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :components
   ((:module examples
     :components
