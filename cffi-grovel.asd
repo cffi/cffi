@@ -28,6 +28,10 @@
 (asdf:defsystem cffi-grovel
   :description "The CFFI Groveller"
   :author "Dan Knapp <dankna@accela.net>"
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :depends-on (cffi alexandria)
   :licence "MIT"
   :components

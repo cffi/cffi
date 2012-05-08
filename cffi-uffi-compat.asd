@@ -32,6 +32,10 @@
 (defsystem cffi-uffi-compat
   :description "UFFI Compatibility Layer for CFFI"
   :author "James Bielman  <jamesjb@jamesjb.com>"
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :components
   ((:module uffi-compat
     :components

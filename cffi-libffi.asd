@@ -35,6 +35,10 @@
   :description "Foreign structures by value"
   :author "Liam Healy <lhealy@common-lisp.net>"
   :maintainer "Liam Healy <lhealy@common-lisp.net>"
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :defsystem-depends-on (#:trivial-features #:cffi-grovel)
   :components
   ((:module libffi

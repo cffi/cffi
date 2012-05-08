@@ -58,6 +58,10 @@
 (defsystem cffi-tests
   :description "Unit tests for CFFI."
   :depends-on (cffi bordeaux-threads #-ecl rt)
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :components
   ((:module "tests"
     :serial t

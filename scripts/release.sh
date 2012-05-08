@@ -13,6 +13,7 @@ fi
 
 PROJECT_NAME='cffi'
 ASDF_FILE="$PROJECT_NAME.asd"
+VERSION_EXPR_FILE="version.lisp-expr"
 HOST="common-lisp.net"
 RELEASE_DIR="/project/$PROJECT_NAME/public_html/releases"
 VERSION_FILE="VERSION"
@@ -59,7 +60,7 @@ fi
 ### Determine new version number
 
 if [ -z "$VERSION" ]; then
-    CURRENT_VERSION=$(git tag -l v\*.\*.\* | head -n1 | cut -dv -f2)
+    CURRENT_VERSION=$(awk -F '"' '/^"/ {print $2}' < ${VERSION_EXPR_FILE})
 
     dots=$(echo "$CURRENT_VERSION" | tr -cd '.')
     count=$(expr length "$dots" + 1)
@@ -96,12 +97,10 @@ DIST_NAME="${PROJECT_NAME}_${VERSION}"
 TARBALL="$DIST_NAME.tar.gz"
 SIGNATURE="$TARBALL.asc"
 
-#echo "Updating $ASDF_FILE with new version: $VERSION"
-#sed -e "s/:version \"$CURRENT_VERSION\"/:version \"$VERSION\"/" \
-#    "$ASDF_FILE" > "$ASDF_FILE.tmp"
-#mv "$ASDF_FILE.tmp" "$ASDF_FILE"
-#
-#darcs record -m "update $ASDF_FILE for version $VERSION"
+echo "Updating ${VERSION_EXPR_FILE} with new version: ${VERSION}"
+echo -e ";; -*- lisp -*-\n\"${VERSION}\"" > ${VERSION_EXPR_FILE}
+
+git commit -m "Release version ${VERSION}" ${VERSION_EXPR_FILE}
 
 echo "Tagging the tree..."
 git tag "v$VERSION"
@@ -109,11 +108,6 @@ git tag "v$VERSION"
 echo "Creating distribution..."
 mkdir "$DIST_NAME"
 git archive master | tar xC "$DIST_NAME"
-
-echo "Updating $ASDF_FILE with new version: $VERSION"
-sed -e "s/^(defsystem \(.*\)/(defsystem \1\n  :version \"$VERSION\"/" \
-    "$DIST_NAME/$ASDF_FILE" > "$DIST_NAME/$ASDF_FILE.tmp"
-mv "$DIST_NAME/$ASDF_FILE.tmp" "$DIST_NAME/$ASDF_FILE"
 
 echo "Creating and signing tarball..."
 tar czf "$TARBALL" "$DIST_NAME"
@@ -155,5 +149,13 @@ done
 echo "Building and uploading documentation..."
 make -C doc upload-docs
 
+DEV_VERSION="${VERSION}.99"
+echo "Updating ${VERSION_EXPR_FILE} with new development version: ${DEV_VERSION}"
+echo -e ";; -*- lisp -*-\n\"${DEV_VERSION}\"" > ${VERSION_EXPR_FILE}
+
+git commit -m "New development cycle: ${DEV_VERSION}" ${VERSION_EXPR_FILE}
+
 echo "Pushing changes..."
 git push --tags origin master
+
+echo "Let the next cycle begin !"

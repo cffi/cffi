@@ -35,6 +35,10 @@
   :description "The Common Foreign Function Interface"
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
+  :version #.(with-open-file (f (merge-pathnames "version.lisp-expr"
+                                                 (or *compile-file-pathname*
+                                                     *load-truename*)))
+               (read f))
   :licence "MIT"
   :depends-on (:alexandria :trivial-features :babel)
   :components
