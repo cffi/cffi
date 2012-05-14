@@ -57,7 +57,7 @@
 
 (defsystem cffi-tests
   :description "Unit tests for CFFI."
-  :depends-on (cffi bordeaux-threads #-ecl rt)
+  :depends-on (cffi-libffi bordeaux-threads #-ecl rt)
   :components
   ((:module "tests"
     :serial t
@@ -72,7 +72,7 @@
      (:file "memory")
      (:file "strings")
      (:file "struct")
-     #+fsbv (:file "fsbv")
+     (:file "fsbv")
      (:file "union")
      (:file "enum")
      (:file "misc-types")
