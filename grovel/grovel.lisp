@@ -244,7 +244,9 @@ int main(int argc, char**argv) {
    #+darwin (list "-I" "/opt/local/include/")
    #-darwin nil
    ;; ECL internal flags
-   #+ecl (list c::*cc-flags*)))
+   #+ecl (list c::*cc-flags*)
+   ;; FreeBSD non-base header files
+   #+freebsd (list "-I" "/usr/local/include/")))
 
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
