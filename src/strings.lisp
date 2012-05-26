@@ -178,7 +178,19 @@ pointer, NIL is returned."
 ;;;# Using Foreign Strings
 
 (defun foreign-string-alloc (string &key (encoding *default-foreign-encoding*)
-                             (null-terminated-p t) (start 0) end)
+                                      (null-terminated-p t) (start 0) end)
+  "Allocate a foreign string containing Lisp string STRING.
+The string must be freed with FOREIGN-STRING-FREE."
+  (foreign-string-alloc-ptr
+   string
+   :encoding encoding
+   :null-terminated-p null-terminated-p
+   :start start
+   :end end))
+
+(defun foreign-string-alloc-ptr
+    (string &key (encoding *default-foreign-encoding*)
+              (null-terminated-p t) ptr (start 0) end)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
   (check-type string string)
@@ -190,7 +202,7 @@ The string must be freed with FOREIGN-STRING-FREE."
            (length (if null-terminated-p
                        (+ count (null-terminator-len encoding))
                        count))
-           (ptr (foreign-alloc :char :count length)))
+           (ptr (or ptr (foreign-alloc :char :count length))))
       (funcall (encoder mapping) string start end ptr 0)
       (when null-terminated-p
         (dotimes (i (null-terminator-len encoding))
@@ -274,6 +286,10 @@ buffer along with ARGS." ; fix wording, sigh
     ;; ((typep obj '(array (unsigned-byte 8)))
     ;;  (values (foreign-string-alloc obj) t))
     (t (error "~A is not a Lisp string or pointer." obj))))
+
+(defmethod translate-into-foreign-memory ((s string) (type foreign-string-type) ptr)
+  (values (foreign-string-alloc-ptr s :encoding (fst-encoding type) :ptr ptr)
+          (fst-free-to-foreign-p type)))
 
 (defmethod translate-from-foreign (ptr (type foreign-string-type))
   (unwind-protect
