@@ -213,6 +213,12 @@ Signals an error if FOREIGN-TYPE is undefined."))
   (print-unreadable-object (type stream :type t :identity nil)
     (format stream "~S" (unparse-type type))))
 
+(defmethod aggregatep ((type foreign-pointer-type))
+  ;; LMH this is necessary to be consistent with the deprecated "bare struct" specification of pointers to structs.
+  ;; LMH put this to NIL to prevent serious breakage; Ryan's example still fails.
+  "A foreign pointer type is an aggregate type." 
+  nil)
+
 ;;;# Structure Type
 
 (defclass foreign-struct-type (named-foreign-type)

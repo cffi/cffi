@@ -301,6 +301,11 @@ buffer along with ARGS." ; fix wording, sigh
   (when free-p
     (foreign-string-free ptr)))
 
+(defmethod aggregatep ((type foreign-string-type))
+  ;; LMH this is necessary so that strings are translated; otherwise the methods for foreign-type-alias and then foreign-pointer-type are invoked, which returns T so that structures can be translated.
+  "A foreign string type is not an aggregate type."
+  nil)
+
 ;;;# STRING+PTR
 
 (define-foreign-type foreign-string+ptr-type (foreign-string-type)

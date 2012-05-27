@@ -65,3 +65,33 @@
   8
   10
   5.0d0)
+
+;;; From Ryan Pavlik
+
+(cffi:defcstruct rp-struct
+ (x :short)
+ (y :short))
+
+(defun test-old-ref (&optional (count 0))
+ (declare (notinline cffi:mem-ref cffi:mem-aref))
+ (cffi:with-foreign-object (ptr '(:struct rp-struct) 2)
+   (format t "~&Old-ref style:~%ptr : ~A~%aref: ~A~%"
+           ptr (cffi:mem-aref ptr 'rp-struct count))))
+
+(defun test-new-ref ()
+ (cffi:with-foreign-object (ptr '(:struct rp-struct) 2)
+   (format t "~&New-ref style:~%ptr : ~A~%aref: ~A~%"
+          ptr
+          (cffi:mem-aref ptr '(:struct rp-struct) 1))))
+
+(defun test-new-ptr-ref (&optional (count 0))
+ (cffi:with-foreign-object (ptr '(:struct rp-struct) 2)
+   (format t "~&New-ref with :pointer style:~%ptr : ~A~%aref: ~A~%"
+          ptr
+          (cffi:mem-aref ptr '(:pointer (:struct rp-struct)) count))))
+
+(defun test-generic-ptr-ref (&optional (count 0))
+ (cffi:with-foreign-object (ptr '(:struct rp-struct) 2)
+   (format t "~&Generic :pointer ref:~%ptr : ~A~%aref: ~A~%"
+          ptr
+          (cffi:mem-aref ptr ':pointer count))))
