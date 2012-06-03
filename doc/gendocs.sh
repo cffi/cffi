@@ -28,7 +28,7 @@
 prog="`basename \"$0\"`"
 srcdir=`pwd`
 
-scripturl="http://common-lisp.net/project/cffi/darcs/cffi/doc/gendocs.sh"
+scripturl="https://github.com/cffi/cffi/blob/master/doc/gendocs.sh"
 templateurl="http://savannah.gnu.org/cgi-bin/viewcvs/texinfo/texinfo/util/gendocs_template"
 
 : ${MAKEINFO="makeinfo"}
