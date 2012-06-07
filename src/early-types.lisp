@@ -524,6 +524,9 @@ Signals an error if the type cannot be resolved."
     (value var body (type translatable-foreign-type))
   (foreign-expand-runtime-translator-or-binding value var body type))
 
+(defmethod expand-to-foreign-dyn-indirect (value var body (type foreign-type-alias))
+  (expand-to-foreign-dyn-indirect value var body (actual-type type)))
+
 ;;; User interface for converting values from/to foreign using the
 ;;; type translators.  The compiler macros use the expanders when
 ;;; possible.
