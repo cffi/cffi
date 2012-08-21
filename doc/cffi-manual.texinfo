@@ -146,7 +146,6 @@ software or the use or other dealings in the software.}
 @dircategory Software development
 @direntry
 * CFFI Manual: (cffi-manual).           CFFI Manual.
-* CFFI Sys spec: (cffi-sys-spec).       CFFI Sys spec.
 @end direntry
 
 @titlepage
