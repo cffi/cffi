@@ -101,8 +101,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun null-pointer ()
   "Construct and return a null pointer."
-  (si:make-foreign-null-pointer)
-  )
+  (si:make-foreign-null-pointer))
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
@@ -115,8 +114,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
   ;;(typep ptr 'si:foreign)
-  (si:foreignp ptr)
-  )
+  (si:foreignp ptr))
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
@@ -289,8 +287,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun %close-foreign-library (handle)
   ;;(declare (ignore handle))
   ;;(error "%CLOSE-FOREIGN-LIBRARY unimplemented.")
-  (si:unload-foreign-module handle)
-  )
+  (si:unload-foreign-module handle))
 
 (defun native-namestring (pathname)
   (namestring pathname))
@@ -312,8 +309,7 @@ WITH-POINTER-TO-VECTOR-DATA."
     (intern (format nil "~A::~A"
                     (if-let (package (symbol-package name))
                       (package-name package)
-                      "#"
-                      )
+                      "#")
                     (symbol-name name))
             '#:cffi-callbacks)))
 
@@ -327,8 +323,7 @@ WITH-POINTER-TO-VECTOR-DATA."
                         ,(mapcar #'list arg-names
                                  (mapcar #'cffi-type->mkcl-type arg-types))
                         ;;(block ,cb-name ,@body)
-                        (block ,cb-name ,body)
-                        )
+                        (block ,cb-name ,body))
        (setf (gethash ',name *callbacks*) ',cb-name))))
 
 (defun %callback (name)
