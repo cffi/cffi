@@ -151,6 +151,7 @@ echo Generating output formats for $srcfile
 cmd="${MAKEINFO} -o $PACKAGE.info $srcfile"
 echo "Generating info files... ($cmd)"
 eval $cmd
+install-info $PACKAGE.info dir
 mkdir -p $outdir/
 tar czf $outdir/$PACKAGE.info.tar.gz $PACKAGE.info*
 info_tgz_size="`calcsize $outdir/$PACKAGE.info.tar.gz`"
