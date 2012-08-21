@@ -143,6 +143,12 @@ software or the use or other dealings in the software.}
 @end copying
 @c %**end of header
 
+@dircategory Software development
+@direntry
+* CFFI Manual: (cffi-manual).           CFFI Manual.
+* CFFI Sys spec: (cffi-sys-spec).       CFFI Sys spec.
+@end direntry
+
 @titlepage
 @title CFFI User Manual
 @c @subtitle Version X.X
