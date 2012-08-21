@@ -4808,7 +4808,7 @@ allocated by @code{foreign-string-alloc}.
 @node foreign-string-to-lisp, lisp-string-to-foreign, foreign-string-free, Strings
 @heading foreign-string-to-lisp
 @subheading Syntax
-@Function{foreign-string-to-lisp ptr &optional offset count max-chars @
+@Function{foreign-string-to-lisp ptr &key offset count max-chars @
                                  encoding @res{} string}
 
 @subheading Arguments and Values
