@@ -665,21 +665,21 @@ DLLEXPORT long long sum_127
   a119, int a120, int a121, float a122, unsigned char a123, unsigned
   char a124, double a125, unsigned long long a126, char a127)
 {
-    return (long long) ((uintptr_t) a1) + ((uintptr_t) a2) + ((long) a3) +
-        a4 + ((uintptr_t) a5) + a6 + ((long) a7) + ((long) a8) + a9 + a10 +
+    return (long long) ((intptr_t) a1) + ((intptr_t) a2) + ((long) a3) +
+        a4 + ((intptr_t) a5) + a6 + ((long) a7) + ((long) a8) + a9 + a10 +
         a11 + a12 + a13 + a14 + a15 + a16 + a17 + ((long) a18) + a19 + a20 +
-        a21 + a22 + a23 + a24 + ((uintptr_t) a25) + a26 + a27 + a28 + a29 +
-        a30 + ((uintptr_t) a31) + a32 + a33 + a34 + ((uintptr_t) a35) +
-        a36 + ((long) a37) + a38 + a39 + ((uintptr_t) a40) + a41 + a42 + a43 +
+        a21 + a22 + a23 + a24 + ((intptr_t) a25) + a26 + a27 + a28 + a29 +
+        a30 + ((intptr_t) a31) + a32 + a33 + a34 + ((intptr_t) a35) +
+        a36 + ((long) a37) + a38 + a39 + ((intptr_t) a40) + a41 + a42 + a43 +
         a44 + a45 + a46 + a47 + ((long) a48) + a49 + a50 + a51 + a52 +
-        ((uintptr_t) a53) + a54 + a55 + a56 + a57 + a58 + ((long) a59) +
-        ((uintptr_t) a60) + ((long) a61) + a62 + a63 + ((long) a64) + a65 + a66
-        + ((uintptr_t) a67) + ((long) a68) + a69 + ((long) a70) + ((long) a71) +
-        a72 + ((uintptr_t) a73) + a74 + a75 + ((uintptr_t) a76) + a77 +
-        ((long) a78) + a79 + a80 + ((uintptr_t) a81) + a82 + a83 + ((long) a84)
-        + ((uintptr_t) a85) + a86 + ((long) a87) + a88 + ((long) a89) + a90 +
+        ((intptr_t) a53) + a54 + a55 + a56 + a57 + a58 + ((long) a59) +
+        ((intptr_t) a60) + ((long) a61) + a62 + a63 + ((long) a64) + a65 + a66
+        + ((intptr_t) a67) + ((long) a68) + a69 + ((long) a70) + ((long) a71) +
+        a72 + ((intptr_t) a73) + a74 + a75 + ((intptr_t) a76) + a77 +
+        ((long) a78) + a79 + a80 + ((intptr_t) a81) + a82 + a83 + ((long) a84)
+        + ((intptr_t) a85) + a86 + ((long) a87) + a88 + ((long) a89) + a90 +
         a91 + a92 + a93 + ((long) a94) + a95 + a96 + a97 + a98 + a99 +
-        ((long) a100) + ((long) a101) + a102 + a103 + ((uintptr_t) a104) +
+        ((long) a100) + ((long) a101) + a102 + a103 + ((intptr_t) a104) +
         ((long) a105) + a106 + a107 + a108 + a109 + ((long) a110) + a111 +
         ((long) a112) + a113 + a114 + a115 + a116 + a117 + a118 + a119 + a120 +
         a121 + ((long) a122) + a123 + a124 + ((long) a125) + a126 + a127;
