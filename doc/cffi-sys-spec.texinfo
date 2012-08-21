@@ -37,6 +37,11 @@ dealings in the software.}
 @end macro
 @c %**end of header
 
+@dircategory Software development
+@direntry
+* CFFI Sys spec: (cffi-sys-spec).       CFFI Sys spec.
+@end direntry
+
 @titlepage
 @title CFFI-SYS Interface Specification
 @c @subtitle Version X.X
