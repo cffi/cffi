@@ -39,7 +39,7 @@
 #+abcl
 (defun %invoke (command arglist)
   (let ((cmdline (reduce (lambda (str1 str2)
-                           (concatenate 'string str1 #\Space str2))
+                           (concatenate 'string str1 " " str2))
                          arglist :initial-value command))
         (stream (make-string-output-stream)))
     (values (ext:run-shell-command cmdline :output stream)
