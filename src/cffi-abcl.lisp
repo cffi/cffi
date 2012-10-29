@@ -30,13 +30,13 @@
 ;;; <http://jna.dev.java.net/>
 ;;;
 ;;; JNA may be automatically loaded into the current JVM process from
-;;; abcl-1.1.0-dev via
-;;;
-;;;   (require 'abcl-contrib)
-;;;   (require 'jna)
+;;; abcl-1.1.0-dev via the contrib mechanism.
 
 (require 'abcl-contrib)
 (require 'jna)
+
+(eval-when (:compile-toplevel :execute)
+  (require :jss))
 
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
@@ -85,7 +85,7 @@
                      :key #'jfield-name
                      :test #'string=)))
     (jcall (jmethod "java.lang.reflect.Field" "setAccessible" "boolean")
-           field (make-immediate-object t :boolean))
+           field +true+)
     (jcall (jmethod "java.lang.reflect.Field" "get" "java.lang.Object")
            field instance)))
 
@@ -97,7 +97,7 @@
                       :key #'jmethod-name
                       :test #'string=)))
     (jcall (jmethod "java.lang.reflect.Method" "setAccessible" "boolean")
-           method (make-immediate-object t :boolean))
+           method +true+)
     method))
 
 (defun private-jconstructor (class-name &rest params)
@@ -112,7 +112,7 @@
                                         "getDeclaredConstructors")
                                (jclass class-name)))))
     (jcall (jmethod "java.lang.reflect.Constructor" "setAccessible" "boolean")
-           cons (make-immediate-object t :boolean))
+           cons +true+)
     cons))
 
 ;;;# Symbol Case
@@ -191,11 +191,11 @@ supplied, it will be bound to SIZE during BODY."
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes can passed to
 WITH-POINTER-TO-VECTOR-DATA."
-  (error "unimplemented"))
+  (error "Unimplemented."))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  (warn "unimplemented"))
+  (warn "Unimplemented."))
 
 ;;;# Dereferencing
 
@@ -205,11 +205,11 @@ WITH-POINTER-TO-VECTOR-DATA."
      ((:int :unsigned-int) "java.lang.Integer")
      ((:long :unsigned-long) "com.sun.jna.NativeLong")
      ((:long-long :unsigned-long-long) "java.lang.Long")
-     (:pointer "com.sun.jna.Pointer")
+     (:pointer "com.sun.jna.Pointer") ;; void * is pointer?
      (:float "java.lang.Float")
      (:double "java.lang.Double")
      ((:char :unsigned-char) "java.lang.Byte")
-     ((:short :unsigned-short) "java.lang.Short"))))
+     ((:short :unsigned-short) "java.lang.Short")))) 
 
 (defun %foreign-type-size (type)
   "Return the size in bytes of a foreign type."
@@ -242,7 +242,7 @@ WITH-POINTER-TO-VECTOR-DATA."
     ((:short :unsigned-short) "getShort")))
 
 (defun lispify-value (value type)
-  (when (and (eq type :pointer) (null value))
+  (when (and (eq type :pointer) (or (null value) (eq +null+ value)))
     (return-from lispify-value (null-pointer)))
   (when (or (eq type :long) (eq type :unsigned-long))
     (setq value (jcall (jmethod "com.sun.jna.NativeLong" "longValue") value)))
@@ -312,7 +312,7 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:stdcall "ALT_CONVENTION")
     (:cdecl "C_CONVENTION")))
 
-(defun make-function-pointer (pointer cconv)
+(defun make-function-pointer (pointer convention)
   (jnew (private-jconstructor "com.sun.jna.Function"
                               "com.sun.jna.Pointer" "int")
         pointer
@@ -393,48 +393,90 @@ WITH-POINTER-TO-VECTOR-DATA."
      :byte)
     ((:short :unsigned-short)
      :short)
+    (:wchar_t
+     :char)
     (:void
      :void)))
 
 (defvar *callbacks* (make-hash-table))
 
+(defmacro convert-args-to-lisp-values (arg-names &rest body)
+  (let ((gensym-args (loop :for name :in arg-names :collecting (gensym))))
+    `(lambda (,@gensym-args)
+       (let ,(loop 
+                :for arg :in arg-names
+                :for gensym-arg :in gensym-args
+                :collecting `(,arg (if (typep ,gensym-arg 'java:java-object)
+                                   (java:jobject-lisp-value ,gensym-arg) 
+                                   ,gensym-arg)))
+         ,body))))
+
 (defmacro %defcallback (name return-type arg-names arg-types body
                         &key convention)
-  (declare (ignore convention))
-  `(let ((interface-name ,(define-jna-callback-interface return-type arg-types)))
-     (setf (gethash ',name *callbacks*)
-           (jinterface-implementation interface-name "callback"
-                                      (lambda (,@arg-names)
-                                        ,body)))))
+  (declare (ignore convention)) ;; I'm always up for ignoring convention, but this is probably wrong.
+  `(setf (gethash ',name *callbacks*)
+         (jinterface-implementation 
+          (ensure-callback-interface ',return-type ',arg-types)
+          "callback"
+          `,(convert-args-to-lisp-values ,arg-names ,@body))))
+;;          (lambda (,@arg-names) ,body))))
 
 (jvm::define-class-name +callback-object+ "com.sun.jna.Callback")
-(defconstant +dynamic-callback-package+
-  "org/armedbear/jna/dynamic/callbacks")
+(defconstant 
+    +dynamic-callback-package+
+  "org/armedbear/jna/dynamic/callbacks"
+  "The slash-delimited Java package in which we create classes dynamically to specify callback interfaces.")
 
-(defun define-jna-callback-interface (returns args)
-  (multiple-value-bind (interface interface-name)
-      (%define-jna-callback-interface
-       (foreign-to-callback-type returns)
-       (mapcar (lambda (type) (foreign-to-callback-type type)) args))
-    (load-class interface)
+(defun ensure-callback-interface (returns args)
+  "Ensure that the jvm interface for the callback exists in the current JVM.
+
+Returns the fully dot qualified name of the interface."
+  (let* ((jvm-returns (foreign-to-callback-type returns))
+         (jvm-args  (mapcar #'foreign-to-callback-type args))
+         (interface-name (qualified-callback-interface-classname jvm-returns jvm-args)))
+    (handler-case 
+        (jss:find-java-class interface-name)
+      (java-exception (e)
+        (when (jinstance-of-p (java:java-exception-cause e)
+                              "java.lang.ClassNotFoundException")
+          (let ((interface-class-bytes (%define-jna-callback-interface jvm-returns jvm-args))
+                (simple-interface-name (callback-interface-classname jvm-returns jvm-args)))
+            (load-class interface-name interface-class-bytes)))))
     interface-name))
 
+(defun qualified-callback-interface-classname (returns args)
+  (format nil "~A.~A"
+          (substitute #\. #\/ +dynamic-callback-package+) 
+          (callback-interface-classname returns args)))
+
+(defun callback-interface-classname (returns args)
+  (flet ((stringify (thing)
+           (typecase thing
+             (jvm::jvm-class-name 
+              (substitute #\_ #\/ 
+                         (jvm::class-name-internal thing)))
+             (t (string thing)))))
+    (format nil "~A__~{~A~^__~}" 
+            (stringify returns) 
+            (mapcar #'stringify args))))
+
 (defun %define-jna-callback-interface (returns args)
-  "Returns the Java byte[] array of a class representing a Java interface.
+  "Returns the Java byte[] array of a class representing a Java
+  interface descending form +CALLBACK-OBJECT+ which contains the
+  single function 'callback' which takes ARGS returning RETURNS.
 
 The fully qualified dotted name of the generated class is returned as
 the second value."
-  (let ((name (symbol-name (gensym))))
+  (let ((name (callback-interface-classname returns args)))
     (values
      (define-java-interface name +dynamic-callback-package+
        `(("callback" ,returns ,args))
        `(,+callback-object+))
-     (format nil "~A.~A"
-             (substitute #\. #\/ +dynamic-callback-package+) name))))
+     (qualified-callback-interface-classname returns args))))
 
 (defun define-java-interface (name package methods
                               &optional (superinterfaces nil))
-"Define a class for a Java interface called NAME in PACKAGE with METHODS.
+"Returns the bytes of the Java class interface called NAME in PACKAGE with METHODS.
 
 METHODS is a list of (NAME RETURN-TYPE (ARG-TYPES)) entries.  NAME is
 a string.  The values of RETURN-TYPE and the list of ARG-TYPES for the
@@ -466,12 +508,9 @@ interface extends specified as fully qualifed dotted Java names."
       (jvm::write-class-file class s)
       (sys::%get-output-stream-bytes s))))
 
-(defun load-class (class-bytes)
-  "Load the Java byte[] array CLASS-BYTES as a Java class."
-  (let ((load-class-method
-         (jmethod "org.armedbear.lisp.JavaClassLoader"
-                  "loadClassFromByteArray" "[B")))
-    (jcall load-class-method java::*classloader* class-bytes)))
+(defun load-class (name bytes)
+  "Load the byte[] array BYTES as a Java class called NAME."
+  (#"loadClassFromByteArray" java::*classloader* name bytes))
 
 ;;; Test function: unused in CFFI
 (defun write-class (class-bytes pathname)
@@ -483,7 +522,8 @@ interface extends specified as fully qualifed dotted Java names."
       (write-byte (jarray-ref class-bytes i) stream))))
 
 (defun %callback (name)
-  (or (gethash name *callbacks*)
+  (or (#"getFunctionPointer" 'com.sun.jna.CallbackReference
+                             (gethash name *callbacks*))
       (error "Undefined callback: ~S" name)))
 
 ;;;# Loading and Closing Foreign Libraries
@@ -492,13 +532,35 @@ interface extends specified as fully qualifed dotted Java names."
 
 (defun %load-foreign-library (name path)
   "Load a foreign library, signals a simple error on failure."
-  (handler-case
-      (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
-        (setf (gethash name *loaded-libraries*) lib)
-        lib)
-    (java-exception (e)
-      (error (jcall (jmethod "java.lang.Exception" "getMessage")
-                    (java-exception-cause e))))))
+  (flet ((load-and-register (name path)
+           (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
+             (setf (gethash name *loaded-libraries*) lib)
+             lib))
+         (foreign-library-type-p (type)
+           (find type '("so" "dll" "dylib") :test #'string=))
+         (java-error (e)
+           (error (jcall (jmethod "java.lang.Exception" "getMessage")
+                         (java-exception-cause e)))))
+    (handler-case
+        (load-and-register name path)
+      (java-exception (e)
+        ;; From JNA http://jna.java.net/javadoc/com/sun/jna/NativeLibrary.html
+        ;; ``[The name] can be short form (e.g. "c"), an explicit
+        ;; version (e.g. "libc.so.6"), or the full path to the library
+        ;; (e.g. "/lib/libc.so.6")''
+        ;;
+        ;; Try to deal with the occurance "libXXX" and "libXXX.so" as
+        ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
+        (let ((p (pathname path)))
+          (if (and (not (pathname-directory p))
+                   (= (search "lib" (pathname-name p)) 0))
+              (let ((short-name (if (foreign-library-type-p (pathname-type p))
+                                    (subseq (pathname-name p) 3)
+                                    (pathname-name p))))
+                (handler-case 
+                    (load-and-register name short-name)
+                  (java-exception (e) (java-error e))))
+              (java-error e)))))))
 
 ;;; FIXME. Should remove libraries from the hash table.
 (defun %close-foreign-library (handle)
@@ -515,9 +577,9 @@ interface extends specified as fully qualifed dotted Java names."
   "Returns a pointer to a foreign symbol NAME."
   (flet ((find-it (name library)
            (let ((p (ignore-errors
-                      (jcall (private-jmethod "com.sun.jna.NativeLibrary"
-                                              "getSymbolAddress")
-                             library name))))
+                      (jcall 
+                       (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
+                       library name))))
              (unless (null p)
                (make-pointer p)))))
     (if (eq library :default)
