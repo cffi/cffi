@@ -646,7 +646,7 @@ int main(int argc, char**argv) {
 
 (defun foreign-type-to-printf-specification (type)
   "Return the printf specification associated with the foreign type TYPE."
-  (case type
+  (ecase type
     (:char
      "\"%hhd\"")
     ((:unsigned-char :uchar)
@@ -682,9 +682,7 @@ int main(int argc, char**argv) {
     (:int64
      "\"%\"PRId64")
     (:uint64
-     "\"%\"PRIu64")
-    (t
-     "\"%i\"")))
+     "\"%\"PRIu64")))
 
 ;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
 ;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
@@ -709,7 +707,8 @@ int main(int argc, char**argv) {
         (c-print-symbol out lisp-name)
         (c-format out " ")
         (format out "~&  fprintf(output, ~A, ~A);~%"
-                (foreign-type-to-printf-specification base-type) c-name)
+                (foreign-type-to-printf-specification (or base-type :int))
+                c-name)
         (c-format out ")")))
     (c-format out ")~%")))
 
