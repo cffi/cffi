@@ -43,7 +43,7 @@ CFLAGS_64      := -m64
 endif
 else
 ifeq ($(OSTYPE), SunOS)
-CFLAGS         := -c -Wall -std=c99 -pedantic
+CFLAGS         := -m64 -fPIC -c -Wall -std=c99 -pedantic
 else
 # Let's assume this is win32
 SHLIB_EXT      := .dll
