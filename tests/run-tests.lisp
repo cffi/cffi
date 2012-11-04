@@ -31,7 +31,7 @@
 (setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
 #+cmu (setf ext:*gc-verbose* nil)
 
-#+(and (not asdf) (or sbcl openmcl ecl))
+#+(and (not asdf) (or sbcl openmcl ecl mkcl))
 (require "asdf")
 
 (asdf:operate 'asdf:load-op 'cffi-tests :verbose nil)

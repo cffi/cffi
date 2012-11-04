@@ -208,6 +208,7 @@
   (:simple-parser check-nil-skip-type))
 
 (defmethod expand-to-foreign (val (type check-nil-skip-type))
+  (declare (ignorable val)) ;; silence style warning on MKCL
   (setf *nil-skipped* nil)
   (null-pointer))
 
