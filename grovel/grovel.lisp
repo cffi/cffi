@@ -647,6 +647,46 @@ int main(int argc, char**argv) {
        `((,(intern (string lisp-name)) ,(car c-names))
          ,@options)))))
 
+(defun foreign-type-to-printf-specification (type)
+  "Return the printf specification associated with the foreign type TYPE."
+  (ecase type
+    (:char
+     "\"%hhd\"")
+    ((:unsigned-char :uchar)
+     "\"%hhu\"")
+    (:short
+     "\"%hd\"")
+    ((:unsigned-short :ushort)
+     "\"%hu\"")
+    (:int
+     "\"%d\"")
+    ((:unsigned-int :uint)
+     "\"%u\"")
+    (:long
+     "\"%ld\"")
+    ((:unsigned-long :ulong)
+     "\"%lu\"")
+    ((:long-long :llong)
+     "\"%lld\"")
+    ((:unsigned-long-long :ullong)
+     "\"%llu\"")
+    (:int8
+     "\"%\"PRId8")
+    (:uint8
+     "\"%\"PRIu8")
+    (:int16
+     "\"%\"PRId16")
+    (:uint16
+     "\"%\"PRIu16")
+    (:int32
+     "\"%\"PRId32")
+    (:uint32
+     "\"%\"PRIu32")
+    (:int64
+     "\"%\"PRId64")
+    (:uint64
+     "\"%\"PRIu64")))
+
 ;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
 ;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
 ;; or a list (NAME &key BASE-TYPE).
@@ -669,7 +709,9 @@ int main(int argc, char**argv) {
         (c-format out "~%  (")
         (c-print-symbol out lisp-name)
         (c-format out " ")
-        (c-printf out "%i" c-name)
+        (format out "~&  fprintf(output, ~A, ~A);~%"
+                (foreign-type-to-printf-specification (or base-type :int))
+                c-name)
         (c-format out ")")))
     (c-format out ")~%")))
 
