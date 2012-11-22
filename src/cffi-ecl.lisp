@@ -290,9 +290,9 @@ WITH-POINTER-TO-VECTOR-DATA."
                 ;; On AMD64, the following code only works with the extra
                 ;; argument ",...". If this is not present, functions
                 ;; like sprintf do not work
-                (format s "extern ~A ~A(~@[~{~A~^, ~}~]);
-@(return) = ~A(~A);"
+                (format s "{ extern ~A ~A(~@[~{~A~^, ~}~]); ~A~A(~A); }"
                         (ecl-type->c-type return-type) pointer types
+                        (if (eq return-type :void) "" "@(return) = ")
                         pointer
                         (subseq +ecl-inline-codes+ 0
                                 (max 0 (1- (* (length values) 3)))))))
