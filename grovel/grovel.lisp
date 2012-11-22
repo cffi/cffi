@@ -89,7 +89,7 @@ int main(int argc, char**argv) {
 
 (defun c-format (out fmt &rest args)
   (let ((text (unescape-for-c (format nil "~?" fmt args))))
-    (format out "~&  fprintf(output, \"~A\");~%" text)))
+    (format out "~&  fputs(\"~A\", output);~%" text)))
 
 (defun c-printf (out fmt &rest args)
   (flet ((item (item)
