@@ -31,6 +31,7 @@
   (:use #:common-lisp #:alexandria)
   (:import-from #:si #:null-pointer-p)
   (:export
+   #:*cffi-ecl-method*
    #:canonicalize-symbol-name-case
    #:foreign-pointer
    #:pointerp
@@ -58,6 +59,41 @@
    #:%foreign-symbol-pointer))
 
 (in-package #:cffi-sys)
+
+;;;
+;;; ECL allows many ways of calling a foreign function, and also many
+;;; ways of finding the pointer associated to a function name. They
+;;; depend on whether the FFI relies on libffi or on the C/C++ compiler,
+;;; and whether they use the shared library loader to locate symbols
+;;; or they are linked by the linker.
+;;;
+;;;  :DFFI
+;;;
+;;;  ECL uses libffi to call foreign functions. The only way to find out
+;;;  foreign symbols is by loading shared libraries and using dlopen()
+;;;  or similar.
+;;;
+;;;  :DLOPEN
+;;;
+;;;  ECL compiles FFI code as C/C++ statements. The names are resolved
+;;;  at run time by the shared library loader every time the function
+;;;  is called
+;;;
+;;;  :C/C++
+;;;
+;;;  ECL compiles FFI code as C/C++ statements, but the name resolution
+;;;  happens at link time. In this case you have to tell the ECL
+;;;  compiler which are the right ld-flags (c:*ld-flags*) to link in
+;;;  the library.
+;;;
+(defvar *cffi-ecl-method*
+  #+dffi :dffi
+  #+(and dlopen (not dffi)) :dlopen
+  #-(or dffi dlopen) :c/c++
+  "The type of code that CFFI generates for ECL: :DFFI when using the
+dynamical foreign function interface; :DLOPEN when using C code and
+dynamical references to symbols; :C/C++ for C/C++ code with static
+references to symbols.")
 
 ;;;# Mis-features
 
@@ -233,27 +269,47 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defconstant +ecl-inline-codes+ "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z")
 
 (defun c-inline-function-pointer-call (pointer types values return-type)
-  (when (stringp pointer)
-    (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
-  `(ffi:c-inline
-    ,(list* pointer values)
-    ,(list* :pointer-void types) ,return-type
-    ,(with-output-to-string (s)
-       (let ((types (mapcar #'ecl-type->c-type types)))
-         ;; On AMD64, the following code only works with the extra
-         ;; argument ",...". If this is not present, functions
-         ;; like sprintf do not work
-         (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
-                 (ecl-type->c-type return-type) types
-                 (subseq +ecl-inline-codes+ 3
-                         (max 3 (+ 2 (* (length values) 3)))))))
-    :one-liner t :side-effects t))
+  (cond ((not (stringp pointer))
+         `(ffi:c-inline
+           ,(list* pointer values)
+           ,(list* :pointer-void types) ,return-type
+           ,(with-output-to-string (s)
+              (let ((types (mapcar #'ecl-type->c-type types)))
+                ;; On AMD64, the following code only works with the extra
+                ;; argument ",...". If this is not present, functions
+                ;; like sprintf do not work
+                (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
+                        (ecl-type->c-type return-type) types
+                        (subseq +ecl-inline-codes+ 3
+                                (max 3 (+ 2 (* (length values) 3)))))))
+           :one-liner t :side-effects t))
+        ((eq *cffi-ecl-method* :c/c++)
+         `(ffi:c-inline ,values ,types ,return-type
+           ,(with-output-to-string (s)
+              (let ((types (mapcar #'ecl-type->c-type types)))
+                ;; On AMD64, the following code only works with the extra
+                ;; argument ",...". If this is not present, functions
+                ;; like sprintf do not work
+                (format s "extern ~A ~A(~@[~{~A~^, ~}~]);
+@(return) = ~A(~A);"
+                        (ecl-type->c-type return-type) pointer types
+                        pointer
+                        (subseq +ecl-inline-codes+ 0
+                                (max 0 (1- (* (length values) 3)))))))
+           :one-liner nil :side-effects t))
+        (t
+         (c-inline-function-pointer-call
+          `(%foreign-symbol-pointer ,pointer nil)
+          types values return-type))))
 
-#+dffi
 (defun dffi-function-pointer-call (pointer types values return-type)
   (when (stringp pointer)
     (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
-  `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values)))
+  #-dffi
+  `(error "In interpreted code, attempted to call a foreign function~% ~A~%~
+             but ECL was built without support for that." ,pointer)
+  #+dffi
+  `(si::call-cfun ,pointer ,return-type (list ,@types) (list ,@values)))
 
 #.(cl:when (>= ext:+ecl-version-number+ 100402)
     (cl:pushnew :ecl-with-backend cl:*features*)
@@ -262,17 +318,12 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun produce-function-pointer-call (pointer types values return-type)
   #-ecl-with-backend
   (progn
-    #+dffi
-    (dffi-function-pointer-call pointer types values return-type)
-    #-dffi
-    (c-inline-function-pointer-call pointer types values return-type))
+    (if (eq *cffi-dffi-method* :dffi)
+        (dffi-function-pointer-call pointer types values return-type)
+        (c-inline-function-pointer-call pointer types values return-type)))
   #+ecl-with-backend
   `(ext:with-backend
      :bytecodes
-     #-dffi
-     (error "In interpreted code, attempted to call a foreign function~% ~A~%~
-             but ECL was built without support for that." pointer)
-     #+dffi
      ,(dffi-function-pointer-call pointer types values return-type)
      :c/c++
      ,(c-inline-function-pointer-call pointer types values return-type)))
