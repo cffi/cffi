@@ -7,7 +7,10 @@
 #ifndef offsetof
 #define offsetof(type, slot) ((long) ((char *) &(((type *) 0)->slot)))
 #endif
-#define sizeofslot(type, slot) (sizeof(((type *) 0)->slot))
+#define getslot(type, slot) (((type *) 0)->slot)
+#define sizeofslot(type, slot) (sizeof(getslot(type, slot)))
+#define countofslot(type, slot) \
+  (sizeof(getslot(type, slot)) / sizeof(getslot(type, slot)[0]))
 #define stringify(x) #x
 #define indirect_stringify(x) stringify(x)
 

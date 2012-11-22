@@ -501,8 +501,7 @@ int main(int argc, char**argv) {
            (c-format out " :count ~D" count))
           ((eql :auto)
            (c-printf out " :count %i"
-                     (format nil "sizeof(~A) - offsetof(~A, ~A)"
-                             struct-c-name
+                     (format nil "countofslot(~A, ~A)"
                              struct-c-name
                              slot-c-name)))
           ((or symbol string)
