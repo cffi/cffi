@@ -16,6 +16,12 @@
 
 #define TYPE_SIGNED_P(type) (((type)-1)<0LL)
 #define _64_BIT_VALUE_FITS_SIGNED_P(value) ( (value) <= 0x7FFFFFFFFFFFFFFFLL )
+#define SLOT_SIGNED_P(result, type, slot)				\
+  do { 									\
+    type slot_signed_p_struct; 						\
+    slot_signed_p_struct.slot = -1; 					\
+    (result) = slot_signed_p_struct.slot < 0;				\
+  } while (0)
 
 void type_name(FILE *output, int signed_p, int size) {
   if (signed_p) {
