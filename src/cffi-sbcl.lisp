@@ -134,7 +134,8 @@
 (declaim (inline foreign-free))
 (defun foreign-free (ptr)
   "Free a PTR allocated by FOREIGN-ALLOC."
-  (declare (type system-area-pointer ptr))
+  (declare (type system-area-pointer ptr)
+           (optimize speed))
   (free-alien (sap-alien ptr (* (unsigned 8)))))
 
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
