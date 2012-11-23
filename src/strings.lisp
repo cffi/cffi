@@ -115,8 +115,13 @@
    :code-point-seq-setter babel::string-set
    :code-point-seq-type babel:simple-unicode-string))
 
+(defvar *null-length*
+  (list :utf-8 1))
+
 (defun null-terminator-len (encoding)
-  (length (enc-nul-encoding (get-character-encoding encoding))))
+  (or (getf *null-length* encoding)
+      (setf (getf *null-length* encoding)
+            (length (enc-nul-encoding (get-character-encoding encoding))))))
 
 (defun lisp-string-to-foreign (string buffer bufsize &key (start 0) end offset
                                (encoding *default-foreign-encoding*))
