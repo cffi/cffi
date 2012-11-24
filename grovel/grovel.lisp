@@ -505,7 +505,13 @@ int main(int argc, char**argv) {
           ((and symbol (not null))
            (c-print-symbol out type))
           (string
-           (c-format out "~A" type)))
+           (c-format out "~A" type))
+          (cons
+           (c-format out "(")
+           (dolist (sym type)
+             (c-print-symbol out sym)
+             (c-format out " "))
+           (c-format out ")")))
         (etypecase count
           (null t)
           (integer
