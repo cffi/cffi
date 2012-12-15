@@ -127,7 +127,9 @@
    #:foreign-bitfield-value
    #:foreign-slot-pointer
    #:foreign-slot-value
+   #:foreign-slot-type
    #:foreign-slot-offset
+   #:foreign-slot-count
    #:foreign-slot-names
    #:foreign-type-alignment
    #:foreign-type-size
