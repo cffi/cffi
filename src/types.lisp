@@ -701,9 +701,17 @@ The foreign array must be freed with foreign-array-free."
   "Return the address of SLOT-NAME in the structure at PTR."
   (foreign-struct-slot-pointer ptr (get-slot-info type slot-name)))
 
+(defun foreign-slot-type (type slot-name)
+  "Return the type of SLOT in a struct TYPE."
+  (slot-type (get-slot-info type slot-name)))
+
 (defun foreign-slot-offset (type slot-name)
   "Return the offset of SLOT in a struct TYPE."
   (slot-offset (get-slot-info type slot-name)))
+
+(defun foreign-slot-count (type slot-name)
+  "Return the number of items in SLOT in a struct TYPE."
+  (slot-count (get-slot-info type slot-name)))
 
 (defun foreign-slot-value (ptr type slot-name)
   "Return the value of SLOT-NAME in the foreign structure at PTR."
