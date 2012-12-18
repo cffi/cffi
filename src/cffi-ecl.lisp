@@ -415,5 +415,6 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
   (handler-case
-      (si:find-foreign-symbol name :default :pointer-void 0)
+      (si:find-foreign-symbol (coerce name 'base-string)
+                              :default :pointer-void 0)
     (error (c) nil)))
