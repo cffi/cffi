@@ -127,7 +127,9 @@
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (jclass-superclass-p (jclass "com.sun.jna.Pointer") (jclass-of ptr)))
+  (let ((jclass (jclass-of ptr)))
+    (when jclass
+      (jclass-superclass-p (jclass "com.sun.jna.Pointer") jclass))))
 
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
@@ -147,7 +149,8 @@
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
-  (zerop (pointer-address ptr)))
+  (and (pointerp ptr)
+       (zerop (pointer-address ptr))))
 
 (defun inc-pointer (ptr offset)
   "Return a fresh pointer pointing OFFSET bytes past PTR."
