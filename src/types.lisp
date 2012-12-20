@@ -667,6 +667,7 @@ The foreign array must be freed with foreign-array-free."
       (ensure-list name-and-options)
     (let ((conc-name (getf options :conc-name)))
       (remf options :conc-name)
+      (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
          ,(when-let (class (getf options :class))

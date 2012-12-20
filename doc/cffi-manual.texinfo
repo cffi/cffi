@@ -143,6 +143,11 @@ software or the use or other dealings in the software.}
 @end copying
 @c %**end of header
 
+@dircategory Software development
+@direntry
+* CFFI Manual: (cffi-manual).           CFFI Manual.
+@end direntry
+
 @titlepage
 @title CFFI User Manual
 @c @subtitle Version X.X
@@ -4808,7 +4813,7 @@ allocated by @code{foreign-string-alloc}.
 @node foreign-string-to-lisp, lisp-string-to-foreign, foreign-string-free, Strings
 @heading foreign-string-to-lisp
 @subheading Syntax
-@Function{foreign-string-to-lisp ptr &optional offset count max-chars @
+@Function{foreign-string-to-lisp ptr &key offset count max-chars @
                                  encoding @res{} string}
 
 @subheading Arguments and Values

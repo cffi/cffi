@@ -28,7 +28,7 @@
 prog="`basename \"$0\"`"
 srcdir=`pwd`
 
-scripturl="http://common-lisp.net/project/cffi/darcs/cffi/doc/gendocs.sh"
+scripturl="https://github.com/cffi/cffi/blob/master/doc/gendocs.sh"
 templateurl="http://savannah.gnu.org/cgi-bin/viewcvs/texinfo/texinfo/util/gendocs_template"
 
 : ${MAKEINFO="makeinfo"}
@@ -151,6 +151,7 @@ echo Generating output formats for $srcfile
 cmd="${MAKEINFO} -o $PACKAGE.info $srcfile"
 echo "Generating info files... ($cmd)"
 eval $cmd
+install-info $PACKAGE.info dir
 mkdir -p $outdir/
 tar czf $outdir/$PACKAGE.info.tar.gz $PACKAGE.info*
 info_tgz_size="`calcsize $outdir/$PACKAGE.info.tar.gz`"
