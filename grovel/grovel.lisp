@@ -402,7 +402,7 @@ int main(int argc, char**argv) {
         (c-format out "~%  (")
         (c-print-symbol out slot-lisp-name t)
         (c-format out " ")
-        (c-print-symbol out type)
+        (c-write out type)
         (etypecase count
           (integer
            (c-format out " :count ~D" count))
@@ -502,16 +502,10 @@ int main(int argc, char**argv) {
                    struct-c-name
                    slot-c-name
                    (not (null count))))
-          ((and symbol (not null))
-           (c-print-symbol out type))
+          ((or cons symbol)
+           (c-write out type))
           (string
-           (c-format out "~A" type))
-          (cons
-           (c-format out "(")
-           (dolist (sym type)
-             (c-print-symbol out sym)
-             (c-format out " "))
-           (c-format out ")")))
+           (c-format out "~A" type)))
         (etypecase count
           (null t)
           (integer
@@ -584,7 +578,7 @@ int main(int argc, char**argv) {
               (format nil "indirect_stringify(~A)" c-name))
     (c-print-symbol out lisp-name t)
     (c-format out " ")
-    (c-print-symbol out type)
+    (c-write out type)
     (when read-only
       (c-format out " :read-only t"))
     (c-format out ")~%")))
