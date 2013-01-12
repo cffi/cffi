@@ -299,16 +299,19 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;;# Calling Foreign Functions
 
 (defun find-foreign-function (name library)
-  (flet ((find-it (name library)
+  (flet ((find-it (library)
            (ignore-errors
-             (jcall (jmethod "com.sun.jna.NativeLibrary" "getFunction"
-                             "java.lang.String")
-                    library name))))
+            (jcall (jmethod "com.sun.jna.NativeLibrary" "getFunction"
+                            "java.lang.String")
+                   library name))))
     (if (eq library :default)
-        (loop for lib in (hash-table-values *loaded-libraries*)
-              for fn = (find-it name lib)
-              when fn do (return fn))
-        (find-it name (gethash library *loaded-libraries*)))))
+        (or (find-it
+             (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
+            ;; The above should find it, but I'm not exactly sure, so
+            ;; let's still do it manually just in case.
+            (loop for lib being the hash-values of *loaded-libraries*
+                  thereis (find-it lib)))
+        (find-it (gethash library *loaded-libraries*)))))
 
 (defun convert-calling-convention (convention)
   (ecase convention
