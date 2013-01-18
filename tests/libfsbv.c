@@ -97,3 +97,9 @@ struct struct_pair_double doublepairdouble (struct struct_pair_double pd)
   ret.dbl = 2*pd.dbl;
   return ret;
 }
+
+DLLEXPORT
+unsigned long long ullsum (unsigned long long a, unsigned long long b)
+{
+  return a + b;
+}

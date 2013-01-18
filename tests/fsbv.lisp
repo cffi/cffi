@@ -65,3 +65,21 @@
   8
   10
   5.0d0)
+
+;;; Typedef fsbv test
+
+(defcfun ("sumpair" sumpair2) :int
+  (p struct-pair-typedef1))
+
+(deftest fsbv.5
+    (sumpair2 '(1 . 2))
+  3)
+
+;;; Test ulonglong on no-long-long implementations.
+
+(defcfun "ullsum" :unsigned-long-long
+  (a :unsigned-long-long) (b :unsigned-long-long))
+
+(deftest fsbv.6
+    (ullsum #x10DEADBEEF #x2300000000)
+  #x33DEADBEEF)
