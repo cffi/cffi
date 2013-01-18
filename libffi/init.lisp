@@ -30,7 +30,7 @@
 (cffi:define-foreign-library (libffi)
   (:darwin (:or "libffi.dylib" "libffi32.dylib"))
   (:unix (:or "libffi.so.6" "libffi32.so.6" "libffi.so.5" "libffi32.so.5"))
-  (:windows "libffi.dll")
+  (:windows (:or "libffi-6.dll" "libffi-5.dll" "libffi.dll"))
   (t (:default "libffi")))
 
 (cffi:load-foreign-library 'libffi)
