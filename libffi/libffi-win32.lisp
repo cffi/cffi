@@ -48,7 +48,7 @@
 (ctype unsigned "unsigned")
 
 (cstruct ffi-type "struct _ffi_type"
-  (size    "size"     :type sizet)
+  (size    "size"     :type :sizet)
   (alignment "alignment"     :type ushort)
   (type    "type"     :type ushort)
   (elements   "elements"   :type :pointer))
