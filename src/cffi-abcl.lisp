@@ -78,6 +78,50 @@
 
 (in-package #:cffi-sys)
 
+;;;# Loading and Closing Foreign Libraries
+
+(defparameter *loaded-libraries* (make-hash-table))
+
+(defun %load-foreign-library (name path)
+  "Load a foreign library, signals a simple error on failure."
+  (flet ((load-and-register (name path)
+           (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
+             (setf (gethash name *loaded-libraries*) lib)
+             lib))
+         (foreign-library-type-p (type)
+           (find type '("so" "dll" "dylib") :test #'string=))
+         (java-error (e)
+           (error (jcall (jmethod "java.lang.Exception" "getMessage")
+                         (java-exception-cause e)))))
+    (handler-case
+        (load-and-register name path)
+      (java-exception (e)
+        ;; From JNA http://jna.java.net/javadoc/com/sun/jna/NativeLibrary.html
+        ;; ``[The name] can be short form (e.g. "c"), an explicit
+        ;; version (e.g. "libc.so.6"), or the full path to the library
+        ;; (e.g. "/lib/libc.so.6")''
+        ;;
+        ;; Try to deal with the occurance "libXXX" and "libXXX.so" as
+        ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
+        (let ((p (pathname path)))
+          (if (and (not (pathname-directory p))
+                   (= (search "lib" (pathname-name p)) 0))
+              (let ((short-name (if (foreign-library-type-p (pathname-type p))
+                                    (subseq (pathname-name p) 3)
+                                    (pathname-name p))))
+                (handler-case 
+                    (load-and-register name short-name)
+                  (java-exception (e) (java-error e))))
+              (java-error e)))))))
+
+;;; FIXME. Should remove libraries from the hash table.
+(defun %close-foreign-library (handle)
+  "Closes a foreign library."
+  #+#:ignore (setf *loaded-libraries* (remove handle *loaded-libraries*))
+  (jcall (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
+
+;;;
+
 (defun private-jfield (class-name field-name instance)
   (let ((field (find field-name
                      (jcall (jmethod "java.lang.Class" "getDeclaredFields")
@@ -550,48 +594,6 @@ interface extends specified as fully qualifed dotted Java names."
   (or (#"getFunctionPointer" 'com.sun.jna.CallbackReference
                              (gethash name *callbacks*))
       (error "Undefined callback: ~S" name)))
-
-;;;# Loading and Closing Foreign Libraries
-
-(defparameter *loaded-libraries* (make-hash-table))
-
-(defun %load-foreign-library (name path)
-  "Load a foreign library, signals a simple error on failure."
-  (flet ((load-and-register (name path)
-           (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
-             (setf (gethash name *loaded-libraries*) lib)
-             lib))
-         (foreign-library-type-p (type)
-           (find type '("so" "dll" "dylib") :test #'string=))
-         (java-error (e)
-           (error (jcall (jmethod "java.lang.Exception" "getMessage")
-                         (java-exception-cause e)))))
-    (handler-case
-        (load-and-register name path)
-      (java-exception (e)
-        ;; From JNA http://jna.java.net/javadoc/com/sun/jna/NativeLibrary.html
-        ;; ``[The name] can be short form (e.g. "c"), an explicit
-        ;; version (e.g. "libc.so.6"), or the full path to the library
-        ;; (e.g. "/lib/libc.so.6")''
-        ;;
-        ;; Try to deal with the occurance "libXXX" and "libXXX.so" as
-        ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
-        (let ((p (pathname path)))
-          (if (and (not (pathname-directory p))
-                   (= (search "lib" (pathname-name p)) 0))
-              (let ((short-name (if (foreign-library-type-p (pathname-type p))
-                                    (subseq (pathname-name p) 3)
-                                    (pathname-name p))))
-                (handler-case 
-                    (load-and-register name short-name)
-                  (java-exception (e) (java-error e))))
-              (java-error e)))))))
-
-;;; FIXME. Should remove libraries from the hash table.
-(defun %close-foreign-library (handle)
-  "Closes a foreign library."
-  #+#:ignore (setf *loaded-libraries* (remove handle *loaded-libraries*))
-  (jcall (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
 
 (defun native-namestring (pathname)
   (namestring pathname))
