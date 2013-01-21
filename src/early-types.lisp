@@ -215,6 +215,14 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 ;;;# Structure Type
 
+(defgeneric bare-struct-type-p (foreign-type)
+  (:documentation
+   "Return true if FOREIGN-TYPE is a bare struct type or an alias of a bare struct type. "))
+
+(defmethod bare-struct-type-p ((type foreign-type))
+  "Return true if FOREIGN-TYPE is a bare struct type or an alias of a bare struct type. "
+  nil)
+
 (defclass foreign-struct-type (named-foreign-type)
   ((slots
     ;; Hash table of slots in this structure, keyed by name.
