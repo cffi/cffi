@@ -74,7 +74,9 @@
    ;; #:with-pointer-to-vector-data
    #:%foreign-symbol-pointer
    #:%defcallback
-   #:%callback))
+   #:%callback
+   #:with-pointer-to-vector-data
+   #:make-shareable-byte-vector))
 
 (in-package #:cffi-sys)
 
@@ -233,16 +235,30 @@ supplied, it will be bound to SIZE during BODY."
 ;;; should be defined to perform a copy-in/copy-out if the Lisp
 ;;; implementation can't do this.
 
-;;; TODO.
-
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes can passed to
 WITH-POINTER-TO-VECTOR-DATA."
-  (error "Unimplemented."))
+  (make-array size :element-type '(unsigned-byte 8)))
+
+(defun copy-to-foreign-vector (vector foreign-pointer)
+  (loop for i below (length vector)
+        do (%mem-set (aref vector i) foreign-pointer :char
+                     i)))
+
+(defun copy-from-foreign-vector (vector foreign-pointer)
+  (loop for i below (length vector)
+        do (setf (aref vector i)
+                 (%mem-ref foreign-pointer :char i))))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  (warn "Unimplemented."))
+  (let ((vector-sym (gensym "VECTOR")))
+    `(let ((,vector-sym ,vector))
+       (with-foreign-pointer (,ptr-var (length ,vector-sym))
+         (copy-to-foreign-vector ,vector-sym ,ptr-var)
+         (unwind-protect
+              (progn ,@body)
+           (copy-from-foreign-vector ,vector-sym ,ptr-var))))))
 
 ;;;# Dereferencing
 
