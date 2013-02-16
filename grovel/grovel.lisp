@@ -117,23 +117,21 @@ int main(int argc, char**argv) {
                 (t "~(~A~)")))
             symbol))
 
-(defun c-write (out form &key recursive)
+(defun c-write (out form &optional no-package)
   (cond
     ((and (listp form)
           (eq 'quote (car form)))
      (c-format out "'")
-     (c-write out (cadr form) :recursive t))
+     (c-write out (cadr form) no-package))
     ((listp form)
      (c-format out "(")
      (loop for subform in form
            for first-p = t then nil
            unless first-p do (c-format out " ")
-           do (c-write out subform :recursive t))
+        do (c-write out subform no-package))
      (c-format out ")"))
     ((symbolp form)
-     (c-print-symbol out form)))
-  (unless recursive
-    (c-format out "~%")))
+     (c-print-symbol out form no-package))))
 
 ;;; Always NIL for now, add {ENABLE,DISABLE}-AUTO-EXPORT grovel forms
 ;;; later, if necessary.
