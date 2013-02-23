@@ -3175,7 +3175,7 @@ has no particular order.
   (tv-secs :long)
   (tv-usecs :long))
 
-CFFI> (foreign-slot-names 'timeval)
+CFFI> (foreign-slot-names '(:struct timeval))
 @result{} (TV-SECS TV-USECS)
 @end lisp
 
@@ -3218,9 +3218,9 @@ bytes of a slot in a foreign struct type.
   (tv-secs :long)
   (tv-usecs :long))
 
-CFFI> (foreign-slot-offset 'timeval 'tv-secs)
+CFFI> (foreign-slot-offset '(:struct timeval) 'tv-secs)
 @result{} 0
-CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
+CFFI> (foreign-slot-offset '(:struct timeval) 'tv-usecs)
 @result{} 4
 @end lisp
 
@@ -3272,8 +3272,8 @@ For aggregate slots, this is the same value returned by
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr 'point)
-        (foreign-slot-pointer ptr 'point 'x))
+CFFI> (with-foreign-object (ptr '(:struct point))
+        (foreign-slot-pointer ptr '(:struct point) 'x))
 @result{} #<FOREIGN-ADDRESS #xBFFF6E60>
 ;; @lispcmt{Note: the exact pointer representation varies from lisp to lisp.}
 @end lisp
@@ -3331,12 +3331,12 @@ There are compiler macros for @code{foreign-slot-value} and its
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr 'point)
+CFFI> (with-foreign-object (ptr '(:struct point))
         ;; @lispcmt{Initialize the slots}
-        (setf (foreign-slot-value ptr 'point 'x) 42
-              (foreign-slot-value ptr 'point 'y) 42)
+        (setf (foreign-slot-value ptr '(:struct point) 'x) 42
+              (foreign-slot-value ptr '(:struct point) 'y) 42)
         ;; @lispcmt{Return a list with the coordinates}
-        (with-foreign-slots ((x y) ptr point)
+        (with-foreign-slots ((x y) ptr (:struct point))
           (list x y)))
 @result{} (42 42)
 @end lisp
@@ -3387,7 +3387,7 @@ CFFI> (foreign-type-alignment :int)
 (defcstruct foo
   (a :char))
 
-CFFI> (foreign-type-alignment 'foo)
+CFFI> (foreign-type-alignment '(:struct foo))
 @result{} 1
 @end lisp
 
@@ -3431,7 +3431,7 @@ CFFI> (foreign-type-size :double)
 @result{} 8
 CFFI> (foreign-type-size :char)
 @result{} 1
-CFFI> (foreign-type-size 'foo)
+CFFI> (foreign-type-size '(:struct foo))
 @result{} 16
 @end lisp
 
@@ -3715,9 +3715,9 @@ each var in @var{vars} to reference foreign slots in @var{ptr} of
 CFFI> (with-foreign-object (time :int)
         (setf (mem-ref time :int)
               (foreign-funcall "time" :pointer (null-pointer) :int))
-        (foreign-funcall "gmtime" :pointer time tm))
+        (foreign-funcall "gmtime" :pointer time (:pointer (:struct tm))))
 @result{} #<A Mac Pointer #x102A30>
-CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
+CFFI> (with-foreign-slots ((sec min hour mday mon year) * (:struct tm))
         (format nil "~A:~A:~A, ~A/~A/~A"
                 hour min sec (+ 1900 year) mon mday))
 @result{} "7:22:47, 2005/8/2"
