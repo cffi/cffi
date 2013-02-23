@@ -69,7 +69,9 @@
 (defmacro define-parse-method (name lambda-list &body body)
   "Define a type parser on NAME and lists whose CAR is NAME."
   (discard-docstring body)
-  (warn-if-kw-or-belongs-to-cl name)
+  (unless (member (package-name *package*) '(#:cffi #:cffi-sys #:cffi-tests)
+                  :key #'string)
+    (warn-if-kw-or-belongs-to-cl name))
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (find-type-parser ',name)
            (lambda ,lambda-list ,@body))
