@@ -40,7 +40,7 @@
 
 (define-foreign-library (libfsbv :type :test)
   (:darwin (:or "libfsbv.dylib" "libfsbv32.dylib"))
-  (:unix (:or "libfsbv.so" "libfsbv32.so"))
+  (:unix (:or "libfsbv.so" "libfsbv_32.so"))
   (:windows "libfsbv.dll")
   (t (:default "libfsbv")))
 
