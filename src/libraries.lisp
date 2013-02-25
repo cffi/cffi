@@ -249,18 +249,37 @@ the USE-FOREIGN-LIBRARY macro."
 ;;; signal this error when something goes wrong. We ignore the host's
 ;;; error. We should probably reuse its error message.
 
-(define-condition load-foreign-library-error (simple-error)
+(define-condition foreign-library-error (simple-error)
   ())
 
-(defun read-new-value ()
-  (format *query-io* "~&Enter a new value (unevaluated): ")
-  (force-output *query-io*)
-  (read *query-io*))
+(define-condition foreign-library-syntax-error (foreign-library-error)
+  ())
 
-(defun fl-error (control &rest arguments)
-  (error 'load-foreign-library-error
+(define-condition load-foreign-library-error (foreign-library-error)
+  ((library :initarg :library :reader load-foreign-library-error-library)
+   (failures :initarg :failures :reader load-foreign-library-error-failures)))
+
+(defun fl-syntax-error (control &rest arguments)
+  (error 'foreign-library-syntax-error
          :format-control control
          :format-arguments arguments))
+
+(define-condition load-failure ()
+  ((path :initarg :path :reader load-failure-path)
+   (host-error :initarg :host-error :reader load-failure-host-error))
+  (:report (lambda (condition stream)
+             (format stream "Path: ~S, host error: \"~A\""
+                     (load-failure-path condition)
+                     (load-failure-host-error condition)))))
+
+(defun note-load-failure (path error)
+  (signal 'load-failure :path (namestring path) :host-error error))
+
+(define-condition load-success ()
+  ())
+
+(defun note-load-success ()
+  (signal 'load-success))
 
 ;;;# Loading Foreign Libraries
 
@@ -271,13 +290,10 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
   (let ((framework (find-darwin-framework framework-name)))
     (if framework
         (load-foreign-library-path name (native-namestring framework))
-        (fl-error "Unable to find framework ~A" framework-name))))
-
-(defun report-simple-error (name error)
-  (fl-error "Unable to load foreign library (~A).~%  ~A"
-            name
-            (format nil "~?" (simple-condition-format-control error)
-                    (simple-condition-format-arguments error))))
+        (note-load-failure framework-name
+                           (make-condition 'simple-error
+                                           :format-control "Cannot find Darwin framework ~A"
+                                           :format-arguments (list framework-name))))))
 
 ;;; FIXME: haven't double checked whether all Lisps signal a
 ;;; SIMPLE-ERROR on %load-foreign-library failure.  In any case they
@@ -287,17 +303,21 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
 find it using the OS's usual methods. If that fails we try to find it
 ourselves."
   (handler-case
-      (values (%load-foreign-library name path)
-              (pathname path))
+      (prog1
+          (values (%load-foreign-library name path)
+                  (pathname path))
+        (note-load-success))
     (error (error)
       (if-let (file (find-file path (append search-path
                                             *foreign-library-directories*)))
         (handler-case
-            (values (%load-foreign-library name (native-namestring file))
-                    file)
+            (prog1
+                (values (%load-foreign-library name (native-namestring file))
+                        file)
+              (note-load-success))
           (simple-error (error)
-            (report-simple-error name error)))
-        (report-simple-error name error)))))
+            (note-load-failure path error)))
+        (note-load-failure path error)))))
 
 (defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when
@@ -306,11 +326,7 @@ none of alternatives were successfully loaded."
     (multiple-value-bind (handle pathname)
         (ignore-errors (load-foreign-library-helper name lib))
       (when handle
-        (return-from try-foreign-library-alternatives
-          (values handle pathname)))))
-  ;; Perhaps we should show the error messages we got for each
-  ;; alternative if we can figure out a nice way to do that.
-  (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
+        (return (values handle pathname))))))
 
 (defparameter *cffi-feature-suffix-map*
   '((:windows . ".dll")
@@ -324,7 +340,7 @@ none of alternatives were successfully loaded."
 operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
   (or (cdr (assoc-if #'featurep *cffi-feature-suffix-map*))
-      (fl-error "Unable to determine the default library suffix on this OS.")))
+      (fl-syntax-error "Unable to determine the default library suffix on this OS.")))
 
 (defun load-foreign-library-helper (name thing &optional search-path)
   (etypecase thing
@@ -335,7 +351,7 @@ This will need to be extended as we test on more OSes."
        (:framework (load-darwin-framework name (second thing)))
        (:default
         (unless (stringp (second thing))
-          (fl-error "Argument to :DEFAULT must be a string."))
+          (fl-syntax-error "Argument to :DEFAULT must be a string."))
         (let ((library-path
                (concatenate 'string
                             (second thing)
@@ -343,13 +359,19 @@ This will need to be extended as we test on more OSes."
           (load-foreign-library-path name library-path search-path)))
        (:or (try-foreign-library-alternatives name (rest thing)))))))
 
+(defpackage :%cffi-libraries
+  (:use))
+
 (defun %do-load-foreign-library (library search-path)
   (flet ((%do-load (lib name spec)
-           (when (foreign-library-spec lib)
-             (with-slots (handle pathname) lib
-               (setf (values handle pathname)
-                     (load-foreign-library-helper
-                      name spec (foreign-library-search-path lib)))))
+           (if (foreign-library-spec lib)
+               (with-slots (handle pathname) lib
+                 (setf (values handle pathname)
+                       (load-foreign-library-helper
+                        name spec (foreign-library-search-path lib))))
+               ;; A library with null spec is a NO-OP and,
+               ;; as such, always loads "successfully"
+               (note-load-success))
            lib))
     (etypecase library
       (symbol
@@ -357,11 +379,11 @@ This will need to be extended as we test on more OSes."
               (spec (foreign-library-spec lib)))
          (%do-load lib library spec)))
       ((or string list)
-       (let* ((lib-name (gensym
-                         (format nil "~:@(~A~)-"
-                                 (if (listp library)
-                                     (first library)
-                                     (file-namestring library)))))
+       (let* ((lib-name (intern
+                         (if (listp library)
+                             (format nil "LIBRARY-~A" library)
+                             (format nil "~:@(~A~)" (file-namestring library)))
+                         :%cffi-libraries))
               (lib (make-instance 'foreign-library
                                   :type :system
                                   :name lib-name
@@ -377,6 +399,32 @@ This will need to be extended as we test on more OSes."
     (pathname (namestring thing))
     (t        thing)))
 
+(defun %reload-foreign-library (library search-path)
+  (ignore-some-conditions (foreign-library-undefined-error)
+    (close-foreign-library library))
+  (let ((failures ())
+        (success nil))
+    (handler-bind ((load-failure
+                     (lambda (c) (push c failures)))
+                   (load-success
+                     (lambda (c)
+                       (declare (ignore c))
+                       (setf success t))))
+      (let ((lib (%do-load-foreign-library library search-path)))
+        (if success
+            lib
+            (error 'load-foreign-library-error
+                   :library lib
+                   :failures (reverse failures)
+                   :format-control "Cannot load library ~A. Failures:~%~{ ~A~%~^~}"
+                   :format-arguments (list (foreign-library-name lib)
+                                           (reverse failures))))))))
+
+(defun read-new-value ()
+  (format *query-io* "~&Enter a new value (unevaluated): ")
+  (force-output *query-io*)
+  (read *query-io*))
+
 (defun load-foreign-library (library &key search-path)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
@@ -384,19 +432,16 @@ load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
   (let ((library (filter-pathname library)))
     (restart-case
-        (progn
-          (ignore-some-conditions (foreign-library-undefined-error)
-            (close-foreign-library library))
-          (%do-load-foreign-library library search-path))
+        (%reload-foreign-library library search-path)
       ;; Offer these restarts that will retry the call to
-      ;; %LOAD-FOREIGN-LIBRARY.
+      ;; %RELOAD-FOREIGN-LIBRARY-FOREIGN-LIBRARY.
       (retry ()
         :report "Try loading the foreign library again."
-        (load-foreign-library library :search-path search-path))
+        (%reload-foreign-library library search-path))
       (use-value (new-library)
         :report "Use another library instead."
         :interactive read-new-value
-        (load-foreign-library new-library :search-path search-path)))))
+        (%reload-foreign-library new-library search-path)))))
 
 (defmacro use-foreign-library (name)
   `(load-foreign-library ',name))

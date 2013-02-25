@@ -107,7 +107,14 @@
    #:list-foreign-libraries
    #:define-foreign-library
    #:load-foreign-library
+   #:foreign-library-error
+   #:foreign-library-syntax-error
+   #:load-failure
+   #:load-failure-path
+   #:load-failure-host-error
    #:load-foreign-library-error
+   #:load-foreign-library-error-library
+   #:load-foreign-library-error-failures
    #:use-foreign-library
    #:close-foreign-library
    #:reload-foreign-libraries
