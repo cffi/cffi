@@ -83,6 +83,23 @@
       (load-foreign-library-error () 'error))
   error)
 
+(define-foreign-library does-not-exist
+  (t (:or (:default "rlydnexist1")
+          (:default "rlydnexist2"))))
+
+(deftest library.error.2
+    (handler-case (load-foreign-library 'does-not-exist)
+      (load-foreign-library-error (error)
+        (if (equalp (mapcar (lambda (f)
+                              (file-namestring
+                               (pathname-name
+                                (cffi:load-failure-path f))))
+                            (load-foreign-library-error-failures error))
+                    '("rlydnexist1" "rlydnexist2"))
+            'error
+            error)))
+  error)
+
 (define-foreign-library pseudo-library
   (t pseudo-library-spec))
 
