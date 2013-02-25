@@ -638,3 +638,25 @@
     (eql (foreign-type-size 'single-byte-struct-alias)
          (foreign-type-size '(:struct single-byte-struct)))
   t)
+
+;;; Old-style access to inner structure fields.
+
+(defcstruct inner-struct (x :int))
+(defcstruct old-style-outer (inner inner-struct))
+(defcstruct new-style-outer (inner (:struct inner-struct)))
+
+(deftest old-style-struct-access
+    (with-foreign-object (s '(:struct old-style-outer))
+      (let ((inner-ptr (foreign-slot-pointer s 'old-style-outer 'inner)))
+        (setf (foreign-slot-value inner-ptr 'inner-struct 'x) 42))
+      (assert (pointerp (foreign-slot-value s 'old-style-outer 'inner)))
+      (foreign-slot-value (foreign-slot-value s 'old-style-outer 'inner)
+                          'inner-struct 'x))
+  42)
+
+(deftest new-style-struct-access
+    (with-foreign-object (s '(:struct new-style-outer))
+      (let ((inner-ptr (foreign-slot-pointer s 'new-style-outer 'inner)))
+        (setf (foreign-slot-value inner-ptr 'inner-struct 'x) 42))
+      (foreign-slot-value s 'new-style-outer 'inner))
+  (x 42))
