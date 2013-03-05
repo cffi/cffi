@@ -90,7 +90,10 @@
 
 (defun structure-by-value-p (ctype)
   "A structure or union is to be called or returned by value."
-  (member (alexandria:ensure-car ctype) '(:struct :union)))
+  (let ((actual-type (follow-typedefs (parse-type ctype))))
+    (or (and (typep actual-type 'foreign-struct-type)
+             (not (bare-struct-type-p actual-type)))
+        #+cffi::no-long-long (typep actual-type 'emulated-llong-type))))
 
 (defun fn-call-by-value-p (argument-types return-type)
   "One or more structures in the arguments or return from the function are called by value."

@@ -48,9 +48,9 @@ set twos-complement bit."
 ;;; packages.  CFFI itself gets to use keywords without a warning.
 (defun warn-if-kw-or-belongs-to-cl (name)
   (let ((package (symbol-package name)))
-    (when (or (eq package (find-package '#:cl))
-              (and (not (eq *package* (find-package '#:cffi)))
-                   (eq package (find-package '#:keyword))))
+    (when (and (not (eq *package* (find-package '#:cffi)))
+               (member package '(#:common-lisp #:keyword)
+                       :key #'find-package))
       (warn "Defining a foreign type named ~S.  This symbol belongs to the ~A ~
              package and that may interfere with other code using CFFI."
             name (package-name package)))))

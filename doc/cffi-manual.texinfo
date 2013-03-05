@@ -3175,7 +3175,7 @@ has no particular order.
   (tv-secs :long)
   (tv-usecs :long))
 
-CFFI> (foreign-slot-names 'timeval)
+CFFI> (foreign-slot-names '(:struct timeval))
 @result{} (TV-SECS TV-USECS)
 @end lisp
 
@@ -3218,9 +3218,9 @@ bytes of a slot in a foreign struct type.
   (tv-secs :long)
   (tv-usecs :long))
 
-CFFI> (foreign-slot-offset 'timeval 'tv-secs)
+CFFI> (foreign-slot-offset '(:struct timeval) 'tv-secs)
 @result{} 0
-CFFI> (foreign-slot-offset 'timeval 'tv-usecs)
+CFFI> (foreign-slot-offset '(:struct timeval) 'tv-usecs)
 @result{} 4
 @end lisp
 
@@ -3272,8 +3272,8 @@ For aggregate slots, this is the same value returned by
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr 'point)
-        (foreign-slot-pointer ptr 'point 'x))
+CFFI> (with-foreign-object (ptr '(:struct point))
+        (foreign-slot-pointer ptr '(:struct point) 'x))
 @result{} #<FOREIGN-ADDRESS #xBFFF6E60>
 ;; @lispcmt{Note: the exact pointer representation varies from lisp to lisp.}
 @end lisp
@@ -3331,12 +3331,12 @@ There are compiler macros for @code{foreign-slot-value} and its
   (x :int)
   (y :int))
 
-CFFI> (with-foreign-object (ptr 'point)
+CFFI> (with-foreign-object (ptr '(:struct point))
         ;; @lispcmt{Initialize the slots}
-        (setf (foreign-slot-value ptr 'point 'x) 42
-              (foreign-slot-value ptr 'point 'y) 42)
+        (setf (foreign-slot-value ptr '(:struct point) 'x) 42
+              (foreign-slot-value ptr '(:struct point) 'y) 42)
         ;; @lispcmt{Return a list with the coordinates}
-        (with-foreign-slots ((x y) ptr point)
+        (with-foreign-slots ((x y) ptr (:struct point))
           (list x y)))
 @result{} (42 42)
 @end lisp
@@ -3387,7 +3387,7 @@ CFFI> (foreign-type-alignment :int)
 (defcstruct foo
   (a :char))
 
-CFFI> (foreign-type-alignment 'foo)
+CFFI> (foreign-type-alignment '(:struct foo))
 @result{} 1
 @end lisp
 
@@ -3431,7 +3431,7 @@ CFFI> (foreign-type-size :double)
 @result{} 8
 CFFI> (foreign-type-size :char)
 @result{} 1
-CFFI> (foreign-type-size 'foo)
+CFFI> (foreign-type-size '(:struct foo))
 @result{} 16
 @end lisp
 
@@ -3715,9 +3715,9 @@ each var in @var{vars} to reference foreign slots in @var{ptr} of
 CFFI> (with-foreign-object (time :int)
         (setf (mem-ref time :int)
               (foreign-funcall "time" :pointer (null-pointer) :int))
-        (foreign-funcall "gmtime" :pointer time tm))
+        (foreign-funcall "gmtime" :pointer time (:pointer (:struct tm))))
 @result{} #<A Mac Pointer #x102A30>
-CFFI> (with-foreign-slots ((sec min hour mday mon year) * tm)
+CFFI> (with-foreign-slots ((sec min hour mday mon year) * (:struct tm))
         (format nil "~A:~A:~A, ~A/~A/~A"
                 hour min sec (+ 1900 year) mon mday))
 @result{} "7:22:47, 2005/8/2"
@@ -4735,21 +4735,21 @@ CFFI> (let ((*default-foreign-encoding* :utf-16))
 
 @subheading Arguments and Values
 
-@table @var
-@item string
+@table @emph
+@item @var{string}
 A Lisp string.
 
-@item encoding
+@item @var{encoding}
 Foreign encoding. Defaults to @code{*default-foreign-encoding*}.
 
-@item null-terminated-p
+@item @var{null-terminated-p}
 Boolean, defaults to true.
 
-@item start, end
+@item @var{start}, @var{end}
 Bounding index designators of @var{string}. 0 and @code{nil}, by
 default.
 
-@item pointer
+@item @var{pointer}
 A pointer to the newly allocated foreign string.
 @end table
 
@@ -4879,24 +4879,24 @@ CFFI> (foreign-string-to-lisp *)
 
 @subheading Arguments and Values
 
-@table @var
-@item string
+@table @emph
+@item @var{string}
 A Lisp string.
 
-@item buffer
+@item @var{buffer}
 A foreign pointer.
 
-@item bufsize
+@item @var{bufsize}
 An integer.
 
-@item start, end
+@item @var{start}, @var{end}
 Bounding index designators of @var{string}. 0 and @code{nil}, by
 default.
 
-@item offset
+@item @var{offset}
 An integer greater than or equal to 0. Defauls to 0.
 
-@item encoding
+@item @var{encoding}
 Foreign encoding. Defaults to @code{*default-foreign-encoding*}.
 @end table
 
@@ -4941,14 +4941,14 @@ bindings ::= @{(var-or-vars string &rest args)@}*
 
 @subheading Arguments and Values
 
-@table @var
-@item var, byte-size-var
+@table @emph
+@item @var{var}, @var{byte-size-var}
 A symbol.
 
-@item string
+@item @var{string}
 A Lisp string.
 
-@item body
+@item @var{body}
 A list of forms to be executed.
 @end table
 
@@ -5554,12 +5554,12 @@ The Lisp symbol to be used a function name.
 @end table
 
 @subheading Description
-@code{translate-name-from-foreign} is used by @code{@seealso{defcfun}}
-to handle the conversion of foreign names to lisp names. By default,
-it translates using
-@code{@seealso{translate-underscore-separated-name}}. However, you can
-create specialized methods on this function to make translating more
-closely match the foreign library's naming conventions.
+@code{translate-name-from-foreign} is used by @ref{defcfun} to handle
+the conversion of foreign names to lisp names. By default, it
+translates using @ref{translate-underscore-separated-name}. However,
+you can create specialized methods on this function to make
+translating more closely match the foreign library's naming
+conventions.
 
 Specialize @var{package} on some package. This allows other packages
 to load libraries with different naming conventions.
@@ -5612,12 +5612,12 @@ The string representing the foreign function name.
 @end table
 
 @subheading Description
-@code{translate-name-to-foreign} is used by @code{@seealso{defcfun}}
-to handle the conversion of lisp names to foreign names. By default,
-it translates using
-@code{@seealso{translate-underscore-separated-name}}. However, you can
-create specialized methods on this function to make translating more
-closely match the foreign library's naming conventions.
+@code{translate-name-to-foreign} is used by @ref{defcfun} to handle
+the conversion of lisp names to foreign names. By default, it
+translates using @ref{translate-underscore-separated-name}. However,
+you can create specialized methods on this function to make
+translating more closely match the foreign library's naming
+conventions.
 
 Specialize @var{package} on some package. This allows other packages
 to load libraries with different naming conventions.
@@ -5665,11 +5665,9 @@ If @var{name} is a symbol, this is a string, and vice versa.
 
 @subheading Description
 @code{translate-underscore-separated-name} is a helper function for
-specializations of
-@code{@seealso{translate-name-from-foreign}} and
-@code{@seealso{translate-name-to-foreign}}. It handles the common
-case of converting between foreign underscore_separated names and lisp
-names.
+specializations of @ref{translate-name-from-foreign} and
+@ref{translate-name-to-foreign}. It handles the common case of
+converting between foreign underscore_separated names and lisp names.
 
 @subheading Examples
 

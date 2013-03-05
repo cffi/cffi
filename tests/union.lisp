@@ -31,6 +31,8 @@
   (int-value :unsigned-int)
   (bytes :unsigned-char :count 4))
 
+(defctype uint32-bytes (:union uint32-bytes))
+
 (defun int-to-bytes (n)
   "Convert N to a list of bytes using a union."
   (with-foreign-object (obj 'uint32-bytes)

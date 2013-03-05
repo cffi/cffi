@@ -74,9 +74,55 @@
    ;; #:with-pointer-to-vector-data
    #:%foreign-symbol-pointer
    #:%defcallback
-   #:%callback))
+   #:%callback
+   #:with-pointer-to-vector-data
+   #:make-shareable-byte-vector))
 
 (in-package #:cffi-sys)
+
+;;;# Loading and Closing Foreign Libraries
+
+(defparameter *loaded-libraries* (make-hash-table))
+
+(defun %load-foreign-library (name path)
+  "Load a foreign library, signals a simple error on failure."
+  (flet ((load-and-register (name path)
+           (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
+             (setf (gethash name *loaded-libraries*) lib)
+             lib))
+         (foreign-library-type-p (type)
+           (find type '("so" "dll" "dylib") :test #'string=))
+         (java-error (e)
+           (error (jcall (jmethod "java.lang.Exception" "getMessage")
+                         (java-exception-cause e)))))
+    (handler-case
+        (load-and-register name path)
+      (java-exception (e)
+        ;; From JNA http://jna.java.net/javadoc/com/sun/jna/NativeLibrary.html
+        ;; ``[The name] can be short form (e.g. "c"), an explicit
+        ;; version (e.g. "libc.so.6"), or the full path to the library
+        ;; (e.g. "/lib/libc.so.6")''
+        ;;
+        ;; Try to deal with the occurance "libXXX" and "libXXX.so" as
+        ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
+        (let ((p (pathname path)))
+          (if (and (not (pathname-directory p))
+                   (= (search "lib" (pathname-name p)) 0))
+              (let ((short-name (if (foreign-library-type-p (pathname-type p))
+                                    (subseq (pathname-name p) 3)
+                                    (pathname-name p))))
+                (handler-case 
+                    (load-and-register name short-name)
+                  (java-exception (e) (java-error e))))
+              (java-error e)))))))
+
+;;; FIXME. Should remove libraries from the hash table.
+(defun %close-foreign-library (handle)
+  "Closes a foreign library."
+  #+#:ignore (setf *loaded-libraries* (remove handle *loaded-libraries*))
+  (jcall (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
+
+;;;
 
 (defun private-jfield (class-name field-name instance)
   (let ((field (find field-name
@@ -127,7 +173,9 @@
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (jclass-superclass-p (jclass "com.sun.jna.Pointer") (jclass-of ptr)))
+  (let ((jclass (jclass-of ptr)))
+    (when jclass
+      (jclass-superclass-p (jclass "com.sun.jna.Pointer") jclass))))
 
 (defun make-pointer (address)
   "Return a pointer pointing to ADDRESS."
@@ -147,7 +195,8 @@
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
-  (zerop (pointer-address ptr)))
+  (and (pointerp ptr)
+       (zerop (pointer-address ptr))))
 
 (defun inc-pointer (ptr offset)
   "Return a fresh pointer pointing OFFSET bytes past PTR."
@@ -186,16 +235,30 @@ supplied, it will be bound to SIZE during BODY."
 ;;; should be defined to perform a copy-in/copy-out if the Lisp
 ;;; implementation can't do this.
 
-;;; TODO.
-
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes can passed to
 WITH-POINTER-TO-VECTOR-DATA."
-  (error "Unimplemented."))
+  (make-array size :element-type '(unsigned-byte 8)))
+
+(defun copy-to-foreign-vector (vector foreign-pointer)
+  (loop for i below (length vector)
+        do (%mem-set (aref vector i) foreign-pointer :char
+                     i)))
+
+(defun copy-from-foreign-vector (vector foreign-pointer)
+  (loop for i below (length vector)
+        do (setf (aref vector i)
+                 (%mem-ref foreign-pointer :char i))))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  (warn "Unimplemented."))
+  (let ((vector-sym (gensym "VECTOR")))
+    `(let ((,vector-sym ,vector))
+       (with-foreign-pointer (,ptr-var (length ,vector-sym))
+         (copy-to-foreign-vector ,vector-sym ,ptr-var)
+         (unwind-protect
+              (progn ,@body)
+           (copy-from-foreign-vector ,vector-sym ,ptr-var))))))
 
 ;;;# Dereferencing
 
@@ -293,19 +356,41 @@ WITH-POINTER-TO-VECTOR-DATA."
                val)))
   value)
 
+;;;# Foreign Globals
+
+(defun %foreign-symbol-pointer (name library)
+  "Returns a pointer to a foreign symbol NAME."
+  (flet ((find-it (library)
+           (ignore-errors
+            (make-pointer
+             (jcall 
+              (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
+              library name)))))
+    (if (eq library :default)
+        (or (find-it
+             (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
+            ;; The above should find it, but I'm not exactly sure, so
+            ;; let's still do it manually just in case.
+            (loop for lib being the hash-values of *loaded-libraries*
+                  thereis (find-it lib)))
+        (find-it (gethash library *loaded-libraries*)))))
+
 ;;;# Calling Foreign Functions
 
 (defun find-foreign-function (name library)
-  (flet ((find-it (name library)
+  (flet ((find-it (library)
            (ignore-errors
-             (jcall (jmethod "com.sun.jna.NativeLibrary" "getFunction"
-                             "java.lang.String")
-                    library name))))
+            (jcall (jmethod "com.sun.jna.NativeLibrary" "getFunction"
+                            "java.lang.String")
+                   library name))))
     (if (eq library :default)
-        (loop for lib in (hash-table-values *loaded-libraries*)
-              for fn = (find-it name lib)
-              when fn do (return fn))
-        (find-it name (gethash library *loaded-libraries*)))))
+        (or (find-it
+             (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
+            ;; The above should find it, but I'm not exactly sure, so
+            ;; let's still do it manually just in case.
+            (loop for lib being the hash-values of *loaded-libraries*
+                  thereis (find-it lib)))
+        (find-it (gethash library *loaded-libraries*)))))
 
 (defun convert-calling-convention (convention)
   (ecase convention
@@ -526,64 +611,5 @@ interface extends specified as fully qualifed dotted Java names."
                              (gethash name *callbacks*))
       (error "Undefined callback: ~S" name)))
 
-;;;# Loading and Closing Foreign Libraries
-
-(defparameter *loaded-libraries* (make-hash-table))
-
-(defun %load-foreign-library (name path)
-  "Load a foreign library, signals a simple error on failure."
-  (flet ((load-and-register (name path)
-           (let ((lib (jstatic "getInstance" "com.sun.jna.NativeLibrary" path)))
-             (setf (gethash name *loaded-libraries*) lib)
-             lib))
-         (foreign-library-type-p (type)
-           (find type '("so" "dll" "dylib") :test #'string=))
-         (java-error (e)
-           (error (jcall (jmethod "java.lang.Exception" "getMessage")
-                         (java-exception-cause e)))))
-    (handler-case
-        (load-and-register name path)
-      (java-exception (e)
-        ;; From JNA http://jna.java.net/javadoc/com/sun/jna/NativeLibrary.html
-        ;; ``[The name] can be short form (e.g. "c"), an explicit
-        ;; version (e.g. "libc.so.6"), or the full path to the library
-        ;; (e.g. "/lib/libc.so.6")''
-        ;;
-        ;; Try to deal with the occurance "libXXX" and "libXXX.so" as
-        ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
-        (let ((p (pathname path)))
-          (if (and (not (pathname-directory p))
-                   (= (search "lib" (pathname-name p)) 0))
-              (let ((short-name (if (foreign-library-type-p (pathname-type p))
-                                    (subseq (pathname-name p) 3)
-                                    (pathname-name p))))
-                (handler-case 
-                    (load-and-register name short-name)
-                  (java-exception (e) (java-error e))))
-              (java-error e)))))))
-
-;;; FIXME. Should remove libraries from the hash table.
-(defun %close-foreign-library (handle)
-  "Closes a foreign library."
-  #+#:ignore (setf *loaded-libraries* (remove handle *loaded-libraries*))
-  (jcall (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
-
 (defun native-namestring (pathname)
   (namestring pathname))
-
-;;;# Foreign Globals
-
-(defun %foreign-symbol-pointer (name library)
-  "Returns a pointer to a foreign symbol NAME."
-  (flet ((find-it (name library)
-           (let ((p (ignore-errors
-                      (jcall 
-                       (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
-                       library name))))
-             (unless (null p)
-               (make-pointer p)))))
-    (if (eq library :default)
-        (loop for lib in (hash-table-values *loaded-libraries*)
-              for fn = (find-it name lib)
-              when fn do (return fn))
-        (find-it name library))))
