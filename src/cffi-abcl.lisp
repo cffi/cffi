@@ -34,9 +34,7 @@
 
 (require 'abcl-contrib)
 (require 'jna)
-
-(eval-when (:compile-toplevel :execute)
-  (require :jss))
+(require 'jss)
 
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
