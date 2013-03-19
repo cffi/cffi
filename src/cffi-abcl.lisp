@@ -32,9 +32,10 @@
 ;;; JNA may be automatically loaded into the current JVM process from
 ;;; abcl-1.1.0-dev via the contrib mechanism.
 
-(require 'abcl-contrib)
-(require 'jna)
-(require 'jss)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require 'abcl-contrib)
+  (require 'jna)
+  (require 'jss))
 
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
@@ -484,7 +485,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defvar *callbacks* (make-hash-table))
 
 (defmacro convert-args-to-lisp-values (arg-names &rest body)
-  (let ((gensym-args (loop :for name :in arg-names :collecting (gensym))))
+  (let ((gensym-args (loop :for name :in arg-names
+                           :collecting (gensym (format nil "~A-~A-" '#:callback-arg name)))))
     `(lambda (,@gensym-args)
        (let ,(loop 
                 :for arg :in arg-names
