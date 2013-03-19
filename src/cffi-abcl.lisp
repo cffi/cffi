@@ -485,7 +485,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defvar *callbacks* (make-hash-table))
 
 (defmacro convert-args-to-lisp-values (arg-names &rest body)
-  (let ((gensym-args (loop :for name :in arg-names :collecting (gensym))))
+  (let ((gensym-args (loop :for name :in arg-names
+                           :collecting (gensym (format nil "~A-~A-" '#:callback-arg name)))))
     `(lambda (,@gensym-args)
        (let ,(loop 
                 :for arg :in arg-names
