@@ -110,9 +110,9 @@
 
 (defmethod asdf:perform ((op process-op) (c grovel-file))
   (let ((output-file (asdf:output-file op c))
-         (input-file (asdf:component-pathname c)))
+        (input-file (asdf:component-pathname c)))
     (ensure-directories-exist (directory-namestring output-file))
-    (let ((tmp-file    (process-grovel-file input-file (ensure-pathname output-file))))
+    (let ((tmp-file (process-grovel-file input-file (ensure-pathname output-file))))
       (unwind-protect
            (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
         (delete-file tmp-file)))))
@@ -125,7 +125,7 @@
     (:default-initargs
      :generated-lisp-file-type "processed-wrapper-file")
     (:documentation
-      "This ASDF component represents an input file that is processed
+     "This ASDF component represents an input file that is processed
       by PROCESS-WRAPPER-FILE. This generates a foreign library and
       matching CFFI bindings that are subsequently compiled and
       loaded.")))
@@ -134,8 +134,8 @@
   (let ((output-file (asdf:output-file op c))
         (input-file  (asdf:component-pathname c)))
     (ensure-directories-exist (directory-namestring output-file))
-    (let ((tmp-file    (process-wrapper-file input-file output-file (or (soname-of c)
-                                                                        (asdf:component-name c)))))
+    (let ((tmp-file (process-wrapper-file input-file output-file (or (soname-of c)
+                                                                     (asdf:component-name c)))))
       (unwind-protect
            (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
         (delete-file tmp-file)))))
