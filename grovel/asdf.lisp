@@ -84,14 +84,14 @@
           (list (list 'process-op (asdf:component-name c)))))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c process-op-input))
-  (let ((generated-lisp-file (asdf:output-file (make-instance 'process-op) c)))
+  (let ((generated-lisp-file (first (asdf:output-files (make-instance 'process-op) c))))
     (asdf:perform op (make-instance 'asdf:cl-source-file
                                     :name (asdf:component-name c)
                                     :parent (asdf:component-parent c)
                                     :pathname generated-lisp-file))))
 
 (defmethod asdf:perform ((op asdf:load-source-op) (c process-op-input))
-  (let ((generated-lisp-file (asdf:output-file (make-instance 'process-op) c)))
+  (let ((generated-lisp-file (first (asdf:output-files (make-instance 'process-op) c))))
     (asdf:perform op (make-instance 'asdf:cl-source-file
                                     :name (asdf:component-name c)
                                     :parent (asdf:component-parent c)
@@ -109,10 +109,10 @@
      by PROCESS-GROVEL-FILE.")))
 
 (defmethod asdf:perform ((op process-op) (c grovel-file))
-  (let ((output-file (asdf:output-file op c))
+  (let ((output-file (first (asdf:output-files op c)))
         (input-file (asdf:component-pathname c)))
     (ensure-directories-exist (directory-namestring output-file))
-    (let ((tmp-file (process-grovel-file input-file (ensure-pathname output-file))))
+    (let ((tmp-file (process-grovel-file input-file output-file)))
       (unwind-protect
            (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
         (delete-file tmp-file)))))
@@ -130,12 +130,15 @@
       matching CFFI bindings that are subsequently compiled and
       loaded.")))
 
+(defun wrapper-soname (c)
+  (or (soname-of c)
+      (asdf:component-name c)))
+
 (defmethod asdf:perform ((op process-op) (c wrapper-file))
-  (let ((output-file (asdf:output-file op c))
+  (let ((output-file (first (asdf:output-files op c)))
         (input-file  (asdf:component-pathname c)))
     (ensure-directories-exist (directory-namestring output-file))
-    (let ((tmp-file (process-wrapper-file input-file output-file (or (soname-of c)
-                                                                     (asdf:component-name c)))))
+    (let ((tmp-file (process-wrapper-file input-file output-file (wrapper-soname c))))
       (unwind-protect
            (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
         (delete-file tmp-file)))))

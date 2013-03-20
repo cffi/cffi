@@ -177,8 +177,11 @@ int main(int argc, char**argv) {
 (defun header-form-p (form)
   (member (form-kind form) *header-forms*))
 
+(defun make-c-file-name (output-defaults)
+  (make-pathname :type "c" :defaults output-defaults))
+
 (defun generate-c-file (input-file output-defaults)
-  (let ((c-file (make-pathname :type "c" :defaults output-defaults)))
+  (let ((c-file (make-c-file-name output-defaults)))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
       (with-open-file (in input-file :direction :input)
         (flet ((read-forms (s)
@@ -744,7 +747,7 @@ int main(int argc, char**argv) {
 
 (defun generate-c-lib-file (input-file output-defaults)
   (let ((*lisp-forms* nil)
-        (c-file (make-pathname :type "c" :defaults output-defaults)))
+        (c-file (make-c-file-name output-defaults)))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
       (with-open-file (in input-file :direction :input)
         (write-string *header* out)
@@ -780,13 +783,16 @@ int main(int argc, char**argv) {
       (terpri out))
     lisp-file))
 
+(defun make-soname (lib-soname output-defaults)
+  (make-pathname :name lib-soname
+                 :defaults output-defaults))
+
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given wrapper file.
 (defun process-wrapper-file (input-file output-defaults lib-soname)
   (with-standard-io-syntax
     (let ((lib-file
-           (lib-filename (make-pathname :name lib-soname
-                                        :defaults output-defaults))))
+            (lib-filename (make-soname lib-soname output-defaults))))
       (multiple-value-bind (c-file lisp-forms)
           (generate-c-lib-file input-file output-defaults)
         (cc-compile-and-link c-file lib-file :library t)
