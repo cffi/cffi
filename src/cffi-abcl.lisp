@@ -474,11 +474,11 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:double
      :double)
     ((:char :unsigned-char)
-     :byte)
+     :int)
     ((:short :unsigned-short)
-     :short)
+     :int)
     (:wchar_t
-     :char)
+     :int)
     (:void
      :void)))
 
