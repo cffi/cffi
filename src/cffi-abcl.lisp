@@ -46,7 +46,7 @@
 
 (defpackage #:cffi-sys
   (:use #:cl #:java)
-  (:import-from #:alexandria #:hash-table-values #:length=)
+  (:import-from #:alexandria #:hash-table-values #:length= #:format-symbol)
   (:export
    #:canonicalize-symbol-name-case
    #:foreign-pointer
@@ -110,7 +110,7 @@
               (let ((short-name (if (foreign-library-type-p (pathname-type p))
                                     (subseq (pathname-name p) 3)
                                     (pathname-name p))))
-                (handler-case 
+                (handler-case
                     (load-and-register name short-name)
                   (java-exception (e) (java-error e))))
               (java-error e)))))))
@@ -271,7 +271,7 @@ WITH-POINTER-TO-VECTOR-DATA."
      (:float "java.lang.Float")
      (:double "java.lang.Double")
      ((:char :unsigned-char) "java.lang.Byte")
-     ((:short :unsigned-short) "java.lang.Short")))) 
+     ((:short :unsigned-short) "java.lang.Short"))))
 
 (defun %foreign-type-size (type)
   "Return the size in bytes of a foreign type."
@@ -362,7 +362,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (flet ((find-it (library)
            (ignore-errors
             (make-pointer
-             (jcall 
+             (jcall
               (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
               library name)))))
     (if (eq library :default)
@@ -485,29 +485,28 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defvar *callbacks* (make-hash-table))
 
 (defmacro convert-args-to-lisp-values (arg-names &rest body)
-  (let ((gensym-args (loop :for name :in arg-names
-                           :collecting (gensym (format nil "~A-~A-" '#:callback-arg name)))))
+  (let ((gensym-args (loop for name in arg-names
+                           collect (format-symbol t '#:callback-arg-~a- name))))
     `(lambda (,@gensym-args)
-       (let ,(loop 
-                :for arg :in arg-names
-                :for gensym-arg :in gensym-args
-                :collecting `(,arg (if (typep ,gensym-arg 'java:java-object)
-                                   (java:jobject-lisp-value ,gensym-arg) 
-                                   ,gensym-arg)))
+       (let ,(loop for arg in arg-names
+                   for gensym-arg in gensym-args
+                   collecting `(,arg (if (typep ,gensym-arg 'java:java-object)
+                                         (java:jobject-lisp-value ,gensym-arg)
+                                         ,gensym-arg)))
          ,body))))
 
 (defmacro %defcallback (name return-type arg-names arg-types body
                         &key convention)
   (declare (ignore convention)) ;; I'm always up for ignoring convention, but this is probably wrong.
   `(setf (gethash ',name *callbacks*)
-         (jinterface-implementation 
+         (jinterface-implementation
           (ensure-callback-interface ',return-type ',arg-types)
           "callback"
           `,(convert-args-to-lisp-values ,arg-names ,@body))))
 ;;          (lambda (,@arg-names) ,body))))
 
 (jvm::define-class-name +callback-object+ "com.sun.jna.Callback")
-(defconstant 
+(defconstant
     +dynamic-callback-package+
   "org/armedbear/jna/dynamic/callbacks"
   "The slash-delimited Java package in which we create classes dynamically to specify callback interfaces.")
@@ -519,7 +518,7 @@ Returns the fully dot qualified name of the interface."
   (let* ((jvm-returns (foreign-to-callback-type returns))
          (jvm-args  (mapcar #'foreign-to-callback-type args))
          (interface-name (qualified-callback-interface-classname jvm-returns jvm-args)))
-    (handler-case 
+    (handler-case
         (jss:find-java-class interface-name)
       (java-exception (e)
         (when (jinstance-of-p (java:java-exception-cause e)
@@ -531,18 +530,18 @@ Returns the fully dot qualified name of the interface."
 
 (defun qualified-callback-interface-classname (returns args)
   (format nil "~A.~A"
-          (substitute #\. #\/ +dynamic-callback-package+) 
+          (substitute #\. #\/ +dynamic-callback-package+)
           (callback-interface-classname returns args)))
 
 (defun callback-interface-classname (returns args)
   (flet ((stringify (thing)
            (typecase thing
-             (jvm::jvm-class-name 
-              (substitute #\_ #\/ 
+             (jvm::jvm-class-name
+              (substitute #\_ #\/
                          (jvm::class-name-internal thing)))
              (t (string thing)))))
-    (format nil "~A__~{~A~^__~}" 
-            (stringify returns) 
+    (format nil "~A__~{~A~^__~}"
+            (stringify returns)
             (mapcar #'stringify args))))
 
 (defun %define-jna-callback-interface (returns args)
