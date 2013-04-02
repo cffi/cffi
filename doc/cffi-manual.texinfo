@@ -5837,7 +5837,8 @@ is intended to be a reasonably complete search path on Darwin systems.
 @subheading Examples
 
 @lisp
-CFFI> (load-foreign-library '(:framework "OpenGL"))
+CFFI> (let ((lib (load-foreign-library '(:framework "OpenGL"))))
+        (foreign-library-pathname lib))
 @result{} #P"/System/Library/Frameworks/OpenGL.framework/OpenGL"
 @end lisp
 
@@ -6056,21 +6057,21 @@ The following example would achieve the same effect:
 @node load-foreign-library, load-foreign-library-error, *foreign-library-directories*, Libraries
 @heading load-foreign-library
 @subheading Syntax
-@Function{load-foreign-library library @res{} handler}
+@Function{load-foreign-library library-designator @res{} library}
 
 @subheading Arguments and Values
 
 @table @var
-@item library
+@item library-designator
 A library designator.
 
-@item handler
+@item library-designator
 An instance of @code{foreign-library}.
 @end table
 
 @subheading Description
 
-Load the library indicated by @var{library}.  A @dfn{library
+Load the library indicated by @var{library-designator}. A @dfn{library
 designator} is defined as follows:
 
 @enumerate
