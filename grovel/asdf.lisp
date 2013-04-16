@@ -68,18 +68,19 @@
   (list (asdf:component-pathname c)))
 
 (defmethod asdf:component-depends-on ((op process-op) (c process-op-input))
-  (append (call-next-method)
-          (list (cons 'asdf:load-op (asdf::component-load-dependencies c)))))
+  `(#-asdf3 (asdf:load-op ,@(asdf::component-load-dependencies c))
+    #+asdf3 (asdf:prepare-op ,c)
+    ,@(call-next-method)))
 
 (defmethod asdf:component-depends-on ((op asdf:compile-op) (c process-op-input))
   (declare (ignore op))
-  (append (call-next-method)
-          (list (list 'process-op (asdf:component-name c)))))
+  `((process-op ,(asdf:component-name c))
+    ,@(call-next-method)))
 
 (defmethod asdf:component-depends-on ((op asdf:load-source-op) (c process-op-input))
   (declare (ignore op))
-  (append (call-next-method)
-          (list (list 'process-op (asdf:component-name c)))))
+  `((process-op ,(asdf:component-name c))
+    ,@(call-next-method)))
 
 (defmethod asdf:perform ((op asdf:compile-op) (c process-op-input))
   (let ((generated-lisp-file (first (asdf:output-files (make-instance 'process-op) c))))
