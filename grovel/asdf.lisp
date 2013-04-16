@@ -44,7 +44,7 @@
                             *cc-flags*)))
     (call-next-method)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute) 
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass process-op (asdf:operation)
     ()
     (:documentation "This ASDF operation performs the steps necessary
