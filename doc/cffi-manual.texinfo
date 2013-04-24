@@ -2714,8 +2714,8 @@ A documentation string, currently ignored.
 The @code{defctype} macro provides a mechanism similar to C's
 @code{typedef} to define new types. The new type inherits
 @var{base-type}'s translators, if any. There is no way to define
-translations for types for types defined with @code{defctype}.  For
-that, you should use @ref{define-foreign-type}.
+translations for types defined with @code{defctype}.  For that,
+you should use @ref{define-foreign-type}.
 
 @subheading Examples
 @lisp
