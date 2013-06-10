@@ -99,10 +99,6 @@
 ;;; use #-cffi-sys::no-long-double here instead.
 #+(and scl long-float) (define-built-in-foreign-type :long-double)
 
-;;; Lists of built-in types
-;;; LMH should these be added to documentation?
-(export '(*other-builtin-types* *built-in-integer-types* *built-in-float-types*))
-
 (defparameter *possible-float-types* '(:float :double :long-double))
 
 (defparameter *other-builtin-types* '(:pointer :void)
