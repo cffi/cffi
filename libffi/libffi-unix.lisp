@@ -64,7 +64,7 @@
 
 #|
 ;;; Will not compile
-;;; error: invalid application of ‘sizeof’ to incomplete type ‘struct ffi_cif’ 
+;;; error: invalid application of `sizeof' to incomplete type `struct ffi_cif'
 ;;; When structs are defined with the name at the end, apparently they
 ;;; are intended to be "opaque types".
 (cstruct ffi-cif "struct ffi_cif"
