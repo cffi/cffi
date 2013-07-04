@@ -6558,8 +6558,8 @@ signalled if the platform supports neither @code{AF_PACKET} nor
 
 @deffn {Grovel Form} bitfield name-and-opts &rest elements
 
-Defines a bitfield, with elements specified as @code{((lisp-name
-c-name) &key documentation)}.  @var{name-and-opts} can be either a
+Defines a bitfield, with elements specified as @code{((lisp-name &rest
+c-names) &key optional documentation)}.  @var{name-and-opts} can be either a
 symbol as name, or a list @code{(name &key base-type)}.  For example:
 @end deffn
 
@@ -6567,10 +6567,11 @@ symbol as name, or a list @code{(name &key base-type)}.  For example:
 (bitfield flags-ctype
   ((:flag-a "FLAG_A")
     :documentation "DOCU_A")
-  ((:flag-b "FLAG_B")
+  ((:flag-b "FLAG_B" "FLAG_B_ALT")
     :documentation "DOCU_B")
   ((:flag-c "FLAG_C")
-    :documentation "DOCU_C"))
+    :documentation "DOCU_C"
+    :optional t))
 @end lisp
 
 

@@ -713,16 +713,28 @@ int main(int argc, char**argv) {
       (c-print-symbol out base-type t))
     (c-format out ")")
     (dolist (mask masks)
-      (destructuring-bind ((lisp-name c-name) &key documentation) mask
+      (destructuring-bind ((lisp-name &rest c-names)
+                           &key optional documentation) mask
         (declare (ignore documentation))
         (check-type lisp-name symbol)
-        (check-type c-name string)
         (c-format out "~%  (")
         (c-print-symbol out lisp-name)
         (c-format out " ")
-        (format out "~&  fprintf(output, ~A, ~A);~%"
-                (foreign-type-to-printf-specification (or base-type :int))
-                c-name)
+        (dolist (c-name c-names)
+          (check-type c-name string)
+          (format out "~&#ifdef ~A~%" c-name)
+          (format out "~&  fprintf(output, ~A, ~A);~%"
+                  (foreign-type-to-printf-specification (or base-type :int))
+                  c-name)
+          (format out "~&#else~%"))
+        (unless optional
+          (c-format out
+                    "~%  #.(cl:progn ~
+                           (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
+                           -1)"
+                    lisp-name))
+        (dotimes (i (length c-names))
+          (format out "~&#endif~%"))
         (c-format out ")")))
     (c-format out ")~%")))
 
