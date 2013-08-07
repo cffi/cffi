@@ -287,14 +287,18 @@ WITH-POINTER-TO-VECTOR-DATA."
                  nil ; arg-checking
                  ff::ep-flag-never-release))))
 
-(defmacro %foreign-funcall (name args &key convention library)
+(defmacro %foreign-funcall (name args &key convention library errno)
   (declare (ignore convention library))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(system::ff-funcall
       (load-time-value (excl::determine-foreign-address
                         '(,name :language :c)
-                        ff::ep-flag-never-release
+                        ,(logior
+                          ff::ep-flag-always-release
+                          (if errno
+                              ff::ep-flag-get-errno
+                              0))
                         nil ; method-index
                         ))
       ;; arg types {'(:c-type lisp-type) argN}*
@@ -315,6 +319,7 @@ WITH-POINTER-TO-VECTOR-DATA."
          :returning ,(allegro-type-pair rettype)
          ;; Don't use call-direct when there are no arguments.
          ,@(unless (null args) '(:call-direct t))
+         :error-value ,(when (getf options :errno) :errno)
          :arg-checking nil
          :strings-convert nil)
       `(,ff-name ,@args))))

@@ -70,7 +70,8 @@
   (destructuring-bind (&key (library :default libraryp)
                             (cconv nil cconv-p)
                             (calling-convention cconv calling-convention-p)
-                            (convention calling-convention))
+                            (convention calling-convention)
+                            errno)
       options
     (when cconv-p
       (warn-obsolete-argument :cconv :convention))
@@ -83,6 +84,7 @@
                                      (get-foreign-library library))))
                    (getf lib-options :convention)))
                :cdecl)
+           :errno errno
            ;; Don't pass the library option if we're dealing with
            ;; FOREIGN-FUNCALL-POINTER.
            (unless pointer
