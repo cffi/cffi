@@ -124,17 +124,15 @@
               Use -f or --force if you want to make a release anyway."))))
 
 (defun new-version-number-candidates (current-version)
-  (let ((current-version (parse-version current-version)))
-    (labels ((alternatives (before after)
-               (when after
-                 (cons (append before (list (1+ (first after)))
-                               (mapcar (constantly 0) (rest after)))
-                       (alternatives (append before (list (first after)))
-                                     (rest after))))))
-      (loop for alt in (alternatives nil current-version)
-            collect (reduce (lambda (acc next)
-                              (format nil "~a.~a" acc next))
-                            alt)))))
+  (labels ((alternatives (before after)
+             (when after
+               (cons (append before
+                             (list (1+ (first after)))
+                             (mapcar (constantly 0) (rest after)))
+                     (alternatives (append before (list (first after)))
+                                   (rest after))))))
+    (loop for alt in (alternatives nil (parse-version current-version))
+          collect (format nil "~{~d~^.~}" alt))))
 
 (defun ask-user-for-version (current-version next-versions)
   (format *query-io* "Current version is ~A. Which will be the next one?~%"
