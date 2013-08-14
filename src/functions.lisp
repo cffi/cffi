@@ -28,6 +28,29 @@
 
 (in-package #:cffi)
 
+(defparameter *errno* nil)
+
+(defun capture-errno (&rest body)
+  "Wraps BODY to capture the second value it returns, which is expected to
+   be errno. *errno* is modified with the captured errno value.
+   errno is discarded, and the return value is returned."
+  (let ((returned-value (gensym))
+        (returned-errno (gensym)))
+    `(multiple-value-bind (,returned-value ,returned-errno)
+         ,@body
+       (when ,returned-errno
+         (setf *errno* ,returned-errno))
+       ,returned-value)))
+
+(defmacro with-errno (&body body)
+  "Creates a dynamic binding to establish a thread-local variable.
+   It's expected that within LET, *errno* will have a thread-local value."
+  `(let (*errno*)
+     ,@body))
+
+(defmacro get-errno ()
+  *errno*)
+
 ;;;# Calling Foreign Functions
 ;;;
 ;;; FOREIGN-FUNCALL is the main primitive for calling foreign
@@ -70,13 +93,15 @@
   (destructuring-bind (&key (library :default libraryp)
                             (cconv nil cconv-p)
                             (calling-convention cconv calling-convention-p)
-                            (convention calling-convention))
+                            (convention calling-convention)
+                            errno)
       options
     (when cconv-p
       (warn-obsolete-argument :cconv :convention))
     (when calling-convention-p
       (warn-obsolete-argument :calling-convention :convention))
-    (list* :convention
+    (list* :errno errno
+           :convention
            (or convention
                (when libraryp
                  (let ((lib-options (foreign-library-options
@@ -124,12 +149,13 @@
                     rettype
                     ctypes
                     pointerp)
-           `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-             ;; No structures by value, direct call
-             ,thing
-             (,@(mapcan #'list ctypes syms)
-              ,(canonicalize-foreign-type rettype))
-             ,@(parse-function-options options :pointer pointerp)))
+           (capture-errno
+            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+               ;; No structures by value, direct call
+               ,thing
+               (,@(mapcan #'list ctypes syms)
+                  ,(canonicalize-foreign-type rettype))
+               ,@(parse-function-options options :pointer pointerp))))
        fsbvp))))
 
 (defmacro foreign-funcall (name-and-options &rest args)
@@ -161,20 +187,21 @@
          (append fixed-fargs varargs-fargs)
          (append fixed-types varargs-types)
          rettype
-         `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-            ,thing
-            ,(append
-              (mapcan #'list
-                      (nconc fixed-ctypes
-                             (mapcar #'promote-varargs-type varargs-ctypes))
-                      (append fixed-syms
-                              (loop for sym in varargs-syms
-                                    and type in varargs-ctypes
-                                    if (eq type :float)
-                                    collect `(float ,sym 1.0d0)
-                                    else collect sym)))
-              (list (canonicalize-foreign-type rettype)))
-            ,@options))))))
+         (capture-errno
+          `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+             ,thing
+             ,(append
+               (mapcan #'list
+                       (nconc fixed-ctypes
+                              (mapcar #'promote-varargs-type varargs-ctypes))
+                       (append fixed-syms
+                               (loop for sym in varargs-syms
+                                  and type in varargs-ctypes
+                                  if (eq type :float)
+                                  collect `(float ,sym 1.0d0)
+                                  else collect sym)))
+               (list (canonicalize-foreign-type rettype)))
+             ,@options)))))))
 
 ;;; For now, the only difference between this macro and
 ;;; FOREIGN-FUNCALL is that it does argument promotion for that
@@ -234,7 +261,8 @@ arguments and does type promotion for the variadic arguments."
                   ,@(append (mapcan #'list arg-types arg-names)
                             (list return-type)))
                 (translate-objects
-                 syms arg-names arg-types return-type caller)))))))
+                 syms arg-names arg-types return-type
+                 (capture-errno caller))))))))
 
 (defun %defcfun-varargs (lisp-name foreign-name return-type args options doc)
   (with-unique-names (varargs)
