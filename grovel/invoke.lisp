@@ -65,7 +65,7 @@
   (values (ext:system (format nil "~A~{ ~A~}" command arglist))
           "<see above>"))
 
-#+(or openmcl cmu scl sbcl)
+#+(or openmcl cmu scl (and sbcl (not win32)))
 (defun %invoke (command arglist)
   (let* ((exit-code)
          (output
@@ -73,21 +73,16 @@
             (let ((process (#+openmcl ccl:run-program
                             #+(or cmu scl) ext:run-program
                             #+sbcl sb-ext:run-program
-                            command arglist
-                            :output #-win32 s #+(and sbcl win32) :stream
+                            command arglist #-win32 :output #-win32 s
                             :error :output
                             #+sbcl :search #+sbcl t)))
-              #+(and sbcl win32)
-              (let ((in (sb-ext:process-output process)))
-                (loop for line = (read-line in nil)
-                   while line
-                   do (format s "~A~%" line)))
               (setq exit-code
                     #+openmcl (nth-value
                                1 (ccl:external-process-status process))
                     #+sbcl (sb-ext:process-exit-code process)
                     #+(or cmu scl) (ext:process-exit-code process))))))
     (values exit-code output)))
+
 
 #+allegro
 (eval-when (:compile-toplevel :load-toplevel :execute)
