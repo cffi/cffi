@@ -83,6 +83,21 @@
                     #+(or cmu scl) (ext:process-exit-code process))))))
     (values exit-code output)))
 
+#+(and sbcl win32)
+(defun %invoke (program args)
+  (let* ((process (sb-ext:run-program program args
+                                      :wait nil
+                                      :search t
+                                      :output :stream))
+         (stream (sb-ext:process-output process))
+         (output (with-output-to-string (string)
+                   (loop for char = (read-char stream nil)
+                      while char
+                      do (write-char char string))))
+         (exit-code (sb-ext:process-exit-code process)))
+    (sb-ext:process-close process)
+    (sb-ext:process-wait process)
+    (values exit-code output)))
 
 #+allegro
 (eval-when (:compile-toplevel :load-toplevel :execute)
