@@ -83,15 +83,16 @@
                     #+sbcl (sb-ext:process-exit-code process)
                     #+(or cmu scl) (ext:process-exit-code process)))))
          #+(and sbcl win32)
-         (output (let* ((process (sb-ext:run-program command arglist
-                                                     :output :stream
-                                                     :search t))
-                        (in (sb-ext:process-output process)))
-                   (with-output-to-string (s)
-                     (loop for line = (read-line in nil)
-                        while line
-                        do (format s "~A~%" line)))
-                   (setf exit-code (sb-ext:process-exit-code process)))))
+         (output 
+          (with-output-to-string (s)
+            (let* ((process (sb-ext:run-program command arglist
+                                                :output :stream
+                                                :search t))
+                   (in (sb-ext:process-output process)))
+              (loop for line = (read-line in nil)
+                 while line
+                 do (format s "~A~%" line))
+              (setf exit-code (sb-ext:process-exit-code process))))))
     (values exit-code output)))
 
 #+allegro
