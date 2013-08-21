@@ -70,18 +70,18 @@
   (let* ((exit-code)
          (output
           (with-output-to-string (s)
-            (let* ((process (#+openmcl ccl:run-program
+            (let ((process (#+openmcl ccl:run-program
                             #+(or cmu scl) ext:run-program
                             #+sbcl sb-ext:run-program
                             command arglist
                             :output #-win32 s #+(and sbcl win32) :stream
                             :error :output
-                            #+sbcl :search #+sbcl t))
-                   #+(and sbcl win32) (in (sb-ext:process-output process)))
+                            #+sbcl :search #+sbcl t)))
               #+(and sbcl win32)
-              (loop for line = (read-line in nil)
+              (let ((in (sb-ext:process-output process)))
+                (loop for line = (read-line in nil)
                    while line
-                   do (format s "~A~%" line))
+                   do (format s "~A~%" line)))
               (setq exit-code
                     #+openmcl (nth-value
                                1 (ccl:external-process-status process))
