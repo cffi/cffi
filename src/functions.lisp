@@ -49,7 +49,7 @@
      ,@body))
 
 (defmacro get-errno ()
-  *errno*)
+  `*errno*)
 
 ;;;# Calling Foreign Functions
 ;;;
