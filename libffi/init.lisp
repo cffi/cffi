@@ -27,14 +27,14 @@
 
 (in-package #:cffi)
 
-(cffi:define-foreign-library (libffi)
+(define-foreign-library (libffi)
   (:darwin (:or "libffi.dylib" "libffi32.dylib"))
   (:solaris (:or "/usr/lib/amd64/libffi.so" "/usr/lib/libffi.so"))
   (:unix (:or "libffi.so.6" "libffi32.so.6" "libffi.so.5" "libffi32.so.5"))
   (:windows (:or "libffi-6.dll" "libffi-5.dll" "libffi.dll"))
   (t (:default "libffi")))
 
-(cffi:load-foreign-library 'libffi)
+(load-foreign-library 'libffi)
 
 (defvar *libffi-type-pointer* (make-hash-table))
 

@@ -45,12 +45,12 @@
   "Generate or retrieve the CIF needed to call the function through libffi."
   (or (gethash foreign-function-name *cif-table*)
       (let* ((number-of-arguments (length argument-types))
-             (cif (cffi:foreign-alloc '(:struct ffi-cif)))
-             (ffi-argtypes (cffi:foreign-alloc :pointer :count number-of-arguments)))
+             (cif (foreign-alloc '(:struct ffi-cif)))
+             (ffi-argtypes (foreign-alloc :pointer :count number-of-arguments)))
         (loop for type in argument-types
               for i from 0
               do
-                 (setf (cffi:mem-aref ffi-argtypes :pointer i)
+                 (setf (mem-aref ffi-argtypes :pointer i)
                        (libffi-type-pointer (parse-type type))))
         (unless
             (eql :OK
@@ -67,9 +67,9 @@
   "Remove prepared definitions for the named foreign function.  Returns foreign-function-name if function had been prepared, NIL otherwise."
   (let ((ptr (gethash foreign-function-name *cif-table*)))
     (when ptr
-      (cffi:foreign-free
-       (cffi:foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
-      (cffi:foreign-free ptr)
+      (foreign-free
+       (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
+      (foreign-free ptr)
       (remhash foreign-function-name *cif-table*)
       foreign-function-name)))
 
@@ -77,29 +77,29 @@
     (function symbols return-type argument-types &optional pointerp (abi :default-abi))
   "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
   (let ((number-of-arguments (length argument-types)))
-    `(cffi:with-foreign-objects
+    `(with-foreign-objects
          ((argvalues :pointer ,number-of-arguments)
           ,@(unless (eql return-type :void)
               `((result ',return-type))))
        (loop :for arg :in (list ,@symbols)
              :for count :from 0
-             :do (setf (cffi:mem-aref argvalues :pointer count) arg))
+             :do (setf (mem-aref argvalues :pointer count) arg))
        (call
         (prepare-function ,function ',return-type ',argument-types ',abi)
         ,(if pointerp
              function
-             `(cffi:foreign-symbol-pointer ,function))
-        ,(if (eql return-type :void) '(cffi:null-pointer) 'result)
+             `(foreign-symbol-pointer ,function))
+        ,(if (eql return-type :void) '(null-pointer) 'result)
         argvalues)
        ,(if (eql return-type :void)
             '(values)
-            (if (typep (parse-type return-type) 'cffi::translatable-foreign-type)
+            (if (typep (parse-type return-type) 'translatable-foreign-type)
                 ;; just return the pointer so that expand-from-foreign
                 ;; can apply translate-from-foreign
                 'result
                 ;; built-in types won't be translated by
                 ;; expand-from-foreign, we have to do it here
-                `(cffi:mem-aref result ',return-type))))))
+                `(mem-aref result ',return-type))))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
