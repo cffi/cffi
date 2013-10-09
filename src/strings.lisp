@@ -118,23 +118,32 @@
 (defun null-terminator-len (encoding)
   (length (enc-nul-encoding (get-character-encoding encoding))))
 
-(defun lisp-string-to-foreign (string buffer bufsize &key (start 0) end offset
-                               (encoding *default-foreign-encoding*))
+(defun %lisp-string-to-foreign
+    (string buffer bufsize start end offset encoding computed-size computed-end)
+  "Copy the Lisp string into the foreign string buffer."
   (check-type string string)
   (when offset
     (setq buffer (inc-pointer buffer offset)))
   (with-checked-simple-vector ((string (coerce string 'babel:unicode-string))
                                (start start) (end end))
+    (declare (ignorable end))           ; Suppress SBCL style warning
     (declare (type simple-string string))
     (let ((mapping (lookup-mapping *foreign-string-mappings* encoding))
           (nul-len (null-terminator-len encoding)))
       (assert (plusp bufsize))
-      (multiple-value-bind (size end)
-          (funcall (octet-counter mapping) string start end (- bufsize nul-len))
-        (funcall (encoder mapping) string start end buffer 0)
-        (dotimes (i nul-len)
-          (setf (mem-ref buffer :char (+ size i)) 0))))
-    buffer))
+      (funcall (encoder mapping) string start computed-end buffer 0)
+      (dotimes (i nul-len)
+        (setf (mem-ref buffer :char (+ computed-size i)) 0))))
+  buffer))
+
+(defun lisp-string-to-foreign
+    (string buffer bufsize
+     &key (start 0) end offset (encoding *default-foreign-encoding*))
+  (multiple-value-bind (computed-size computed-end)
+      (funcall (octet-counter (lookup-mapping *foreign-string-mappings* encoding))
+               string start end 0)
+    (%lisp-string-to-foreign
+     string buffer bufsize start end offset encoding computed-size computed-end)))
 
 ;;; Expands into a loop that calculates the length of the foreign
 ;;; string at PTR plus OFFSET, using ACCESSOR and looking for a null
@@ -177,25 +186,24 @@ pointer, NIL is returned."
 
 ;;;# Using Foreign Strings
 
-(defun foreign-string-alloc (string &key (encoding *default-foreign-encoding*)
-                             (null-terminated-p t) (start 0) end)
+(defun foreign-string-alloc
+    (string
+     &key (encoding *default-foreign-encoding*)
+       (null-terminated-p t) (start 0) end)
   "Allocate a foreign string containing Lisp string STRING.
 The string must be freed with FOREIGN-STRING-FREE."
-  (check-type string string)
-  (with-checked-simple-vector ((string (coerce string 'babel:unicode-string))
-                               (start start) (end end))
-    (declare (type simple-string string))
-    (let* ((mapping (lookup-mapping *foreign-string-mappings* encoding))
-           (count (funcall (octet-counter mapping) string start end 0))
-           (nul-length (if null-terminated-p
-                           (null-terminator-len encoding)
-                           0))
-           (length (+ count nul-length))
-           (ptr (foreign-alloc :char :count length)))
-      (funcall (encoder mapping) string start end ptr 0)
-      (dotimes (i nul-length)
-        (setf (mem-ref ptr :char (+ count i)) 0))
-      (values ptr length))))
+  (let* ((computed-size
+           (funcall (octet-counter (lookup-mapping *foreign-string-mappings* encoding))
+                    string start end 0))
+         (length
+           (+ computed-size
+              (if null-terminated-p
+                  (null-terminator-len encoding)
+                  0)))
+         (ptr (foreign-alloc :char :count length)))
+    (%lisp-string-to-foreign
+     string ptr length start end 0 encoding computed-size end)
+    (values ptr length)))
 
 (defun foreign-string-free (ptr)
   "Free a foreign string allocated by FOREIGN-STRING-ALLOC."
