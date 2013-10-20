@@ -285,6 +285,10 @@ buffer along with ARGS." ; fix wording, sigh
   (when free-p
     (foreign-string-free ptr)))
 
+(defmethod expand-to-foreign-dyn-indirect
+    (value var body (type foreign-string-type))
+  (expand-to-foreign-dyn value var body type))
+
 ;;;# STRING+PTR
 
 (define-foreign-type foreign-string+ptr-type (foreign-string-type)
