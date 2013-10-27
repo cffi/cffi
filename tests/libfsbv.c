@@ -108,7 +108,7 @@ DLLEXPORT
 struct struct_pair stringlenpair (char *string, struct struct_pair dp)
 {
   struct struct_pair ret;
-  int len = strlen(&string);
+  int len = strlen(string);
   ret.a = len*dp.a;
   ret.b = len*dp.b;
   return ret;

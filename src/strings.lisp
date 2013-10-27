@@ -287,7 +287,13 @@ buffer along with ARGS." ; fix wording, sigh
 
 (defmethod expand-to-foreign-dyn-indirect
     (value var body (type foreign-string-type))
-  (expand-to-foreign-dyn value var body type))
+  (alexandria:with-gensyms (str)
+    (expand-to-foreign-dyn
+     value
+     str
+     (list 
+      (expand-to-foreign-dyn-indirect str var body (parse-type :pointer)))
+     type)))
 
 ;;;# STRING+PTR
 
