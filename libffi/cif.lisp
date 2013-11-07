@@ -29,7 +29,7 @@
 
 ;;; Structs
 
-(cffi:defcstruct ffi-cif
+(defcstruct ffi-cif
   (abi ffi-abi)
   (number-of-arguments unsigned)
   (argument-types :pointer)
@@ -40,14 +40,14 @@
 ;;; Functions
 ;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
 
-(cffi:defcfun ("ffi_prep_cif" prep-cif) status
+(defcfun ("ffi_prep_cif" prep-cif) status
   (ffi-cif :pointer)
   (ffi-abi abi)
   (nargs :uint)
   (rtype :pointer)
   (argtypes :pointer))
 
-(cffi:defcfun ("ffi_call" call) :void
+(defcfun ("ffi_call" call) :void
   (ffi-cif :pointer)
   (function :pointer)
   (rvalue :pointer)

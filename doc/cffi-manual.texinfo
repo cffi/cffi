@@ -2714,8 +2714,8 @@ A documentation string, currently ignored.
 The @code{defctype} macro provides a mechanism similar to C's
 @code{typedef} to define new types. The new type inherits
 @var{base-type}'s translators, if any. There is no way to define
-translations for types for types defined with @code{defctype}.  For
-that, you should use @ref{define-foreign-type}.
+translations for types defined with @code{defctype}.  For that,
+you should use @ref{define-foreign-type}.
 
 @subheading Examples
 @lisp
@@ -3680,7 +3680,8 @@ pointer.  The return value is not used.
 
 @table @var
 @item vars
-A list of symbols.
+A list with each element a symbol, or list of length two with the
+first element @code{:pointer} and the second a symbol.
 
 @item ptr
 A foreign pointer to a structure.
@@ -3693,9 +3694,11 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-slots} macro creates local symbol macros for
-each var in @var{vars} to reference foreign slots in @var{ptr} of
-@var{type}.  It is similar to Common Lisp's @code{with-slots} macro.
+The @code{with-foreign-slots} macro creates local symbol macros for each
+var in @var{vars} to reference foreign slots in @var{ptr} of @var{type}.
+If the var is a list starting with @code{:pointer}, it will bind the
+pointer to the slot (rather than the value). It is similar to Common
+Lisp's @code{with-slots} macro.
 
 @subheading Examples
 @lisp
@@ -5837,7 +5840,8 @@ is intended to be a reasonably complete search path on Darwin systems.
 @subheading Examples
 
 @lisp
-CFFI> (load-foreign-library '(:framework "OpenGL"))
+CFFI> (let ((lib (load-foreign-library '(:framework "OpenGL"))))
+        (foreign-library-pathname lib))
 @result{} #P"/System/Library/Frameworks/OpenGL.framework/OpenGL"
 @end lisp
 
@@ -6056,21 +6060,21 @@ The following example would achieve the same effect:
 @node load-foreign-library, load-foreign-library-error, *foreign-library-directories*, Libraries
 @heading load-foreign-library
 @subheading Syntax
-@Function{load-foreign-library library @res{} handler}
+@Function{load-foreign-library library-designator @res{} library}
 
 @subheading Arguments and Values
 
 @table @var
-@item library
+@item library-designator
 A library designator.
 
-@item handler
+@item library-designator
 An instance of @code{foreign-library}.
 @end table
 
 @subheading Description
 
-Load the library indicated by @var{library}.  A @dfn{library
+Load the library indicated by @var{library-designator}. A @dfn{library
 designator} is defined as follows:
 
 @enumerate

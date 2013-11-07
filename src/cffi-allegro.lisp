@@ -294,7 +294,8 @@ WITH-POINTER-TO-VECTOR-DATA."
     `(system::ff-funcall
       (load-time-value (excl::determine-foreign-address
                         '(,name :language :c)
-                        ff::ep-flag-never-release
+                        #-(version>= 8 1) ff::ep-flag-never-release
+                        #+(version>= 8 1) ff::ep-flag-always-release
                         nil ; method-index
                         ))
       ;; arg types {'(:c-type lisp-type) argN}*
@@ -316,7 +317,9 @@ WITH-POINTER-TO-VECTOR-DATA."
          ;; Don't use call-direct when there are no arguments.
          ,@(unless (null args) '(:call-direct t))
          :arg-checking nil
-         :strings-convert nil)
+         :strings-convert nil
+         #+(version>= 8 1) ,@'(:release-heap :always)
+         #+smp ,@'(:release-heap-implies-allow-gc t))
       `(,ff-name ,@args))))
 
 ;;; See doc/allegro-internals.txt for a clue about entry-vec.

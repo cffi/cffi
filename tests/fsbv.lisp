@@ -83,3 +83,12 @@
 (deftest fsbv.6
     (ullsum #x10DEADBEEF #x2300000000)
   #x33DEADBEEF)
+
+;;; Combine structures by value with a string argument
+(defcfun "stringlenpair" (:struct struct-pair)
+  (s :string)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.7
+  (stringlenpair "abc" '(1 . 2))
+  (3 . 6))

@@ -48,7 +48,14 @@
   (:export
    ;; Types.
    #:foreign-pointer
+
+   ;; FIXME: the following types are undocumented. They should
+   ;; probably be replaced with a proper type introspection API
+   ;; though.
    #:*built-in-foreign-types*
+   #:*other-builtin-types*
+   #:*built-in-integer-types*
+   #:*built-in-float-types*
 
    ;; Primitive pointer operations.
    #:foreign-free
@@ -143,6 +150,7 @@
    #:translation-forms-for-class
 
    ;; Extensible foreign type operations.
+   #:define-translation-method          ; FIXME: undocumented
    #:translate-to-foreign
    #:translate-from-foreign
    #:translate-into-foreign-memory

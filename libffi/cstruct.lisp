@@ -28,23 +28,23 @@
 (in-package #:cffi)
 
 (defun slot-multiplicity (slot)
-  (if (typep slot 'cffi::aggregate-struct-slot)
-      (cffi::slot-count slot)
+  (if (typep slot 'aggregate-struct-slot)
+      (slot-count slot)
       1))
 
 (defun number-of-items (structure-type)
   "Total number of items in the foreign structure."
-  (loop for val being the hash-value of (cffi::structure-slots structure-type)
+  (loop for val being the hash-value of (structure-slots structure-type)
         sum (slot-multiplicity val)))
 
 (defmethod libffi-type-pointer ((type foreign-struct-type))
   (or (call-next-method)
       (set-libffi-type-pointer
        type
-       (let* ((ptr (cffi:foreign-alloc '(:struct ffi-type)))
+       (let* ((ptr (foreign-alloc '(:struct ffi-type)))
               (nitems (number-of-items type))
               (type-pointer-array
-                (cffi:foreign-alloc :pointer :count (1+ nitems))))
+                (foreign-alloc :pointer :count (1+ nitems))))
          (loop for slot in (slots-in-order type)
                for ltp = (libffi-type-pointer (parse-type (slot-type slot)))
                with slot-counter = 0
@@ -52,23 +52,23 @@
                       (loop
                         repeat (slot-multiplicity slot)
                         do (setf
-                            (cffi:mem-aref
+                            (mem-aref
                              type-pointer-array :pointer slot-counter)
                             ltp)
                            (incf slot-counter))
                       (error
                        "Slot type ~a in foreign structure is unknown to libffi."
-                       (cffi::unparse-type (cffi::slot-type slot)))))
+                       (unparse-type (slot-type slot)))))
          (setf
-          (cffi:mem-aref type-pointer-array :pointer nitems)
-          (cffi:null-pointer)
+          (mem-aref type-pointer-array :pointer nitems)
+          (null-pointer)
           ;; The ffi-type
-          (cffi:foreign-slot-value ptr '(:struct ffi-type) 'size)
+          (foreign-slot-value ptr '(:struct ffi-type) 'size)
           0
-          (cffi:foreign-slot-value ptr '(:struct ffi-type) 'alignment)
+          (foreign-slot-value ptr '(:struct ffi-type) 'alignment)
           0
-          (cffi:foreign-slot-value ptr '(:struct ffi-type) 'type)
+          (foreign-slot-value ptr '(:struct ffi-type) 'type)
           +type-struct+
-          (cffi:foreign-slot-value ptr '(:struct ffi-type) 'elements)
+          (foreign-slot-value ptr '(:struct ffi-type) 'elements)
           type-pointer-array)
          ptr))))
