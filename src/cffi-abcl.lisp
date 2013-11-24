@@ -396,12 +396,29 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:stdcall "ALT_CONVENTION")
     (:cdecl "C_CONVENTION")))
 
+(defparameter *jna-string-encoding* "UTF-8"
+  "Encoding for conversion between Java and native strings that occurs within JNA.
+
+Used with jna-4.0.0 or later.")
+
+;;; c.f. <http://twall.github.io/jna/4.0/javadoc/com/sun/jna/Function.html#Function%28com.sun.jna.Pointer,%20int,%20java.lang.String%29>
+(defvar *jna-4.0.0-or-later-p*
+  (ignore-errors (private-jconstructor "com.sun.jna.Function"
+                                       "com.sun.jna.Pointer" "int" "java.lang.String")))
+
 (defun make-function-pointer (pointer convention)
-  (jnew (private-jconstructor "com.sun.jna.Function"
-                              "com.sun.jna.Pointer" "int")
-        pointer
-        (jfield "com.sun.jna.Function"
-                (convert-calling-convention convention))))
+  (apply 
+   #'jnew 
+   (if *jna-4.0.0-or-later-p*
+       (private-jconstructor "com.sun.jna.Function"
+                             "com.sun.jna.Pointer" "int" "java.lang.String")
+       (private-jconstructor "com.sun.jna.Function"
+                             "com.sun.jna.Pointer" "int"))
+   pointer
+   (jfield "com.sun.jna.Function"
+           (convert-calling-convention convention))
+   (when *jna-4.0.0-or-later-p*
+     (list *function-call-encoding*))))
 
 (defun lisp-value-to-java (value foreign-type)
   (if (eq foreign-type :pointer)
