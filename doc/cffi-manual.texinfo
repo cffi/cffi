@@ -502,11 +502,10 @@ access C data from many Common Lisp implementations.
 
 @cindex foreign functions and data
 The concept can be generalized to other languages; at the time of
-writing, only @cffi{}'s C support is fairly complete, but C++
-support is being worked on.  Therefore, we will interchangeably refer
-to @dfn{foreign functions} and @dfn{foreign data}, and ``C functions''
-and ``C data''.  At no time will the word ``foreign'' carry its usual,
-non-programming meaning.
+writing, only @cffi{}'s C support is fairly complete. Therefore, we
+will interchangeably refer to @dfn{foreign functions} and @dfn{foreign
+data}, and ``C functions'' and ``C data''.  At no time will the word
+``foreign'' carry its usual, non-programming meaning.
 
 This tutorial expects you to have a working understanding of both
 Common Lisp and C, including the Common Lisp macro system.
@@ -606,9 +605,7 @@ intended to be part of the public library interface.  In those cases,
 a pure Lisp struct definition is always preferred.  In fact, many
 prefer to stay in Lisp and break the encapsulation anyway, placing the
 burden of correct library interface definition on the library.}
-
-@impnote{cffi-grovel, a project not yet part of @cffi{}, automates
-this and other processes.}
+@ref{The Groveller} automates this and other processes.
 
 Another disadvantage appears when you would rather use the foreign
 language than Lisp.  However, someone who prefers C to Lisp is not a
@@ -670,6 +667,7 @@ load @cffi{}.
 (in-package :cffi-user)
 
 (define-foreign-library libcurl
+  (:darwin (:or "libcurl.3.dylib" "libcurl.dylib"))
   (:unix (:or "libcurl.so.3" "libcurl.so"))
   (t (:default "libcurl")))
 
