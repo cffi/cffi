@@ -65,7 +65,7 @@
   (values (ext:system (format nil "~A~{ ~A~}" command arglist))
           "<see above>"))
 
-#+(or openmcl cmu scl sbcl)
+#+(or openmcl cmu scl (and sbcl (not win32)))
 (defun %invoke (command arglist)
   (let* ((exit-code)
          (output
@@ -76,13 +76,27 @@
                             command arglist #-win32 :output #-win32 s
                             :error :output
                             #+sbcl :search #+sbcl t)))
-              #+win32
-              (write-line "note: SBCL on windows can't redirect output.")
               (setq exit-code
                     #+openmcl (nth-value
                                1 (ccl:external-process-status process))
                     #+sbcl (sb-ext:process-exit-code process)
                     #+(or cmu scl) (ext:process-exit-code process))))))
+    (values exit-code output)))
+
+#+(and sbcl win32)
+(defun %invoke (program args)
+  (let* ((process (sb-ext:run-program program args
+                                      :wait nil
+                                      :search t
+                                      :output :stream))
+         (stream (sb-ext:process-output process))
+         (output (with-output-to-string (string)
+                   (loop for char = (read-char stream nil)
+                      while char
+                      do (write-char char string))))
+         (exit-code (sb-ext:process-exit-code process)))
+    (sb-ext:process-close process)
+    (sb-ext:process-wait process)
     (values exit-code output)))
 
 #+allegro
