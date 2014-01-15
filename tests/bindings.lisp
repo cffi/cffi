@@ -124,7 +124,13 @@
   (let ((regression-test::*compile-tests* compiled)
         (*package* (find-package '#:cffi-tests)))
     (format t "~&;;; running tests (~Acompiled)" (if compiled "" "un"))
-    (do-tests)))
+    (do-tests)
+    (set-difference (regression-test:pending-tests)
+                    regression-test::*expected-failures*)))
+
+(defun run-all-cffi-tests ()
+  (append (run-cffi-tests :compiled nil)
+          (run-cffi-tests :compiled t)))
 
 (defmacro expecting-error (&body body)
   `(handler-case (progn ,@body :no-error)

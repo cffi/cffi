@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cffi/cffi.svg)](https://travis-ci.org/luismbo/cffi)
+
 CFFI, the Common Foreign Function Interface, purports to be a portable
 foreign function interface for Common Lisp. The CFFI library is
 composed of a Lisp-implementation-specific backend in the CFFI-SYS
@@ -11,5 +13,7 @@ declarative interface for defining foreign functions, structures,
 typedefs, enumerated types, etc. It is implemented in portable ANSI CL
 making use of the low-level operators exported by CFFI-SYS.
 
-Please consult the manual for further details, including installation
-instructions.
+Please consult [the manual][1] for further details, including
+installation instructions.
+
+[1]: http://common-lisp.net/project/cffi/manual/html_node/

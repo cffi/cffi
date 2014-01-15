@@ -83,9 +83,6 @@
   nil)
 
 (defmethod perform ((o test-op) (c (eql (find-system :cffi-tests))))
-  (flet ((run-tests (&rest args)
-           (apply (intern (string '#:run-cffi-tests) '#:cffi-tests) args)))
-    (run-tests :compiled nil)
-    (run-tests :compiled t)))
+  (funcall (intern (string '#:run-all-cffi-tests) :cffi-tests)))
 
 ;;; vim: ft=lisp et

@@ -29,4 +29,4 @@
 
 (defpackage #:cffi-tests
   (:use #:cl #:cffi #:cffi-sys #:regression-test)
-  (:export #:do-tests))
+  (:export #:do-tests #:run-cffi-tests #:run-all-cffi-tests))
