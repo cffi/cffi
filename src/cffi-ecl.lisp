@@ -51,6 +51,7 @@
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
+   #:%close-foreign-library
    #:native-namestring
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
