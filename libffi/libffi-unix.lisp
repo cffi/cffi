@@ -35,6 +35,9 @@
 #+darwin
 (cc-flags "-I/opt/local/include/")
 
+#+openbsd
+(cc-flags "-I/usr/local/include")
+
 #+darwin
 (include "ffi/ffi.h")
 #-darwin
