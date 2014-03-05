@@ -45,7 +45,8 @@
     (call-next-method)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defclass process-op (asdf:downward-operation)
+  (defclass process-op (#-asdf3 asdf:operation
+                        #+asdf3 asdf:downward-operation)
     ()
     (:documentation "This ASDF operation performs the steps necessary
   to generate a compilable and loadable lisp file from a
@@ -68,7 +69,8 @@
   (list (asdf:component-pathname c)))
 
 (defmethod asdf:component-depends-on ((op process-op) (c process-op-input))
-  `((asdf:prepare-op ,c)
+  `(#-asdf3 (asdf:load-op ,@(asdf::component-load-dependencies c))
+    #+asdf3 (asdf:prepare-op ,c)
     ,@(call-next-method)))
 
 (defmethod asdf:component-depends-on ((op asdf:compile-op) (c process-op-input))
