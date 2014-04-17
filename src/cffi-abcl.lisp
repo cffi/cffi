@@ -418,7 +418,7 @@ Used with jna-4.0.0 or later.")
    (jfield "com.sun.jna.Function"
            (convert-calling-convention convention))
    (when *jna-4.0.0-or-later-p*
-     (list *function-call-encoding*))))
+     (list *jna-string-encoding*))))
 
 (defun lisp-value-to-java (value foreign-type)
   (if (eq foreign-type :pointer)
