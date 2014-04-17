@@ -117,154 +117,155 @@
   "List of real float types supported by CFFI.")
 
 ;;;# Foreign Pointers
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
 
-(define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
-
-(defun mem-ref (ptr type &optional (offset 0))
-  "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
+  (defun mem-ref (ptr type &optional (offset 0))
+    "Return the value of TYPE at OFFSET bytes from PTR. If TYPE is aggregate,
 we don't return its 'value' but a pointer to it, which is PTR itself."
-  (let* ((parsed-type (parse-type type))
-         (ctype (canonicalize parsed-type)))
+    (let* ((parsed-type (parse-type type))
+           (ctype (canonicalize parsed-type)))
+      #+cffi-sys::no-long-long
+      (when (member ctype '(:long-long :unsigned-long-long))
+        (return-from mem-ref
+          (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
+                                  parsed-type)))
+      ;; normal branch
+      (if (aggregatep parsed-type)
+          (if (bare-struct-type-p parsed-type)
+              (inc-pointer ptr offset)
+              (translate-from-foreign (inc-pointer ptr offset) parsed-type))
+          (translate-from-foreign (%mem-ref ptr ctype offset) parsed-type))))
+
+  (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
+    "Compiler macro to open-code MEM-REF when TYPE is constant."
+    (if (constantp type)
+        (let* ((parsed-type (parse-type (eval type)))
+               (ctype (canonicalize parsed-type)))
+          ;; Bail out when using emulated long long types.
           #+cffi-sys::no-long-long
           (when (member ctype '(:long-long :unsigned-long-long))
-            (return-from mem-ref
-              (translate-from-foreign (%emulated-mem-ref-64 ptr ctype offset)
-                                      parsed-type)))
-          ;; normal branch
-    (if (aggregatep parsed-type)
-        (if (bare-struct-type-p parsed-type)
-            (inc-pointer ptr offset)
-            (translate-from-foreign (inc-pointer ptr offset) parsed-type))
-        (translate-from-foreign (%mem-ref ptr ctype offset) parsed-type))))
+            (return-from mem-ref form))
+          (if (aggregatep parsed-type)
+              (if (bare-struct-type-p parsed-type)
+                  `(inc-pointer ,ptr ,offset)
+                  (expand-from-foreign `(inc-pointer ,ptr ,offset) parsed-type))
+              (expand-from-foreign `(%mem-ref ,ptr ,ctype ,offset) parsed-type)))
+        form))
 
-(define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
-  "Compiler macro to open-code MEM-REF when TYPE is constant."
-  (if (constantp type)
-      (let* ((parsed-type (parse-type (eval type)))
-             (ctype (canonicalize parsed-type)))
-        ;; Bail out when using emulated long long types.
-        #+cffi-sys::no-long-long
-        (when (member ctype '(:long-long :unsigned-long-long))
-          (return-from mem-ref form))
-        (if (aggregatep parsed-type)
-            (if (bare-struct-type-p parsed-type)
-                `(inc-pointer ,ptr ,offset)
-                (expand-from-foreign `(inc-pointer ,ptr ,offset) parsed-type))
-            (expand-from-foreign `(%mem-ref ,ptr ,ctype ,offset) parsed-type)))
-      form))
+  (defun mem-set (value ptr type &optional (offset 0))
+    "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
+    (let* ((ptype (parse-type type))
+           (ctype (canonicalize ptype)))
+      #+cffi-sys::no-long-long
+      (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
+        (return-from mem-set
+          (%emulated-mem-set-64 (translate-to-foreign value ptype)
+                                ptr ctype offset)))
+      (if (aggregatep ptype)            ; XXX: backwards incompatible?
+          (translate-into-foreign-memory value ptype (inc-pointer ptr offset))
+          (%mem-set (translate-to-foreign value ptype) ptr ctype offset))))
 
-(defun mem-set (value ptr type &optional (offset 0))
-  "Set the value of TYPE at OFFSET bytes from PTR to VALUE."
-  (let* ((ptype (parse-type type))
-         (ctype (canonicalize ptype)))
-    #+cffi-sys::no-long-long
-    (when (or (eq ctype :long-long) (eq ctype :unsigned-long-long))
-      (return-from mem-set
-        (%emulated-mem-set-64 (translate-to-foreign value ptype)
-                              ptr ctype offset)))
-    (if (aggregatep ptype) ; XXX: backwards incompatible?
-        (translate-into-foreign-memory value ptype (inc-pointer ptr offset))
-        (%mem-set (translate-to-foreign value ptype) ptr ctype offset))))
-
-(define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
-  "SETF expander for MEM-REF that doesn't rebind TYPE.
+  (define-setf-expander mem-ref (ptr type &optional (offset 0) &environment env)
+    "SETF expander for MEM-REF that doesn't rebind TYPE.
 This is necessary for the compiler macro on MEM-SET to be able
 to open-code (SETF MEM-REF) forms."
-  (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr env)
-    (declare (ignore setter newval))
-    ;; if either TYPE or OFFSET are constant, we avoid rebinding them
-    ;; so that the compiler macros on MEM-SET and %MEM-SET work.
-    (with-unique-names (store type-tmp offset-tmp)
-      (values
-       (append (unless (constantp type)   (list type-tmp))
-               (unless (constantp offset) (list offset-tmp))
-               dummies)
-       (append (unless (constantp type)   (list type))
-               (unless (constantp offset) (list offset))
-               vals)
-       (list store)
-       `(progn
-          (mem-set ,store ,getter
-                   ,@(if (constantp type)   (list type)   (list type-tmp))
-                   ,@(if (constantp offset) (list offset) (list offset-tmp)))
-          ,store)
-       `(mem-ref ,getter
-                 ,@(if (constantp type)   (list type)   (list type-tmp))
-                 ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
+    (multiple-value-bind (dummies vals newval setter getter)
+        (get-setf-expansion ptr env)
+      (declare (ignore setter newval))
+      ;; if either TYPE or OFFSET are constant, we avoid rebinding them
+      ;; so that the compiler macros on MEM-SET and %MEM-SET work.
+      (with-unique-names (store type-tmp offset-tmp)
+        (values
+         (append (unless (constantp type)   (list type-tmp))
+                 (unless (constantp offset) (list offset-tmp))
+                 dummies)
+         (append (unless (constantp type)   (list type))
+                 (unless (constantp offset) (list offset))
+                 vals)
+         (list store)
+         `(progn
+           (mem-set ,store ,getter
+            ,@(if (constantp type)   (list type)   (list type-tmp))
+            ,@(if (constantp offset) (list offset) (list offset-tmp)))
+           ,store)
+         `(mem-ref ,getter
+           ,@(if (constantp type)   (list type)   (list type-tmp))
+           ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
 
-(define-compiler-macro mem-set
-    (&whole form value ptr type &optional (offset 0))
-  "Compiler macro to open-code (SETF MEM-REF) when type is constant."
-  (if (constantp type)
-      (let* ((parsed-type (parse-type (eval type)))
-             (ctype (canonicalize parsed-type)))
-        ;; Bail out when using emulated long long types.
-        #+cffi-sys::no-long-long
-        (when (member ctype '(:long-long :unsigned-long-long))
-          (return-from mem-set form))
-        (if (aggregatep parsed-type)    ; XXX: skip for now.
-            form      ; use expand-into-foreign-memory when available.
-            `(%mem-set ,(expand-to-foreign value parsed-type)
-                       ,ptr ,ctype ,offset)))
-      form))
+  (define-compiler-macro mem-set
+      (&whole form value ptr type &optional (offset 0))
+    "Compiler macro to open-code (SETF MEM-REF) when type is constant."
+    (if (constantp type)
+        (let* ((parsed-type (parse-type (eval type)))
+               (ctype (canonicalize parsed-type)))
+          ;; Bail out when using emulated long long types.
+          #+cffi-sys::no-long-long
+          (when (member ctype '(:long-long :unsigned-long-long))
+            (return-from mem-set form))
+          (if (aggregatep parsed-type)  ; XXX: skip for now.
+              form    ; use expand-into-foreign-memory when available.
+              `(%mem-set ,(expand-to-foreign value parsed-type)
+                ,ptr ,ctype ,offset)))
+        form))
 
 ;;;# Dereferencing Foreign Arrays
 
+
 ;;; Maybe this should be named MEM-SVREF? [2007-02-28 LO]
-(defun mem-aref (ptr type &optional (index 0))
-  "Like MEM-REF except for accessing 1d arrays."
-  (mem-ref ptr type (* index (foreign-type-size type))))
+  (defun mem-aref (ptr type &optional (index 0))
+    "Like MEM-REF except for accessing 1d arrays."
+    (mem-ref ptr type (* index (foreign-type-size type))))
 
-(define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
-  "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
-  (if (constantp type)
-      (if (constantp index)
-          `(mem-ref ,ptr ,type
-                    ,(* (eval index) (foreign-type-size (eval type))))
-          `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
-      form))
+  (define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
+    "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
+    (if (constantp type)
+        (if (constantp index)
+            `(mem-ref ,ptr ,type
+              ,(* (eval index) (foreign-type-size (eval type))))
+            `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
+        form))
 
-(define-setf-expander mem-aref (ptr type &optional (index 0) &environment env)
-  "SETF expander for MEM-AREF."
-  (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion ptr env)
-    (declare (ignore setter newval))
-    ;; we avoid rebinding type and index, if possible (and if type is not
-    ;; constant, we don't bother about the index), so that the compiler macros
-    ;; on MEM-SET or %MEM-SET can work.
-    (with-unique-names (store type-tmp index-tmp)
-      (values
-       (append (unless (constantp type)
+  (define-setf-expander mem-aref (ptr type &optional (index 0) &environment env)
+    "SETF expander for MEM-AREF."
+    (multiple-value-bind (dummies vals newval setter getter)
+        (get-setf-expansion ptr env)
+      (declare (ignore setter newval))
+      ;; we avoid rebinding type and index, if possible (and if type is not
+      ;; constant, we don't bother about the index), so that the compiler macros
+      ;; on MEM-SET or %MEM-SET can work.
+      (with-unique-names (store type-tmp index-tmp)
+        (values
+         (append (unless (constantp type)
+                   (list type-tmp))
+                 (unless (and (constantp type) (constantp index))
+                   (list index-tmp))
+                 dummies)
+         (append (unless (constantp type)
+                   (list type))
+                 (unless (and (constantp type) (constantp index))
+                   (list index))
+                 vals)
+         (list store)
+         ;; Here we'll try to calculate the offset from the type and index,
+         ;; or if not possible at least get the type size early.
+         `(progn
+           ,(if (constantp type)
+                (if (constantp index)
+                    `(mem-set ,store ,getter ,type
+                      ,(* (eval index) (foreign-type-size (eval type))))
+                    `(mem-set ,store ,getter ,type
+                      (* ,index-tmp ,(foreign-type-size (eval type)))))
+                `(mem-set ,store ,getter ,type-tmp
+                  (* ,index-tmp (foreign-type-size ,type-tmp))))
+           ,store)
+         `(mem-aref ,getter
+           ,@(if (constantp type)
+                 (list type)
                  (list type-tmp))
-               (unless (and (constantp type) (constantp index))
-                 (list index-tmp))
-               dummies)
-       (append (unless (constantp type)
-                 (list type))
-               (unless (and (constantp type) (constantp index))
-                 (list index))
-               vals)
-       (list store)
-       ;; Here we'll try to calculate the offset from the type and index,
-       ;; or if not possible at least get the type size early.
-       `(progn
-          ,(if (constantp type)
-               (if (constantp index)
-                   `(mem-set ,store ,getter ,type
-                             ,(* (eval index) (foreign-type-size (eval type))))
-                   `(mem-set ,store ,getter ,type
-                             (* ,index-tmp ,(foreign-type-size (eval type)))))
-               `(mem-set ,store ,getter ,type-tmp
-                         (* ,index-tmp (foreign-type-size ,type-tmp))))
-          ,store)
-       `(mem-aref ,getter
-                  ,@(if (constantp type)
-                        (list type)
-                        (list type-tmp))
-                  ,@(if (and (constantp type) (constantp index))
-                        (list index)
-                        (list index-tmp)))))))
+           ,@(if (and (constantp type) (constantp index))
+                 (list index)
+                 (list index-tmp))))))))
 
 (defmethod translate-into-foreign-memory
     (value (type foreign-pointer-type) pointer)
