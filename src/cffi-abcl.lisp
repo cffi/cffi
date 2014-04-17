@@ -498,7 +498,7 @@ Used with jna-4.0.0 or later.")
     ((:char :unsigned-char)
      :int)
     ((:short :unsigned-short)
-     :int)
+     :short)
     (:wchar_t
      :int)
     (:void
@@ -527,7 +527,7 @@ Used with jna-4.0.0 or later.")
          (jinterface-implementation
           (ensure-callback-interface ',return-type ',arg-types)
           "callback"
-          (convert-args-to-lisp-values ,arg-names ,arg-types ,body))))
+          (convert-args-to-lisp-values ,arg-names ,arg-types (lisp-value-to-java ,body ',return-type)))))
 ;;          (lambda (,@arg-names) ,body))))
 
 (jvm::define-class-name +callback-object+ "com.sun.jna.Callback")
