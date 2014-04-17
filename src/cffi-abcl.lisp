@@ -180,13 +180,19 @@
   "Return a pointer pointing to ADDRESS."
   (jnew (private-jconstructor "com.sun.jna.Pointer" "long") address))
 
+(defun %pointer-address (pointer)
+  (private-jfield "com.sun.jna.Pointer" "peer" pointer))
+
 (defun pointer-address (pointer)
   "Return the address pointed to by PTR."
-  (private-jfield "com.sun.jna.Pointer" "peer" pointer))
+  (let ((peer (%pointer-address pointer)))
+    (if (< peer 0)
+        (+ #.(ash 1 64) peer)
+        peer)))
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
-  (= (pointer-address ptr1) (pointer-address ptr2)))
+  (= (%pointer-address ptr1) (%pointer-address ptr2)))
 
 (defun null-pointer ()
   "Construct and return a null pointer."
@@ -195,11 +201,11 @@
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
   (and (pointerp ptr)
-       (zerop (pointer-address ptr))))
+       (zerop (%pointer-address ptr))))
 
 (defun inc-pointer (ptr offset)
   "Return a fresh pointer pointing OFFSET bytes past PTR."
-  (make-pointer (+ (pointer-address ptr) offset)))
+  (make-pointer (+ (%pointer-address ptr) offset)))
 
 ;;;# Allocation
 
@@ -212,7 +218,7 @@
 (defun foreign-free (ptr)
   "Free a PTR allocated by FOREIGN-ALLOC."
   (jcall (private-jmethod "com.sun.jna.Memory" "free")
-         nil (pointer-address ptr)))
+         nil (%pointer-address ptr)))
 
 ;;; TODO: stack allocation.
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
