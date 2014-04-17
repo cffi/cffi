@@ -200,8 +200,7 @@
 
 (defun null-pointer-p (ptr)
   "Return true if PTR is a null pointer."
-  (and (pointerp ptr)
-       (zerop (%pointer-address ptr))))
+  (zerop (%pointer-address ptr)))
 
 (defun inc-pointer (ptr offset)
   "Return a fresh pointer pointing OFFSET bytes past PTR."
