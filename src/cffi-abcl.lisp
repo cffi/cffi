@@ -309,19 +309,23 @@ WITH-POINTER-TO-VECTOR-DATA."
     ((:short :unsigned-short) "getShort")))
 
 (defun lispify-value (value type)
-  (when (and (eq type :pointer) (or (null value) (eq +null+ value)))
+  (when (and (eq type :pointer) (or (null (java:jobject-lisp-value value))
+                                    (eq +null+ (java:jobject-lisp-value value))))
     (return-from lispify-value (null-pointer)))
   (when (or (eq type :long) (eq type :unsigned-long))
-    (setq value (jcall (jmethod "com.sun.jna.NativeLong" "longValue") value)))
+    (setq value (jcall-raw (jmethod "com.sun.jna.NativeLong" "longValue")
+                           (java:jobject-lisp-value value))))
   (let ((bit-size (* 8 (%foreign-type-size type))))
-    (if (and (unsigned-type-p type) (logbitp (1- bit-size) value))
-        (lognot (logxor value (1- (expt 2 bit-size))))
-        value)))
+    (let ((lisp-value (java:jobject-lisp-value value)))
+      (if (and (unsigned-type-p type)
+               (logbitp (1- bit-size) lisp-value))
+          (lognot (logxor lisp-value (1- (expt 2 bit-size))))
+          lisp-value))))
 
 (defun %mem-ref (ptr type &optional (offset 0))
   (lispify-value
-   (jcall (jmethod "com.sun.jna.Pointer" (jna-getter type) "long")
-          ptr offset)
+   (jcall-raw (jmethod "com.sun.jna.Pointer" (jna-getter type) "long")
+              ptr offset)
    type))
 
 (defun jna-setter (type)
@@ -452,8 +456,8 @@ Used with jna-4.0.0 or later.")
                      function jargs)
           (values))
         (lispify-value
-         (jcall (jmethod "com.sun.jna.Function" "invoke"
-                         "java.lang.Class" "[Ljava.lang.Object;")
+         (jcall-raw (jmethod "com.sun.jna.Function" "invoke"
+                             "java.lang.Class" "[Ljava.lang.Object;")
                 function
                 (foreign-type-to-java-class return-type)
                 jargs)
@@ -515,9 +519,7 @@ Used with jna-4.0.0 or later.")
                    for type in arg-types
                    for gensym-arg in gensym-args
                    collecting `(,arg (if (typep ,gensym-arg 'java:java-object)
-                                         (lispify-value (java:jobject-lisp-value ,gensym-arg)
-                                                        ,type)
-                                         #+nil (java:jobject-lisp-value ,gensym-arg)
+                                         (lispify-value ,gensym-arg ,type)
                                          ,gensym-arg)))
          ,@body))))
 
