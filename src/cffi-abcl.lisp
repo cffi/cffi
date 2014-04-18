@@ -211,13 +211,14 @@
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes on the heap and return a pointer."
   (make-pointer
-   (jcall (private-jmethod "com.sun.jna.Memory" "malloc")
-          nil size)))
+   (jcall-raw (private-jmethod "com.sun.jna.Memory" "malloc")
+              nil size)))
 
 (defun foreign-free (ptr)
   "Free a PTR allocated by FOREIGN-ALLOC."
-  (jcall (private-jmethod "com.sun.jna.Memory" "free")
-         nil (%pointer-address ptr)))
+  (jcall-raw (private-jmethod "com.sun.jna.Memory" "free")
+             nil (%pointer-address ptr))
+  nil)
 
 ;;; TODO: stack allocation.
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
