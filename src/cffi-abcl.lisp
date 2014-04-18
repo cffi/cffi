@@ -377,7 +377,7 @@ WITH-POINTER-TO-VECTOR-DATA."
             ;; let's still do it manually just in case.
             (loop for lib being the hash-values of *loaded-libraries*
                   thereis (find-it lib)))
-        (find-it (gethash library *loaded-libraries*)))))
+        (find-it library))))
 
 ;;;# Calling Foreign Functions
 
