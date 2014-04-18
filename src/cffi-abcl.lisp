@@ -426,19 +426,20 @@ Used with jna-4.0.0 or later.")
      (list *jna-string-encoding*))))
 
 (defun lisp-value-to-java (value foreign-type)
-  (if (eq foreign-type :pointer)
-      value
-      (jnew (ecase foreign-type
-              ((:int :unsigned-int) (jconstructor "java.lang.Integer" "int"))
-              ((:long-long :unsigned-long-long)
-                 (jconstructor "java.lang.Long" "long"))
-              ((:long :unsigned-long)
-                 (jconstructor "com.sun.jna.NativeLong" "long"))
-              ((:short :unsigned-short) (jconstructor "java.lang.Short" "short"))
-              ((:char :unsigned-char) (jconstructor "java.lang.Byte" "byte"))
-              (:float (jconstructor "java.lang.Float" "float"))
-              (:double (jconstructor "java.lang.Double" "double")))
-            value)))
+  (case foreign-type
+    (:pointer value)
+    (:void nil)
+    (t (jnew (ecase foreign-type
+               ((:int :unsigned-int) (jconstructor "java.lang.Integer" "int"))
+               ((:long-long :unsigned-long-long)
+                (jconstructor "java.lang.Long" "long"))
+               ((:long :unsigned-long)
+                (jconstructor "com.sun.jna.NativeLong" "long"))
+               ((:short :unsigned-short) (jconstructor "java.lang.Short" "short"))
+               ((:char :unsigned-char) (jconstructor "java.lang.Byte" "byte"))
+               (:float (jconstructor "java.lang.Float" "float"))
+               (:double (jconstructor "java.lang.Double" "double")))
+             value))))
 
 (defun %%foreign-funcall (function args arg-types return-type)
   (let ((jargs (jnew-array "java.lang.Object" (length args))))
