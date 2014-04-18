@@ -497,7 +497,7 @@ Used with jna-4.0.0 or later.")
     (:double
      :double)
     ((:char :unsigned-char)
-     :int)
+     :byte)
     ((:short :unsigned-short)
      :short)
     (:wchar_t
