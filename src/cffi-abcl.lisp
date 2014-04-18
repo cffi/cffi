@@ -119,7 +119,7 @@
 (defun %close-foreign-library (handle)
   "Closes a foreign library."
   #+#:ignore (setf *loaded-libraries* (remove handle *loaded-libraries*))
-  (jcall (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
+  (jcall-raw (jmethod "com.sun.jna.NativeLibrary" "dispose") handle))
 
 ;;;
 
@@ -351,7 +351,7 @@ WITH-POINTER-TO-VECTOR-DATA."
          (val (if (and (unsigned-type-p type) (logbitp (1- bit-size) value))
                   (lognot (logxor value (1- (expt 2 bit-size))))
                   value)))
-    (jcall (jmethod "com.sun.jna.Pointer"
+    (jcall-raw (jmethod "com.sun.jna.Pointer"
                     (jna-setter type) "long" (jna-setter-arg-type type))
            ptr
            offset
@@ -367,7 +367,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (flet ((find-it (library)
            (ignore-errors
             (make-pointer
-             (jcall
+             (jcall-raw
               (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
               library name)))))
     (if (eq library :default)
@@ -384,8 +384,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun find-foreign-function (name library)
   (flet ((find-it (library)
            (ignore-errors
-            (jcall (jmethod "com.sun.jna.NativeLibrary" "getFunction"
-                            "java.lang.String")
+            (jcall-raw (jmethod "com.sun.jna.NativeLibrary" "getFunction"
+                                "java.lang.String")
                    library name))))
     (if (eq library :default)
         (or (find-it
@@ -448,8 +448,8 @@ Used with jna-4.0.0 or later.")
                    (lisp-value-to-java arg type)))
     (if (eq return-type :void)
         (progn
-          (jcall (jmethod "com.sun.jna.Function" "invoke" "[Ljava.lang.Object;")
-                 function jargs)
+          (jcall-raw (jmethod "com.sun.jna.Function" "invoke" "[Ljava.lang.Object;")
+                     function jargs)
           (values))
         (lispify-value
          (jcall (jmethod "com.sun.jna.Function" "invoke"
