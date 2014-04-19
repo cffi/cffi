@@ -43,7 +43,9 @@
 (defun translate-objects (syms args types rettype call-form &optional indirect)
   "Helper function for FOREIGN-FUNCALL and DEFCFUN.  If 'indirect is T, all arguments are represented by foreign pointers, even those that can be represented by CL objects."
   (if (null args)
-      (expand-from-foreign call-form (parse-type rettype))
+      (if rettype
+          (expand-from-foreign call-form (parse-type rettype))
+          call-form)
       (funcall
        (if indirect
            #'expand-to-foreign-dyn-indirect
