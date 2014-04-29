@@ -33,7 +33,7 @@
 ;;;# Shell Execution
 
 #-(or abcl allegro clisp cmu ecl lispworks openmcl sbcl scl)
-(error "%INVOKE is unimplemented for this Lisp.  Patches welcome.")
+(grovel-error "%INVOKE is unimplemented for this Lisp.  Patches welcome.")
 
 ;; FIXME: doesn't do shell quoting
 #+abcl
@@ -115,7 +115,7 @@
   (multiple-value-bind (exit-code output)
       (%invoke command args)
     (unless (zerop exit-code)
-      (error "External process exited with code ~S.~@
-              Command was: ~S~{ ~S~}~@
-              Output was:~%~A"
-             exit-code command args output))))
+      (grovel-error "External process exited with code ~S.~@
+                     Command was: ~S~{ ~S~}~@
+                     Output was:~%~A"
+                    exit-code command args output))))
