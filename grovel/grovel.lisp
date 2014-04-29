@@ -38,6 +38,13 @@
 
 ;;;# Error Conditions
 
+(define-condition grovel-error (simple-error) ())
+
+(defun grovel-error (format-control &rest format-arguments)
+  (error 'grovel-error
+         :format-control format-control
+         :format-arguments format-arguments))
+
 ;;; This warning is signalled when cffi-grovel can't find some macro.
 ;;; Signalled by CONSTANT or CONSTANTENUM.
 (define-condition missing-definition (warning)
@@ -161,7 +168,7 @@ int main(int argc, char**argv) {
 (defgeneric %process-grovel-form (name out arguments)
   (:method (name out arguments)
     (declare (ignore out arguments))
-    (error "Unknown Grovel syntax: ~S" name)))
+    (grovel-error "Unknown Grovel syntax: ~S" name)))
 
 (defun process-grovel-form (out form)
   (%process-grovel-form (form-kind form) out (cdr form)))
@@ -549,7 +556,7 @@ int main(int argc, char**argv) {
                          (null (second c-parse))
                          (symbolp (first c-parse))
                          (eql #\* (char (symbol-name (first c-parse)) 0)))
-              (error "Unable to parse c-string ~s." str))
+              (grovel-error "Unable to parse c-string ~s." str))
             (let ((func-name (symbolicate "%" name '#:-accessor)))
               `(progn
                  (declaim (inline ,func-name))
@@ -557,7 +564,7 @@ int main(int argc, char**argv) {
                                  ,func-name) :pointer)
                  (define-symbol-macro ,name
                      (cffi:mem-ref (,func-name) ',type)))))
-      (t (error "Unable to parse c-string ~s." str)))))
+      (t (grovel-error "Unable to parse c-string ~s." str)))))
 
 (defun foreign-name-to-symbol (s)
   (intern (substitute #\- #\_ (string-upcase s))))
@@ -815,7 +822,7 @@ int main(int argc, char**argv) {
 (defgeneric %process-wrapper-form (name out arguments)
   (:method (name out arguments)
     (declare (ignore out arguments))
-    (error "Unknown Grovel syntax: ~S" name)))
+    (grovel-error "Unknown Grovel syntax: ~S" name)))
 
 ;;; OUT is lexically bound to the output stream within BODY.
 (defmacro define-wrapper-syntax (name lambda-list &body body)

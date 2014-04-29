@@ -30,7 +30,8 @@
    ;; Class name
    #:grovel-file
    #:process-grovel-file
-   ;; Error condition
+   ;; Error conditions
+   #:grovel-error
    #:missing-definition)
   (:export
    ;; Class name
