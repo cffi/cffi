@@ -54,7 +54,7 @@
        (parse-type (car types)))))
 
 (defun parse-args-and-types (args)
-  "Returns 4 values. Types, canonicalized types, args and return type."
+  "Returns 4 values: types, canonicalized types, args and return type."
   (let* ((len (length args))
          (return-type (if (oddp len) (lastcar args) :void)))
     (loop repeat (floor len 2)
@@ -114,23 +114,24 @@
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs)))
           (fsbvp (fn-call-by-value-p ctypes rettype)))
-      (translate-objects
-       syms fargs types rettype
-       (if fsbvp
-           ;; Structures by value call through *foreign-structures-by-value*
-           (funcall *foreign-structures-by-value*
-                    thing
-                    syms
-                    rettype
-                    ctypes
-                    pointerp)
+      (if fsbvp
+          ;; Structures by value call through *foreign-structures-by-value*
+          (funcall *foreign-structures-by-value*
+                   thing
+                   fargs
+                   syms
+                   types
+                   rettype
+                   ctypes
+                   pointerp)
+          (translate-objects
+           syms fargs types rettype
            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
              ;; No structures by value, direct call
              ,thing
              (,@(mapcan #'list ctypes syms)
               ,(canonicalize-foreign-type rettype))
-             ,@(parse-function-options options :pointer pointerp)))
-       fsbvp))))
+             ,@(parse-function-options options :pointer pointerp)))))))
 
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
