@@ -76,33 +76,34 @@
 (defun ffcall-body-libffi
     (function function-arguments symbols types return-type argument-types &optional pointerp (abi :default-abi))
   "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
-  (translate-objects
-   symbols function-arguments types return-type
-   (let ((number-of-arguments (length argument-types)))
-     `(with-foreign-objects
-          ((argvalues :pointer ,number-of-arguments)
-           ,@(unless (eql return-type :void)
-               `((result ',return-type))))
-        (loop :for arg :in (list ,@symbols)
-              :for count :from 0
-              :do (setf (mem-aref argvalues :pointer count) arg))
-        (call
-         (prepare-function ,function ',return-type ',argument-types ',abi)
-         ,(if pointerp
-              function
-              `(foreign-symbol-pointer ,function))
-         ,(if (eql return-type :void) '(null-pointer) 'result)
-         argvalues)
-        ,(if (eql return-type :void)
-             '(values)
-             (if (typep (parse-type return-type) 'translatable-foreign-type)
-                 ;; just return the pointer so that expand-from-foreign
-                 ;; can apply translate-from-foreign
-                 'result
-                 ;; built-in types won't be translated by
-                 ;; expand-from-foreign, we have to do it here
-                 `(mem-aref result ',return-type)))))
-   t))
+  (let ((number-of-arguments (length argument-types)))
+    `(with-foreign-objects
+         ((argvalues :pointer ,number-of-arguments)
+          ,@(unless (eql return-type :void)
+              `((result ',return-type))))
+       ,(translate-objects
+         symbols function-arguments types return-type
+         `(progn
+            (loop :for arg :in (list ,@symbols)
+                  :for count :from 0
+                  :do (setf (mem-aref argvalues :pointer count) arg))
+            (call
+             (prepare-function ,function ',return-type ',argument-types ',abi)
+             ,(if pointerp
+                  function
+                  `(foreign-symbol-pointer ,function))
+             ,(if (eql return-type :void) '(null-pointer) 'result)
+             argvalues)
+            ,(if (eql return-type :void)
+                 '(values)
+                 (if (typep (parse-type return-type) 'translatable-foreign-type)
+                     ;; just return the pointer so that expand-from-foreign
+                     ;; can apply translate-from-foreign
+                     'result
+                     ;; built-in types won't be translated by
+                     ;; expand-from-foreign, we have to do it here
+                     `(mem-aref result ',return-type))))
+         t))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
