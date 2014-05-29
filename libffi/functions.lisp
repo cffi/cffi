@@ -73,6 +73,21 @@
       (remhash foreign-function-name *cif-table*)
       foreign-function-name)))
 
+(defun translate-objects-ret (symbols function-arguments types return-type call-form)
+  (if (eql return-type :void)
+      (progn
+        (translate-objects symbols function-arguments types return-type call-form t)
+        (values))
+      (if (typep (parse-type return-type) 'translatable-foreign-type)
+          ;; just return the pointer so that expand-from-foreign
+          ;; can apply translate-from-foreign
+          (translate-objects symbols function-arguments types return-type call-form t)
+          ;; built-in types won't be translated by
+          ;; expand-from-foreign, we have to do it here
+          `(mem-ref
+            ,(translate-objects symbols function-arguments types return-type call-form t)
+            ,return-type))))
+
 (defun ffcall-body-libffi
     (function function-arguments symbols types return-type argument-types &optional pointerp (abi :default-abi))
   "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
@@ -81,7 +96,7 @@
          ((argvalues :pointer ,number-of-arguments)
           ,@(unless (eql return-type :void)
               `((result ',return-type))))
-       ,(translate-objects
+       ,(translate-objects-ret
          symbols function-arguments types return-type
          `(progn
             (loop :for arg :in (list ,@symbols)
@@ -94,16 +109,7 @@
                   `(foreign-symbol-pointer ,function))
              ,(if (eql return-type :void) '(null-pointer) 'result)
              argvalues)
-            ,(if (eql return-type :void)
-                 '(values)
-                 (if (typep (parse-type return-type) 'translatable-foreign-type)
-                     ;; just return the pointer so that expand-from-foreign
-                     ;; can apply translate-from-foreign
-                     'result
-                     ;; built-in types won't be translated by
-                     ;; expand-from-foreign, we have to do it here
-                     `(mem-aref result ',return-type))))
-         t))))
+            result)))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
