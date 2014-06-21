@@ -164,4 +164,7 @@
    #:defcvar
    #:get-var-pointer
    #:foreign-symbol-pointer
+
+   #:with-errno
+   #:get-errno
    ))

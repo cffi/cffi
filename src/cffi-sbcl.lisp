@@ -299,12 +299,14 @@ WITH-POINTER-TO-VECTOR-DATA."
     (extern-alien ,name (function ,rettype ,@types))
     ,@fargs))
 
-(defmacro %foreign-funcall (name args &key library convention)
+(defmacro %foreign-funcall (name args &key library convention errno)
   "Perform a foreign function call, document it more later."
   (declare (ignore library convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(%%foreign-funcall ,name ,types ,fargs ,rettype)))
+    (if errno `(values (%%foreign-funcall ,name ,types ,fargs ,rettype)
+                       (sb-alien:get-errno))
+        `(%%foreign-funcall ,name ,types ,fargs ,rettype))))
 
 (defmacro %foreign-funcall-pointer (ptr args &key convention)
   "Funcall a pointer to a foreign function."

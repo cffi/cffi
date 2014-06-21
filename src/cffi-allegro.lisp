@@ -287,15 +287,19 @@ WITH-POINTER-TO-VECTOR-DATA."
                  nil ; arg-checking
                  ff::ep-flag-never-release))))
 
-(defmacro %foreign-funcall (name args &key convention library)
+(defmacro %foreign-funcall (name args &key convention library errno)
   (declare (ignore convention library))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
     `(system::ff-funcall
       (load-time-value (excl::determine-foreign-address
                         '(,name :language :c)
-                        #-(version>= 8 1) ff::ep-flag-never-release
-                        #+(version>= 8 1) ff::ep-flag-always-release
+                        ,(logior
+                          #-(version>= 8 1) ff::ep-flag-never-release
+                          #+(version>= 8 1) ff::ep-flag-always-release
+                          (if errno
+                              ff::ep-flag-get-errno
+                              0))
                         nil ; method-index
                         ))
       ;; arg types {'(:c-type lisp-type) argN}*
@@ -318,6 +322,7 @@ WITH-POINTER-TO-VECTOR-DATA."
          ,@(unless (null args) '(:call-direct t))
          :arg-checking nil
          :strings-convert nil
+         :error-value ,(when (getf options :errno) :errno)
          #+(version>= 8 1) ,@'(:release-heap :always)
          #+smp ,@'(:release-heap-implies-allow-gc t))
       `(,ff-name ,@args))))
