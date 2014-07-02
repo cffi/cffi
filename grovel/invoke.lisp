@@ -60,10 +60,32 @@
 ;;; FIXME: there's no way to tell from EXT:RUN-PROGRAM whether the
 ;;; command failed or not.  Using EXT:SYSTEM instead, but we should
 ;;; quote arguments.
-#+ecl
+#+(and ecl (not windows))
 (defun %invoke (command arglist)
   (values (ext:system (format nil "~A~{ ~A~}" command arglist))
           "<see above>"))
+
+#+(and ecl windows)
+(defun %invoke (command arglist)
+  (flet ((split-args (argstr)
+           "Turn a string of args into a list."
+           (let ((args nil)
+                 (from 0)
+                 (to 0))
+             (dotimes (i (length argstr))
+               (when (and (eq (aref argstr i) #\space)
+                          (or (zerop i)
+                              (not (eq (aref argstr (1- i)) #\\))))
+                 (setf to i)
+                 (let ((part (subseq argstr from to)))
+                   (when (< 0 (length part))
+                     (push part args)))
+                 (setf from (1+ to))))
+             (push (subseq argstr (1+ to)) args)
+             (nreverse args))))
+    (values (nth-value 1 (ext:run-program command (split-args (format nil "~{ ~a~}" arglist))
+                                          :wait t :output t :input t :error t))
+            "<see above>")))
 
 #+(or openmcl cmu scl sbcl)
 (defun %invoke (command arglist)

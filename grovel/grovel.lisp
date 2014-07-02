@@ -245,7 +245,8 @@ int main(int argc, char**argv) {
 
 (defparameter *cc*
   #+(or cygwin (not windows)) "cc"
-  #+(and windows (not cygwin)) "c:/msys/1.0/bin/gcc.exe")
+  #+(and windows (not ecl) (not cygwin)) "c:/msys/1.0/bin/gcc.exe"
+  #+(and windows ecl (not cygwin)) c:*cc*)
 
 (defparameter *cc-flags*
   (append
