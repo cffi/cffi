@@ -500,6 +500,15 @@ int main(int argc, char**argv) {
         (c-export out slot-lisp-name)))
     (c-format out "(cffi:defcstruct (")
     (c-print-symbol out struct-lisp-name t)
+    (unless (search "struct" struct-c-name)
+      (restart-case
+          (error 'grovel-error
+                 :format-arguments (list struct-c-name struct-c-name)
+                 :format-control "struct-c-name ~s doesn't seem like a valid structure type designator in C.
+Maybe it should be \"struct ~a\" instead?")
+        (continue ())
+        (append-string ()
+          (setf struct-c-name (concatenate 'string "struct " struct-c-name)))))
     (c-printf out
               (format nil " :size ~A)" *typeof-printer*)
               (format nil "sizeof(~A)" struct-c-name))
