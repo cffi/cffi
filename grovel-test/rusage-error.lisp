@@ -6,10 +6,14 @@
 
 (in-package cffi-grovel-test.rusage)
 
+(cstruct timeval "struct timeval"
+   (sec "tv_sec" :type :long)
+   (usec "tv_usec" :type :long))
+
 ;; error case
 (cstruct rusage "rusage"
-   ;; (utime "ru_utime" :type (:struct timeval))
-   ;; (stime "ru_stime" :type (:struct timeval))
+   (utime "ru_utime" :type (:struct timeval))
+   (stime "ru_stime" :type (:struct timeval))
    (maxrss "ru_maxrss" :type :long)
    (ixrss "ru_ixrss" :type :long)
    (idrss "ru_idrss" :type :long)
