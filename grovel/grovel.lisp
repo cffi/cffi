@@ -391,6 +391,10 @@ int main(int argc, char**argv) {
   (dotimes (i (length c-names))
     (format out "~&#endif~%")))
 
+(defvar *typeof-printer*
+  #+windows "%Iu" ; this ansi-non-compliant ******!
+  #-windows "%zu")
+
 (define-grovel-syntax cunion (union-lisp-name union-c-name &rest slots)
   (let ((documentation (when (stringp (car slots)) (pop slots))))
     (c-section-header out "cunion" union-lisp-name)
@@ -400,7 +404,9 @@ int main(int argc, char**argv) {
         (c-export out slot-lisp-name)))
     (c-format out "(cffi:defcunion (")
     (c-print-symbol out union-lisp-name t)
-    (c-printf out " :size %i)" (format nil "sizeof(~A)" union-c-name))
+    (c-printf out
+              (format nil " :size ~A)" *typeof-printer*)
+              (format nil "sizeof(~A)" union-c-name))
     (when documentation
       (c-format out "~%  ~S" documentation))
     (dolist (slot slots)
@@ -416,7 +422,8 @@ int main(int argc, char**argv) {
            (c-format out " :count ~D" count))
           ((eql :auto)
            ;; nb, works like :count :auto does in cstruct below
-           (c-printf out " :count %i"
+           (c-printf out
+                     (format nil " :count ~A)" *typeof-printer*)
                      (format nil "sizeof(~A)" union-c-name)))
           (null t))
         (c-format out ")")))
@@ -493,7 +500,8 @@ int main(int argc, char**argv) {
         (c-export out slot-lisp-name)))
     (c-format out "(cffi:defcstruct (")
     (c-print-symbol out struct-lisp-name t)
-    (c-printf out " :size %i)"
+    (c-printf out
+              (format nil " :size ~A)" *typeof-printer*)
               (format nil "sizeof(~A)" struct-c-name))
     (when documentation
       (c-format out "~%  ~S" documentation))
