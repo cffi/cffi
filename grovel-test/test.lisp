@@ -52,3 +52,20 @@
              (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
           (delete-file tmp-file))
         (load output-file)))))
+
+(test test3
+  ;; I borrowed a code from osicat
+  (finishes
+    (let* ((input-file (asdf:system-relative-pathname
+                        :cffi-grovel-test
+                        "grovel-test/basic-unixint.lisp"))
+           (output-file (asdf:system-relative-pathname
+                         :cffi-grovel-test
+                         "grovel-test/basic-unixint.grovel.lisp"))
+           (tmp-file (cffi-grovel:process-grovel-file
+                       input-file output-file)))
+      (unwind-protect
+           (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
+        (delete-file tmp-file))
+      (load output-file))))
+
