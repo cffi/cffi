@@ -123,42 +123,46 @@
 
 ;;;
 
-(defun private-jfield (class-name field-name instance)
-  (let ((field (find field-name
-                     (jcall (jmethod "java.lang.Class" "getDeclaredFields")
-                            (jclass class-name))
-                     :key #'jfield-name
-                     :test #'string=)))
-    (jcall (jmethod "java.lang.reflect.Field" "setAccessible" "boolean")
-           field +true+)
-    (jcall (jmethod "java.lang.reflect.Field" "get" "java.lang.Object")
-           field instance)))
+;;; FIXME! We should probably define a private-jfield-accessor that does the hard work once!
+(let ((get-declared-fields-jmethod (jmethod "java.lang.Class" "getDeclaredFields")))
+  (defun private-jfield (class-name field-name instance)
+    (let ((field (find field-name
+                       (jcall get-declared-fields-jmethod
+                              (jclass class-name))
+                       :key #'jfield-name
+                       :test #'string=)))
+      (jcall (jmethod "java.lang.reflect.Field" "setAccessible" "boolean")
+             field +true+)
+      (jcall (jmethod "java.lang.reflect.Field" "get" "java.lang.Object")
+             field instance))))
 
 ;;; XXX: doesn't match jmethod-arguments.
-(defun private-jmethod (class-name method-name)
-  (let ((method (find method-name
-                      (jcall (jmethod "java.lang.Class" "getDeclaredMethods")
-                             (jclass class-name))
-                      :key #'jmethod-name
-                      :test #'string=)))
-    (jcall (jmethod "java.lang.reflect.Method" "setAccessible" "boolean")
-           method +true+)
-    method))
 
-(defun private-jconstructor (class-name &rest params)
-  (let* ((param-classes (mapcar #'jclass params))
-         (cons (find-if (lambda (x &aux (cons-params (jconstructor-params x)))
-                          (and (length= param-classes cons-params)
-                               (loop for param in param-classes
-                                     and param-x across cons-params
-                                     always (string= (jclass-name param)
-                                                     (jclass-name param-x)))))
-                        (jcall (jmethod "java.lang.Class"
-                                        "getDeclaredConstructors")
-                               (jclass class-name)))))
-    (jcall (jmethod "java.lang.reflect.Constructor" "setAccessible" "boolean")
-           cons +true+)
-    cons))
+(let ((get-declared-methods-jmethod (jmethod "java.lang.Class" "getDeclaredMethods")))
+  (defun private-jmethod (class-name method-name)
+    (let ((method (find method-name
+                        (jcall get-declared-methods-jmethod
+                               (jclass class-name))
+                        :key #'jmethod-name
+                        :test #'string=)))
+      (jcall (jmethod "java.lang.reflect.Method" "setAccessible" "boolean")
+             method +true+)
+      method)))
+
+(let ((get-declared-constructors-jmethod (jmethod "java.lang.Class"
+                                                  "getDeclaredConstructors"))
+      (set-accessible-jmethod (jmethod "java.lang.reflect.Constructor" "setAccessible" "boolean")))
+  (defun private-jconstructor (class-name &rest params)
+    (let* ((param-classes (mapcar #'jclass params))
+           (cons (find-if (lambda (x &aux (cons-params (jconstructor-params x)))
+                            (and (length= param-classes cons-params)
+                                 (loop for param in param-classes
+                                    and param-x across cons-params
+                                    always (string= (jclass-name param)
+                                                    (jclass-name param-x)))))
+                          (jcall get-declared-constructors-jmethod (jclass class-name)))))
+      (jcall set-accessible-jmethod cons +true+)
+      cons)))
 
 ;;;# Symbol Case
 
@@ -176,12 +180,26 @@
     (when jclass
       (jclass-superclass-p (jclass "com.sun.jna.Pointer") jclass))))
 
-(defun make-pointer (address)
-  "Return a pointer pointing to ADDRESS."
-  (jnew (private-jconstructor "com.sun.jna.Pointer" "long") address))
+(let ((jconstructor (private-jconstructor "com.sun.jna.Pointer" "long")))
+  (defun make-pointer (address)
+    "Return a pointer pointing to ADDRESS."
+    (jnew jconstructor address)))
 
-(defun %pointer-address (pointer)
-  (private-jfield "com.sun.jna.Pointer" "peer" pointer))
+(defun make-private-jfield-accessor (class-name field-name)
+  (let ((field (find field-name
+                     (jcall (jmethod "java.lang.Class" "getDeclaredFields")
+                            (jclass class-name))
+                     :key #'jfield-name
+                     :test #'string=)))
+    (jcall (jmethod "java.lang.reflect.Field" "setAccessible" "boolean")
+           field +true+)
+    (let ((get-jmethod (jmethod "java.lang.reflect.Field" "get" "java.lang.Object")))
+      (lambda (instance)
+        (jcall get-jmethod field instance)))))
+
+(let ((accessor (make-private-jfield-accessor "com.sun.jna.Pointer" "peer")))
+  (defun %pointer-address (pointer)
+    (funcall accessor pointer)))
 
 (defun pointer-address (pointer)
   "Return the address pointed to by PTR."
@@ -208,17 +226,17 @@
 
 ;;;# Allocation
 
-(defun %foreign-alloc (size)
-  "Allocate SIZE bytes on the heap and return a pointer."
-  (make-pointer
-   (jcall-raw (private-jmethod "com.sun.jna.Memory" "malloc")
-              nil size)))
+(let ((malloc-jmethod (private-jmethod "com.sun.jna.Memory" "malloc")))
+  (defun %foreign-alloc (size)
+    "Allocate SIZE bytes on the heap and return a pointer."
+    (make-pointer
+     (jcall-raw malloc-jmethod nil size))))
 
-(defun foreign-free (ptr)
-  "Free a PTR allocated by FOREIGN-ALLOC."
-  (jcall-raw (private-jmethod "com.sun.jna.Memory" "free")
-             nil (%pointer-address ptr))
-  nil)
+(let ((free-jmethod (private-jmethod "com.sun.jna.Memory" "free")))
+  (defun foreign-free (ptr)
+    "Free a PTR allocated by FOREIGN-ALLOC."
+    (jcall-raw free-jmethod nil (%pointer-address ptr))
+    nil))
 
 ;;; TODO: stack allocation.
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
@@ -245,15 +263,23 @@ supplied, it will be bound to SIZE during BODY."
 WITH-POINTER-TO-VECTOR-DATA."
   (make-array size :element-type '(unsigned-byte 8)))
 
-(defun copy-to-foreign-vector (vector foreign-pointer)
-  (loop for i below (length vector)
-        do (%mem-set (aref vector i) foreign-pointer :char
-                     i)))
 
-(defun copy-from-foreign-vector (vector foreign-pointer)
-  (loop for i below (length vector)
-        do (setf (aref vector i)
-                 (%mem-ref foreign-pointer :char i))))
+(let ((method (jmethod "com.sun.jna.Pointer"
+                       (jna-setter :char) "long" (jna-setter-arg-type :char))))
+  (defun copy-to-foreign-vector (vector foreign-pointer)
+    (loop for i below (length vector)
+       do
+         (jcall-raw method
+                    foreign-pointer i
+                    (aref vector i)))))
+
+;; hand-roll the jna-getter method instead of calling %mem-ref every time through
+(let ((method (jmethod "com.sun.jna.Pointer" (jna-getter :char) "long")))
+  (defun copy-from-foreign-vector (vector foreign-pointer)
+    (loop for i below (length vector)
+       do (setf (aref vector i)
+                (lispify-value (jcall-raw method foreign-pointer i)
+                               :char)))))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
@@ -366,23 +392,21 @@ WITH-POINTER-TO-VECTOR-DATA."
   value)
 
 ;;;# Foreign Globals
-
-(defun %foreign-symbol-pointer (name library)
-  "Returns a pointer to a foreign symbol NAME."
-  (flet ((find-it (library)
-           (ignore-errors
-            (make-pointer
-             (jcall-raw
-              (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")
-              library name)))))
-    (if (eq library :default)
-        (or (find-it
-             (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
-            ;; The above should find it, but I'm not exactly sure, so
-            ;; let's still do it manually just in case.
-            (loop for lib being the hash-values of *loaded-libraries*
-                  thereis (find-it lib)))
-        (find-it library))))
+(let ((get-symbol-address-jmethod (private-jmethod "com.sun.jna.NativeLibrary" "getSymbolAddress")))
+  (defun %foreign-symbol-pointer (name library)
+    "Returns a pointer to a foreign symbol NAME."
+    (flet ((find-it (library)
+             (ignore-errors
+               (make-pointer
+                (jcall-raw get-symbol-address-jmethod library name)))))
+      (if (eq library :default)
+          (or (find-it
+               (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
+              ;; The above should find it, but I'm not exactly sure, so
+              ;; let's still do it manually just in case.
+              (loop for lib being the hash-values of *loaded-libraries*
+                 thereis (find-it lib)))
+          (find-it library)))))
 
 ;;;# Calling Foreign Functions
 
@@ -416,19 +440,18 @@ Used with jna-4.0.0 or later.")
   (ignore-errors (private-jconstructor "com.sun.jna.Function"
                                        "com.sun.jna.Pointer" "int" "java.lang.String")))
 
-(defun make-function-pointer (pointer convention)
-  (apply
-   #'jnew
-   (if *jna-4.0.0-or-later-p*
-       (private-jconstructor "com.sun.jna.Function"
-                             "com.sun.jna.Pointer" "int" "java.lang.String")
-       (private-jconstructor "com.sun.jna.Function"
-                             "com.sun.jna.Pointer" "int"))
-   pointer
-   (jfield "com.sun.jna.Function"
-           (convert-calling-convention convention))
-   (when *jna-4.0.0-or-later-p*
-     (list *jna-string-encoding*))))
+(let ((jconstructor
+       (if *jna-4.0.0-or-later-p*
+           (private-jconstructor "com.sun.jna.Function"
+                                 "com.sun.jna.Pointer" "int" "java.lang.String")
+           (private-jconstructor "com.sun.jna.Function"
+                                 "com.sun.jna.Pointer" "int"))))
+  (defun make-function-pointer (pointer convention)
+    (apply
+     #'jnew jconstructor pointer
+     (jfield "com.sun.jna.Function" (convert-calling-convention convention))
+     (when *jna-4.0.0-or-later-p*
+       (list *jna-string-encoding*)))))
 
 (defun lisp-value-to-java (value foreign-type)
   (case foreign-type
