@@ -278,8 +278,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (defun copy-from-foreign-vector (vector foreign-pointer)
     (loop for i below (length vector)
        do (setf (aref vector i)
-                (lispify-value (jcall-raw method foreign-pointer i)
-                               :char)))))
+                (java:jobject-lisp-value (jcall-raw method foreign-pointer i))))))
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
