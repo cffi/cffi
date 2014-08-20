@@ -258,11 +258,43 @@ supplied, it will be bound to SIZE during BODY."
 ;;; should be defined to perform a copy-in/copy-out if the Lisp
 ;;; implementation can't do this.
 
+(defun jna-setter (type)
+  (ecase type
+    ((:char :unsigned-char) "setByte")
+    (:double "setDouble")
+    (:float "setFloat")
+    ((:int :unsigned-int) "setInt")
+    ((:long :unsigned-long) "setNativeLong")
+    ((:long-long :unsigned-long-long) "setLong")
+    (:pointer "setPointer")
+    ((:short :unsigned-short) "setShort")))
+
+(defun jna-setter-arg-type (type)
+  (ecase type
+    ((:char :unsigned-char) "byte")
+    (:double "double")
+    (:float "float")
+    ((:int :unsigned-int) "int")
+    ((:long :unsigned-long) "com.sun.jna.NativeLong")
+    ((:long-long :unsigned-long-long) "long")
+    (:pointer "com.sun.jna.Pointer")
+    ((:short :unsigned-short) "short")))
+
+(defun jna-getter (type)
+  (ecase type
+    ((:char :unsigned-char) "getByte")
+    (:double "getDouble")
+    (:float "getFloat")
+    ((:int :unsigned-int) "getInt")
+    ((:long :unsigned-long) "getNativeLong")
+    ((:long-long :unsigned-long-long) "getLong")
+    (:pointer "getPointer")
+    ((:short :unsigned-short) "getShort")))
+
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes can passed to
 WITH-POINTER-TO-VECTOR-DATA."
   (make-array size :element-type '(unsigned-byte 8)))
-
 
 (let ((method (jmethod "com.sun.jna.Pointer"
                        (jna-setter :char) "long" (jna-setter-arg-type :char))))
@@ -323,17 +355,6 @@ WITH-POINTER-TO-VECTOR-DATA."
       :unsigned-long-long) t)
     (t nil)))
 
-(defun jna-getter (type)
-  (ecase type
-    ((:char :unsigned-char) "getByte")
-    (:double "getDouble")
-    (:float "getFloat")
-    ((:int :unsigned-int) "getInt")
-    ((:long :unsigned-long) "getNativeLong")
-    ((:long-long :unsigned-long-long) "getLong")
-    (:pointer "getPointer")
-    ((:short :unsigned-short) "getShort")))
-
 (defun lispify-value (value type)
   (when (and (eq type :pointer) (or (null (java:jobject-lisp-value value))
                                     (eq +null+ (java:jobject-lisp-value value))))
@@ -353,28 +374,6 @@ WITH-POINTER-TO-VECTOR-DATA."
    (jcall-raw (jmethod "com.sun.jna.Pointer" (jna-getter type) "long")
               ptr offset)
    type))
-
-(defun jna-setter (type)
-  (ecase type
-    ((:char :unsigned-char) "setByte")
-    (:double "setDouble")
-    (:float "setFloat")
-    ((:int :unsigned-int) "setInt")
-    ((:long :unsigned-long) "setNativeLong")
-    ((:long-long :unsigned-long-long) "setLong")
-    (:pointer "setPointer")
-    ((:short :unsigned-short) "setShort")))
-
-(defun jna-setter-arg-type (type)
-  (ecase type
-    ((:char :unsigned-char) "byte")
-    (:double "double")
-    (:float "float")
-    ((:int :unsigned-int) "int")
-    ((:long :unsigned-long) "com.sun.jna.NativeLong")
-    ((:long-long :unsigned-long-long) "long")
-    (:pointer "com.sun.jna.Pointer")
-    ((:short :unsigned-short) "short")))
 
 (defun %mem-set (value ptr type &optional (offset 0))
   (let* ((bit-size (* 8 (%foreign-type-size type)))
