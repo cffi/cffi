@@ -75,6 +75,15 @@ int sumpair (struct struct_pair sp)
 }
 
 DLLEXPORT
+struct struct_pair makepair ()
+{
+  struct struct_pair ret;
+  ret.a = -127;
+  ret.b = 42;
+  return ret;
+}
+
+DLLEXPORT
 struct struct_pair doublepair (struct struct_pair dp)
 {
   struct struct_pair ret;
