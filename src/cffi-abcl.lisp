@@ -33,9 +33,9 @@
 ;;; abcl-1.1.0-dev via the contrib mechanism.
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (require 'abcl-contrib)
-  (require 'jna)
-  (require 'jss))
+  (require :abcl-contrib)
+  (require :jna)
+  (require :jss))
 
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
