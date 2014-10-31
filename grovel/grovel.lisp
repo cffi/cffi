@@ -34,7 +34,7 @@
 
 (defun trim-whitespace (strings)
   (loop for s in strings
-        collect (string-trim '(#\Space #\Tab) s)))
+        collect (string-trim '(#\Space #\Tab #\Newline) s)))
 
 ;;;# Error Conditions
 
@@ -332,6 +332,13 @@ int main(int argc, char**argv) {
 
 (define-grovel-syntax cc-flags (&rest flags)
   (appendf *cc-flags* (trim-whitespace flags)))
+
+(define-grovel-syntax pkg-flags (&rest pkgs)
+  (appendf *cc-flags*
+    (trim-whitespace (mapcar #'(lambda (p)
+                                 (asdf/run-program:run-program
+                                  `("pkg-config" ,p "--cflags") :output :string))
+                             (trim-whitespace pkgs)))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
