@@ -65,24 +65,42 @@
   (values (ext:system (format nil "~A~{ ~A~}" command arglist))
           "<see above>"))
 
-#+(or openmcl cmu scl sbcl)
+(defun process-output (process-stream)
+  (with-open-stream (process-stream process-stream)
+    (with-output-to-string (str)
+      (loop for char = (read-char process-stream nil)
+            while char
+            do (write-char char str)))))
+
+#+(or cmu scl)
+(defun %invoke (command arglist)
+  (let* ((process (ext:run-program command arglist
+                                   :output :stream
+                                   :wait nil
+                                   :error :output))
+         (output (process-output (ext:process-output process))))
+    (ext:process-wait process)
+    (values (ext:process-exit-code process) output)))
+
+#+sbcl
+(defun %invoke (command arglist)
+  (let* ((process (sb-ext:run-program command arglist
+                                      :output :stream
+                                      :wait nil
+                                      :error :output
+                                      :search t))
+         (output (process-output (sb-ext:process-output process))))
+    (sb-ext:process-wait process)
+    (values (sb-ext:process-exit-code process) output)))
+
+#+openmcl
 (defun %invoke (command arglist)
   (let* ((exit-code)
-         (output
-          (with-output-to-string (s)
-            (let ((process (#+openmcl ccl:run-program
-                            #+(or cmu scl) ext:run-program
-                            #+sbcl sb-ext:run-program
-                            command arglist #-win32 :output #-win32 s
-                            :error :output
-                            #+sbcl :search #+sbcl t)))
-              #+win32
-              (write-line "note: SBCL on windows can't redirect output.")
-              (setq exit-code
-                    #+openmcl (nth-value
-                               1 (ccl:external-process-status process))
-                    #+sbcl (sb-ext:process-exit-code process)
-                    #+(or cmu scl) (ext:process-exit-code process))))))
+         (output (with-output-to-string (s)
+                   (let ((process (ccl:run-program command arglist
+                                                   :output s
+                                                   :error :output)))
+                     (setq exit-code (nth-value 1 (ccl:external-process-status process)))))))
     (values exit-code output)))
 
 #+allegro
