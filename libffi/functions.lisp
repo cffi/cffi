@@ -75,9 +75,7 @@
 
 (defun translate-objects-ret (symbols function-arguments types return-type call-form)
   (if (eql return-type :void)
-      (progn
-        (translate-objects symbols function-arguments types return-type call-form t)
-        (values))
+      (translate-objects symbols function-arguments types return-type call-form t)
       (if (typep (parse-type return-type) 'translatable-foreign-type)
           ;; just return the pointer so that expand-from-foreign
           ;; can apply translate-from-foreign
@@ -109,7 +107,7 @@
                   `(foreign-symbol-pointer ,function))
              ,(if (eql return-type :void) '(null-pointer) 'result)
              argvalues)
-            result)))))
+            ,(if (eql return-type :void) '(values) 'result))))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
