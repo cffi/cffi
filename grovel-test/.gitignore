@@ -1,0 +1,5 @@
+*.c
+*.preprocessed
+*~
+*.grovel.lisp
+*.grovel
