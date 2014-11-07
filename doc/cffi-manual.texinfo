@@ -6489,6 +6489,17 @@ Adds @var{cc-flags} to the command line arguments used for the C compiler
 invocation.
 @end deffn
 
+@deffn {Grovel Form} pkg-flags &rest pkgs
+
+Adds @var{pkgs} to the command line arguments for the external program
+pkg-config and runs it to retrieve the relevant include flags used for the
+C compiler invocation. This syntax can be used instead of hard-coding
+paths using @code{cc-flags}, and ensures that include flags are added
+correctly on the build system. Assumes pkg-config is installed and working.
+@var{pkgs} are strings that identify installed pkg-config packages. See
+the pkg-config manual for more information.
+@end deffn
+
 @deffn {Grovel Form} cstruct lisp-name c-name slots
 
 Define a @cffi{} foreign struct with the slot data specfied.  Slots
