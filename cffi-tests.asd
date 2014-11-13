@@ -57,7 +57,7 @@
 
 (defsystem cffi-tests
   :description "Unit tests for CFFI."
-  :depends-on (cffi-libffi bordeaux-threads #-ecl rt)
+  :depends-on (cffi-grovel cffi-libffi bordeaux-threads #-ecl rt)
   :components
   ((:module "tests"
     :serial t
@@ -76,7 +76,8 @@
      (:file "union")
      (:file "enum")
      (:file "misc-types")
-     (:file "misc")))))
+     (:file "misc")
+     (:file "grovel")))))
 
 (defmethod operation-done-p ((o test-op) (c (eql (find-system :cffi-tests))))
   nil)
