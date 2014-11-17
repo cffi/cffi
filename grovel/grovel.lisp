@@ -336,10 +336,9 @@ int main(int argc, char**argv) {
 
 (define-grovel-syntax pkg-flags (&rest pkgs)
   (appendf *cc-flags*
-    (trim-whitespace (mapcar #'(lambda (p)
-                                 (asdf/run-program:run-program
-                                  `("pkg-config" ,p "--cflags") :output :string))
-                             (trim-whitespace pkgs)))))
+           (trim-whitespace (mapcar #'(lambda (p)
+                                        (invoke "pkg-config" p "--cflags"))
+                                    (trim-whitespace pkgs)))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
