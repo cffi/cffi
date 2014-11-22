@@ -136,4 +136,5 @@
       (grovel-error "External process exited with code ~S.~@
                      Command was: ~S~{ ~S~}~@
                      Output was:~%~A"
-                    exit-code command args output))))
+                    exit-code command args output))
+    output))
