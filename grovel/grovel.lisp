@@ -335,10 +335,14 @@ int main(int argc, char**argv) {
   (appendf *cc-flags* (trim-whitespace flags)))
 
 (define-grovel-syntax pkg-flags (&rest pkgs)
-  (appendf *cc-flags*
-           (trim-whitespace (mapcar #'(lambda (p)
-                                        (invoke "pkg-config" p "--cflags"))
-                                    (trim-whitespace pkgs)))))
+  (handler-case
+      (appendf *cc-flags*
+               (trim-whitespace (mapcar #'(lambda (p)
+                                            (invoke "pkg-config" p "--cflags"))
+                                        (trim-whitespace pkgs))))
+    (error (e)
+      (format *debug-io* "~&ERROR: ~a" e)
+      (format *debug-io* "~&Attempting to continue anyway.~%"))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
