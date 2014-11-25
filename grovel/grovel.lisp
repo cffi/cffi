@@ -223,9 +223,17 @@ int main(int argc, char**argv) {
 
 (defparameter *exe-extension* #-windows nil #+windows "exe")
 
+(defun change-pathname-type (path type)
+  (let* ((name (pathname-name path))
+         (dot (position #\. name :from-end t)))
+    (if (or type (not dot))
+        (make-pathname :type type :defaults path)
+        (make-pathname :name (subseq name 0 dot)
+                       :type (subseq name (1+ dot))
+                       :defaults path))))
+
 (defun exe-filename (defaults)
-  (let ((path (make-pathname :type *exe-extension*
-                             :defaults defaults)))
+  (let ((path (change-pathname-type defaults *exe-extension*)))
     ;; It's necessary to prepend "./" to relative paths because some
     ;; implementations of INVOKE use a shell.
     (when (or (not (pathname-directory path))
