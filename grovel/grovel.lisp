@@ -625,7 +625,9 @@ int main(int argc, char**argv) {
            (c-format out "  (")
            (c-print-symbol out lisp-name)
            (c-format out " ")
-           (c-printf out "%i" c-name)
+           (format out "~&  fprintf(output, ~A, ~A);~%"
+                   (foreign-type-to-printf-specification (or base-type :int))
+                   c-name)
            (c-format out ")~%"))))
     (c-format out ")~%")
     (when define-constants
@@ -653,7 +655,9 @@ int main(int argc, char**argv) {
              (check-type c-name string)
              (format out "~&#ifdef ~A~%" c-name)
              (c-format out " ")
-             (c-printf out "%i" c-name)
+             (format out "~&  fprintf(output, ~A, ~A);~%"
+                     (foreign-type-to-printf-specification (or base-type :int))
+                     c-name)
              (format out "~&#else~%"))
         (unless optional
           (c-format out
