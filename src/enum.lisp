@@ -227,7 +227,7 @@ the bitfield TYPE."
       (let ((type-obj (parse-type (eval type))))
         (if (not (typep type-obj 'foreign-bitfield))
             (error "~S is not a foreign bitfield type." type)
-            (%foreign-bitfield-symbols type-obj (eval value))))
+            `(quote ,(%foreign-bitfield-symbols type-obj (eval value)))))
       form))
 
 (defmethod translate-to-foreign (value (type foreign-bitfield))
