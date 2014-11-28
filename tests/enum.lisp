@@ -113,3 +113,18 @@
 (deftest bitfield.4
     (foreign-bitfield-value 'bf4 '(one))
   1)
+
+(deftest bitfield.4b
+    (values (foreign-bitfield-symbols 'bf4 0)
+            (foreign-bitfield-symbols 'bf4 1))
+  (zero)
+  (zero one))
+
+(deftest bitfield.translators
+    (with-foreign-object (bf 'bf4 2)
+      (setf (mem-aref bf 'bf4 0) 0)
+      (setf (mem-aref bf 'bf4 1) 1)
+      (values (mem-aref bf 'bf4 0)
+              (mem-aref bf 'bf4 1)))
+  (zero)
+  (zero one))
