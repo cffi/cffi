@@ -38,8 +38,7 @@
 #+openbsd
 (cc-flags "-I/usr/local/include")
 
-#+linux
-(pkg-flags "libffi")
+(pkg-config-cflags "libffi" :optional t)
 
 #+darwin
 (include "ffi/ffi.h")
