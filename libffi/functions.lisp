@@ -84,7 +84,7 @@
           ;; expand-from-foreign, we have to do it here
           `(mem-ref
             ,(translate-objects symbols function-arguments types return-type call-form t)
-            ,return-type))))
+            ,(canonicalize-foreign-type return-type)))))
 
 (defun ffcall-body-libffi
     (function function-arguments symbols types return-type argument-types &optional pointerp (abi :default-abi))
