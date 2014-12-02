@@ -110,6 +110,15 @@ int main(int argc, char**argv) {
           (item arg))
     (format out ");~%")))
 
+(defun c-print-integer-constant (out arg &optional foreign-type)
+  (let ((foreign-type (or foreign-type :int)))
+    (c-format out "#.(cffi-grovel::convert-intmax-constant ")
+    (format out "~&  fprintf(output, \"%\"PRIiMAX, (intmax_t)~A);~%"
+            arg)
+    (c-format out " ")
+    (c-write out `(quote ,foreign-type))
+    (c-format out ")")))
+
 ;;; TODO: handle packages in a better way. One way is to process each
 ;;; grovel form as it is read (like we already do for wrapper
 ;;; forms). This way in can expect *PACKAGE* to have sane values.
@@ -625,9 +634,7 @@ int main(int argc, char**argv) {
            (c-format out "  (")
            (c-print-symbol out lisp-name)
            (c-format out " ")
-           (format out "~&  fprintf(output, ~A, ~A);~%"
-                   (foreign-type-to-printf-specification (or base-type :int))
-                   c-name)
+           (c-print-integer-constant out c-name base-type)
            (c-format out ")~%"))))
     (c-format out ")~%")
     (when define-constants
@@ -655,9 +662,7 @@ int main(int argc, char**argv) {
              (check-type c-name string)
              (format out "~&#ifdef ~A~%" c-name)
              (c-format out " ")
-             (format out "~&  fprintf(output, ~A, ~A);~%"
-                     (foreign-type-to-printf-specification (or base-type :int))
-                     c-name)
+             (c-print-integer-constant out c-name base-type)
              (format out "~&#else~%"))
         (unless optional
           (c-format out
@@ -680,6 +685,38 @@ int main(int argc, char**argv) {
        'constant out
        `((,(intern (string lisp-name)) ,(car c-names))
          ,@options)))))
+
+(defun convert-intmax-constant (constant base-type)
+  "Convert the C CONSTANT to an integer of BASE-TYPE. The constant is
+assumed to be an integer printed using the PRIiMAX printf(3) format
+string."
+  ;; | C Constant |  Type   | Return Value | Notes                                                                    |
+  ;; |------------+---------+--------------+--------------------------------------------------------------------------|
+  ;; |         -1 |  :int32 |           -1 |                                                                          |
+  ;; | 0xffffffff |  :int32 |           -1 | CONSTANT may be a positive integer if sizeof(intmax_t) > sizeof(int32_t) |
+  ;; | 0xffffffff | :uint32 |   4294967295 |                                                                          |
+  ;; |         -1 | :uint32 |   4294967295 |                                                                          |
+  ;; |------------+---------+--------------+--------------------------------------------------------------------------|
+  (let* ((type-bits (* 8 (cffi:foreign-type-size base-type)))
+         (2^N (ash 1 type-bits)))
+    (etypecase base-type
+      ((member :unsigned-char :uchar
+               :unsigned-short :ushort
+               :unsigned-int :uint
+               :unsigned-long :ulong
+               :unsigned-long-long :ullong
+               :uint8 :uint16 :uint32 :uint64)
+       (mod constant 2^N))
+      ((member :char :short :int :long :long-long :llong :int8 :int16 :int32 :int64)
+       (let* ((v (mod constant 2^N)))
+         (if (logbitp (1- type-bits) v)
+             (- (mask-field (byte (1- type-bits) 0) v)
+                (ash 1 (1- type-bits)))
+             v)))
+      (keyword
+       (error "Unsupported builtin type."))
+      (t
+       (convert-intmax-constant constant (cffi::canonicalize-foreign-type base-type))))))
 
 (defun foreign-type-to-printf-specification (type)
   "Return the printf specification associated with the foreign type TYPE."
