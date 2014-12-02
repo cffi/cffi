@@ -32,34 +32,48 @@
   0 "test
 ")
 
-(defun bug-1395242-helper (enum-type base-type)
+(defun bug-1395242-helper (enum-type base-type constant-name)
   (check-type enum-type (member constantenum cenum))
-  (check-type base-type (member :int :unsigned-int))
-  (uiop/stream:with-temporary-file (:stream grovel-stream :pathname grovel-file)
-    ;; Write the grovel file
-    (with-open-stream (*standard-output* grovel-stream)
-      (write `(,enum-type (bug-1395242-enum :base-type ,base-type)
-                          ((:max-uint32 "UINT_LEAST32_MAX")))))
-    ;; Get the value of :inaddr-broadcast
-    (let ((lisp-file (cffi-grovel:process-grovel-file grovel-file)))
-      (unwind-protect
-           (progn
-             (load lisp-file)
-             (cffi:foreign-enum-value 'bug-1395242-enum :max-uint32))
-        (uiop/filesystem:delete-file-if-exists lisp-file)))))
+  (check-type base-type string)
+  (check-type constant-name string)
+  (let ((enum-name (intern (symbol-name (gensym))))
+        (base-type-name (intern (symbol-name (gensym)))))
+    (uiop/stream:with-temporary-file (:stream grovel-stream :pathname grovel-file)
+      ;; Write the grovel file-
+      (with-open-stream (*standard-output* grovel-stream)
+        (write `(ctype ,base-type-name ,base-type))
+        (write `(,enum-type (,enum-name :base-type ,base-type-name)
+                            ((:value ,constant-name)))))
+      ;; Get the value of :inaddr-broadcast
+      (let ((lisp-file (cffi-grovel:process-grovel-file grovel-file)))
+        (unwind-protect
+             (progn
+               (load lisp-file)
+               (cffi:foreign-enum-value enum-name :value))
+          (uiop/filesystem:delete-file-if-exists lisp-file))))))
 
-(deftest bug-1395242.constantenum.int
-    (bug-1395242-helper 'constantenum :int)
-  -1)
-
-(deftest bug-1395242.constantenum.unsigned-int
-    (bug-1395242-helper 'constantenum :unsigned-int)
-  4294967295)
-
-(deftest bug-1395242.cenum.int
-    (bug-1395242-helper 'cenum :int)
-  -1)
-
-(deftest bug-1395242.cenum.unsigned-int
-    (bug-1395242-helper 'cenum :unsigned-int)
-  4294967295)
+(deftest bug-1395242
+    (labels ((process-expression (expression)
+               (loop
+                  :for enum-type :in '(constantenum cenum)
+                  :always
+                  (destructuring-bind (base-type &rest evaluations) expression
+                    (loop
+                       :for (name expected-value) :in evaluations
+                       :for actual-value := (bug-1395242-helper enum-type base-type name)
+                       :always
+                       (cond ((= expected-value actual-value)
+                              t)
+                             (t
+                              (format *error-output*
+                                      "Test failed for case: ~A, ~A, ~A (expected ~A, actual ~A)~%"
+                                      enum-type base-type name expected-value actual-value)
+                              nil)))))))
+      (every #'process-expression
+             '(("uint8_t" ("UINT8_MAX" 255) ("INT8_MAX" 127) ("INT8_MIN" 128))
+               ("int8_t" ("INT8_MIN" -128) ("INT8_MAX" 127) ("UINT8_MAX" -1))
+               ("uint16_t" ("UINT16_MAX" 65535) ("INT8_MIN" 65408))
+               ("int16_t" ("INT16_MIN" -32768) ("INT16_MAX" 32767) ("UINT16_MAX" -1))
+               ("uint32_t" ("UINT32_MAX" 4294967295) ("INT8_MIN" 4294967168))
+               ("int32_t" ("INT32_MIN" -2147483648) ("INT32_MAX" 2147483647)))))
+  T)
