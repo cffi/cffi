@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cffi/cffi.svg)](https://travis-ci.org/luismbo/cffi)
+[![Build Status](https://travis-ci.org/cffi/cffi.svg?branch=master)](https://travis-ci.org/cffi/cffi)
 
 CFFI, the Common Foreign Function Interface, purports to be a portable
 foreign function interface for Common Lisp. The CFFI library is
