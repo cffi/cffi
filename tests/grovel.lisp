@@ -38,8 +38,8 @@
   (check-type constant-name string)
   (let ((enum-name (intern (symbol-name (gensym))))
         (base-type-name (intern (symbol-name (gensym)))))
-    (uiop/stream:with-temporary-file (:stream grovel-stream :pathname grovel-file)
-      ;; Write the grovel file-
+    (uiop:with-temporary-file (:stream grovel-stream :pathname grovel-file)
+      ;; Write the grovel file
       (with-open-stream (*standard-output* grovel-stream)
         (write `(ctype ,base-type-name ,base-type))
         (write `(,enum-type (,enum-name :base-type ,base-type-name)
@@ -53,22 +53,18 @@
           (uiop/filesystem:delete-file-if-exists lisp-file))))))
 
 (deftest bug-1395242
-    (labels ((process-expression (expression)
-               (loop
-                  :for enum-type :in '(constantenum cenum)
-                  :always
-                  (destructuring-bind (base-type &rest evaluations) expression
-                    (loop
-                       :for (name expected-value) :in evaluations
-                       :for actual-value := (bug-1395242-helper enum-type base-type name)
-                       :always
-                       (cond ((= expected-value actual-value)
-                              t)
-                             (t
-                              (format *error-output*
-                                      "Test failed for case: ~A, ~A, ~A (expected ~A, actual ~A)~%"
-                                      enum-type base-type name expected-value actual-value)
-                              nil)))))))
+    (labels
+        ((process-expression (expression)
+           (loop for enum-type in '(constantenum cenum)
+                 always (destructuring-bind (base-type &rest evaluations) expression
+                          (loop for (name expected-value) in evaluations
+                                for actual-value = (bug-1395242-helper enum-type base-type name)
+                                always (or (= expected-value actual-value)
+                                           (progn
+                                             (format *error-output*
+                                                     "Test failed for case: ~A, ~A, ~A (expected ~A, actual ~A)~%"
+                                                     enum-type base-type name expected-value actual-value)
+                                             nil)))))))
       (every #'process-expression
              '(("uint8_t" ("UINT8_MAX" 255) ("INT8_MAX" 127) ("INT8_MIN" 128))
                ("int8_t" ("INT8_MIN" -128) ("INT8_MAX" 127) ("UINT8_MAX" -1))
@@ -76,4 +72,4 @@
                ("int16_t" ("INT16_MIN" -32768) ("INT16_MAX" 32767) ("UINT16_MAX" -1))
                ("uint32_t" ("UINT32_MAX" 4294967295) ("INT8_MIN" 4294967168))
                ("int32_t" ("INT32_MIN" -2147483648) ("INT32_MAX" 2147483647)))))
-  T)
+  t)
