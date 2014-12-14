@@ -690,33 +690,27 @@ int main(int argc, char**argv) {
   "Convert the C CONSTANT to an integer of BASE-TYPE. The constant is
 assumed to be an integer printed using the PRIiMAX printf(3) format
 string."
-  ;; | C Constant |  Type   | Return Value | Notes                                                                    |
-  ;; |------------+---------+--------------+--------------------------------------------------------------------------|
-  ;; |         -1 |  :int32 |           -1 |                                                                          |
-  ;; | 0xffffffff |  :int32 |           -1 | CONSTANT may be a positive integer if sizeof(intmax_t) > sizeof(int32_t) |
-  ;; | 0xffffffff | :uint32 |   4294967295 |                                                                          |
-  ;; |         -1 | :uint32 |   4294967295 |                                                                          |
-  ;; |------------+---------+--------------+--------------------------------------------------------------------------|
-  (let* ((type-bits (* 8 (cffi:foreign-type-size base-type)))
-         (2^N (ash 1 type-bits)))
-    (etypecase base-type
-      ((member :unsigned-char :uchar
-               :unsigned-short :ushort
-               :unsigned-int :uint
-               :unsigned-long :ulong
-               :unsigned-long-long :ullong
-               :uint8 :uint16 :uint32 :uint64)
-       (mod constant 2^N))
-      ((member :char :short :int :long :long-long :llong :int8 :int16 :int32 :int64)
-       (let* ((v (mod constant 2^N)))
+  ;; | C Constant |  Type   | Return Value | Notes                                 |
+  ;; |------------+---------+--------------+---------------------------------------|
+  ;; |         -1 |  :int32 |           -1 |                                       |
+  ;; | 0xffffffff |  :int32 |           -1 | CONSTANT may be a positive integer if |
+  ;; |            |         |              | sizeof(intmax_t) > sizeof(int32_t)    |
+  ;; | 0xffffffff | :uint32 |   4294967295 |                                       |
+  ;; |         -1 | :uint32 |   4294967295 |                                       |
+  ;; |------------+---------+--------------+---------------------------------------|
+  (let* ((canonical-type (cffi::canonicalize-foreign-type base-type))
+         (type-bits (* 8 (cffi:foreign-type-size canonical-type)))
+         (2^n (ash 1 type-bits)))
+    (ecase canonical-type
+      ((:unsigned-char :unsigned-short :unsigned-int
+        :unsigned-long :unsigned-long-long)
+       (mod constant 2^n))
+      ((:char :short :int :long :long-long)
+       (let ((v (mod constant 2^n)))
          (if (logbitp (1- type-bits) v)
              (- (mask-field (byte (1- type-bits) 0) v)
                 (ash 1 (1- type-bits)))
-             v)))
-      (keyword
-       (error "Unsupported builtin type."))
-      (t
-       (convert-intmax-constant constant (cffi::canonicalize-foreign-type base-type))))))
+             v))))))
 
 (defun foreign-type-to-printf-specification (type)
   "Return the printf specification associated with the foreign type TYPE."
