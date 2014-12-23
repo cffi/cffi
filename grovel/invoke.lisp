@@ -57,13 +57,14 @@
               (integer   ret))
             "<see above>")))
 
-;;; FIXME: there's no way to tell from EXT:RUN-PROGRAM whether the
-;;; command failed or not.  Using EXT:SYSTEM instead, but we should
-;;; quote arguments.
 #+ecl
 (defun %invoke (command arglist)
-  (values (ext:system (format nil "~A~{ ~A~}" command arglist))
-          "<see above>"))
+  (values
+   (nth-value 1 (ext:run-program "/bin/sh"
+                                 (list "-c"
+                                       (format nil "~A~{ ~A~}" command arglist))
+                                 :wait t :output nil :input nil :error nil))
+   "<see above>"))
 
 (defun process-output (process-stream)
   (with-open-stream (process-stream process-stream)
