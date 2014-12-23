@@ -270,9 +270,9 @@ int main(int argc, char**argv) {
 ;;; FIXME: is there a better way to detect whether these flags
 ;;; are necessary?
 (defparameter *cpu-word-size-flags*
-  #+arm
+  #+(or :arm :armv5l :armv6l :armv7l)
   (list "-marm")
-  #-arm
+  #-(or :arm :armv5l :armv6l :armv7l)
   (ecase (cffi:foreign-type-size :pointer)
     (4 (list "-m32"))
     (8 (list "-m64"))))
