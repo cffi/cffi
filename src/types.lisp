@@ -333,6 +333,54 @@ to open-code (SETF MEM-REF) forms."
               (floor idx (nth dim-index dimensions)))
         finally (return indexes)))
 
+(defun foreign-alloc (type &key (initial-element nil initial-element-p)
+                      (initial-contents nil initial-contents-p)
+                      (count 1 count-p) null-terminated-p)
+  "Allocate enough memory to hold COUNT objects of type TYPE. If
+INITIAL-ELEMENT is supplied, each element of the newly allocated
+memory is initialized with its value. If INITIAL-CONTENTS is supplied,
+each of its elements will be used to initialize the contents of the
+newly allocated memory."
+  (let (contents-length)
+    ;; Some error checking, etc...
+    (when (and null-terminated-p
+               (not (eq (canonicalize-foreign-type type) :pointer)))
+      (error "Cannot use :NULL-TERMINATED-P with non-pointer types."))
+    (when (and initial-element-p initial-contents-p)
+      (error "Cannot specify both :INITIAL-ELEMENT and :INITIAL-CONTENTS"))
+    (when initial-contents-p
+      (setq contents-length (length initial-contents))
+      (if count-p
+          (assert (>= count contents-length))
+          (setq count contents-length)))
+    ;; Everything looks good.
+    (let ((ptr (%foreign-alloc (* (foreign-type-size type)
+                                  (if null-terminated-p (1+ count) count)))))
+      (when initial-element-p
+        (dotimes (i count)
+          (setf (mem-aref ptr type i) initial-element)))
+      (when initial-contents-p
+        (dotimes (i contents-length)
+          (setf (mem-aref ptr type i) (elt initial-contents i))))
+      (when null-terminated-p
+        (setf (mem-aref ptr :pointer count) (null-pointer)))
+      ptr)))
+
+;;; Simple compiler macro that kicks in when TYPE is constant and only
+;;; the COUNT argument is passed.  (Note: hard-coding the type's size
+;;; into the fasl will likely break CLISP fasl cross-platform
+;;; compatibilty.)
+(define-compiler-macro foreign-alloc (&whole form type &rest args
+                                      &key (count 1 count-p) &allow-other-keys)
+  (if (or (and count-p (<= (length args) 2)) (null args))
+      (cond
+        ((and (constantp type) (constantp count))
+         `(%foreign-alloc ,(* (eval count) (foreign-type-size (eval type)))))
+        ((constantp type)
+         `(%foreign-alloc (* ,count ,(foreign-type-size (eval type)))))
+        (t form))
+      form))
+
 (defun lisp-array-to-foreign (array pointer array-type)
   "Copy elements from a Lisp array to POINTER."
   (let* ((type (follow-typedefs (parse-type array-type)))
@@ -860,54 +908,6 @@ slots will be defined and stored."
 (defmethod foreign-type-alignment (type)
   "Return the alignment in bytes of a foreign type."
   (foreign-type-alignment (parse-type type)))
-
-(defun foreign-alloc (type &key (initial-element nil initial-element-p)
-                      (initial-contents nil initial-contents-p)
-                      (count 1 count-p) null-terminated-p)
-  "Allocate enough memory to hold COUNT objects of type TYPE. If
-INITIAL-ELEMENT is supplied, each element of the newly allocated
-memory is initialized with its value. If INITIAL-CONTENTS is supplied,
-each of its elements will be used to initialize the contents of the
-newly allocated memory."
-  (let (contents-length)
-    ;; Some error checking, etc...
-    (when (and null-terminated-p
-               (not (eq (canonicalize-foreign-type type) :pointer)))
-      (error "Cannot use :NULL-TERMINATED-P with non-pointer types."))
-    (when (and initial-element-p initial-contents-p)
-      (error "Cannot specify both :INITIAL-ELEMENT and :INITIAL-CONTENTS"))
-    (when initial-contents-p
-      (setq contents-length (length initial-contents))
-      (if count-p
-          (assert (>= count contents-length))
-          (setq count contents-length)))
-    ;; Everything looks good.
-    (let ((ptr (%foreign-alloc (* (foreign-type-size type)
-                                  (if null-terminated-p (1+ count) count)))))
-      (when initial-element-p
-        (dotimes (i count)
-          (setf (mem-aref ptr type i) initial-element)))
-      (when initial-contents-p
-        (dotimes (i contents-length)
-          (setf (mem-aref ptr type i) (elt initial-contents i))))
-      (when null-terminated-p
-        (setf (mem-aref ptr :pointer count) (null-pointer)))
-      ptr)))
-
-;;; Simple compiler macro that kicks in when TYPE is constant and only
-;;; the COUNT argument is passed.  (Note: hard-coding the type's size
-;;; into the fasl will likely break CLISP fasl cross-platform
-;;; compatibilty.)
-(define-compiler-macro foreign-alloc (&whole form type &rest args
-                                      &key (count 1 count-p) &allow-other-keys)
-  (if (or (and count-p (<= (length args) 2)) (null args))
-      (cond
-        ((and (constantp type) (constantp count))
-         `(%foreign-alloc ,(* (eval count) (foreign-type-size (eval type)))))
-        ((constantp type)
-         `(%foreign-alloc (* ,count ,(foreign-type-size (eval type)))))
-        (t form))
-      form))
 
 (defmacro with-foreign-object ((var type &optional (count 1)) &body body)
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
