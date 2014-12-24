@@ -129,6 +129,12 @@
 (defmethod translate-from-foreign (value (type foreign-enum))
   (%foreign-enum-keyword type value :errorp t))
 
+(defmethod expand-to-foreign (value (type foreign-enum))
+  (once-only (value)
+    `(if (keywordp ,value)
+         (%foreign-enum-value ,type ,value :errorp t)
+         ,value)))
+
 ;;;# Foreign Bitfields as Lisp keywords
 ;;;
 ;;; DEFBITFIELD is an abstraction similar to the one provided by DEFCENUM.
