@@ -30,6 +30,7 @@
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys #:babel-encodings)
   (:import-from #:alexandria
+                #:compose
                 #:ensure-list
                 #:featurep
                 #:format-symbol
@@ -39,6 +40,7 @@
                 #:lastcar
                 #:make-gensym-list
                 #:make-keyword
+                #:mappend
                 #:once-only
                 #:parse-body
                 #:simple-style-warning

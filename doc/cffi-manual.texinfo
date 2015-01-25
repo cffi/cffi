@@ -6015,6 +6015,15 @@ A symbol, whose result is its symbol value.
 Anything else evaluates to itself.
 @end enumerate
 
+The result of evaluating the @dfn{simple Lisp expression} should yield
+a @emph{designator} for a @emph{list} of @emph{pathname designators}.
+
+@strong{Note}: in Common Lisp, @code{#p"/foo/bar"} designates the
+@emph{bar} file within the @emph{/foo} directory whereas
+@code{#p"/foo/bar/"} designates the @emph{/foo/bar} directory. Keep
+that in mind when customising the value of
+@code{*foreign-library-directories*}.
+
 
 @subheading Examples
 

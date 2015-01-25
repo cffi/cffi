@@ -36,7 +36,7 @@
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
-  :depends-on (:alexandria :trivial-features :babel)
+  :depends-on (:uiop :alexandria :trivial-features :babel)
   :components
   ((:module "src"
     :serial t

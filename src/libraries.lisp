@@ -38,19 +38,44 @@
 ;;; These two special variables behave similarly to
 ;;; ASDF:*CENTRAL-REGISTRY* as its arguments are evaluated before
 ;;; being used. We used our MINI-EVAL instead of the full-blown EVAL
-;;; though.
+;;; and the evaluated form should yield a single pathname or a list of
+;;; pathnames.
 ;;;
 ;;; Only after failing to find a library through the normal ways
 ;;; (eg: on Linux LD_LIBRARY_PATH, /etc/ld.so.cache, /usr/lib/, /lib)
 ;;; do we try to find the library ourselves.
 
-(defvar *foreign-library-directories* '()
+(defun explode-path-environment-variable (name)
+  (mapcar #'uiop:ensure-directory-pathname
+          (split-if (lambda (c) (eql #\: c))
+                    (uiop:getenv name)
+                    :elide)))
+
+(defun darwin-fallback-library-path ()
+  (or (explode-path-environment-variable "DYLD_FALLBACK_LIBRARY_PATH")
+      (list (merge-pathnames #p"lib/" (user-homedir-pathname))
+            #p"/usr/local/lib/"
+            #p"/usr/lib/")))
+
+(defvar *foreign-library-directories*
+  (if (featurep :darwin)
+      '((explode-path-environment-variable "LD_LIBRARY_PATH")
+        (explode-path-environment-variable "DYLD_LIBRARY_PATH")
+        (uiop:getcwd)
+        (darwin-fallback-library-path))
+      '())
   "List onto which user-defined library paths can be pushed.")
 
+(defun fallback-darwin-framework-directories ()
+  (or (explode-path-environment-variable "DYLD_FALLBACK_FRAMEWORK_PATH")
+      (list (uiop:getcwd)
+            (merge-pathnames #p"Library/Frameworks/" (user-homedir-pathname))
+            #p"/Library/Frameworks/"
+            #p"/System/Library/Frameworks/")))
+
 (defvar *darwin-framework-directories*
-  '((merge-pathnames #p"Library/Frameworks/" (user-homedir-pathname))
-    #p"/Library/Frameworks/"
-    #p"/System/Library/Frameworks/")
+  '((explode-path-environment-variable "DYLD_FRAMEWORK_PATH")
+    (fallback-darwin-framework-directories))
   "List of directories where Frameworks are searched for.")
 
 (defun mini-eval (form)
@@ -61,6 +86,9 @@
     (symbol (symbol-value form))
     (t form)))
 
+(defun parse-directories (list)
+  (mappend (compose #'ensure-list #'mini-eval) list))
+
 (defun find-file (path directories)
   "Searches for PATH in a list of DIRECTORIES and returns the first it finds."
   (some (lambda (directory) (probe-file (merge-pathnames path directory)))
@@ -68,11 +96,11 @@
 
 (defun find-darwin-framework (framework-name)
   "Searches for FRAMEWORK-NAME in *DARWIN-FRAMEWORK-DIRECTORIES*."
-  (dolist (framework-directory *darwin-framework-directories*)
+  (dolist (directory (parse-directories *darwin-framework-directories*))
     (let ((path (make-pathname
                  :name framework-name
                  :directory
-                 (append (pathname-directory (mini-eval framework-directory))
+                 (append (pathname-directory directory)
                          (list (format nil "~A.framework" framework-name))))))
       (when (probe-file path)
         (return-from find-darwin-framework path)))))
@@ -290,14 +318,14 @@ ourselves."
       (values (%load-foreign-library name path)
               (pathname path))
     (error (error)
-      (if-let (file (find-file path (append search-path
-                                            *foreign-library-directories*)))
-        (handler-case
-            (values (%load-foreign-library name (native-namestring file))
-                    file)
-          (simple-error (error)
-            (report-simple-error name error)))
-        (report-simple-error name error)))))
+      (let ((dirs (parse-directories *foreign-library-directories*)))
+        (if-let (file (find-file path (append search-path dirs)))
+          (handler-case
+              (values (%load-foreign-library name (native-namestring file))
+                      file)
+            (simple-error (error)
+              (report-simple-error name error)))
+          (report-simple-error name error))))))
 
 (defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when

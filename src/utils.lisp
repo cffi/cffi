@@ -65,3 +65,20 @@ set twos-complement bit."
 (defun warn-obsolete-argument (old-arg new-arg)
   (warn 'obsolete-argument-warning
         :old-arg old-arg :new-arg new-arg))
+
+(defun split-if (test seq &optional (dir :before))
+  (remove-if #'(lambda (x) (equal x (subseq seq 0 0)))
+             (loop for start fixnum = 0
+                     then (if (eq dir :before)
+                              stop
+                              (the fixnum (1+ (the fixnum stop))))
+                   while (< start (length seq))
+                   for stop = (position-if test seq
+                                           :start (if (eq dir :elide)
+                                                      start
+                                                      (the fixnum (1+ start))))
+                   collect (subseq seq start
+                                   (if (and stop (eq dir :after))
+                                       (the fixnum (1+ (the fixnum stop)))
+                                       stop))
+                   while stop)))
