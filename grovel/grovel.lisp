@@ -714,17 +714,43 @@ string."
 
 (defun foreign-type-to-printf-specification (type)
   "Return the printf specification associated with the foreign type TYPE."
-  (ecase (cffi::canonicalize-foreign-type type)
-    (:char "\"%hhd\"")
-    (:unsigned-char "\"%hhu\"")
-    (:short "\"%hd\"")
-    (:unsigned-short "\"%hu\"")
-    (:int "\"%d\"")
-    (:unsigned-int "\"%u\"")
-    (:long "\"%ld\"")
-    (:unsigned-long "\"%lu\"")
-    (:long-long "\"%lld\"")
-    (:unsigned-long-long "\"%llu\"")))
+  (ecase type
+    (:char
+     "\"%hhd\"")
+    ((:unsigned-char :uchar)
+     "\"%hhu\"")
+    (:short
+     "\"%hd\"")
+    ((:unsigned-short :ushort)
+     "\"%hu\"")
+    (:int
+     "\"%d\"")
+    ((:unsigned-int :uint)
+     "\"%u\"")
+    (:long
+     "\"%ld\"")
+    ((:unsigned-long :ulong)
+     "\"%lu\"")
+    ((:long-long :llong)
+     "\"%lld\"")
+    ((:unsigned-long-long :ullong)
+     "\"%llu\"")
+    (:int8
+     "\"%\"PRId8")
+    (:uint8
+     "\"%\"PRIu8")
+    (:int16
+     "\"%\"PRId16")
+    (:uint16
+     "\"%\"PRIu16")
+    (:int32
+     "\"%\"PRId32")
+    (:uint32
+     "\"%\"PRIu32")
+    (:int64
+     "\"%\"PRId64")
+    (:uint64
+     "\"%\"PRIu64")))
 
 ;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
 ;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
