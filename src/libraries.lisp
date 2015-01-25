@@ -187,7 +187,7 @@
         finally (return (mapcar #'pathname search-path))))
 
 (defun foreign-library-loaded-p (lib)
-  (not (null (slot-value (get-foreign-library lib) 'handle))))
+  (not (null (foreign-library-handle (get-foreign-library lib)))))
 
 (defun list-foreign-libraries (&key (loaded-only t) type)
   "Return a list of defined foreign libraries.
