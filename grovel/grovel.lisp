@@ -629,13 +629,13 @@ int main(int argc, char**argv) {
           enum
         (declare (ignore documentation))
         (check-type lisp-name keyword)
-        (loop :for c-name :in c-names :do
-           (check-type c-name string)
-           (c-format out "  (")
-           (c-print-symbol out lisp-name)
-           (c-format out " ")
-           (c-print-integer-constant out c-name base-type)
-           (c-format out ")~%"))))
+        (loop for c-name in c-names do
+          (check-type c-name string)
+          (c-format out "  (")
+          (c-print-symbol out lisp-name)
+          (c-format out " ")
+          (c-print-integer-constant out c-name base-type)
+          (c-format out ")~%"))))
     (c-format out ")~%")
     (when define-constants
       (define-constants-from-enum out enum-list))))
@@ -659,11 +659,11 @@ int main(int argc, char**argv) {
         (c-format out "~%  (")
         (c-print-symbol out lisp-name)
         (loop for c-name in c-names do
-             (check-type c-name string)
-             (format out "~&#ifdef ~A~%" c-name)
-             (c-format out " ")
-             (c-print-integer-constant out c-name base-type)
-             (format out "~&#else~%"))
+          (check-type c-name string)
+          (format out "~&#ifdef ~A~%" c-name)
+          (c-format out " ")
+          (c-print-integer-constant out c-name base-type)
+          (format out "~&#else~%"))
         (unless optional
           (c-format out
                     "~%  #.(cl:progn ~
