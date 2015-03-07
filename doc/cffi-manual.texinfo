@@ -1425,7 +1425,7 @@ The above signature trivially translates into a @cffi{}
       ;; @lispcmt{We use the dynamically-bound *easy-write-procedure* to}
       ;; @lispcmt{call a closure with useful lexical context.}
       (progn (funcall (symbol-value '*easy-write-procedure*)
-                      (foreign-string-to-lisp ptr data-size nil))
+                      (foreign-string-to-lisp ptr :count data-size))
              data-size)         ;@lispcmt{indicates success}
       ;; @lispcmt{The WRITEFUNCTION should return something other than the}
       ;; @lispcmt{#bytes available to signal an error.}
