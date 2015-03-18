@@ -365,7 +365,12 @@ WITH-POINTER-TO-VECTOR-DATA."
       (error "file error while trying to load `~A'" path))))
 
 (defun %close-foreign-library (handle)
-  (error "%CLOSE-FOREIGN-LIBRARY unimplemented."))
+  "Close a foreign library."
+  (handler-case (si::unload-foreign-module handle)
+    (undefined-function ()
+      (restart-case (error "Detected ECL prior to version 15.2.21. ~
+                            Function FFI:CLOSE-FOREIGN-LIBRARY isn't implemented yet.")
+        (ignore () :report "Continue anyway (foreign library will remain opened).")))))
 
 (defun native-namestring (pathname)
   (namestring pathname))
