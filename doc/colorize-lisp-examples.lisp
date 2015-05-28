@@ -349,6 +349,8 @@ span.paren6:hover { color : inherit; background-color : #FFBAFF; }
                  ((#\&) (write-string "&amp;" out))
                  ((#\<) (write-string "&lt;" out))
                  ((#\>) (write-string "&gt;" out))
+                 ((#\") (write-string "&quot;" out))
+                 ((#\RIGHTWARDS_DOUBLE_ARROW) (write-string "&rArr;" out))
                  (t (write-char char out)))))
     (coerce output 'simple-string)))
 
@@ -370,9 +372,15 @@ span.paren6:hover { color : inherit; background-color : #FFBAFF; }
       (setq last-end (+ next-start substring-length)))))
 
 (defun decode-from-tt (string)
-  (string-substitute (string-substitute (string-substitute string "&amp;" "&")
-                                        "&lt;" "<")
-                    "&gt;" ">"))
+  (string-substitute
+   (string-substitute
+    (string-substitute
+     (string-substitute
+      (string-substitute string "&amp;" "&")
+      "&lt;" "<")
+     "&gt;" ">")
+    "&rArr;" (string #\RIGHTWARDS_DOUBLE_ARROW))
+   "&quot;" "\""))
 
 (defun html-colorization (coloring-type string)
   (format-scan coloring-type
@@ -962,7 +970,7 @@ output to *verbose-out*.  Returns the shell's exit code."
 (defmacro string-append (outputstr &rest args)
   `(setq ,outputstr (concatenate 'string ,outputstr ,@args)))
 
-(defconstant +indent+ 2
+(defconstant +indent+ 0
   "Indentation used in the examples.")
 
 (defun texinfo->raw-lisp (code)

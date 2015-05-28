@@ -83,27 +83,7 @@
 @alias lispcmt = asis
 @end ifnottex
 
-@c My copy of makeinfo is not generating any HTML for @result{} for
-@c some odd reason. (It certainly used to...)
-@ifhtml
-@macro result
-=>
-@end macro
-@end ifhtml
-
-@c Similar macro to @result. Its purpose is to work around the fact
-@c that &rArr; does not work properly inside @lisp.
-@ifhtml
-@macro res
-@html
-&rArr;
-@end html
-@end macro
-@end ifhtml
-
-@ifnothtml
 @alias res = result
-@end ifnothtml
 
 @c ============================= Macros =============================
 
@@ -114,10 +94,10 @@
 
 @copying
 Copyright @copyright{} 2005 James Bielman <jamesjb at jamesjb.com> @*
-Copyright @copyright{} 2005-2010 Lu@'{@dotless{i}}s Oliveira
+Copyright @copyright{} 2005-2015 Lu@'{@dotless{i}}s Oliveira
   <loliveira at common-lisp.net> @*
-Copyright @copyright{} 2005-2006 Dan Knapp <danka at accela.net>
-Copyright @copyright{} 2005-2006 Emily Backes <lucca at accela.net>
+Copyright @copyright{} 2005-2006 Dan Knapp <danka at accela.net> @*
+Copyright @copyright{} 2005-2006 Emily Backes <lucca at accela.net> @*
 Copyright @copyright{} 2006 Stephen Compall <s11 at member.fsf.org>
 
 @quotation

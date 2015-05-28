@@ -14,9 +14,9 @@ td  {padding-right: 1em; padding-left: 1em}
 sub {font-size: smaller}
 .node {padding: 0; margin: 0}
 
-.lisp { font-family: monospace;
-        background-color: #F4F4F4; border: 1px solid #AAA;
-        padding-top: 0.5em; padding-bottom: 0.5em; }
+pre.lisp { font-family: monospace;
+           background-color: #F4F4F4; border: 1px solid #AAA;
+           padding-top: 0.5em; padding-bottom: 0.5em; }
 
 /* coloring */
 
