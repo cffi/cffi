@@ -25,6 +25,8 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
+export LC_ALL=C
+
 all: manual spec
 
 manual: cffi-manual.texinfo style.css
