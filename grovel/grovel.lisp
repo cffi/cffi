@@ -282,6 +282,12 @@ int main(int argc, char**argv) {
         #-darwin "-shared"
         #-windows "-fPIC"))
 
+(defun host-and-directory-namestring (pathname)
+  (namestring
+   (make-pathname :name nil
+                  :type nil
+                  :defaults pathname)))
+
 (defun cc-compile-and-link (input-file output-file &key library)
   (let ((arglist
          `(,(or (getenv "CC") *cc*)
@@ -289,9 +295,8 @@ int main(int argc, char**argv) {
            ,@*cc-flags*
            ;; add the cffi directory to the include path to make common.h visible
            ,(format nil "-I~A"
-                    (directory-namestring
-                     (truename
-                      (asdf:system-definition-pathname :cffi-grovel))))
+                    (host-and-directory-namestring
+                     (truename (asdf:system-definition-pathname :cffi-grovel))))
            ,@(when library *platform-library-flags*)
            "-o" ,(native-namestring output-file)
            ,(native-namestring input-file))))
