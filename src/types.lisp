@@ -600,10 +600,13 @@ The foreign array must be freed with foreign-array-free."
   (check-type struct-or-union (member :struct :union))
   (let* ((struct-type-name `(,struct-or-union ,name))
          (struct-type (parse-type struct-type-name)))
-    (simple-style-warning
-     "bare references to struct types are deprecated. ~
-      Please use ~S or ~S instead."
-     `(:pointer ,struct-type-name) struct-type-name)
+    ;;(simple-style-warning
+    ;; "bare references to struct types are deprecated. ~
+    ;;  Please use ~S or ~S instead of ~A ~A."
+    ;; `(:pointer ,struct-type-name)
+    ;; struct-type-name
+    ;; name
+    ;; struct-or-union)
     (make-instance (class-of struct-type)
                    :alignment (alignment struct-type)
                    :size (size struct-type)
