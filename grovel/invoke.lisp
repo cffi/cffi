@@ -59,12 +59,13 @@
 
 #+ecl
 (defun %invoke (command arglist)
-  (values
-   (nth-value 1 (ext:run-program "/bin/sh"
-                                 (list "-c"
-                                       (format nil "~A~{ ~A~}" command arglist))
-                                 :wait t :output nil :input nil :error nil))
-   "<see above>"))
+  (multiple-value-bind (output-stream exit-code)
+      (ext:run-program "/bin/sh"
+                       (list "-c"
+                             (format nil "~A~{ ~A~}" command arglist))
+                       :wait t :output :stream :input nil :error nil)
+    (values exit-code
+            (process-output output-stream))))
 
 (defun process-output (process-stream)
   (with-open-stream (process-stream process-stream)
