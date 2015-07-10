@@ -36,6 +36,12 @@
  ((:bad-typedef "FFI_BAD_TYPEDEF"))
  ((:bad-abi "FFI_BAD_ABI")))
 
+#+x86-64
+(cenum abi
+ ((:default-abi "FFI_DEFAULT_ABI"))
+ ((:win64 "FFI_WIN64")))
+
+#-x86-64
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
  ((:sysv "FFI_SYSV"))
