@@ -524,7 +524,7 @@ Signals an error if the type cannot be resolved."
 
 (defmethod expand-to-foreign-dyn-indirect
     (value var body (type foreign-built-in-type))
-  `(with-foreign-object (,var :pointer)
+  `(with-foreign-object (,var ,type)
      (translate-into-foreign-memory ,value ,type ,var)
      ,@body))
 
