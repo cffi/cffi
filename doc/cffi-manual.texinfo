@@ -1940,6 +1940,11 @@ default.
 (convert-from-foreign 1 :boolean) @result{} t
 @end lisp
 
+@ForeignType{:bool}
+
+The @code{:bool} type represents the C99 @code{_Bool} or C++
+@code{bool}. Its size is usually 1 byte except on OSX where it's an @code{int}.
+
 @ForeignType{:wrapper base-type &key to-c from-c}
 
 The @code{:wrapper} type stores two symbols passed to the @var{to-c}
