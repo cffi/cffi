@@ -86,6 +86,41 @@
           (bool-xor nil nil))
   (t t t t nil t nil))
 
+(defcfun "sizeof_bool" :unsigned-int)
+
+(deftest misc-types.sizeof.bool
+    (eql (sizeof-bool) (foreign-type-size :bool))
+  t)
+
+(defcfun "bool_to_unsigned" :unsigned-int
+  (b :bool))
+
+(defcfun "unsigned_to_bool" :bool
+  (u :unsigned-int))
+
+(deftest misc-types.bool.convert-to-foreign.mem
+    (loop for v in '(nil t)
+          collect
+          (with-foreign-object (b :bool)
+            (setf (mem-ref b :bool) v)
+            (mem-ref b #.(cffi::canonicalize-foreign-type :bool))))
+  (0 1))
+
+(deftest misc-types.bool.convert-to-foreign.call
+    (mapcar #'bool-to-unsigned '(nil t))
+  (0 1))
+
+(deftest misc-types.bool.convert-from-foreign.mem
+    (loop for v in '(0 1 42)
+          collect
+          (with-foreign-object (b :bool)
+            (setf (mem-ref b #.(cffi::canonicalize-foreign-type :bool)) v)
+            (mem-ref b :bool)))
+  (nil t t))
+
+(deftest misc-types.bool.convert-from-foreign.call
+    (mapcar #'unsigned-to-bool '(0 1 42))
+  (nil t t))
 
 ;;; Regression test: boolean type only worked with canonicalized
 ;;; built-in integer types. Should work for any type that canonicalizes

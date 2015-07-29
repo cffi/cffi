@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+#include <stdbool.h>
 
 /* MSVC doesn't have stdint.h and uses a different syntax for stdcall */
 #ifndef _MSC_VER
@@ -287,6 +288,24 @@ DLLEXPORT
 unsigned long bool_xor(long a, unsigned long b)
 {
     return (a && !b) || (!a && b);
+}
+
+DLLEXPORT
+unsigned sizeof_bool(void)
+{
+    return (unsigned) sizeof(_Bool);
+}
+
+DLLEXPORT
+unsigned bool_to_unsigned(_Bool b)
+{
+    return (unsigned) b;
+}
+
+DLLEXPORT
+_Bool unsigned_to_bool(unsigned u)
+{
+    return (_Bool) u;
 }
 
 /*

@@ -986,6 +986,10 @@ The buffer has dynamic extent and may be stack allocated."
       (not (zerop (eval value)))
       `(not (zerop ,value))))
 
+;;; Boolean type that represents C99 _Bool
+(defctype :bool (:boolean #+darwin :int
+                          #-darwin :char))
+
 ;;;# Typedefs for built-in types.
 
 (defctype :uchar  :unsigned-char)
