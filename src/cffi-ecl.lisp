@@ -319,7 +319,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defun produce-function-pointer-call (pointer types values return-type)
   #-ecl-with-backend
   (progn
-    (if (eq *cffi-dffi-method* :dffi)
+    (if (eq *cffi-ecl-method* :dffi)
         (dffi-function-pointer-call pointer types values return-type)
         (c-inline-function-pointer-call pointer types values return-type)))
   #+ecl-with-backend
@@ -327,7 +327,9 @@ WITH-POINTER-TO-VECTOR-DATA."
      :bytecodes
      ,(dffi-function-pointer-call pointer types values return-type)
      :c/c++
-     ,(c-inline-function-pointer-call pointer types values return-type)))
+     (if (eq *cffi-ecl-method* :dffi)
+         ,(dffi-function-pointer-call pointer types values return-type)
+         ,(c-inline-function-pointer-call pointer types values return-type))))
 
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
