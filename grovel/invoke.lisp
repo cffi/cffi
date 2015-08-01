@@ -57,6 +57,13 @@
               (integer   ret))
             "<see above>")))
 
+(defun process-output (process-stream)
+  (with-open-stream (process-stream process-stream)
+    (with-output-to-string (str)
+      (loop for char = (read-char process-stream nil)
+            while char
+            do (write-char char str)))))
+
 #+ecl
 (defun %invoke (command arglist)
   (multiple-value-bind (output-stream exit-code)
@@ -66,13 +73,6 @@
                        :wait t :output :stream :input nil :error nil)
     (values exit-code
             (process-output output-stream))))
-
-(defun process-output (process-stream)
-  (with-open-stream (process-stream process-stream)
-    (with-output-to-string (str)
-      (loop for char = (read-char process-stream nil)
-            while char
-            do (write-char char str)))))
 
 #+(or cmu scl)
 (defun %invoke (command arglist)
