@@ -1,8 +1,9 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
 ;;; libffi-win32.lisp -- libffi CFFI-Grovel definitions for Windows.
+;;; Note that despite the name, this includes 64 bit Windows as well as 32 bit.
 ;;;
-;;; Copyright (C) 2009, 2010, 2011, 2012 Liam M. Healy  <lhealy@common-lisp.net>
+;;; Copyright (C) 2009, 2010, 2011, 2012, 2015 Liam M. Healy  <lhealy@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -28,6 +29,9 @@
 ;; by CRLF0710, modified from Liam Healy 2009-02-22 09:24:33EST libffi-unix.lisp
 
 (in-package #:cffi)
+
+#+msys2
+(pkg-config-cflags "libffi" :optional t)
 
 (include "ffi.h")
 
@@ -58,20 +62,6 @@
   (alignment "alignment"     :type ushort)
   (type    "type"     :type ushort)
   (elements   "elements"   :type :pointer))
-
-#|
-;;; Will not compile
-;;; error: invalid application of ‘sizeof’ to incomplete type ‘struct ffi_cif’ 
-;;; When structs are defined with the name at the end, apparently they
-;;; are intended to be "opaque types".
-(cstruct ffi-cif "struct ffi_cif"
- (abi    "abi"     :type ffi-abi)
- (nargs "nargs"     :type unsigned)
- (arg-types    "arg_types"     :type :pointer)
- (return-type   "rtype"   :type :pointer)
- (bytes   "bytes"   :type :unsigned)
- (flags   "flags"   :type :unsigned))
-|#
 
 (constant (+type-void+ "FFI_TYPE_VOID"))
 (constant (+type-int+ "FFI_TYPE_INT"))
