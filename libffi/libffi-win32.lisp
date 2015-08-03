@@ -30,7 +30,6 @@
 
 (in-package #:cffi)
 
-#+msys2
 (pkg-config-cflags "libffi" :optional t)
 
 (include "ffi.h")
