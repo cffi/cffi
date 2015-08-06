@@ -535,14 +535,12 @@ library type if type is not specified."
 
 ;; Taken from UFFI's src/os.lisp
 ;; modified from function ASDF -- Copyright Dan Barlow and Contributors
-(defun run-shell-command (control-string  &rest args &key output)
+(defun run-shell-command (control-string &rest args)
   "Interpolate ARGS into CONTROL-STRING as if by FORMAT, and
 synchronously execute the result using a Bourne-compatible shell, with
 output to *trace-output*.  Returns the shell's exit code."
-  (unless output
-    (setq output *trace-output*))
-
-  (let ((command (apply #'format nil control-string args)))
+  (let ((command (apply #'format nil control-string args))
+        (output *trace-output*))
     #+sbcl
     (sb-impl::process-exit-code
      (sb-ext:run-program
