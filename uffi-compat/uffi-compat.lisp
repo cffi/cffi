@@ -525,12 +525,12 @@ library type if type is not specified."
   #+clisp (sys::getenv (string var))
   #+(or cmu scl) (cdr (assoc (string var) ext:*environment-list* :test #'equalp
                              :key #'string))
-  #+gcl (si:getenv (string var))
+  #+(or ecl gcl) (si:getenv (string var))
   #+lispworks (lw:environment-variable (string var))
   #+lucid (lcl:environment-variable (string var))
   #+(or mcl ccl) (ccl::getenv var)
   #+sbcl (sb-ext:posix-getenv var)
-  #-(or allegro clisp cmu scl gcl lispworks lucid mcl ccl sbcl)
+  #-(or allegro clisp cmu ecl scl gcl lispworks lucid mcl ccl sbcl)
   (error 'not-implemented :proc (list 'getenv var)))
 
 ;; Taken from UFFI's src/os.lisp
