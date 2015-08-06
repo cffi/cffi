@@ -574,7 +574,13 @@ output to *trace-output*.  Returns the shell's exit code."
                  :input nil :output output
                  :wait t)))
 
-    #-(or openmcl clisp lispworks allegro scl cmu sbcl)
+    #+ecl
+    (nth-value 1
+               (ext:run-program
+                "/bin/sh" (list "-c" command)
+                :input nil :output output :error nil :wait t))
+
+    #-(or openmcl ecl clisp lispworks allegro scl cmu sbcl)
     (error "RUN-SHELL-PROGRAM not implemented for this Lisp")
     ))
 
