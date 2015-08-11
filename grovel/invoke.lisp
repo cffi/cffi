@@ -45,24 +45,31 @@
     (values (ext:run-shell-command cmdline :output stream)
             (get-output-stream-string stream))))
 
-;;; FIXME: As best I can tell CLISP's EXT:RUN-PROGRAM can either
-;;; create new streams OR return the exit code, but not both.  Using
-;;; existing streams doesn't seem to be an option either.
-#+clisp
-(defun %invoke (command arglist)
-  (let ((ret (ext:run-program command :arguments arglist)))
-    (values (etypecase ret
-              ((eql nil) 0)
-              ((eql   t) 1)
-              (integer   ret))
-            "<see above>")))
-
 (defun process-output (process-stream)
   (with-open-stream (process-stream process-stream)
     (with-output-to-string (str)
       (loop for char = (read-char process-stream nil)
             while char
             do (write-char char str)))))
+
+#+clisp
+(defun %invoke (command arglist)
+  (let* ((output-file
+          (make-pathname
+           :name (format nil "clisp-cffi-invoke-~A-~A.tmp"
+                         (get-universal-time)
+                         (random 1000))))
+         (ret (ext:run-program command
+                              :arguments arglist
+                              :output output-file)))
+    (with-open-file (stream output-file :direction :input)
+      (multiple-value-prog1
+          (values (etypecase ret
+                    ((eql nil) 0)
+                    ((eql   t) 1)
+                    (integer   ret))
+                  (process-output stream))
+        (delete-file output-file)))))
 
 #+ecl
 (defun %invoke (command arglist)
