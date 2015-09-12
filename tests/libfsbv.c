@@ -122,3 +122,14 @@ struct struct_pair stringlenpair (char *string, struct struct_pair dp)
   ret.b = len*dp.b;
   return ret;
 }
+
+struct bitfield_struct {
+  unsigned int b;
+};
+
+DLLEXPORT
+struct bitfield_struct structbitfield (unsigned int x) {
+  struct bitfield_struct ret;
+  ret.b = x;
+  return ret;
+}
