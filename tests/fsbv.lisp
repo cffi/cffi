@@ -99,3 +99,40 @@
 (deftest fsbv.7
   (stringlenpair "abc" '(1 . 2))
   (3 . 6))
+
+;;; returning struct with bitfield member (bug #1474631)
+(defbitfield (struct-bitfield :unsigned-int)
+  (:a 1)
+  (:b 2))
+
+(defcstruct bitfield-struct
+  (b struct-bitfield))
+
+(defcfun "structbitfield" (:struct bitfield-struct)
+  (x :unsigned-int))
+
+(defctype struct-bitfield-typedef struct-bitfield)
+
+(defcstruct bitfield-struct.2
+  (b struct-bitfield-typedef))
+
+(defcfun ("structbitfield" structbitfield.2) (:struct bitfield-struct.2)
+  (x :unsigned-int))
+
+;; these would get stuck in an infinite loop previously
+(deftest fsbv.struct-bitfield.0
+  (structbitfield 0)
+  (b nil))
+
+(deftest fsbv.struct-bitfield.1
+  (structbitfield 1)
+  (b (:a)))
+
+(deftest fsbv.struct-bitfield.2
+  (structbitfield 2)
+  (b (:b)))
+
+(deftest fsbv.struct-bitfield.3
+  (structbitfield.2 2)
+  (b (:b)))
+
