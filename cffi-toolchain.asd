@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; run-tests.lisp --- Simple script to run the unit tests.
+;;; cffi-toolchain.asd --- ASDF system definition for cffi-toolchain.
 ;;;
-;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,20 +25,21 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cl-user)
+#-asdf3.1 (error "CFFI-toolchain requires ASDF 3.1!")
 
-(setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
-#+cmucl (setf ext:*gc-verbose* nil)
+(defsystem "cffi-toolchain"
+  :description "The CFFI toolchain"
+  :long-description "Portable abstractions for using the C compiler, linker, etc."
+  :author "Francois-Rene Rideau <fahree@gmail.com>"
+  :depends-on ((:version "asdf" "3.1.2"))
+  :licence "MIT"
+  :components
+  ((:module "toolchain"
+    :serial t
+    :components
+    ((:file "package")
+     (:file "asdf-compat" :if-feature (#.(if (version<= "3.1.6" (asdf-version)) :or :and)))
+     (:file "c-toolchain")
+     (:file "static-link")))))
 
-(require "asdf")
-
-(format t "~&;;; -------- Running tests in ~A --------~%"
-        (uiop:implementation-identifier))
-
-(asdf:load-system "cffi-tests" :verbose nil)
-(asdf:test-system "cffi-tests")
-
-(terpri)
-(force-output)
-
-(uiop:quit)
+;; vim: ft=lisp et

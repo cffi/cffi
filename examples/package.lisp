@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; run-tests.lisp --- Simple script to run the unit tests.
+;;; package.lisp --- CFFI-EXAMPLES package definition.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
 ;;;
@@ -25,20 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cl-user)
-
-(setf *load-verbose* nil *compile-verbose* nil *compile-print* nil)
-#+cmucl (setf ext:*gc-verbose* nil)
-
-(require "asdf")
-
-(format t "~&;;; -------- Running tests in ~A --------~%"
-        (uiop:implementation-identifier))
-
-(asdf:load-system "cffi-tests" :verbose nil)
-(asdf:test-system "cffi-tests")
-
-(terpri)
-(force-output)
-
-(uiop:quit)
+(defpackage #:cffi-example
+  (:use #:cl #:cffi #:cffi-sys)
+  (:export #:check-groveller #:entry-point))

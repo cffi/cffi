@@ -23,17 +23,14 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(defpackage #:cffi-grovel
-  (:use #:common-lisp #:alexandria)
-  (:import-from #:cffi-sys #:native-namestring)
+(uiop:define-package #:cffi-grovel
+  (:mix #:cffi-toolchain #:asdf #:uiop #:alexandria #:common-lisp)
   (:export
    ;; Class name
    #:grovel-file
    #:process-grovel-file
+   #:wrapper-file
+   #:process-wrapper-file
    ;; Error conditions
    #:grovel-error
-   #:missing-definition)
-  (:export
-   ;; Class name
-   #:wrapper-file
-   #:process-wrapper-file))
+   #:missing-definition))

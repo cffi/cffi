@@ -28,9 +28,8 @@
 (in-package #:cffi-tests)
 
 (deftest %invoke
-    (cffi-grovel::%invoke "echo" '("test"))
-  0 "test
-")
+    (cffi-grovel::invoke "echo" "test")
+  nil nil 0)
 
 (defun bug-1395242-helper (enum-type base-type constant-name)
   (check-type enum-type (member constantenum cenum))

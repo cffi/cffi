@@ -25,19 +25,17 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(asdf:defsystem cffi-grovel
+(defsystem "cffi-grovel"
   :description "The CFFI Groveller"
   :author "Dan Knapp <dankna@accela.net>"
-  :depends-on (cffi alexandria)
+  :depends-on ("cffi" "cffi-toolchain" "alexandria")
   :licence "MIT"
   :components
-  ((:module grovel
-    :serial t
+  ((:module "grovel"
     :components
-    ((:file "package")
-     (:file "invoke")
-     (:static-file "common.h")
-     (:file "grovel")
-     (:file "asdf")))))
+    ((:static-file "common.h")
+     (:file "package")
+     (:file "grovel" :depends-on ("package"))
+     (:file "asdf" :depends-on ("grovel"))))))
 
 ;; vim: ft=lisp et

@@ -30,13 +30,6 @@
 
 (in-package #:cffi-grovel)
 
-;;;# Utils
-
-(defun trim-whitespace (strings)
-  (loop for s in strings
-        for trim = (string-trim '(#\Space #\Tab #\Newline) s)
-        unless (string= "" trim) collect trim))
-
 ;;;# Error Conditions
 
 (define-condition grovel-error (simple-error) ())
@@ -172,9 +165,6 @@ int main(int argc, char**argv) {
         (subseq string 0 suffix-start)
         string)))
 
-(defun strcat (&rest strings)
-  (apply #'concatenate 'string strings))
-
 (defgeneric %process-grovel-form (name out arguments)
   (:method (name out arguments)
     (declare (ignore out arguments))
@@ -194,128 +184,58 @@ int main(int argc, char**argv) {
 (defun header-form-p (form)
   (member (form-kind form) *header-forms*))
 
-(defun make-c-file-name (output-defaults)
-  (make-pathname :type "c" :defaults output-defaults))
-
 (defun generate-c-file (input-file output-defaults)
-  (let ((c-file (make-c-file-name output-defaults)))
-    (with-open-file (out c-file :direction :output :if-exists :supersede)
-      (with-open-file (in input-file :direction :input)
-        (flet ((read-forms (s)
-                 (do ((forms ())
-                      (form (read s nil nil) (read s nil nil)))
-                     ((null form) (nreverse forms))
-                   (labels
-                       ((process-form (f)
-                          (case (form-kind f)
-                            (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
-                          (case (form-kind f)
-                            (in-package
-                             (setf *package* (find-package (second f)))
-                             (push f forms))
-                            (progn
-                              ;; flatten progn forms
-                              (mapc #'process-form (rest f)))
-                            (t (push f forms)))))
-                     (process-form form)))))
-          (let* ((forms (read-forms in))
-                 (header-forms (remove-if-not #'header-form-p forms))
-                 (body-forms (remove-if #'header-form-p forms)))
-            (write-string *header* out)
-            (dolist (form header-forms)
-              (process-grovel-form out form))
-            (write-string *prologue* out)
-            (dolist (form body-forms)
-              (process-grovel-form out form))
-            (write-string *postscript* out)))))
-    c-file))
+  (nest
+   (with-standard-io-syntax)
+   (let ((c-file (make-c-file-name output-defaults "__grovel"))
+         (*print-readably* nil)
+         (*print-escape* t)))
+   (with-open-file (out c-file :direction :output :if-exists :supersede))
+   (with-open-file (in input-file :direction :input))
+   (flet ((read-forms (s)
+            (do ((forms ())
+                 (form (read s nil nil) (read s nil nil)))
+                ((null form) (nreverse forms))
+              (labels
+                  ((process-form (f)
+                     (case (form-kind f)
+                       (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
+                     (case (form-kind f)
+                       (in-package
+                        (setf *package* (find-package (second f)))
+                        (push f forms))
+                       (progn
+                         ;; flatten progn forms
+                         (mapc #'process-form (rest f)))
+                       (t (push f forms)))))
+                (process-form form))))))
+   (let* ((forms (read-forms in))
+          (header-forms (remove-if-not #'header-form-p forms))
+          (body-forms (remove-if #'header-form-p forms)))
+     (write-string *header* out)
+     (dolist (form header-forms)
+       (process-grovel-form out form))
+     (write-string *prologue* out)
+     (dolist (form body-forms)
+       (process-grovel-form out form))
+     (write-string *postscript* out)
+     c-file)))
 
-(defparameter *exe-extension* #-windows nil #+windows "exe")
-
-(defun exe-filename (defaults)
-  (let ((path (make-pathname :type *exe-extension*
-                             :defaults defaults)))
-    ;; It's necessary to prepend "./" to relative paths because some
-    ;; implementations of INVOKE use a shell.
-    (when (or (not (pathname-directory path))
-              (eq :relative (car (pathname-directory path))))
-      (setf path (make-pathname
-                  :directory (list* :relative "."
-                                    (cdr (pathname-directory path)))
-                  :defaults path)))
-    path))
-
-(defun tmp-lisp-filename (defaults)
+(defun tmp-lisp-file-name (defaults)
   (make-pathname :name (strcat (pathname-name defaults) ".grovel-tmp")
                  :type "lisp" :defaults defaults))
 
-(cffi:defcfun "getenv" :string
-  (name :string))
 
-
-(defparameter *cc*
-  #+(or cygwin (not windows)) "cc"
-  #+(and windows (not cygwin)) "gcc")
-
-(defparameter *cc-flags*
-  (append
-   ;; For MacPorts
-   #+darwin (list "-I" "/opt/local/include/")
-   #-darwin nil
-   ;; ECL internal flags
-   #+ecl (list c::*cc-flags*)
-   ;; FreeBSD non-base header files
-   #+freebsd (list "-I" "/usr/local/include/")))
-
-;;; FIXME: is there a better way to detect whether these flags
-;;; are necessary?
-(defparameter *cpu-word-size-flags*
-  #+arm '("-marm")
-  #+arm64 '()
-  #-(or arm arm64)
-  (ecase (cffi:foreign-type-size :pointer)
-    (4 '("-m32"))
-    (8 '("-m64"))))
-
-(defparameter *platform-library-flags*
-  (list #+darwin "-bundle"
-        #-darwin "-shared"
-        #-windows "-fPIC"))
-
-(defun host-and-directory-namestring (pathname)
-  (namestring
-   (make-pathname :name nil
-                  :type nil
-                  :defaults pathname)))
-
-(defun cc-compile-and-link (input-file output-file &key library)
-  (let ((arglist
-         `(,(or (getenv "CC") *cc*)
-           ,@*cpu-word-size-flags*
-           ,@*cc-flags*
-           ;; add the cffi directory to the include path to make common.h visible
-           ,(format nil "-I~A"
-                    (host-and-directory-namestring
-                     (truename (asdf:system-definition-pathname :cffi-grovel))))
-           ,@(when library *platform-library-flags*)
-           "-o" ,(native-namestring output-file)
-           ,(native-namestring input-file))))
-    (when library
-      ;; if it's a library that may be used, remove it
-      ;; so we won't possibly be overwriting the code of any existing process
-      (ignore-some-conditions (file-error)
-        (delete-file output-file)))
-    (apply #'invoke arglist)))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given grovel file.
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (with-standard-io-syntax
     (let* ((c-file (generate-c-file input-file output-defaults))
-           (exe-file (exe-filename c-file))
-           (lisp-file (tmp-lisp-filename c-file)))
-      (cc-compile-and-link c-file exe-file)
-      (invoke exe-file (native-namestring lisp-file))
+           (exe-file (make-exe-file-name c-file))
+           (lisp-file (tmp-lisp-file-name c-file)))
+      (link-executable exe-file (list (cc-include-grovel-argument) c-file))
+      (invoke exe-file lisp-file)
       lisp-file)))
 
 ;;; OUT is lexically bound to the output stream within BODY.
@@ -343,10 +263,10 @@ int main(int argc, char**argv) {
   (c-format out "(cffi:defctype ~S ~S)~%" new-type base-type))
 
 (define-grovel-syntax flag (&rest flags)
-  (appendf *cc-flags* (trim-whitespace flags)))
+  (appendf *cc-flags* (parse-command-flags-list flags)))
 
 (define-grovel-syntax cc-flags (&rest flags)
-  (appendf *cc-flags* (trim-whitespace flags)))
+  (appendf *cc-flags* (parse-command-flags-list flags)))
 
 (define-grovel-syntax pkg-config-cflags (pkg &key optional)
   (block nil
@@ -357,7 +277,7 @@ int main(int argc, char**argv) {
                     (format *debug-io* "~&Attempting to continue anyway.~%")
                     (return)))))
       (appendf *cc-flags*
-               (trim-whitespace (list (invoke "pkg-config" pkg "--cflags")))))))
+               (parse-command-flags (invoke "pkg-config" pkg "--cflags"))))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
@@ -402,9 +322,9 @@ int main(int argc, char**argv) {
     (ecase type
       (integer
        (format out "~&  if(_64_BIT_VALUE_FITS_SIGNED_P(~A))~%" c-name)
-       (format out "    fprintf(output, \"%lli\", (int64_t) ~A);" c-name)
+       (format out "    fprintf(output, \"%lli\", (long long signed) ~A);" c-name)
        (format out "~&  else~%")
-       (format out "    fprintf(output, \"%llu\", (uint64_t) ~A);" c-name))
+       (format out "    fprintf(output, \"%llu\", (long long unsigned) ~A);" c-name))
       (double-float
        (format out "~&  fprintf(output, \"%s\", print_double_for_lisp((double)~A));~%" c-name)))
     (when documentation
@@ -426,7 +346,7 @@ int main(int argc, char**argv) {
         (c-export out slot-lisp-name)))
     (c-format out "(cffi:defcunion (")
     (c-print-symbol out union-lisp-name t)
-    (c-printf out " :size %i)" (format nil "sizeof(~A)" union-c-name))
+    (c-printf out " :size %llu)" (format nil "(long long unsigned) sizeof(~A)" union-c-name))
     (when documentation
       (c-format out "~%  ~S" documentation))
     (dolist (slot slots)
@@ -442,8 +362,8 @@ int main(int argc, char**argv) {
            (c-format out " :count ~D" count))
           ((eql :auto)
            ;; nb, works like :count :auto does in cstruct below
-           (c-printf out " :count %i"
-                     (format nil "sizeof(~A)" union-c-name)))
+           (c-printf out " :count %llu"
+                     (format nil "(long long unsigned) sizeof(~A)" union-c-name)))
           (null t))
         (c-format out ")")))
     (c-format out ")~%")))
@@ -519,8 +439,8 @@ int main(int argc, char**argv) {
         (c-export out slot-lisp-name)))
     (c-format out "(cffi:defcstruct (")
     (c-print-symbol out struct-lisp-name t)
-    (c-printf out " :size %i)"
-              (format nil "sizeof(~A)" struct-c-name))
+    (c-printf out " :size %llu)"
+              (format nil "(long long unsigned) sizeof(~A)" struct-c-name))
     (when documentation
       (c-format out "~%  ~S" documentation))
     (dolist (slot slots)
@@ -545,17 +465,17 @@ int main(int argc, char**argv) {
           (integer
            (c-format out " :count ~D" count))
           ((eql :auto)
-           (c-printf out " :count %i"
-                     (format nil "countofslot(~A, ~A)"
+           (c-printf out " :count %llu"
+                     (format nil "(long long unsigned) countofslot(~A, ~A)"
                              struct-c-name
                              slot-c-name)))
           ((or symbol string)
            (format out "~&#ifdef ~A~%" count)
-           (c-printf out " :count %i"
-                     (format nil "~A" count))
+           (c-printf out " :count %llu"
+                     (format nil "(long long unsigned) (~A)" count))
            (format out "~&#endif~%")))
-        (c-printf out " :offset %li)"
-                  (format nil "offsetof(~A, ~A)"
+        (c-printf out " :offset %lli)"
+                  (format nil "(long long signed) offsetof(~A, ~A)"
                           struct-c-name
                           slot-c-name))))
     (c-format out ")~%")
@@ -792,7 +712,7 @@ string."
 
 (defun generate-c-lib-file (input-file output-defaults)
   (let ((*lisp-forms* nil)
-        (c-file (make-c-file-name output-defaults)))
+        (c-file (make-c-file-name output-defaults "__wrapper")))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
       (with-open-file (in input-file :direction :input)
         (write-string *header* out)
@@ -800,47 +720,53 @@ string."
               do (process-wrapper-form out form))))
     (values c-file (nreverse *lisp-forms*))))
 
-(defun lib-filename (defaults)
-  (make-pathname :type (subseq (cffi::default-library-suffix) 1)
-                 :defaults defaults))
-
-(defun generate-bindings-file (lib-file lib-soname lisp-forms output-defaults)
-  (let ((lisp-file (tmp-lisp-filename output-defaults)))
-    (with-open-file (out lisp-file :direction :output :if-exists :supersede)
-      (format out ";;;; This file was automatically generated by cffi-grovel.~%~
-                   ;;;; Do not edit by hand.~%")
-      (let ((*package* (find-package '#:cl))
-            (named-library-name
-             (let ((*package* (find-package :keyword))
-                   (*read-eval* nil))
-               (read-from-string lib-soname))))
-        (pprint `(progn
-                   (cffi:define-foreign-library
-                       (,named-library-name
-                        :type :grovel-wrapper
-                        :search-path ,(directory-namestring lib-file))
-                     (t ,(namestring (lib-filename lib-soname))))
-                   (cffi:use-foreign-library ,named-library-name))
-                out)
-        (fresh-line out))
-      (dolist (form lisp-forms)
-        (print form out))
-      (terpri out))
-    lisp-file))
-
 (defun make-soname (lib-soname output-defaults)
   (make-pathname :name lib-soname
                  :defaults output-defaults))
 
+(defun generate-bindings-file (lib-file lib-soname lisp-forms output-defaults)
+  (with-standard-io-syntax
+    (let ((lisp-file (tmp-lisp-file-name output-defaults))
+          (*print-readably* nil)
+          (*print-escape* t))
+      (with-open-file (out lisp-file :direction :output :if-exists :supersede)
+        (format out ";;;; This file was automatically generated by cffi-grovel.~%~
+                   ;;;; Do not edit by hand.~%")
+        (let ((*package* (find-package '#:cl))
+              (named-library-name
+                (let ((*package* (find-package :keyword))
+                      (*read-eval* nil))
+                  (read-from-string lib-soname))))
+          (pprint `(progn
+                     (cffi:define-foreign-library
+                         (,named-library-name
+                          :type :grovel-wrapper
+                          :search-path ,(directory-namestring lib-file))
+                       (t ,(namestring (make-lib-file-name lib-soname))))
+                     (cffi:use-foreign-library ,named-library-name))
+                  out)
+          (fresh-line out))
+        (dolist (form lisp-forms)
+          (print form out))
+        (terpri out))
+      lisp-file)))
+
+(defun cc-include-grovel-argument ()
+  (format nil "-I~A" (truename (system-source-directory :cffi-grovel))))
+
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given wrapper file.
-(defun process-wrapper-file (input-file output-defaults lib-soname)
+(defun process-wrapper-file (input-file
+                             &key
+                               (output-defaults (make-pathname :defaults input-file :type "processed"))
+                               lib-soname)
   (with-standard-io-syntax
-    (let ((lib-file
-            (lib-filename (make-soname lib-soname output-defaults))))
-      (multiple-value-bind (c-file lisp-forms)
-          (generate-c-lib-file input-file output-defaults)
-        (cc-compile-and-link c-file lib-file :library t)
+    (multiple-value-bind (c-file lisp-forms)
+        (generate-c-lib-file input-file output-defaults)
+    (let ((lib-file (make-lib-file-name (make-soname lib-soname output-defaults)))
+          (o-file (make-o-file-name output-defaults "__wrapper")))
+        (cc-compile o-file (list (cc-include-grovel-argument) c-file))
+        (link-shared-library lib-file (list o-file))
         ;; FIXME: hardcoded library path.
         (values (generate-bindings-file lib-file lib-soname lisp-forms output-defaults)
                 lib-file)))))
@@ -871,7 +797,7 @@ string."
     (write-line string out)))
 
 (define-wrapper-syntax flag (&rest flags)
-  (appendf *cc-flags* (trim-whitespace flags)))
+  (appendf *cc-flags* (parse-command-flags-list flags)))
 
 (define-wrapper-syntax proclaim (&rest proclamations)
   (push `(proclaim ,@proclamations) *lisp-forms*))

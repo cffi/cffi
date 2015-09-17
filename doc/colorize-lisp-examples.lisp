@@ -950,7 +950,7 @@ output to *verbose-out*.  Returns the shell's exit code."
       "/bin/sh"
       (list  "-c" command)
       :input nil :output *standard-output*))
-    #+(or cmu scl)
+    #+(or cmucl scl)
     (ext:process-exit-code
      (ext:run-program
       "/bin/sh"

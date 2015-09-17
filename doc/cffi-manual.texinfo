@@ -160,6 +160,7 @@ software or the use or other dealings in the software.}
 * Libraries::                   
 * Callbacks::                   
 * The Groveller::               
+* Static Linking::
 * Limitations::                 
 * Platform-specific features::  Details about the underlying system.
 * Glossary::                    List of CFFI-specific terms and meanings.
@@ -363,9 +364,9 @@ Furthermore, if you wish to run the testsuite,
 @uref{http://www.cliki.net/rt,,RT} is required.
 
 You may find mechanisms such as
-@uref{http://common-lisp.net/project/clbuild/,,clbuild} (recommended)
-or @uref{http://www.cliki.net/ASDF-Install,,ASDF-Install} (not as
-recommendable) helpful in getting and managing @cffi{} and its
+@uref{https://www.quicklisp.org/beta/,Quicklisp} (recommended)
+or @uref{http://common-lisp.net/project/clbuild/,,clbuild} (for advanced
+uses) helpful in getting and managing @cffi{} and its
 dependencies.
 
 
@@ -376,8 +377,9 @@ dependencies.
 @chapter Implementation Support
 
 @cffi{} supports various free and commercial Lisp implementations:
-Allegro CL, Corman CL, @sc{clisp}, @acronym{CMUCL}, @acronym{ECL},
-LispWorks, Clozure CL, @acronym{SBCL} and the Scieneer CL.
+@acronym{ABCL}, Allegro CL, @sc{clisp}, Clozure CL, @acronym{CMUCL},
+Corman CL, @acronym{ECL}, @acronym{GCL}, LispWorks, @acronym{MCL},
+@acronym{SBCL} and the Scieneer CL.
 
 In general, you should work with the latest versions of each
 implementation since those will usually be tested against recent
@@ -632,12 +634,12 @@ First of all, we will create a package to work in.  You can save these
 forms in a file, or just send them to the listener as they are.  If
 creating bindings for an @acronym{ASDF} package of yours, you will
 want to add @code{:cffi} to the @code{:depends-on} list in your
-@file{.asd} file.  Otherwise, just use the @code{asdf:oos} function to
+@file{.asd} file.  Otherwise, just use the @code{asdf:load-system} function to
 load @cffi{}.
 
 @tutorialsource{Initialization}
 @lisp
-(asdf:oos 'asdf:load-op :cffi)
+(asdf:load-system :cffi)
 
 ;;; @lispcmt{Nothing special about the "CFFI-USER" package.  We're just}
 ;;; @lispcmt{using it as a substitute for your own CL package.}
@@ -6599,27 +6601,29 @@ Notice the use of @code{eval-when} to ensure @cffi{}-Grovel is present
 and the use of @code{(cffi-grovel:grovel-file name &key cc-flags)}
 instead of @code{(:file name)}.
 
+The @file{example-software.asd} file would look like that:
+
 @lisp
 ;;; @lispcmt{CFFI-Grovel is needed for processing grovel-file components}
-(cl:eval-when (:load-toplevel :execute)
-  (asdf:operate 'asdf:load-op 'cffi-grovel))
-
-(asdf:defsystem example-software
-  :depends-on (cffi)
+(defsystem "example-software"
+  :defsystem-depends-on ("cffi-grovel")
+  :depends-on ("cffi")
   :serial t
   :components
   ((:file "package")
-   (cffi-grovel:grovel-file "example-grovelling")
+   (:cffi-grovel-file "example-grovelling")
+   (:cffi-wrapper-file "example-wrappers")
    (:file "example")))
 @end lisp
 
-The ``package.lisp'' file would contain several @code{defpackage}
-forms, to remove circular dependencies and make building the project
-easier.  Note that you may or may not want to @code{:use} your
-internal package.
+The @file{package.lisp} file would contain one or several
+@code{defpackage} forms, to remove circular dependencies and make
+building the project easier.  Note that you may or may not want to
+@code{:use} your internal package.
 
-@impnote{Mention that it's a not a good idea to :USE when names may
-clash with, say, CL symbols.}
+@impnote{Note that it's a not a good idea to @code{:use} when names may
+clash with, say, CL symbols.
+Or you could use @code{uiop:define-package} and its @code{:mix} option.}
 
 @lisp
 (defpackage #:example-internal
@@ -6633,14 +6637,20 @@ clash with, say, CL symbols.}
 
 The internal package is created by Lisp code output from the C program
 written by @cffi{}-Grovel; if your specification file is
-exampleint.lisp, the exampleint.cffi.lisp file will contain the
+@file{exampleint.lisp}, the @file{exampleint.cffi.lisp} file will contain the
 @cffi{} definitions needed by the rest of your project.
 @xref{Groveller Syntax}.
 
 @node Groveller Implementation Notes,  , Groveller ASDF Integration, The Groveller
 @section Implementation Notes
 
-@impnote{This info might not be up-to-date.}
+@cffi{}-Grovel will generate many files that not only architecture-specific,
+but also implementation-specific, and should not be distributed.
+ASDF will generate these files in its output cache;
+if you build with multiple architectures (e.g. with NFS/AFS home
+directories) or implementations, it is critical for avoiding clashes
+to keep this cache in an implementation-dependent directory (as is the
+default).
 
 For @code{foo-internal.lisp}, the resulting @code{foo-internal.c},
 @code{foo-internal}, and @code{foo-internal.cffi.lisp} are all
@@ -6650,13 +6660,6 @@ system.  For this reason, it is not helpful to distribute any of those
 files; end users building @cffi{}-Grovel based software will need
 @code{cffi}-Grovel anyway.
 
-If you build with multiple architectures in the same directory
-(e.g. with NFS/AFS home directories), it is critical to remove these
-generated files or the resulting constants will be very incorrect.
-
-@impnote{Maybe we should tag the generated names with something host
-or OS-specific?}
-
 @impnote{For now, after some experimentation with @sc{clisp} having no
 long-long, it seems appropriate to assert that the generated @code{.c}
 files are architecture and operating-system dependent, but
@@ -6665,6 +6668,46 @@ lisp-implementation independent.  This way the same @code{.c} file
 between the implementations running on a given system.}
 
 @c TODO: document the new wrapper stuff.
+
+
+@c ===================================================================
+@c CHAPTER: Static Linking
+
+@node Static Linking, Limitations, The Groveller, Top
+@chapter Static Linking
+
+On recent enough versions of supported implementations (currently,
+GNU CLISP 2.49, CMUCL 2015-11, and SBCL 1.2.17), and with a recent
+enough ASDF (3.1.2 or later), you can create a statically linked
+Lisp executable image that includes all the C extensions
+(wrappers and any other objects output by @code{compile-op})
+as well as your Lisp code --- or a standalone application executable.
+This makes it easier to deliver your code as a single file.
+
+To dump a statically linked executable image, use:
+
+@lisp
+(asdf:load-system :cffi-grovel)
+(asdf:operate :static-image-op :example-software)
+@end lisp
+
+To dump a statically linked executable standalone application, use:
+
+@lisp
+(asdf:load-system :cffi-grovel)
+(asdf:operate :static-program-op :example-software)
+@end lisp
+
+See @uref{https://common-lisp.net/project/asdf/,,the ASDF
+manual} for documentation about @code{image-op} and @code{program-op}
+which are the parent operation classes that behave similarly except
+they don't statically link C code.
+
+@impnote{There is also an operation @code{:static-runtime-op} to create the
+statically linked runtime alone, but it's admittedly not very useful
+except as an intermediate step dependency towards building
+@code{:static-image-op} or @code{:static-program-op}.}
+
 
 
 @c ===================================================================

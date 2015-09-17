@@ -225,11 +225,11 @@
 (defcfun "pass_int_ref" :void (f :pointer))
 
 ;;; CMUCL chokes on this one for some reason.
-#-(and darwin cmu)
+#-(and darwin cmucl)
 (defcallback read-int-from-pointer :void ((a :pointer))
   (setq *int* (mem-ref a :int)))
 
-#+(and darwin cmu)
+#+(and darwin cmucl)
 (pushnew 'callbacks.void rt::*expected-failures*)
 
 (deftest callbacks.void
@@ -271,7 +271,7 @@
 (defcfun "call_sum_127_no_ll" :long (cb :pointer))
 
 ;;; CMUCL, ECL and CCL choke on this one.
-#-(or ecl cmu clozure
+#-(or ecl cmucl clozure
       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (defcallback sum-127-no-ll :long
     ((a1 :unsigned-long) (a2 :pointer) (a3 :long) (a4 :double)
@@ -328,7 +328,7 @@
           (format t "a~A: ~A~%" i arg))
     (reduce #'+ args)))
 
-#+(or openmcl cmu ecl (and darwin (or allegro lispworks)))
+#+(or openmcl cmucl ecl (and darwin (or allegro lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
 
 #+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
@@ -344,7 +344,7 @@
   (defcfun "call_sum_127" :long-long (cb :pointer))
 
   ;;; CMUCL, ECL and CCL choke on this one.
-  #-(or cmu ecl clozure)
+  #-(or cmucl ecl clozure)
   (defcallback sum-127 :long-long
       ((a1 :short) (a2 :char) (a3 :pointer) (a4 :float) (a5 :long) (a6 :double)
        (a7 :unsigned-long-long) (a8 :unsigned-short) (a9 :unsigned-char)
@@ -395,7 +395,7 @@
        (values (floor a108)) a109 a110 a111 a112 a113 a114 a115 a116 a117 a118
        a119 a120 a121 (values (floor a122)) a123 a124 a125 a126 a127))
 
-  #+(or openmcl cmu ecl)
+  #+(or openmcl cmucl ecl)
   (push 'callbacks.bff.2 rt::*expected-failures*)
 
   (deftest callbacks.bff.2
@@ -412,7 +412,7 @@
 ;;; point arithmetic rounding errors.
 ;;;
 ;;; CMUCL chokes on this one.
-#-(and darwin cmu)
+#-(and darwin cmucl)
 (defcallback double26 :double
     ((a1 :double) (a2 :double) (a3 :double) (a4 :double) (a5 :double)
      (a6 :double) (a7 :double) (a8 :double) (a9 :double) (a10 :double)
@@ -429,14 +429,14 @@
 
 (defcfun "call_double26" :double (f :pointer))
 
-#+(and darwin (or allegro cmu))
+#+(and darwin (or allegro cmucl))
 (pushnew 'callbacks.double26 rt::*expected-failures*)
 
 (deftest callbacks.double26
     (call-double26 (callback double26))
   81.64d0)
 
-#+(and darwin cmu)
+#+(and darwin cmucl)
 (pushnew 'callbacks.double26.funcall rt::*expected-failures*)
 
 #-cffi-sys::no-foreign-funcall
@@ -453,7 +453,7 @@
   81.64d0)
 
 ;;; Same as above, for floats.
-#-(and darwin cmu)
+#-(and darwin cmucl)
 (defcallback float26 :float
     ((a1 :float) (a2 :float) (a3 :float) (a4 :float) (a5 :float)
      (a6 :float) (a7 :float) (a8 :float) (a9 :float) (a10 :float)
@@ -470,14 +470,14 @@
 
 (defcfun "call_float26" :float (f :pointer))
 
-#+(and darwin (or lispworks openmcl cmu))
+#+(and darwin (or lispworks openmcl cmucl))
 (pushnew 'callbacks.float26 regression-test::*expected-failures*)
 
 (deftest callbacks.float26
     (call-float26 (callback float26))
   130.0)
 
-#+(and darwin (or lispworks openmcl cmu))
+#+(and darwin (or lispworks openmcl cmucl))
 (pushnew 'callbacks.float26.funcall regression-test::*expected-failures*)
 
 #-cffi-sys::no-foreign-funcall

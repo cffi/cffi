@@ -484,7 +484,7 @@ library type if type is not specified."
 (defun load-foreign-library (filename &key module supporting-libraries
                              force-load)
   #+(or allegro mcl sbcl clisp) (declare (ignore module supporting-libraries))
-  #+(or cmu scl sbcl) (declare (ignore module))
+  #+(or cmucl scl sbcl) (declare (ignore module))
 
   (when (and filename (or (null (pathname-directory filename))
                           (probe-file filename)))
@@ -496,7 +496,7 @@ library type if type is not specified."
         t ;; return T, but don't reload library
         (progn
           ;; FIXME: Hmm, what are these two for?
-          #+cmu
+          #+cmucl
           (let ((type (pathname-type (parse-namestring filename))))
             (if (string-equal type "so")
                 (sys::load-object-file filename)
@@ -513,7 +513,7 @@ library type if type is not specified."
                                     (convert-supporting-libraries-to-string
                                      supporting-libraries))))
 
-          #-(or cmu scl)
+          #-(or cmucl scl)
           (cffi:load-foreign-library filename)
           (push filename *loaded-libraries*)
           t))))
@@ -523,14 +523,14 @@ library type if type is not specified."
   "Return the value of the environment variable."
   #+allegro (sys::getenv (string var))
   #+clisp (sys::getenv (string var))
-  #+(or cmu scl) (cdr (assoc (string var) ext:*environment-list* :test #'equalp
+  #+(or cmucl scl) (cdr (assoc (string var) ext:*environment-list* :test #'equalp
                              :key #'string))
   #+(or ecl gcl) (si:getenv (string var))
   #+lispworks (lw:environment-variable (string var))
   #+lucid (lcl:environment-variable (string var))
   #+(or mcl ccl) (ccl::getenv var)
   #+sbcl (sb-ext:posix-getenv var)
-  #-(or allegro clisp cmu ecl scl gcl lispworks lucid mcl ccl sbcl)
+  #-(or allegro clisp cmucl ecl scl gcl lispworks lucid mcl ccl sbcl)
   (error 'not-implemented :proc (list 'getenv var)))
 
 ;; Taken from UFFI's src/os.lisp
@@ -548,7 +548,7 @@ output to *trace-output*.  Returns the shell's exit code."
       (list "-c" command)
       :input nil :output output))
 
-    #+(or cmu scl)
+    #+(or cmucl scl)
     (ext:process-exit-code
      (ext:run-program
       "/bin/sh"
@@ -580,7 +580,7 @@ output to *trace-output*.  Returns the shell's exit code."
                 "/bin/sh" (list "-c" command)
                 :input nil :output output :error nil :wait t))
 
-    #-(or openmcl ecl clisp lispworks allegro scl cmu sbcl)
+    #-(or openmcl ecl clisp lispworks allegro scl cmucl sbcl)
     (error "RUN-SHELL-PROGRAM not implemented for this Lisp")
     ))
 
