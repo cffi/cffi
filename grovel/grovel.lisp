@@ -719,43 +719,28 @@ string."
 
 (defun foreign-type-to-printf-specification (type)
   "Return the printf specification associated with the foreign type TYPE."
-  (ecase type
-    (:char
-     "\"%hhd\"")
-    ((:unsigned-char :uchar)
-     "\"%hhu\"")
-    (:short
-     "\"%hd\"")
-    ((:unsigned-short :ushort)
-     "\"%hu\"")
-    (:int
-     "\"%d\"")
-    ((:unsigned-int :uint)
-     "\"%u\"")
-    (:long
-     "\"%ld\"")
-    ((:unsigned-long :ulong)
-     "\"%lu\"")
-    ((:long-long :llong)
-     "\"%lld\"")
-    ((:unsigned-long-long :ullong)
-     "\"%llu\"")
-    (:int8
-     "\"%\"PRId8")
-    (:uint8
-     "\"%\"PRIu8")
-    (:int16
-     "\"%\"PRId16")
-    (:uint16
-     "\"%\"PRIu16")
-    (:int32
-     "\"%\"PRId32")
-    (:uint32
-     "\"%\"PRIu32")
-    (:int64
-     "\"%\"PRId64")
-    (:uint64
-     "\"%\"PRIu64")))
+  (labels ((resolve-typedefs (foreign-type)
+             (etypecase foreign-type
+               (cffi::foreign-typedef (resolve-typedefs (cffi::actual-type foreign-type)))
+               (cffi::foreign-built-in-type (cffi::type-keyword foreign-type))
+               (t (resolve-typedefs (cffi::parse-type type))))))
+    (ecase (resolve-typedefs type)
+      ;; 2015/10/13 guicho2.71828
+      ;; it used to include all integer types in *built-in-foreign-types*, and all of its aliases,
+      ;; such as :char, :unsigned-char, :uchar, ... :int8, :int16, :uint8 ...
+      ;; however, some types like :int8 are the alias to the actual built-in types.
+      ;; Those types are resolved by resolve-typedefs and now we have
+      ;; unaliased built-in types only.
+      (:char               "\"%hhd\"")
+      (:unsigned-char      "\"%hhu\"")
+      (:short              "\"%hd\"")
+      (:unsigned-short     "\"%hu\"")
+      (:int                "\"%d\"")
+      (:unsigned-int       "\"%u\"")
+      (:long               "\"%ld\"")
+      (:unsigned-long      "\"%lu\"")
+      (:long-long          "\"%lld\"")
+      (:unsigned-long-long "\"%llu\""))))
 
 ;; Defines a bitfield, with elements specified as ((LISP-NAME C-NAME)
 ;; &key DOCUMENTATION).  NAME-AND-OPTS can be either a symbol as name,
