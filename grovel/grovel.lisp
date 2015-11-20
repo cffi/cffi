@@ -690,6 +690,33 @@ string."
           (format out "~&#endif~%"))
         (c-format out ")")))
     (c-format out ")~%")))
+
+;; Similar to bitfield, but gets values from an enum rather than
+;; macro definitions.
+(define-grovel-syntax bitfield-enum (name-and-opts &rest masks)
+  (destructuring-bind (name &key base-type)
+      (ensure-list name-and-opts)
+    (c-section-header out "bitfield-enum" name)
+    (c-export out name)
+    (c-format out "(cffi:defbitfield (")
+    (c-print-symbol out name t)
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
+    (dolist (mask masks)
+      (destructuring-bind ((lisp-name &optional c-name) &key documentation)
+          mask
+        (declare (ignore documentation))
+        (check-type lisp-name symbol)
+        (c-format out "~%  (")
+        (c-print-symbol out lisp-name)
+        (when c-name
+          (check-type c-name string)
+          (c-format out " ")
+          (c-print-integer-constant out c-name base-type))
+        (c-format out ")")))
+    (c-format out ")~%")))
 
 
 ;;;# Wrapper Generation

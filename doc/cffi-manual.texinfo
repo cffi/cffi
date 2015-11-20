@@ -6585,6 +6585,14 @@ symbol as name, or a list @code{(name &key base-type)}.  For example:
     :optional t))
 @end lisp
 
+@deffn {Grovel Form} bitfield-enum name-and-opts &rest elements
+
+Defines a bitfield from a c enum as @code{((lisp-name &optional
+c-name) &key documentation)}. It works very similarly to
+@code{bitfield} but retrieves values from a c enum rather than macro
+definitions.
+@end deffn
+
 
 @c ===================================================================
 @c SECTION: Groveller ASDF Integration
