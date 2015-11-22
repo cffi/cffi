@@ -318,7 +318,8 @@ WITH-POINTER-TO-VECTOR-DATA."
          ,@(unless (null args) '(:call-direct t))
          :arg-checking nil
          :strings-convert nil
-         #+(version>= 8 1) ,@'(:release-heap :always)
+         #+(version>= 8 1) ,@'(:release-heap :when-ok
+                               :release-heap-ignorable t)
          #+smp ,@'(:release-heap-implies-allow-gc t))
       `(,ff-name ,@args))))
 
