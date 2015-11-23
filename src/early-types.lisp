@@ -312,7 +312,7 @@ Signals an error if FOREIGN-TYPE is undefined."))
   ())
 
 (defun follow-typedefs (type)
-  (if (typep type 'foreign-type-alias)
+  (if (typep type 'foreign-typedef)
       (follow-typedefs (actual-type type))
       type))
 
