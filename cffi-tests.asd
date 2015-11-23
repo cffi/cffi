@@ -67,6 +67,7 @@
      (:file "foreign-globals" :depends-on ("package"))
      (:file "memory" :depends-on ("package"))
      (:file "strings" :depends-on ("package"))
+     (:file "arrays" :depends-on ("package"))
      (:file "struct" :depends-on ("package"))
      (:file "fsbv" :depends-on ("bindings"))
      (:file "union" :depends-on ("package"))
