@@ -89,6 +89,15 @@
    #:with-foreign-strings
    #:with-foreign-pointer-as-string
 
+   ;; Foreign array operations.
+   ;; TODO: document these
+   #:foreign-array-alloc
+   #:foreign-array-free
+   #:foreign-array-to-lisp
+   #:lisp-array-to-foreign
+   #:with-foreign-array
+   #:foreign-aref
+
    ;; Foreign function operations.
    #:defcfun
    #:foreign-funcall
