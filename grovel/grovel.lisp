@@ -277,7 +277,9 @@ int main(int argc, char**argv) {
                     (format *debug-io* "~&Attempting to continue anyway.~%")
                     (return)))))
       (appendf *cc-flags*
-               (parse-command-flags (invoke "pkg-config" pkg "--cflags"))))))
+               (parse-command-flags (run-program (list "pkg-config" pkg "--cflags")
+                                                 :output :string
+                                                 :error-output :interactive))))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
