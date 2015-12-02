@@ -79,6 +79,14 @@
    #:make-shareable-byte-vector
    #:with-pointer-to-vector-data
 
+   ;; Foreign byte data operations.
+   #:octets-to-foreign
+   #:foreign-to-octets
+   #:foreign-octets-alloc
+   #:foreign-octets-free
+   #:with-foreign-octets
+   #:with-foreign-pointer-as-octets
+
    ;; Foreign string operations.
    #:*default-foreign-encoding*
    #:foreign-string-alloc

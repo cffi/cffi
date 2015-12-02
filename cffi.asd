@@ -59,6 +59,7 @@
      (:file "early-types")
      (:file "types")
      (:file "enum")
+     (:file "octets")
      (:file "strings")
      (:file "structures")
      (:file "functions")
