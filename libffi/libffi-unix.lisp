@@ -50,6 +50,10 @@
  ((:bad-typedef "FFI_BAD_TYPEDEF"))
  ((:bad-abi "FFI_BAD_ABI")))
 
+#+freebsd
+(cenum abi
+ ((:default-abi "FFI_DEFAULT_ABI")))
+#-freebsd 
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
  ((:sysv "FFI_SYSV"))
