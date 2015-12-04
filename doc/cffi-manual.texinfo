@@ -6728,8 +6728,6 @@ commonly used by C are insufficiently expressive.
 @xref{Tutorial-Abstraction,, Breaking the abstraction}, for more
 details.
 
-@item
-C @code{struct}s cannot be passed by value.
 @end itemize
 
 
