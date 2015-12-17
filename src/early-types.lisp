@@ -64,6 +64,10 @@
   "Set the type parser for SYMBOL."
   (setf (gethash (cons namespace symbol) *type-parsers*) func))
 
+(defun undefine-foreign-type (symbol &optional (namespace :default))
+  (remhash (cons namespace symbol) *type-parsers*)
+  (values))
+
 ;;; Using a generic function would have been nicer but generates lots
 ;;; of style warnings in SBCL.  (Silly reason, yes.)
 (defmacro define-parse-method (name lambda-list &body body)
