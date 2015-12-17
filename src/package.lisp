@@ -45,6 +45,7 @@
                 #:parse-body
                 #:simple-style-warning
                 #:symbolicate
+                #:unwind-protect-case
                 #:when-let
                 #:with-unique-names)
   (:export
