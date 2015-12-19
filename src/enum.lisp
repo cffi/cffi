@@ -135,6 +135,17 @@
          (%foreign-enum-value ,type ,value :errorp t)
          ,value)))
 
+;;; There are two exansions necessary for an enum: first, the enum
+;;; keyword needs to be translated to an int, and then the int needs
+;;; to be made indirect.
+(defmethod expand-to-foreign-dyn-indirect (value var body (type foreign-enum))
+  (expand-to-foreign-dyn-indirect       ; Make the integer indirect
+   (alexandria:with-gensyms (feint)
+     (call-next-method value feint (list feint) type)) ; TRANSLATABLE-FOREIGN-TYPE method
+   var
+   body
+   (actual-type type)))
+
 ;;;# Foreign Bitfields as Lisp keywords
 ;;;
 ;;; DEFBITFIELD is an abstraction similar to the one provided by DEFCENUM.

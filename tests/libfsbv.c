@@ -2,7 +2,7 @@
  *
  * libfsbv.c --- auxiliary C lib for testing foreign structure by value calls
  *
- * Copyright (C) 2011 Liam M. Healy
+ * Copyright (C) 2011, 2015 Liam M. Healy
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -63,7 +63,17 @@ struct struct_pair_double {
     double dbl;
 };
 
+typedef enum {
+    ONE = 1,
+    TWO,
+    THREE,
+    FOUR,
+    FORTY_ONE = 41,
+    FORTY_TWO
+} numeros;
+
 int sumpair (struct struct_pair sp);
+int enumpair (numeros mynum, struct struct_pair sp);
 struct struct_pair doublepair (struct struct_pair dp);
 double prodsumpair (struct struct_pair_double spd);
 struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
@@ -72,6 +82,31 @@ DLLEXPORT
 int sumpair (struct struct_pair sp)
 {
   return sp.a + sp.b;
+}
+
+DLLEXPORT
+int enumpair (numeros mynum, struct struct_pair sp)
+{
+  if ( mynum == ONE )
+    {
+      return sp.a + sp.b;
+    }
+  else if ( mynum == TWO )
+    {
+      return sp.a + 2*sp.b;
+    }
+  else if ( mynum == THREE )
+    {
+      return 2*sp.a + sp.b;
+    }
+  else if ( mynum == FOUR )
+    {
+      return 2*sp.a + 2*sp.b;
+    }
+  else 
+    {
+      return 41*sp.a + 42*sp.b;
+    }
 }
 
 DLLEXPORT

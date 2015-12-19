@@ -100,6 +100,15 @@
   (stringlenpair "abc" '(1 . 2))
   (3 . 6))
 
+;;; Combine structures by value with an enum argument
+(defcfun "enumpair" (:int)
+  (e numeros)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.8
+  (enumpair :two '(1 . 2))
+  5)
+
 ;;; returning struct with bitfield member (bug #1474631)
 (defbitfield (struct-bitfield :unsigned-int)
   (:a 1)
