@@ -64,3 +64,13 @@
      (:file "functions")
      (:file "foreign-vars")
      (:file "features")))))
+
+(defsystem :cffi/errno
+  :description "Access to the OS errno through CFFI:*ERRNO*"
+  :author "Attila Lendvai <attila@lendvai.name>"
+  :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
+  :licence "MIT"
+  :depends-on (:cffi)
+  :components
+  ((:file "errno"
+    :pathname "src/errno")))
