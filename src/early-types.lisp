@@ -53,15 +53,61 @@
 (defvar *type-parsers* (make-hash-table :test 'equal)
   "Hash table of defined type parsers.")
 
+(define-condition cffi-error (error)
+  ())
+
+(define-condition foreign-type-error (cffi-error)
+  ((type-name :initarg :type-name
+              :initform (error "Must specify TYPE-NAME.")
+              :accessor foreign-type-error/type-name)
+   (namespace :initarg :namespace
+              :initform :default
+              :accessor foreign-type-error/namespace)))
+
+(defun foreign-type-error/compound-name (e)
+  (let ((name (foreign-type-error/type-name e))
+        (namespace (foreign-type-error/namespace e)))
+    (if (eq namespace :default)
+        name
+        `(,namespace ,name))))
+
+(define-condition simple-foreign-type-error (simple-error foreign-type-error)
+  ())
+
+(defun simple-foreign-type-error (type-name namespace format-control &rest format-arguments)
+  (error 'simple-foreign-type-error
+         :type-name type-name :namespace namespace
+         :format-control format-control :format-arguments format-arguments))
+
+(define-condition undefined-foreign-type-error (foreign-type-error)
+  ()
+  (:report (lambda (e stream)
+             (format stream "Unknown CFFI type ~S" (foreign-type-error/compound-name e)))))
+
+(defun undefined-foreign-type-error (type-name &optional (namespace :default))
+  (error 'undefined-foreign-type-error :type-name type-name :namespace namespace))
+
+;; TODO this is not according to the C namespace rules,
+;; see bug: https://bugs.launchpad.net/cffi/+bug/1527947
+(deftype c-namespace-name ()
+  '(member :default :struct :union))
+
+;; for C namespaces read: https://stackoverflow.com/questions/12579142/type-namespace-in-c
+;; (section 6.2.3 Name spaces of identifiers)
+;; NOTE: :struct is probably an unfortunate name for the tagged (?) namespace
 (defun find-type-parser (symbol &optional (namespace :default))
-  "Return the type parser for SYMBOL."
+  "Return the type parser for SYMBOL. NAMESPACE is either :DEFAULT (for
+variables, functions, and typedefs) or :STRUCT (for structs, unions, and enums)."
+  (check-type symbol (and symbol (not null)))
+  (check-type namespace c-namespace-name)
   (or (gethash (cons namespace symbol) *type-parsers*)
-      (if (eq namespace :default)
-          (error "unknown CFFI type: ~S." symbol)
-          (error "unknown CFFI type: (~S ~S)." namespace symbol))))
+      (undefined-foreign-type-error symbol namespace)))
 
 (defun (setf find-type-parser) (func symbol &optional (namespace :default))
   "Set the type parser for SYMBOL."
+  (check-type symbol (and symbol (not null)))
+  (check-type namespace c-namespace-name)
+  ;; TODO Shall we signal a redefinition warning here?
   (setf (gethash (cons namespace symbol) *type-parsers*) func))
 
 (defun undefine-foreign-type (symbol &optional (namespace :default))
@@ -360,7 +406,8 @@ Signals an error if FOREIGN-TYPE is undefined."))
     (labels ((%check (cur-type)
                (when (typep cur-type 'foreign-typedef)
                  (when (gethash (name cur-type) seen)
-                   (error "Detected cycle in type ~S." type))
+                   (simple-foreign-type-error type :default
+                                              "Detected cycle in type ~S." type))
                  (setf (gethash (name cur-type) seen) t)
                  (%check (actual-type cur-type)))))
       (%check type))))

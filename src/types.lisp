@@ -30,6 +30,11 @@
 
 ;;;# Built-In Types
 
+;; NOTE: In the C standard there's a "signed-char":
+;; https://stackoverflow.com/questions/436513/char-signed-char-char-unsigned-char
+;; and "char" may be either signed or unsigned, i.e. treating it as a small int
+;; is not wise. At the level of CFFI we can safely ignore this and assume that
+;; :char is mapped to "signed-char" by the CL implementation under us.
 (define-built-in-foreign-type :char)
 (define-built-in-foreign-type :unsigned-char)
 (define-built-in-foreign-type :short)
@@ -680,9 +685,9 @@ The foreign array must be freed with foreign-array-free."
         (dolist (slotdef slots)
           (destructuring-bind (slotname type &key (count 1) offset) slotdef
             (when (eq (canonicalize-foreign-type type) :void)
-              (simple-type-related-error type :struct
+              (simple-foreign-type-error type :struct
                                          "In struct ~S: void type not allowed in field ~S"
-                                         list name slotdef))
+                                         name slotdef))
             (setq current-offset
                   (or offset
                       (adjust-for-alignment type current-offset :normal firstp)))
@@ -748,7 +753,9 @@ The foreign array must be freed with foreign-array-free."
   (let* ((struct (follow-typedefs (parse-type type)))
          (info (gethash slot-name (slots struct))))
     (unless info
-      (error "Undefined slot ~A in foreign type ~A." slot-name type))
+      (simple-foreign-type-error type :struct
+                                 "Undefined slot ~A in foreign type ~A."
+                                 slot-name type))
     info))
 
 (defun foreign-slot-pointer (ptr type slot-name)
@@ -886,7 +893,7 @@ slots will be defined and stored."
         (dolist (slotdef slots)
           (destructuring-bind (slotname type &key (count 1)) slotdef
             (when (eq (canonicalize-foreign-type type) :void)
-              (simple-type-related-error name :struct
+              (simple-foreign-type-error name :struct
                                          "In union ~S: void type not allowed in field ~S"
                                          name slotdef))
             (let* ((slot (make-struct-slot slotname 0 type count))

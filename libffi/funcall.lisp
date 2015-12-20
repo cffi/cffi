@@ -27,8 +27,7 @@
 
 (in-package #:cffi)
 
-;; TODO this should inherit from cffi-error, but it's not merged yet in master.
-(define-condition libffi-error (error)
+(define-condition libffi-error (cffi-error)
   ((function-name
     :initarg :function-name :reader function-name)))
 
