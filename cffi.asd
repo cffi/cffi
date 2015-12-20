@@ -37,6 +37,8 @@
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
   :depends-on (:uiop :alexandria :trivial-features :babel)
+  :in-order-to ((test-op (load-op :cffi-tests)))
+  :perform (test-op (o c) (operate 'asdf:test-op :cffi-tests))
   :components
   ((:module "src"
     :serial t
@@ -64,12 +66,3 @@
      (:file "functions")
      (:file "foreign-vars")
      (:file "features")))))
-
-(defmethod operation-done-p ((o test-op) (c (eql (find-system :cffi))))
-  nil)
-
-(defmethod perform ((o test-op) (c (eql (find-system :cffi))))
-  (operate 'asdf:load-op :cffi-tests)
-  (operate 'asdf:test-op :cffi-tests))
-
-;; vim: ft=lisp et
