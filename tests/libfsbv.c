@@ -35,6 +35,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <float.h>
 
@@ -110,11 +111,11 @@ int enumpair (numeros mynum, struct struct_pair sp)
 }
 
 DLLEXPORT
-struct struct_pair makepair ()
+struct struct_pair makepair (bool cond)
 {
   struct struct_pair ret;
   ret.a = -127;
-  ret.b = 42;
+  ret.b = cond ? 42 : 43;
   return ret;
 }
 

@@ -32,7 +32,7 @@
 (defcfun "sumpair" :int
   (p (:struct struct-pair)))
 
-(defcfun "makepair" (:struct struct-pair))
+(defcfun "makepair" (:struct struct-pair) (cond :bool))
 
 (defcfun "doublepair" (:struct struct-pair)
   (p (:struct struct-pair)))
@@ -54,8 +54,12 @@
   (2 . 4))
 
 ;;; return struct by value
-(deftest fsbv.makepair
-    (makepair)
+(deftest fsbv.makepair.1
+    (makepair nil)
+  (-127 . 43))
+
+(deftest fsbv.makepair.2
+    (makepair t)
   (-127 . 42))
 
 ;;; Call recursive structure by value
