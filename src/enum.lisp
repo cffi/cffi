@@ -46,6 +46,9 @@
     :reader value-keywords))
   (:documentation "Describes a foreign enumerated type."))
 
+(deftype enum-key ()
+  '(and symbol (not null)))
+
 (defun make-foreign-enum (type-name base-type values)
   "Makes a new instance of the foreign-enum class."
   (let ((type (make-instance 'foreign-enum :name type-name
@@ -54,7 +57,7 @@
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value))
           (ensure-list pair)
-        (check-type keyword keyword)
+        (check-type keyword enum-key)
         (check-type value integer)
         (if (gethash keyword (keyword-values type))
             (error "A foreign enum cannot contain duplicate keywords: ~S."
@@ -89,7 +92,7 @@
 ;;; when the value or keyword is constant.  I am not going to bother
 ;;; until someone has a serious performance need to do so though. --jamesjb
 (defun %foreign-enum-value (type keyword &key errorp)
-  (check-type keyword keyword)
+  (check-type keyword enum-key)
   (or (gethash keyword (keyword-values type))
       (when errorp
         (error "~S is not defined as a keyword for enum type ~S."
