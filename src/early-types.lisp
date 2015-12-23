@@ -512,7 +512,9 @@ Signals an error if the type cannot be resolved."
     (value var body (type translatable-foreign-type))
   (let ((*runtime-translator-form*
           `(with-foreign-object (,var ',(unparse-type type))
-             (translate-into-foreign-memory ,value ,type ,var)
+             (if (typep ,value 'foreign-pointer)
+                 (setf ,var ,value)
+                 (translate-into-foreign-memory ,value ,type ,var))
              ,@body)))
     (call-next-method)))
 
