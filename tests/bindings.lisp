@@ -52,6 +52,17 @@
   (:darwin "/usr/lib/libm.dylib")
   (t (:default "libm")))
 
+(defmacro deftest (name &rest body)
+  (destructuring-bind (name &key expected-to-fail)
+      (alexandria:ensure-list name)
+    (let ((result `(rt:deftest ,name ,@body)))
+      (when expected-to-fail
+        (setf result `(progn
+                        (when ,expected-to-fail
+                          (pushnew ',name rt::*expected-failures*))
+                        ,result)))
+      result)))
+
 (defun call-within-new-thread (fn &rest args)
   (let (result
         error

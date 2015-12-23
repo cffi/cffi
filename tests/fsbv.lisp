@@ -32,7 +32,8 @@
 (defcfun "sumpair" :int
   (p (:struct struct-pair)))
 
-(defcfun "makepair" (:struct struct-pair) (cond :bool))
+(defcfun "makepair" (:struct struct-pair)
+  (condition :bool))
 
 (defcfun "doublepair" (:struct struct-pair)
   (p (:struct struct-pair)))
@@ -48,17 +49,24 @@
     (sumpair '(1 . 2))
   3)
 
+;;; See lp#1528719
+(deftest (fsbv.wfo :expected-to-fail t)
+    (with-foreign-object (arg '(:struct struct-pair))
+      (convert-into-foreign-memory '(40 . 2) '(:struct struct-pair) arg)
+      (sumpair arg))
+  42)
+
 ;;; Call and return struct by value
 (deftest fsbv.2
     (doublepair '(1 . 2))
   (2 . 4))
 
 ;;; return struct by value
-(deftest fsbv.makepair.1
+(deftest (fsbv.makepair.1 :expected-to-fail t)
     (makepair nil)
   (-127 . 43))
 
-(deftest fsbv.makepair.2
+(deftest (fsbv.makepair.2 :expected-to-fail t)
     (makepair t)
   (-127 . 42))
 

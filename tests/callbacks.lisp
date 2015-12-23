@@ -144,9 +144,7 @@
 
 #-cffi-sys::no-long-long
 (progn
-  #+openmcl (push 'callbacks.long-long rt::*expected-failures*)
-
-  (deftest callbacks.long-long
+  (deftest (callbacks.long-long :expected-to-fail (alexandria:featurep :openmcl))
       (expect-long-long-sum (callback sum-long-long))
     1)
 
