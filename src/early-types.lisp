@@ -423,6 +423,12 @@ Signals an error if FOREIGN-TYPE is undefined."))
       (setf (unparsed-type ptype) type))
     ptype))
 
+(defun ensure-parsed-base-type (type)
+  (follow-typedefs
+   (if (typep type 'foreign-type)
+       type
+       (parse-type type))))
+
 (defun canonicalize-foreign-type (type)
   "Convert TYPE to a built-in type by following aliases.
 Signals an error if the type cannot be resolved."

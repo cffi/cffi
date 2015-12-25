@@ -388,7 +388,7 @@ newly allocated memory."
 
 (defun lisp-array-to-foreign (array pointer array-type)
   "Copy elements from a Lisp array to POINTER."
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (el-type (element-type type))
          (dimensions (dimensions type)))
     (loop with foreign-type-size = (array-element-size type)
@@ -403,7 +403,7 @@ newly allocated memory."
   "Copy elements from ptr into a Lisp array. If POINTER is a null
 pointer, returns NIL."
   (unless (null-pointer-p pointer)
-    (let* ((type (follow-typedefs (parse-type array-type)))
+    (let* ((type (ensure-parsed-base-type array-type))
            (el-type (element-type type))
            (dimensions (dimensions type))
            (array (make-array dimensions)))
@@ -421,7 +421,7 @@ pointer, returns NIL."
   "Allocate a foreign array containing the elements of lisp array.
 The foreign array must be freed with foreign-array-free."
   (check-type array array)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (ptr (foreign-alloc (element-type type)
                              :count (reduce #'* (dimensions type)))))
     (lisp-array-to-foreign array ptr array-type)
@@ -434,21 +434,21 @@ The foreign array must be freed with foreign-array-free."
 (defmacro with-foreign-array ((var lisp-array array-type) &body body)
   "Bind var to a foreign array containing lisp-array elements in body."
   (with-unique-names (type)
-    `(let ((,type (follow-typedefs (parse-type ,array-type))))
+    `(let ((,type (ensure-parsed-base-type ,array-type)))
        (with-foreign-pointer (,var (* (reduce #'* (dimensions ,type))
                                       (array-element-size ,type)))
          (lisp-array-to-foreign ,lisp-array ,var ,array-type)
          ,@body))))
 
 (defun foreign-aref (ptr array-type &rest indexes)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (offset (* (array-element-size type)
                     (apply #'indexes-to-row-major-index
                            (dimensions type) indexes))))
     (mem-ref ptr (element-type type) offset)))
 
 (defun (setf foreign-aref) (value ptr array-type &rest indexes)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (offset (* (array-element-size type)
                     (apply #'indexes-to-row-major-index
                            (dimensions type) indexes))))
@@ -529,7 +529,7 @@ The foreign array must be freed with foreign-array-free."
 (defun foreign-slot-names (type)
   "Returns a list of TYPE's slot names in no particular order."
   (loop for value being the hash-values
-        in (slots (follow-typedefs (parse-type type)))
+        in (slots (ensure-parsed-base-type type))
         collect (slot-name value)))
 
 ;;;### Simple Slots
@@ -750,7 +750,7 @@ The foreign array must be freed with foreign-array-free."
 
 (defun get-slot-info (type slot-name)
   "Return the slot info for SLOT-NAME or raise an error."
-  (let* ((struct (follow-typedefs (parse-type type)))
+  (let* ((struct (ensure-parsed-base-type type))
          (info (gethash slot-name (slots struct))))
     (unless info
       (simple-foreign-type-error type :struct

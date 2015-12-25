@@ -64,6 +64,18 @@
          (eq :true (return-enum2 :true)))
   t)
 
+(defctype numeros-typedef numeros)
+
+(deftest enum.typedef.1
+    (eq (foreign-enum-keyword 'numeros-typedef 1)
+        (foreign-enum-keyword 'numeros 1))
+  t)
+
+(deftest enum.typedef.2
+    (eql (foreign-enum-value 'numeros-typedef :four)
+         (foreign-enum-value 'numeros :four))
+  t)
+
 ;;;# Bitfield tests
 
 ;;; Regression test: defbitfield was misbehaving when the first value

@@ -37,7 +37,7 @@
 ;;; constant for the type by a type translator when passed as
 ;;; arguments or a return value to a foreign function.
 
-(defclass foreign-enum (foreign-typedef enhanced-foreign-type)
+(defclass foreign-enum (named-foreign-type enhanced-foreign-type)
   ((keyword-values
     :initform (make-hash-table :test 'eq)
     :reader keyword-values)
@@ -86,7 +86,7 @@
 
 (defun foreign-enum-keyword-list (enum-type)
   "Return a list of KEYWORDS defined in ENUM-TYPE."
-  (hash-keys-to-list (keyword-values (parse-type enum-type))))
+  (hash-keys-to-list (keyword-values (ensure-parsed-base-type enum-type))))
 
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
@@ -100,7 +100,7 @@
 
 (defun foreign-enum-value (type keyword &key (errorp t))
   "Convert a KEYWORD into an integer according to the enum TYPE."
-  (let ((type-obj (parse-type type)))
+  (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-enum))
       (error "~S is not a foreign enum type." type)
       (%foreign-enum-value type-obj keyword :errorp errorp))))
@@ -114,7 +114,7 @@
 
 (defun foreign-enum-keyword (type value &key (errorp t))
   "Convert an integer VALUE into a keyword according to the enum TYPE."
-  (let ((type-obj (parse-type type)))
+  (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-enum))
         (error "~S is not a foreign enum type." type)
         (%foreign-enum-keyword type-obj value :errorp errorp))))
@@ -155,7 +155,7 @@
 ;;; With some changes to DEFCENUM, this could certainly be implemented on
 ;;; top of it.
 
-(defclass foreign-bitfield (foreign-typedef enhanced-foreign-type)
+(defclass foreign-bitfield (named-foreign-type enhanced-foreign-type)
   ((symbol-values
     :initform (make-hash-table :test 'eq)
     :reader symbol-values)
@@ -212,7 +212,7 @@
 
 (defun foreign-bitfield-value (type symbols)
   "Convert a list of symbols into an integer according to the TYPE bitfield."
-  (let ((type-obj (parse-type type)))
+  (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-bitfield))
       (error "~S is not a foreign bitfield type." type)
       (%foreign-bitfield-value type-obj symbols))))
@@ -236,7 +236,7 @@
 (defun foreign-bitfield-symbols (type value)
   "Convert an integer VALUE into a list of matching symbols according to
 the bitfield TYPE."
-  (let ((type-obj (parse-type type)))
+  (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-bitfield))
         (error "~S is not a foreign bitfield type." type)
         (%foreign-bitfield-symbols type-obj value))))
