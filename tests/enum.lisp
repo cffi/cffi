@@ -76,6 +76,34 @@
          (foreign-enum-value 'numeros :four))
   t)
 
+(defcenum enum-size.int
+  (:one 1)
+  (:int #.(1- (expt 2 (1- (* (foreign-type-size :int) 8)))))
+  (:two 2))
+
+(defcenum enum-size.long
+  (:long #.(1- (expt 2 (1- (* (foreign-type-size :long) 8)))))
+  (:one 1)
+  (:two 2))
+
+#+nil ;; :long-long is often the same size as :long
+(defcenum enum-size.long-long
+  (:one 1)
+  (:two 2)
+  (:long-long #.(1- (expt 2 (1- (* (foreign-type-size :long-long) 8))))))
+
+(deftest enum.size
+    (mapcar 'cffi::unparse-type
+            (list (cffi::actual-type (cffi::parse-type 'enum-size.int))
+                  (cffi::actual-type (cffi::parse-type 'enum-size.long))))
+  (:int :long))
+
+(deftest enum.size.error-when-too-large
+    (expecting-error
+      (eval '(defcenum enum-size-too-large
+              (:too-long #.(expt 2 129)))))
+  :error)
+
 ;;;# Bitfield tests
 
 ;;; Regression test: defbitfield was misbehaving when the first value

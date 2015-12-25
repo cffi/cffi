@@ -39,10 +39,12 @@
 
 (defclass foreign-enum (named-foreign-type enhanced-foreign-type)
   ((keyword-values
-    :initform (make-hash-table :test 'eq)
+    :initform (error "Must specify KEYWORD-VALUES.")
+    :initarg :keyword-values
     :reader keyword-values)
    (value-keywords
-    :initform (make-hash-table)
+    :initform (error "Must specify VALUE-KEYWORDS.")
+    :initarg :value-keywords
     :reader value-keywords))
   (:documentation "Describes a foreign enumerated type."))
 
@@ -51,31 +53,52 @@
 
 (defun make-foreign-enum (type-name base-type values)
   "Makes a new instance of the foreign-enum class."
-  (let ((type (make-instance 'foreign-enum :name type-name
-                             :actual-type (parse-type base-type)))
-        (default-value 0))
+  (let ((keyword-values (make-hash-table :test 'eq))
+        (value-keywords (make-hash-table))
+        (default-value 0)
+        (largest-value 0))
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value))
           (ensure-list pair)
         (check-type keyword enum-key)
         (check-type value integer)
-        (if (gethash keyword (keyword-values type))
+        (when (> value largest-value)
+          (setf largest-value value))
+        (if (gethash keyword keyword-values)
             (error "A foreign enum cannot contain duplicate keywords: ~S."
                    keyword)
-            (setf (gethash keyword (keyword-values type)) value))
-        ;; This is completely arbitrary behaviour: we keep the last we
+            (setf (gethash keyword keyword-values) value))
+        ;; This is completely arbitrary behaviour: we keep the last
         ;; value->keyword mapping. I suppose the opposite would be
         ;; just as good (keeping the first). Returning a list with all
         ;; the keywords might be a solution too? Suggestions
         ;; welcome. --luis
-        (setf (gethash value (value-keywords type)) keyword)
+        (setf (gethash value value-keywords) keyword)
         (setq default-value (1+ value))))
-    type))
+    (unless base-type
+      ;; details: https://stackoverflow.com/questions/1122096/what-is-the-underlying-type-of-a-c-enum
+      (let ((bits (integer-length largest-value)))
+        (setf base-type
+              (cond
+                ((<= bits (load-time-value (1- (* (foreign-type-size :int) 8))))
+                 :int)
+                ((<= bits (load-time-value (1- (* (foreign-type-size :long) 8))))
+                 :long)
+                ((<= bits (load-time-value (1- (* (foreign-type-size :long-long) 8))))
+                 :long-long)
+                (t
+                 (error "Enum value ~S of enum ~S is too large to store."
+                        largest-value type-name))))))
+    (make-instance 'foreign-enum
+                   :name type-name
+                   :actual-type (parse-type base-type)
+                   :keyword-values keyword-values
+                   :value-keywords value-keywords)))
 
 (defmacro defcenum (name-and-options &body enum-list)
   "Define an foreign enumerated type."
   (discard-docstring enum-list)
-  (destructuring-bind (name &optional (base-type :int))
+  (destructuring-bind (name &optional base-type)
       (ensure-list name-and-options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (notice-foreign-type
