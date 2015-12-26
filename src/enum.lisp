@@ -27,6 +27,16 @@
 
 (in-package #:cffi)
 
+;; TODO the accessors names are rather inconsistent:
+;; FOREIGN-ENUM-VALUE           FOREIGN-BITFIELD-VALUE
+;; FOREIGN-ENUM-KEYWORD         FOREIGN-BITFIELD-SYMBOLS
+;; FOREIGN-ENUM-KEYWORD-LIST    FOREIGN-BITFIELD-SYMBOL-LIST
+;; I'd rename them to: FOREIGN-*-KEY(S) and FOREIGN-*-ALL-KEYS -- attila
+
+;; TODO bitfield is a confusing name, because the C standard calls
+;; the "int foo : 3" type as a bitfield. Maybe rename to defbitmask?
+;; -- attila
+
 ;;;# Foreign Constants as Lisp Keywords
 ;;;
 ;;; This module defines the DEFCENUM macro, which provides an
@@ -51,19 +61,35 @@
 (deftype enum-key ()
   '(and symbol (not null)))
 
-(defun make-foreign-enum (type-name base-type values)
-  "Makes a new instance of the foreign-enum class."
+(defparameter +valid-enum-base-types+ '(:char :unsigned-char
+                                        :short :unsigned-short
+                                        :int :unsigned-int
+                                        :long :unsigned-long
+                                        :long-long :unsigned-long-long))
+
+(defun parse-foreign-enum-like (type-name base-type values
+                                &optional field-mode-p)
   (let ((keyword-values (make-hash-table :test 'eq))
         (value-keywords (make-hash-table))
-        (default-value 0)
+        (field-keywords (list))
+        (bit-index->keyword (make-array 0 :adjustable t
+                                        :element-type t))
+        (default-value (if field-mode-p 1 0))
         (largest-value 0))
     (dolist (pair values)
-      (destructuring-bind (keyword &optional (value default-value))
+      (destructuring-bind (keyword &optional (value default-value valuep))
           (ensure-list pair)
         (check-type keyword enum-key)
         (check-type value integer)
         (when (> value largest-value)
           (setf largest-value value))
+        (if field-mode-p
+            (if valuep
+                (when (and (>= value default-value)
+                           (single-bit-p value))
+                  (setf default-value (ash value 1)))
+                (setf default-value (ash default-value 1)))
+            (setf default-value (1+ value)))
         (if (gethash keyword keyword-values)
             (error "A foreign enum cannot contain duplicate keywords: ~S."
                    keyword)
@@ -74,43 +100,72 @@
         ;; the keywords might be a solution too? Suggestions
         ;; welcome. --luis
         (setf (gethash value value-keywords) keyword)
-        (setq default-value (1+ value))))
-    (unless base-type
-      ;; details: https://stackoverflow.com/questions/1122096/what-is-the-underlying-type-of-a-c-enum
-      (let ((bits (integer-length largest-value)))
-        (setf base-type
-              (cond
-                ((<= bits (load-time-value (1- (* (foreign-type-size :int) 8))))
-                 :int)
-                ((<= bits (load-time-value (1- (* (foreign-type-size :long) 8))))
-                 :long)
-                ((<= bits (load-time-value (1- (* (foreign-type-size :long-long) 8))))
-                 :long-long)
-                (t
-                 (error "Enum value ~S of enum ~S is too large to store."
-                        largest-value type-name))))))
+        (when (and field-mode-p
+                   (single-bit-p value))
+          (let ((bit-index (1- (integer-length value))))
+            (push keyword field-keywords)
+            (when (<= (array-dimension bit-index->keyword 0)
+                      bit-index)
+              (setf bit-index->keyword
+                    (adjust-array bit-index->keyword (1+ bit-index)
+                                  :initial-element nil)))
+            (setf (aref bit-index->keyword bit-index)
+                  keyword)))))
+    (if base-type
+        (progn
+          (setf base-type (canonicalize-foreign-type base-type))
+          (assert (member base-type +valid-enum-base-types+ :test 'eq) ()
+                  "Invalid base type ~S for enum type ~S. Must be one of ~S."
+                  base-type type-name +valid-enum-base-types+))
+        ;; details: https://stackoverflow.com/questions/1122096/what-is-the-underlying-type-of-a-c-enum
+        (let ((bits (integer-length largest-value)))
+          (setf base-type
+                (cond
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :int) 8))))
+                   :int)
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :long) 8))))
+                   :long)
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :long-long) 8))))
+                   :long-long)
+                  (t
+                   (error "Enum value ~S of enum ~S is too large to store."
+                          largest-value type-name))))))
+    (values base-type keyword-values value-keywords
+            field-keywords (when field-mode-p
+                             (alexandria:copy-array
+                              bit-index->keyword :adjustable nil
+                              :fill-pointer nil)))))
+
+(defun make-foreign-enum (type-name base-type values)
+  "Makes a new instance of the foreign-enum class."
+  (multiple-value-bind
+        (base-type keyword-values value-keywords)
+      (parse-foreign-enum-like type-name base-type values)
     (make-instance 'foreign-enum
                    :name type-name
                    :actual-type (parse-type base-type)
                    :keyword-values keyword-values
                    :value-keywords value-keywords)))
 
-(defmacro defcenum (name-and-options &body enum-list)
-  "Define an foreign enumerated type."
+(defun %defcenum-like (name-and-options enum-list type-factory)
   (discard-docstring enum-list)
   (destructuring-bind (name &optional base-type)
       (ensure-list name-and-options)
-    (let ((type (make-foreign-enum name base-type enum-list)))
+    (let ((type (funcall type-factory name base-type enum-list)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-foreign-type ',name
                               ;; ,type is not enough here, someone needs to
                               ;; define it when we're being loaded from a fasl.
-                              (make-foreign-enum ',name ',base-type ',enum-list))
+                              (,type-factory ',name ',base-type ',enum-list))
          ,@(remove nil
                    (mapcar (lambda (key)
                              (unless (keywordp key)
                                `(defconstant ,key ,(foreign-enum-value type key))))
                            (foreign-enum-keyword-list type)))))))
+
+(defmacro defcenum (name-and-options &body enum-list)
+  "Define an foreign enumerated type."
+  (%defcenum-like name-and-options enum-list 'make-foreign-enum))
 
 (defun hash-keys-to-list (ht)
   (loop for k being the hash-keys in ht collect k))
@@ -169,12 +224,12 @@
          (%foreign-enum-value ,type ,value :errorp t)
          ,value)))
 
-;;; There are two exansions necessary for an enum: first, the enum
+;;; There are two expansions necessary for an enum: first, the enum
 ;;; keyword needs to be translated to an int, and then the int needs
 ;;; to be made indirect.
 (defmethod expand-to-foreign-dyn-indirect (value var body (type foreign-enum))
   (expand-to-foreign-dyn-indirect       ; Make the integer indirect
-   (alexandria:with-gensyms (feint)
+   (with-unique-names (feint)
      (call-next-method value feint (list feint) type)) ; TRANSLATABLE-FOREIGN-TYPE method
    var
    body
@@ -186,83 +241,76 @@
 ;;; With some changes to DEFCENUM, this could certainly be implemented on
 ;;; top of it.
 
-(defclass foreign-bitfield (named-foreign-type enhanced-foreign-type)
-  ((symbol-values
-    :initform (make-hash-table :test 'eq)
-    :reader symbol-values)
-   (value-symbols
-    :initform (make-hash-table)
-    :reader value-symbols))
+(defclass foreign-bitfield (foreign-enum)
+  ((field-keywords
+    :initform (error "Must specify FIELD-KEYWORDS.")
+    :initarg :field-keywords
+    :reader field-keywords)
+   (bit-index->keyword
+    :initform (error "Must specify BIT-INDEX->KEYWORD")
+    :initarg :bit-index->keyword
+    :reader bit-index->keyword))
   (:documentation "Describes a foreign bitfield type."))
 
 (defun make-foreign-bitfield (type-name base-type values)
   "Makes a new instance of the foreign-bitfield class."
-  (let ((type (make-instance 'foreign-bitfield :name type-name
-                             :actual-type (parse-type base-type)))
-        (bit-floor 1))
-    (dolist (pair values)
-      ;; bit-floor rule: find the greatest single-bit int used so far,
-      ;; and store its left-shift
-      (destructuring-bind (symbol &optional
-                           (value (prog1 bit-floor
-                                    (setf bit-floor (ash bit-floor 1)))
-                                  value-p))
-          (ensure-list pair)
-        (check-type symbol symbol)
-        (when value-p
-          (check-type value integer)
-          (when (and (>= value bit-floor) (single-bit-p value))
-            (setf bit-floor (ash value 1))))
-        (if (gethash symbol (symbol-values type))
-            (error "A foreign bitfield cannot contain duplicate symbols: ~S."
-                   symbol)
-            (setf (gethash symbol (symbol-values type)) value))
-        (push symbol (gethash value (value-symbols type)))))
-    type))
+  (multiple-value-bind
+        (base-type keyword-values value-keywords
+                   field-keywords bit-index->keyword)
+      (parse-foreign-enum-like type-name base-type values t)
+    (make-instance 'foreign-bitfield
+                   :name type-name
+                   :actual-type (parse-type base-type)
+                   :keyword-values keyword-values
+                   :value-keywords value-keywords
+                   :field-keywords field-keywords
+                   :bit-index->keyword bit-index->keyword)))
 
 (defmacro defbitfield (name-and-options &body masks)
   "Define an foreign enumerated type."
-  (discard-docstring masks)
-  (destructuring-bind (name &optional (base-type :int))
-      (ensure-list name-and-options)
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-type
-        ',name (make-foreign-bitfield ',name ',base-type ',masks)))))
+  (%defcenum-like name-and-options masks 'make-foreign-bitfield))
 
 (defun foreign-bitfield-symbol-list (bitfield-type)
   "Return a list of SYMBOLS defined in BITFIELD-TYPE."
-  (hash-keys-to-list (symbol-values (parse-type bitfield-type))))
+  (field-keywords (ensure-parsed-base-type bitfield-type)))
 
 (defun %foreign-bitfield-value (type symbols)
-  (reduce #'logior symbols
-          :key (lambda (symbol)
-                 (check-type symbol symbol)
-                 (or (gethash symbol (symbol-values type))
-                     (error "~S is not a valid symbol for bitfield type ~S."
-                            symbol type)))))
+  (declare (optimize speed))
+  (labels ((process-one (symbol)
+             (check-type symbol symbol)
+             (or (gethash symbol (keyword-values type))
+                 (error "~S is not a valid symbol for bitfield type ~S."
+                        symbol type))))
+    (declare (dynamic-extent #'process-one))
+    (if (consp symbols)
+        (reduce #'logior symbols :key #'process-one)
+        (process-one symbols))))
 
 (defun foreign-bitfield-value (type symbols)
   "Convert a list of symbols into an integer according to the TYPE bitfield."
   (let ((type-obj (ensure-parsed-base-type type)))
-    (if (not (typep type-obj 'foreign-bitfield))
-      (error "~S is not a foreign bitfield type." type)
-      (%foreign-bitfield-value type-obj symbols))))
+    (assert (typep type-obj 'foreign-bitfield) ()
+            "~S is not a foreign bitfield type." type)
+    (%foreign-bitfield-value type-obj symbols)))
 
 (define-compiler-macro foreign-bitfield-value (&whole form type symbols)
   "Optimize for when TYPE and SYMBOLS are constant."
+  (declare (notinline foreign-bitfield-value))
   (if (and (constantp type) (constantp symbols))
-      (let ((type-obj (parse-type (eval type))))
-        (if (not (typep type-obj 'foreign-bitfield))
-            (error "~S is not a foreign bitfield type." type)
-            (%foreign-bitfield-value type-obj (eval symbols))))
+      (foreign-bitfield-value (eval type) (eval symbols))
       form))
 
 (defun %foreign-bitfield-symbols (type value)
   (check-type value integer)
-  (loop for mask being the hash-keys in (value-symbols type)
-            using (hash-value symbols)
-        when (= (logand value mask) mask)
-        append symbols))
+  (check-type type foreign-bitfield)
+  (loop
+    :with bit-index->keyword = (bit-index->keyword type)
+    :for bit-index :from 0 :below (array-dimension bit-index->keyword 0)
+    :for mask = 1 :then (ash mask 1)
+    :for key = (aref bit-index->keyword bit-index)
+    :when (and key
+               (= (logand value mask) mask))
+    :collect key))
 
 (defun foreign-bitfield-symbols (type value)
   "Convert an integer VALUE into a list of matching symbols according to
@@ -274,11 +322,9 @@ the bitfield TYPE."
 
 (define-compiler-macro foreign-bitfield-symbols (&whole form type value)
   "Optimize for when TYPE and SYMBOLS are constant."
+  (declare (notinline foreign-bitfield-symbols))
   (if (and (constantp type) (constantp value))
-      (let ((type-obj (parse-type (eval type))))
-        (if (not (typep type-obj 'foreign-bitfield))
-            (error "~S is not a foreign bitfield type." type)
-            `(quote ,(%foreign-bitfield-symbols type-obj (eval value)))))
+      `(quote ,(foreign-bitfield-symbols (eval type) (eval value)))
       form))
 
 (defmethod translate-to-foreign (value (type foreign-bitfield))
