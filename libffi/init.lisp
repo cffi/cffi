@@ -74,10 +74,7 @@
            (assert descriptor)
            (setf (%libffi-type-desciptor-cache-value type) descriptor))))
   (map nil #'populate-with-built-in *built-in-float-types*)
-  (map nil #'populate-with-built-in (remove :pointer *other-builtin-types*))
-  ;; Let's not rely on the identity of the parsed void*
-  ;; type, use :pointer as the key instead.
-  (populate-with-built-in :pointer :pointer)
+  (map nil #'populate-with-built-in *other-builtin-types*)
   ;; Set the type descriptors for integer built-in types
   (dolist (type *built-in-integer-types*)
     (populate-with-built-in
