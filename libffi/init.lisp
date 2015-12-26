@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; init.lisp --- Load libffi and define #'libffi-type-pointer
+;;; init.lisp --- Load libffi and define basics
 ;;;
 ;;; Copyright (C) 2009, 2011 Liam M. Healy
 ;;;
@@ -37,17 +37,54 @@
 
 (load-foreign-library 'libffi)
 
-(defvar *libffi-type-pointer* (make-hash-table))
+;; FIXME: this is not thread safe. The fact that it's only accessed at
+;; compile time alleviates that somewhat. -- attila
+(defvar *libffi-type-descriptor-cache* (make-hash-table))
 
-(defgeneric libffi-type-pointer (object)
-  (:documentation "The type pointer defined by libffi.")
-  (:method ((object symbol))
-    (libffi-type-pointer (parse-type object)))
+(defun %libffi-type-desciptor-cache-value (type)
+  (check-type type (or foreign-type keyword))
+  (gethash type *libffi-type-descriptor-cache*))
+
+(defun (setf %libffi-type-desciptor-cache-value) (value type)
+  (check-type type (or foreign-type keyword))
+  (setf (gethash type *libffi-type-descriptor-cache*)
+        value))
+
+(defgeneric make-libffi-type-descriptor (object)
+  (:documentation "Build a libffi struct that describes the type for libffi. This will be used as read-only argument when the actual call happens.")
   (:method (object)
-    (gethash object *libffi-type-pointer*)))
+    (%libffi-type-desciptor-cache-value object))
+  (:method ((object foreign-built-in-type))
+    (%libffi-type-desciptor-cache-value (type-keyword object)))
+  (:method ((type foreign-pointer-type))
+    ;; simplify all pointer types into a void*
+    (%libffi-type-desciptor-cache-value :pointer))
+  (:method :around (object)
+    (let ((result (call-next-method)))
+      (assert result () "~S failed on ~S. That's bad."
+              'make-libffi-type-descriptor object)
+      result))
+  (:method ((type foreign-type-alias))
+    ;; Set the type pointer on demand for alias types (e.g. typedef, enum, etc)
+    (make-libffi-type-descriptor (actual-type type))))
 
-(defun set-libffi-type-pointer (type pointer)
-  "Set the hash table entry for the libffi type pointer."
-  (setf (gethash (if (symbolp type) (parse-type type) type)
-                 *libffi-type-pointer*)
-        pointer))
+(flet ((populate-with-built-in (type &optional (libffi-name type))
+         (let ((descriptor (foreign-symbol-pointer
+                            (format nil "ffi_type_~(~a~)" libffi-name))))
+           (assert descriptor)
+           (setf (%libffi-type-desciptor-cache-value type) descriptor))))
+  (map nil #'populate-with-built-in *built-in-float-types*)
+  (map nil #'populate-with-built-in (remove :pointer *other-builtin-types*))
+  ;; Let's not rely on the identity of the parsed void*
+  ;; type, use :pointer as the key instead.
+  (populate-with-built-in :pointer :pointer)
+  ;; Set the type descriptors for integer built-in types
+  (dolist (type *built-in-integer-types*)
+    (populate-with-built-in
+     type
+     (format
+      nil
+      "~aint~d"
+      (if (string-equal type "unsigned" :end1 (min 8 (length (string type))))
+          "u" "s")
+      (* 8 (foreign-type-size type))))))

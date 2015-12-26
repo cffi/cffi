@@ -85,6 +85,12 @@
   10
   5.0d0)
 
+(defcstruct (struct-with-array :size 6)
+  (s1 (:array :char 6)))
+
+(defcfun "zork" :void
+  (p (:struct struct-with-array)))
+
 ;;; Typedef fsbv test
 
 (defcfun ("sumpair" sumpair2) :int
@@ -93,6 +99,15 @@
 (deftest fsbv.5
     (sumpair2 '(1 . 2))
   3)
+
+(defcfun "returnpairpointer" (:pointer (:struct struct-pair))
+  (ignored (:struct struct-pair)))
+
+(deftest fsbv.return-a-pointer
+    (let ((ptr (returnpairpointer '(1 . 2))))
+      (+ (foreign-slot-value ptr '(:struct struct-pair) 'a)
+         (foreign-slot-value ptr '(:struct struct-pair) 'b)))
+  42)
 
 ;;; Test ulonglong on no-long-long implementations.
 

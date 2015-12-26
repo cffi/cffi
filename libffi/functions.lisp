@@ -51,11 +51,11 @@
               for i from 0
               do
                  (setf (mem-aref ffi-argtypes :pointer i)
-                       (libffi-type-pointer (parse-type type))))
+                       (make-libffi-type-descriptor (parse-type type))))
         (unless
             (eql :OK
                  (prep-cif cif abi number-of-arguments
-                           (libffi-type-pointer (parse-type return-type))
+                           (make-libffi-type-descriptor (parse-type return-type))
                            ffi-argtypes))
           (error
            'foreign-function-not-prepared

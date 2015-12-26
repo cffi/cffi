@@ -27,48 +27,50 @@
 
 (in-package #:cffi)
 
-(defun slot-multiplicity (slot)
-  (if (typep slot 'aggregate-struct-slot)
-      (slot-count slot)
-      1))
+(defun %make-libffi-type-descriptor/struct (type)
+  (labels
+      ((slot-multiplicity (slot)
+         (if (typep slot 'aggregate-struct-slot)
+             (slot-count slot)
+             1))
+       (number-of-items (structure-type)
+         "Total number of items in the foreign structure."
+         (loop for val being the hash-value of (structure-slots structure-type)
+               sum (slot-multiplicity val))))
+    (let* ((ptr (foreign-alloc '(:struct ffi-type)))
+           (nitems (number-of-items type))
+           (type-pointer-array
+            (foreign-alloc :pointer :count (1+ nitems))))
+      (loop for slot in (slots-in-order type)
+            for ltp = (make-libffi-type-descriptor
+                       (parse-type (slot-type slot)))
+            with slot-counter = 0
+            do (if ltp
+                   (loop
+                         repeat (slot-multiplicity slot)
+                         do (setf
+                             (mem-aref
+                              type-pointer-array :pointer slot-counter)
+                             ltp)
+                         (incf slot-counter))
+                   (error
+                    "Slot type ~a in foreign structure is unknown to libffi."
+                    (unparse-type (slot-type slot)))))
+      (setf
+       (mem-aref type-pointer-array :pointer nitems)
+       (null-pointer)
+       ;; The ffi-type
+       (foreign-slot-value ptr '(:struct ffi-type) 'size)
+       0
+       (foreign-slot-value ptr '(:struct ffi-type) 'alignment)
+       0
+       (foreign-slot-value ptr '(:struct ffi-type) 'type)
+       +type-struct+
+       (foreign-slot-value ptr '(:struct ffi-type) 'elements)
+       type-pointer-array)
+      ptr)))
 
-(defun number-of-items (structure-type)
-  "Total number of items in the foreign structure."
-  (loop for val being the hash-value of (structure-slots structure-type)
-        sum (slot-multiplicity val)))
-
-(defmethod libffi-type-pointer ((type foreign-struct-type))
+(defmethod make-libffi-type-descriptor ((type foreign-struct-type))
   (or (call-next-method)
-      (set-libffi-type-pointer
-       type
-       (let* ((ptr (foreign-alloc '(:struct ffi-type)))
-              (nitems (number-of-items type))
-              (type-pointer-array
-                (foreign-alloc :pointer :count (1+ nitems))))
-         (loop for slot in (slots-in-order type)
-               for ltp = (libffi-type-pointer (parse-type (slot-type slot)))
-               with slot-counter = 0
-               do (if ltp
-                      (loop
-                        repeat (slot-multiplicity slot)
-                        do (setf
-                            (mem-aref
-                             type-pointer-array :pointer slot-counter)
-                            ltp)
-                           (incf slot-counter))
-                      (error
-                       "Slot type ~a in foreign structure is unknown to libffi."
-                       (unparse-type (slot-type slot)))))
-         (setf
-          (mem-aref type-pointer-array :pointer nitems)
-          (null-pointer)
-          ;; The ffi-type
-          (foreign-slot-value ptr '(:struct ffi-type) 'size)
-          0
-          (foreign-slot-value ptr '(:struct ffi-type) 'alignment)
-          0
-          (foreign-slot-value ptr '(:struct ffi-type) 'type)
-          +type-struct+
-          (foreign-slot-value ptr '(:struct ffi-type) 'elements)
-          type-pointer-array)
-         ptr))))
+      (setf (%libffi-type-desciptor-cache-value type)
+            (%make-libffi-type-descriptor/struct type))))

@@ -119,6 +119,14 @@ struct struct_pair makepair (bool cond)
   return ret;
 }
 
+const struct struct_pair static_pair = { 40, 2};
+
+DLLEXPORT
+struct struct_pair * returnpairpointer (struct struct_pair ignored)
+{
+  return &static_pair;
+}
+
 DLLEXPORT
 struct struct_pair doublepair (struct struct_pair dp)
 {

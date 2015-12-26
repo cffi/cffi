@@ -44,7 +44,6 @@
      (cffi-grovel:grovel-file
       "libffi"
       :pathname #+unix "libffi-unix" #+windows "libffi-win32")
-     (:file "built-in-types")
      (:file "cstruct")
      (:file "cif")
      (:file "functions"))))
