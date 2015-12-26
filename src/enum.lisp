@@ -100,9 +100,17 @@
   (discard-docstring enum-list)
   (destructuring-bind (name &optional base-type)
       (ensure-list name-and-options)
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-type
-        ',name (make-foreign-enum ',name ',base-type ',enum-list)))))
+    (let ((type (make-foreign-enum name base-type enum-list)))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         (notice-foreign-type ',name
+                              ;; ,type is not enough here, someone needs to
+                              ;; define it when we're being loaded from a fasl.
+                              (make-foreign-enum ',name ',base-type ',enum-list))
+         ,@(remove nil
+                   (mapcar (lambda (key)
+                             (unless (keywordp key)
+                               `(defconstant ,key ,(foreign-enum-value type key))))
+                           (foreign-enum-keyword-list type)))))))
 
 (defun hash-keys-to-list (ht)
   (loop for k being the hash-keys in ht collect k))

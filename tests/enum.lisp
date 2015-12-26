@@ -77,9 +77,9 @@
   t)
 
 (defcenum enum-size.int
-  (:one 1)
-  (:int #.(1- (expt 2 (1- (* (foreign-type-size :int) 8)))))
-  (:two 2))
+  (enum-size-one 1)
+  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :int) 8)))))
+  (enum-size-two 2))
 
 (defcenum enum-size.long
   (:long #.(1- (expt 2 (1- (* (foreign-type-size :long) 8)))))
@@ -97,6 +97,11 @@
             (list (cffi::actual-type (cffi::parse-type 'enum-size.int))
                   (cffi::actual-type (cffi::parse-type 'enum-size.long))))
   (:int :long))
+
+(deftest enum.size.members
+    (mapcar (alexandria:conjoin 'boundp 'constantp)
+            '(enum-size-one enum-size-two enum-size-int))
+  (t t t))
 
 (deftest enum.size.error-when-too-large
     (expecting-error
