@@ -37,8 +37,7 @@
 
 (load-foreign-library 'libffi)
 
-;; FIXME: this is not thread safe. The fact that it's only accessed at
-;; compile time alleviates that somewhat. -- attila
+;; FIXME not threadsafe: https://bugs.launchpad.net/cffi/+bug/1474211
 (defvar *libffi-type-descriptor-cache* (make-hash-table))
 
 (defun %libffi-type-desciptor-cache-value (type)

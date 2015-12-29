@@ -413,6 +413,12 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
   (let ((library (filter-pathname library)))
     (restart-case
         (progn
+          ;; dlopen/dlclose does reference counting, but the CFFI-SYS
+          ;; API has no infrastructure to track that. Therefore if we
+          ;; want to avoid increasing the internal dlopen reference
+          ;; counter, and thus thwarting dlclose, then we need to try
+          ;; to call CLOSE-FOREIGN-LIBRARY and ignore any signaled
+          ;; errors.
           (ignore-some-conditions (foreign-library-undefined-error)
             (close-foreign-library library))
           (%do-load-foreign-library library search-path))

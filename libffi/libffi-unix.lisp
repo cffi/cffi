@@ -53,7 +53,7 @@
 #+freebsd
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI")))
-#-freebsd 
+#-freebsd
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
  ((:sysv "FFI_SYSV"))

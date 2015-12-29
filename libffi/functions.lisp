@@ -27,6 +27,7 @@
 
 (in-package #:cffi)
 
+;; FIXME not threadsafe: https://bugs.launchpad.net/cffi/+bug/1474211
 (defvar *cif-table* (make-hash-table :test 'equal)
   "A hash table of foreign functions and pointers to the foreign cif (Call InterFace) structure for that function.")
 
@@ -36,7 +37,7 @@
   (:report
    (lambda (condition stream)
      (format stream "Foreign function ~a did not prepare correctly"
-	     (foreign-function-name condition))))
+             (foreign-function-name condition))))
   (:documentation
    "Preparation of foreign function did not succeed, according to return from libffi library."))
 
