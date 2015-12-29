@@ -175,4 +175,7 @@
    #:defcvar
    #:get-var-pointer
    #:foreign-symbol-pointer
+   ;; *errno* and strerror are only available when the :cffi/errno ASDF system is loaded
+   #:*errno*
+   #:strerror
    ))

@@ -65,11 +65,12 @@
      (:file "foreign-vars")
      (:file "features")))))
 
-(defmethod operation-done-p ((o test-op) (c (eql (find-system :cffi))))
-  nil)
-
-(defmethod perform ((o test-op) (c (eql (find-system :cffi))))
-  (operate 'asdf:load-op :cffi-tests)
-  (operate 'asdf:test-op :cffi-tests))
-
-;; vim: ft=lisp et
+(defsystem :cffi/errno
+  :description "Access to the OS errno through CFFI:*ERRNO*"
+  :author "Attila Lendvai <attila@lendvai.name>"
+  :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
+  :licence "MIT"
+  :depends-on (:cffi)
+  :components
+  ((:file "errno"
+    :pathname "src/errno")))
