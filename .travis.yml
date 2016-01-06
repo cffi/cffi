@@ -24,7 +24,7 @@ matrix:
 install:
   - curl -L https://github.com/luismbo/cl-travis/raw/master/install.sh | sh
   - if [ "${LISP:(-2)}" = "32" ]; then
-      sudo apt-get install libc6-dev-i386 libffi-dev:i386;
+      sudo apt-get install -y libc6-dev-i386 libffi-dev:i386;
     fi
   - git clone --depth=1 git://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
   - git clone https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
