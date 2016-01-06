@@ -172,3 +172,32 @@
   (structbitfield.2 2)
   (b (:b)))
 
+;;; Test for a discrepancy between normal and fsbv return values
+
+(cffi:define-foreign-type int-return-code (cffi::foreign-type-alias)
+  ()
+  (:default-initargs :actual-type (cffi::parse-type :int))
+  (:simple-parser int-return-code))
+
+(defmethod cffi:expand-from-foreign (value (type int-return-code))
+  ;; NOTE: strictly speaking it should be
+  ;; (cffi:convert-from-foreign ,value :int), but it's irrelevant in this case
+  `(let ((return-code ,value))
+     ;; FIXME the issue is that the VALUE expression is a mem-ref away when
+     ;; libffi is in the game, i.e. it's a memory pointer, not an integer.
+     (check-type return-code integer)
+     return-code))
+
+(defcfun (noargs-with-typedef "noargs") int-return-code)
+
+(deftest fsbv.return-value-discrepancy.1
+    (noargs-with-typedef)
+  42)
+
+(deftest (fsbv.return-value-discrepancy.2 :expected-to-fail t)
+    (progn
+      (eval '(defcfun (sumpair-with-typedef "sumpair") int-return-code
+              (p (:struct struct-pair))))
+      (compile 'sumpair-with-typedef)
+      (sumpair-with-typedef '(40 . 2)))
+  42)
