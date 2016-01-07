@@ -75,17 +75,20 @@
       foreign-function-name)))
 
 (defun translate-objects-ret (symbols function-arguments types return-type call-form)
-  (if (eql return-type :void)
-      (translate-objects symbols function-arguments types return-type call-form t)
-      (if (typep (parse-type return-type) 'translatable-foreign-type)
-          ;; just return the pointer so that expand-from-foreign
-          ;; can apply translate-from-foreign
-          (translate-objects symbols function-arguments types return-type call-form t)
-          ;; built-in types won't be translated by
-          ;; expand-from-foreign, we have to do it here
-          `(mem-ref
-            ,(translate-objects symbols function-arguments types return-type call-form t)
-            ',(canonicalize-foreign-type return-type)))))
+  (translate-objects
+   symbols
+   function-arguments
+   types
+   return-type
+   (if (or (eql return-type :void)
+           (typep (parse-type return-type) 'translatable-foreign-type))
+       call-form
+       ;; built-in types won't be translated by
+       ;; expand-from-foreign, we have to do it here
+       `(mem-ref
+         ,call-form
+         ',(canonicalize-foreign-type return-type)))
+   t))
 
 (defun ffcall-body-libffi
     (function function-arguments symbols types return-type argument-types &optional pointerp (abi :default-abi))
