@@ -27,13 +27,7 @@
 
 (in-package #:cffi)
 
-#+bordeaux-threads
-(defvar *compiler-thread-lock* (bt:make-lock "cffi-libffi"))
-
-(defmacro hold-compiler-thread-lock-if-possible (&body body)
-  #+bordeaux-threads `(bt:with-lock-held (*compiler-thread-lock*) ,@body)
-  #-bordeaux-threads `(progn ,@body))
-
+;; FIXME not threadsafe: https://bugs.launchpad.net/cffi/+bug/1474211
 (defvar *cif-table* (make-hash-table :test 'equal)
   "A hash table of foreign functions and pointers to the foreign cif (Call InterFace) structure for that function.")
 
@@ -50,37 +44,35 @@
 (defun prepare-function
     (foreign-function-name return-type argument-types &optional (abi :default-abi))
   "Generate or retrieve the CIF needed to call the function through libffi."
-  (hold-compiler-thread-lock-if-possible
-   (or (gethash foreign-function-name *cif-table*)
-       (let* ((number-of-arguments (length argument-types))
-              (cif (foreign-alloc '(:struct ffi-cif)))
-              (ffi-argtypes (foreign-alloc :pointer :count number-of-arguments)))
-         (loop for type in argument-types
-               for i from 0
-               do
-                  (setf (mem-aref ffi-argtypes :pointer i)
-                        (make-libffi-type-descriptor (parse-type type))))
-         (unless
-             (eql :OK
-                  (prep-cif cif abi number-of-arguments
-                            (make-libffi-type-descriptor (parse-type return-type))
-                            ffi-argtypes))
-           (error
-            'foreign-function-not-prepared
-            :foreign-function-name foreign-function-name))
-         (setf (gethash foreign-function-name *cif-table*) cif)
-         cif))))
+  (or (gethash foreign-function-name *cif-table*)
+      (let* ((number-of-arguments (length argument-types))
+             (cif (foreign-alloc '(:struct ffi-cif)))
+             (ffi-argtypes (foreign-alloc :pointer :count number-of-arguments)))
+        (loop for type in argument-types
+              for i from 0
+              do
+                 (setf (mem-aref ffi-argtypes :pointer i)
+                       (make-libffi-type-descriptor (parse-type type))))
+        (unless
+            (eql :OK
+                 (prep-cif cif abi number-of-arguments
+                           (make-libffi-type-descriptor (parse-type return-type))
+                           ffi-argtypes))
+          (error
+           'foreign-function-not-prepared
+           :foreign-function-name foreign-function-name))
+        (setf (gethash foreign-function-name *cif-table*) cif)
+        cif)))
 
 (defun unprepare-function (foreign-function-name)
   "Remove prepared definitions for the named foreign function.  Returns foreign-function-name if function had been prepared, NIL otherwise."
-  (hold-compiler-thread-lock-if-possible
-    (let ((ptr (gethash foreign-function-name *cif-table*)))
-      (when ptr
-        (foreign-free
-         (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
-        (foreign-free ptr)
-        (remhash foreign-function-name *cif-table*)
-        foreign-function-name))))
+  (let ((ptr (gethash foreign-function-name *cif-table*)))
+    (when ptr
+      (foreign-free
+       (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
+      (foreign-free ptr)
+      (remhash foreign-function-name *cif-table*)
+      foreign-function-name)))
 
 (defun translate-objects-ret (symbols function-arguments types return-type call-form)
   (translate-objects
