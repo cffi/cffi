@@ -56,18 +56,14 @@
                    (error
                     "Slot type ~a in foreign structure is unknown to libffi."
                     (unparse-type (slot-type slot)))))
-      (setf
-       (mem-aref type-pointer-array :pointer nitems)
-       (null-pointer)
-       ;; The ffi-type
-       (foreign-slot-value ptr '(:struct ffi-type) 'size)
-       0
-       (foreign-slot-value ptr '(:struct ffi-type) 'alignment)
-       0
-       (foreign-slot-value ptr '(:struct ffi-type) 'type)
-       +type-struct+
-       (foreign-slot-value ptr '(:struct ffi-type) 'elements)
-       type-pointer-array)
+      (setf (mem-aref type-pointer-array :pointer nitems)
+            (null-pointer))
+      (macrolet ((store (slot value)
+                   `(setf (foreign-slot-value ptr '(:struct ffi-type) ',slot) ,value)))
+        (store size 0)
+        (store alignment 0)
+        (store type +type-struct+)
+        (store elements type-pointer-array))
       ptr)))
 
 (defmethod make-libffi-type-descriptor ((type foreign-struct-type))

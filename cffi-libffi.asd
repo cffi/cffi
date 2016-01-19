@@ -41,10 +41,8 @@
     :serial t
     :components
     ((:file "init")
-     (cffi-grovel:grovel-file
-      "libffi"
-      :pathname #+unix "libffi-unix" #+windows "libffi-win32")
+     (cffi-grovel:grovel-file "ffi-types")
      (:file "cstruct")
-     (:file "cif")
+     (:file "ffi-functions")
      (:file "functions"))))
   :depends-on (#:cffi #:cffi-grovel #:trivial-features))

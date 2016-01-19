@@ -52,9 +52,9 @@
       :for index :from 0
       :do (setf (mem-aref ffi-argtypes :pointer index)
                 (make-libffi-type-descriptor (parse-type type))))
-    (unless (eql :ok (prep-cif cif abi argument-count
-                               (make-libffi-type-descriptor (parse-type return-type))
-                               ffi-argtypes))
+    (unless (eql :ok (libffi/prep-cif cif abi argument-count
+                                      (make-libffi-type-descriptor (parse-type return-type))
+                                      ffi-argtypes))
       (libffi-error function-name
                     "The 'ffi_prep_cif' libffi call failed for function ~S."
                     function-name))
@@ -80,9 +80,9 @@
          ',(canonicalize-foreign-type return-type)))
    t))
 
-(defun ffcall-body-libffi (function function-arguments symbols types
-                           return-type argument-types
-                           &optional pointerp (abi :default-abi))
+(defun foreign-funcall-form/fsbv-with-libffi (function function-arguments symbols types
+                                              return-type argument-types
+                                              &optional pointerp (abi :default-abi))
   "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
   (let ((argument-count (length argument-types)))
     `(with-foreign-objects ((argument-values :pointer ,argument-count)
@@ -109,16 +109,16 @@
                                          ;; finite world is full of compromises... - attila
                                          (make-libffi-cif ,function ',return-type
                                                           ',argument-types ',abi)))))
-              (call libffi-cif
-                    ,(if pointerp
-                         function
-                         `(foreign-symbol-pointer ,function))
-                    ,(if (eql return-type :void) '(null-pointer) 'result)
-                    argument-values)
+              (libffi/call libffi-cif
+                           ,(if pointerp
+                                function
+                                `(foreign-symbol-pointer ,function))
+                           ,(if (eql return-type :void) '(null-pointer) 'result)
+                           argument-values)
               ,(if (eql return-type :void)
                    '(values)
                    'result)))))))
 
-(setf *foreign-structures-by-value* 'ffcall-body-libffi)
+(setf *foreign-structures-by-value* 'foreign-funcall-form/fsbv-with-libffi)
 
 (pushnew :fsbv *features*)

@@ -27,27 +27,16 @@
 
 (in-package #:cffi)
 
-;;; Structs
-
-(defcstruct ffi-cif
-  (abi ffi-abi)
-  (number-of-arguments unsigned)
-  (argument-types :pointer)
-  (return-type :pointer)
-  (bytes unsigned)
-  (flags unsigned))
-
-;;; Functions
 ;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
 
-(defcfun ("ffi_prep_cif" prep-cif) status
+(defcfun ("ffi_prep_cif" libffi/prep-cif) status
   (ffi-cif :pointer)
   (ffi-abi abi)
   (nargs :uint)
   (rtype :pointer)
   (argtypes :pointer))
 
-(defcfun ("ffi_call" call) :void
+(defcfun ("ffi_call" libffi/call) :void
   (ffi-cif :pointer)
   (function :pointer)
   (rvalue :pointer)
