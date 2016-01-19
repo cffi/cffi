@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; functions.lisp -- Calling foreign functions
+;;; funcall.lisp -- FOREIGN-FUNCALL implementation using libffi
 ;;;
 ;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
 ;;;

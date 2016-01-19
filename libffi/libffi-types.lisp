@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; libffi-unix.lisp -- libffi CFFI-Grovel definitions for unix systems.
+;;; libffi-types.lisp -- CFFI-Grovel definitions for libffi
 ;;;
 ;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
 ;;;

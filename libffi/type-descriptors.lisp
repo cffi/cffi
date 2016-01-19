@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cstruct.lisp --- Hook to defcstruct
+;;; type-descriptors.lisp --- Build malloc'd libffi type descriptors
 ;;;
-;;; Copyright (C) 2009, 2010, 2011 Liam Healy  <lhealy@common-lisp.net>
+;;; Copyright (C) 2009, 2011 Liam M. Healy
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -26,6 +26,17 @@
 ;;;
 
 (in-package #:cffi)
+
+(defmacro type-descriptor-ptr (type)
+  `(foreign-symbol-pointer ,(format nil "ffi_type_~(~A~)" type)))
+
+(defmacro type-descriptor-ptr/integer (type)
+  `(foreign-symbol-pointer
+    ,(format nil "ffi_type_~Aint~D"
+             (if (string-equal type "unsigned"
+                               :end1 (min 8 (length (string type))))
+                 "u" "s")
+             (* 8 (foreign-type-size type)))))
 
 (defun %make-libffi-type-descriptor/struct (type)
   (labels
@@ -66,7 +77,30 @@
         (store elements type-pointer-array))
       ptr)))
 
-(defmethod make-libffi-type-descriptor ((type foreign-struct-type))
-  (or (call-next-method)
-      (setf (%libffi-type-desciptor-cache-value type)
-            (%make-libffi-type-descriptor/struct type))))
+(defgeneric make-libffi-type-descriptor (object)
+  (:documentation "Build a libffi struct that describes the type for libffi. This will be used as a cached static read-only argument when the actual call happens.")
+  (:method ((object foreign-built-in-type))
+    (let ((type-keyword (type-keyword object)))
+      #.`(case type-keyword
+           ,@(loop
+               :for type :in (append *built-in-float-types*
+                                     *other-builtin-types*)
+               :collect `(,type (type-descriptor-ptr ,type)))
+           ,@(loop
+               :for type :in *built-in-integer-types*
+               :collect `(,type (type-descriptor-ptr/integer ,type)))
+           ;; there's a generic error report in an :around method
+           )))
+  (:method ((type foreign-pointer-type))
+    ;; simplify all pointer types into a void*
+    (type-descriptor-ptr :pointer))
+  (:method ((type foreign-struct-type))
+    (%make-libffi-type-descriptor/struct type))
+  (:method :around (object)
+    (let ((result (call-next-method)))
+      (assert result () "~S failed on ~S. That's bad."
+              'make-libffi-type-descriptor object)
+      result))
+  (:method ((type foreign-type-alias))
+    ;; Set the type pointer on demand for alias types (e.g. typedef, enum, etc)
+    (make-libffi-type-descriptor (actual-type type))))

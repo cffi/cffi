@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; cffi-libffi.asd --- Foreign Structures By Value
+;;; init.lisp --- Load libffi and define basics
 ;;;
-;;; Copyright (C) 2011 Liam M. Healy
+;;; Copyright (C) 2009, 2010, 2011 Liam Healy  <lhealy@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,24 +25,19 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package :asdf)
+(in-package #:cffi)
 
-(eval-when (:compile-toplevel :execute)
-  (asdf:oos 'asdf:load-op :cffi-grovel)
-  (asdf:oos 'asdf:load-op :trivial-features))
+;;; See file:///usr/share/doc/libffi-dev/html/The-Basics.html#The-Basics
 
-(defsystem cffi-libffi
-  :description "Foreign structures by value"
-  :author "Liam Healy <lhealy@common-lisp.net>"
-  :maintainer "Liam Healy <lhealy@common-lisp.net>"
-  :defsystem-depends-on (#:trivial-features #:cffi-grovel)
-  :components
-  ((:module libffi
-    :serial t
-    :components
-    ((:file "libffi")
-     (cffi-grovel:grovel-file "libffi-types")
-     (:file "libffi-functions")
-     (:file "type-descriptors")
-     (:file "funcall"))))
-  :depends-on (#:cffi #:cffi-grovel #:trivial-features))
+(defcfun ("ffi_prep_cif" libffi/prep-cif) status
+  (ffi-cif :pointer)
+  (ffi-abi abi)
+  (nargs :uint)
+  (rtype :pointer)
+  (argtypes :pointer))
+
+(defcfun ("ffi_call" libffi/call) :void
+  (ffi-cif :pointer)
+  (function :pointer)
+  (rvalue :pointer)
+  (avalues :pointer))
