@@ -27,52 +27,42 @@
 
 (in-package #:cffi)
 
-;; FIXME not threadsafe: https://bugs.launchpad.net/cffi/+bug/1474211
-(defvar *cif-table* (make-hash-table :test 'equal)
-  "A hash table of foreign functions and pointers to the foreign cif (Call InterFace) structure for that function.")
+;; TODO this should inherit from cffi-error, but it's not merged yet in master.
+(define-condition libffi-error (error)
+  ((function-name
+    :initarg :function-name :reader function-name)))
 
-(define-condition foreign-function-not-prepared (error)
-  ((foreign-function-name
-    :initarg :foreign-function-name :reader foreign-function-name))
-  (:report
-   (lambda (condition stream)
-     (format stream "Foreign function ~a did not prepare correctly"
-             (foreign-function-name condition))))
-  (:documentation
-   "Preparation of foreign function did not succeed, according to return from libffi library."))
+(define-condition simple-libffi-error (simple-error libffi-error)
+  ())
 
-(defun prepare-function
-    (foreign-function-name return-type argument-types &optional (abi :default-abi))
-  "Generate or retrieve the CIF needed to call the function through libffi."
-  (or (gethash foreign-function-name *cif-table*)
-      (let* ((number-of-arguments (length argument-types))
-             (cif (foreign-alloc '(:struct ffi-cif)))
-             (ffi-argtypes (foreign-alloc :pointer :count number-of-arguments)))
-        (loop for type in argument-types
-              for i from 0
-              do
-                 (setf (mem-aref ffi-argtypes :pointer i)
-                       (make-libffi-type-descriptor (parse-type type))))
-        (unless
-            (eql :OK
-                 (prep-cif cif abi number-of-arguments
-                           (make-libffi-type-descriptor (parse-type return-type))
-                           ffi-argtypes))
-          (error
-           'foreign-function-not-prepared
-           :foreign-function-name foreign-function-name))
-        (setf (gethash foreign-function-name *cif-table*) cif)
-        cif)))
+(defun libffi-error (function-name format-control &rest format-arguments)
+  (error 'simple-libffi-error
+         :function-name function-name
+         :format-control format-control
+         :format-arguments format-arguments))
 
-(defun unprepare-function (foreign-function-name)
-  "Remove prepared definitions for the named foreign function.  Returns foreign-function-name if function had been prepared, NIL otherwise."
-  (let ((ptr (gethash foreign-function-name *cif-table*)))
-    (when ptr
-      (foreign-free
-       (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
-      (foreign-free ptr)
-      (remhash foreign-function-name *cif-table*)
-      foreign-function-name)))
+(defun make-libffi-cif (function-name return-type argument-types
+                        &optional (abi :default-abi))
+  "Generate or retrieve the Call InterFace needed to call the function through libffi."
+  (let* ((argument-count (length argument-types))
+         (cif (foreign-alloc '(:struct ffi-cif)))
+         (ffi-argtypes (foreign-alloc :pointer :count argument-count)))
+    (loop
+      :for type :in argument-types
+      :for index :from 0
+      :do (setf (mem-aref ffi-argtypes :pointer index)
+                (make-libffi-type-descriptor (parse-type type))))
+    (unless (eql :ok (prep-cif cif abi argument-count
+                               (make-libffi-type-descriptor (parse-type return-type))
+                               ffi-argtypes))
+      (libffi-error function-name
+                    "The 'ffi_prep_cif' libffi call failed for function ~S."
+                    function-name))
+    cif))
+
+(defun free-libffi-cif (ptr)
+  (foreign-free (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
+  (foreign-free ptr))
 
 (defun translate-objects-ret (symbols function-arguments types return-type call-form)
   (translate-objects
@@ -90,28 +80,44 @@
          ',(canonicalize-foreign-type return-type)))
    t))
 
-(defun ffcall-body-libffi
-    (function function-arguments symbols types return-type argument-types &optional pointerp (abi :default-abi))
+(defun ffcall-body-libffi (function function-arguments symbols types
+                           return-type argument-types
+                           &optional pointerp (abi :default-abi))
   "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
-  (let ((number-of-arguments (length argument-types)))
-    `(with-foreign-objects
-         ((argvalues :pointer ,number-of-arguments)
-          ,@(unless (eql return-type :void)
-              `((result ',return-type))))
+  (let ((argument-count (length argument-types)))
+    `(with-foreign-objects ((argument-values :pointer ,argument-count)
+                            ,@(unless (eql return-type :void)
+                                `((result ',return-type))))
        ,(translate-objects-ret
          symbols function-arguments types return-type
+         ;; NOTE: We must delay the cif creation until the first call
+         ;; because it's FOREIGN-ALLOC'd, i.e. it gets corrupted by an
+         ;; image save/restore cycle. This way a lib will remain usable
+         ;; through a save/restore cycle if the save happens before any
+         ;; FFI calls will have been made, i.e. nothing is malloc'd yet.
          `(progn
-            (loop :for arg :in (list ,@symbols)
-                  :for count :from 0
-                  :do (setf (mem-aref argvalues :pointer count) arg))
-            (call
-             (prepare-function ,function ',return-type ',argument-types ',abi)
-             ,(if pointerp
-                  function
-                  `(foreign-symbol-pointer ,function))
-             ,(if (eql return-type :void) '(null-pointer) 'result)
-             argvalues)
-            ,(if (eql return-type :void) '(values) 'result))))))
+            (loop
+              :for arg :in (list ,@symbols)
+              :for count :from 0
+              :do (setf (mem-aref argument-values :pointer count) arg))
+            (let* ((libffi-cif-cache (load-time-value (cons 'libffi-cif-cache nil)))
+                   (libffi-cif (or (cdr libffi-cif-cache)
+                                   (setf (cdr libffi-cif-cache)
+                                         ;; FIXME ideally we should install a finalizer on the cons
+                                         ;; that calls FREE-LIBFFI-CIF on the cif (when the function
+                                         ;; gets redefined, and the cif becomes unreachable). but a
+                                         ;; finite world is full of compromises... - attila
+                                         (make-libffi-cif ,function ',return-type
+                                                          ',argument-types ',abi)))))
+              (call libffi-cif
+                    ,(if pointerp
+                         function
+                         `(foreign-symbol-pointer ,function))
+                    ,(if (eql return-type :void) '(null-pointer) 'result)
+                    argument-values)
+              ,(if (eql return-type :void)
+                   '(values)
+                   'result)))))))
 
 (setf *foreign-structures-by-value* 'ffcall-body-libffi)
 
