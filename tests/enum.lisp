@@ -80,18 +80,18 @@
 
 (defcenum enum-size.int
   (enum-size-one 1)
-  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :int) 8)))))
+  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-int) 8)))))
   (enum-size-two 2))
 
 (defcenum enum-size.long
-  (:long #.(1- (expt 2 (1- (* (foreign-type-size :long) 8)))))
+  (:long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long) 8)))))
   (:one 1)
   (:two 2))
 
 (defcenum enum-size.long-long
   (:one 1)
   (:two 2)
-  (:long-long #.(1- (expt 2 (1- (* (foreign-type-size :long-long) 8))))))
+  (:long-long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long-long) 8))))))
 
 (deftest enum.size
     (mapcar (alexandria:compose 'foreign-type-size
@@ -101,9 +101,9 @@
             (list 'enum-size.int
                   'enum-size.long
                   'enum-size.long-long))
-  (#.(foreign-type-size :int)
-   #.(foreign-type-size :long)
-   #.(foreign-type-size :long-long)))
+  (#.(foreign-type-size :unsigned-int)
+   #.(foreign-type-size :unsigned-long)
+   #.(foreign-type-size :unsigned-long-long)))
 
 (deftest enum.size.members
     (mapcar (alexandria:conjoin 'boundp 'constantp)

@@ -61,11 +61,7 @@
 (deftype enum-key ()
   '(and symbol (not null)))
 
-(defparameter +valid-enum-base-types+ '(:char :unsigned-char
-                                        :short :unsigned-short
-                                        :int :unsigned-int
-                                        :long :unsigned-long
-                                        :long-long :unsigned-long-long))
+(defparameter +valid-enum-base-types+ *built-in-integer-types*)
 
 (defun parse-foreign-enum-like (type-name base-type values
                                 &optional field-mode-p)
@@ -121,12 +117,12 @@
         (let ((bits (integer-length largest-value)))
           (setf base-type
                 (cond
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :int) 8))))
-                   :int)
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :long) 8))))
-                   :long)
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :long-long) 8))))
-                   :long-long)
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-int) 8))))
+                   :unsigned-int)
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-long) 8))))
+                   :unsigned-long)
+                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-long-long) 8))))
+                   :unsigned-long-long)
                   (t
                    (error "Enum value ~S of enum ~S is too large to store."
                           largest-value type-name))))))
