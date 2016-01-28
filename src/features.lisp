@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; features.lisp --- CFFI-specific features.
+;;; features.lisp --- CFFI-specific features (DEPRECATED).
 ;;;
 ;;; Copyright (C) 2006-2007, Luis Oliveira  <loliveira@common-lisp.net>
 ;;;
