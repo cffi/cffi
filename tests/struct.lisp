@@ -660,3 +660,23 @@
         (setf (foreign-slot-value inner-ptr 'inner-struct 'x) 42))
       (foreign-slot-value s 'new-style-outer 'inner))
   (x 42))
+
+;;; regression test: setting the value of aggregate slots.
+
+(defcstruct aggregate-struct
+  (x :int)
+  (pair (:struct struct-pair))
+  (y :int))
+
+(deftest set-aggregate-struct-slot
+    (with-foreign-objects ((pair-struct '(:struct struct-pair))
+                           (aggregate-struct '(:struct aggregate-struct)))
+      (with-foreign-slots ((a b) pair-struct (:struct struct-pair))
+        (setf a 1 b 2)
+        (with-foreign-slots ((x pair y) aggregate-struct (:struct aggregate-struct))
+          (setf x 42 y 42)
+          (setf pair pair-struct)
+          (values x pair y))))
+  42
+  (1 . 2)
+  42)
