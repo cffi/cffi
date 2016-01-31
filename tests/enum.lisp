@@ -27,7 +27,9 @@
 
 (in-package #:cffi-tests)
 
-(defcenum numeros
+(defctype numeros-base-type :int)
+
+(defcenum (numeros numeros-base-type)
   (:one 1)
   :two
   :three
@@ -64,12 +66,62 @@
          (eq :true (return-enum2 :true)))
   t)
 
+(defctype numeros-typedef numeros)
+
+(deftest enum.typedef.1
+    (eq (foreign-enum-keyword 'numeros-typedef 1)
+        (foreign-enum-keyword 'numeros 1))
+  t)
+
+(deftest enum.typedef.2
+    (eql (foreign-enum-value 'numeros-typedef :four)
+         (foreign-enum-value 'numeros :four))
+  t)
+
+(defcenum enum-size.int
+  (enum-size-one 1)
+  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-int) 8)))))
+  (enum-size-two 2))
+
+(defcenum enum-size.long
+  (:long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long) 8)))))
+  (:one 1)
+  (:two 2))
+
+(defcenum enum-size.long-long
+  (:one 1)
+  (:two 2)
+  (:long-long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long-long) 8))))))
+
+(deftest enum.size
+    (mapcar (alexandria:compose 'foreign-type-size
+                                'cffi::unparse-type
+                                'cffi::actual-type
+                                'cffi::parse-type)
+            (list 'enum-size.int
+                  'enum-size.long
+                  'enum-size.long-long))
+  (#.(foreign-type-size :unsigned-int)
+   #.(foreign-type-size :unsigned-long)
+   #.(foreign-type-size :unsigned-long-long)))
+
+(deftest enum.size.members
+    (mapcar (alexandria:conjoin 'boundp 'constantp)
+            '(enum-size-one enum-size-two enum-size-int))
+  (t t t))
+
+(deftest enum.size.error-when-too-large
+    (expecting-error
+      (eval '(defcenum enum-size-too-large
+              (:too-long #.(expt 2 129)))))
+  :error)
+
 ;;;# Bitfield tests
 
 ;;; Regression test: defbitfield was misbehaving when the first value
 ;;; was provided.
 (deftest bitfield.1
-    (eval '(defbitfield bf1
+    (eval '(defbitfield (bf1 :long)
              (:foo 0)))
   bf1)
 
@@ -79,6 +131,7 @@
   four
   eight
   sixteen
+  (bf2.outlier 42)
   thirty-two
   sixty-four)
 
@@ -88,7 +141,13 @@
             '(one two four eight sixteen thirty-two sixty-four))
   (1 2 4 8 16 32 64))
 
-(defbitfield bf3
+(deftest bitfield.2.outlier
+    (mapcar (lambda (symbol)
+              (foreign-bitfield-value 'bf2 (list symbol)))
+            '(one two four eight sixteen thirty-two sixty-four))
+  (1 2 4 8 16 32 64))
+
+(defbitfield (bf3 :int)
   (three 3)
   one
   (seven 7)
@@ -106,25 +165,50 @@
   (1 2 16))
 
 (defbitfield bf4
+  ;; zero will be a simple enum member because it's not a valid mask
   (zero 0)
-  one)
+  one
+  two
+  four
+  (three 3)
+  (sixteen 16))
 
 ;;; Yet another edge case with the 0...
 (deftest bitfield.4
-    (foreign-bitfield-value 'bf4 '(one))
-  1)
+    ;; These should macroexpand to the literals in Slime
+    ;; due to the compiler macros. Same below.
+    (values (foreign-bitfield-value 'bf4 'one)
+            (foreign-bitfield-value 'bf4 '(one two))
+            (foreign-bitfield-value 'bf4 '(three)) ; or should it signal an error?
+            (foreign-bitfield-value 'bf4 '(sixteen)))
+  1
+  3
+  3
+  16)
 
 (deftest bitfield.4b
     (values (foreign-bitfield-symbols 'bf4 0)
-            (foreign-bitfield-symbols 'bf4 1))
-  (zero)
-  (zero one))
+            (foreign-bitfield-symbols 'bf4 1)
+            (foreign-bitfield-symbols 'bf4 3)
+            (foreign-bitfield-symbols 'bf4 8)
+            (foreign-bitfield-symbols 'bf4 16))
+  nil
+  (one)
+  (one two)
+  nil
+  (sixteen))
 
 (deftest bitfield.translators
     (with-foreign-object (bf 'bf4 2)
-      (setf (mem-aref bf 'bf4 0) 0)
-      (setf (mem-aref bf 'bf4 1) 1)
+      (setf (mem-aref bf 'bf4 0) 1)
+      (setf (mem-aref bf 'bf4 1) 3)
       (values (mem-aref bf 'bf4 0)
               (mem-aref bf 'bf4 1)))
-  (zero)
-  (zero one))
+  (one)
+  (one two))
+
+(deftest bitfield.base-type-error
+    (expecting-error
+      (eval '(defbitfield (bf1 :float)
+              (:foo 0))))
+  :error)

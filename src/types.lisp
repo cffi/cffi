@@ -30,6 +30,11 @@
 
 ;;;# Built-In Types
 
+;; NOTE: In the C standard there's a "signed-char":
+;; https://stackoverflow.com/questions/436513/char-signed-char-char-unsigned-char
+;; and "char" may be either signed or unsigned, i.e. treating it as a small int
+;; is not wise. At the level of CFFI we can safely ignore this and assume that
+;; :char is mapped to "signed-char" by the CL implementation under us.
 (define-built-in-foreign-type :char)
 (define-built-in-foreign-type :unsigned-char)
 (define-built-in-foreign-type :short)
@@ -383,7 +388,7 @@ newly allocated memory."
 
 (defun lisp-array-to-foreign (array pointer array-type)
   "Copy elements from a Lisp array to POINTER."
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (el-type (element-type type))
          (dimensions (dimensions type)))
     (loop with foreign-type-size = (array-element-size type)
@@ -398,7 +403,7 @@ newly allocated memory."
   "Copy elements from ptr into a Lisp array. If POINTER is a null
 pointer, returns NIL."
   (unless (null-pointer-p pointer)
-    (let* ((type (follow-typedefs (parse-type array-type)))
+    (let* ((type (ensure-parsed-base-type array-type))
            (el-type (element-type type))
            (dimensions (dimensions type))
            (array (make-array dimensions)))
@@ -416,7 +421,7 @@ pointer, returns NIL."
   "Allocate a foreign array containing the elements of lisp array.
 The foreign array must be freed with foreign-array-free."
   (check-type array array)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (ptr (foreign-alloc (element-type type)
                              :count (reduce #'* (dimensions type)))))
     (lisp-array-to-foreign array ptr array-type)
@@ -429,21 +434,21 @@ The foreign array must be freed with foreign-array-free."
 (defmacro with-foreign-array ((var lisp-array array-type) &body body)
   "Bind var to a foreign array containing lisp-array elements in body."
   (with-unique-names (type)
-    `(let ((,type (follow-typedefs (parse-type ,array-type))))
+    `(let ((,type (ensure-parsed-base-type ,array-type)))
        (with-foreign-pointer (,var (* (reduce #'* (dimensions ,type))
                                       (array-element-size ,type)))
          (lisp-array-to-foreign ,lisp-array ,var ,array-type)
          ,@body))))
 
 (defun foreign-aref (ptr array-type &rest indexes)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (offset (* (array-element-size type)
                     (apply #'indexes-to-row-major-index
                            (dimensions type) indexes))))
     (mem-ref ptr (element-type type) offset)))
 
 (defun (setf foreign-aref) (value ptr array-type &rest indexes)
-  (let* ((type (follow-typedefs (parse-type array-type)))
+  (let* ((type (ensure-parsed-base-type array-type))
          (offset (* (array-element-size type)
                     (apply #'indexes-to-row-major-index
                            (dimensions type) indexes))))
@@ -524,7 +529,7 @@ The foreign array must be freed with foreign-array-free."
 (defun foreign-slot-names (type)
   "Returns a list of TYPE's slot names in no particular order."
   (loop for value being the hash-values
-        in (slots (follow-typedefs (parse-type type)))
+        in (slots (ensure-parsed-base-type type))
         collect (slot-name value)))
 
 ;;;### Simple Slots
@@ -659,6 +664,14 @@ The foreign array must be freed with foreign-array-free."
         offset
         (+ offset (- align rem)))))
 
+(defmacro with-tentative-type-definition ((name value namespace) &body body)
+  (once-only (name namespace)
+    `(unwind-protect-case ()
+          (progn
+            (notice-foreign-type ,name ,value ,namespace)
+            ,@body)
+       (:abort (undefine-foreign-type ,name ,namespace)))))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
@@ -667,28 +680,30 @@ The foreign array must be freed with foreign-array-free."
           (current-offset 0)
           (max-align 1)
           (firstp t))
-      ;; determine offsets
-      (dolist (slotdef slots)
-        (destructuring-bind (slotname type &key (count 1) offset) slotdef
-          (when (eq (canonicalize-foreign-type type) :void)
-            (error "void type not allowed in structure definition: ~S" slotdef))
-          (setq current-offset
-                (or offset
-                    (adjust-for-alignment type current-offset :normal firstp)))
-          (let* ((slot (make-struct-slot slotname current-offset type count))
-                 (align (get-alignment (slot-type slot) :normal firstp)))
-            (setf (gethash slotname (slots struct)) slot)
-            (when (> align max-align)
-              (setq max-align align)))
-          (incf current-offset (* count (foreign-type-size type))))
-        (setq firstp nil))
-      ;; calculate padding and alignment
-      (setf (alignment struct) max-align) ; See point 1 above.
-      (let ((tail-padding (- max-align (rem current-offset max-align))))
-        (unless (= tail-padding max-align) ; See point 3 above.
-          (incf current-offset tail-padding)))
-      (setf (size struct) (or size current-offset))
-      (notice-foreign-type name struct :struct))))
+      (with-tentative-type-definition (name struct :struct)
+        ;; determine offsets
+        (dolist (slotdef slots)
+          (destructuring-bind (slotname type &key (count 1) offset) slotdef
+            (when (eq (canonicalize-foreign-type type) :void)
+              (simple-foreign-type-error type :struct
+                                         "In struct ~S: void type not allowed in field ~S"
+                                         name slotdef))
+            (setq current-offset
+                  (or offset
+                      (adjust-for-alignment type current-offset :normal firstp)))
+            (let* ((slot (make-struct-slot slotname current-offset type count))
+                   (align (get-alignment (slot-type slot) :normal firstp)))
+              (setf (gethash slotname (slots struct)) slot)
+              (when (> align max-align)
+                (setq max-align align)))
+            (incf current-offset (* count (foreign-type-size type))))
+          (setq firstp nil))
+        ;; calculate padding and alignment
+        (setf (alignment struct) max-align) ; See point 1 above.
+        (let ((tail-padding (- max-align (rem current-offset max-align))))
+          (unless (= tail-padding max-align) ; See point 3 above.
+            (incf current-offset tail-padding)))
+        (setf (size struct) (or size current-offset))))))
 
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
@@ -735,10 +750,12 @@ The foreign array must be freed with foreign-array-free."
 
 (defun get-slot-info (type slot-name)
   "Return the slot info for SLOT-NAME or raise an error."
-  (let* ((struct (follow-typedefs (parse-type type)))
+  (let* ((struct (ensure-parsed-base-type type))
          (info (gethash slot-name (slots struct))))
     (unless info
-      (error "Undefined slot ~A in foreign type ~A." slot-name type))
+      (simple-foreign-type-error type :struct
+                                 "Undefined slot ~A in foreign type ~A."
+                                 slot-name type))
     info))
 
 (defun foreign-slot-pointer (ptr type slot-name)
@@ -872,21 +889,23 @@ slots will be defined and stored."
     (let ((union (make-instance 'foreign-union-type :name name))
           (max-size 0)
           (max-align 0))
-      (dolist (slotdef slots)
-        (destructuring-bind (slotname type &key (count 1)) slotdef
-          (when (eq (canonicalize-foreign-type type) :void)
-            (error "void type not allowed in union definition: ~S" slotdef))
-          (let* ((slot (make-struct-slot slotname 0 type count))
-                 (size (* count (foreign-type-size type)))
-                 (align (foreign-type-alignment (slot-type slot))))
-            (setf (gethash slotname (slots union)) slot)
-            (when (> size max-size)
-              (setf max-size size))
-            (when (> align max-align)
-              (setf max-align align)))))
-      (setf (size union) (or size max-size))
-      (setf (alignment union) max-align)
-      (notice-foreign-type name union :union))))
+      (with-tentative-type-definition (name union :union)
+        (dolist (slotdef slots)
+          (destructuring-bind (slotname type &key (count 1)) slotdef
+            (when (eq (canonicalize-foreign-type type) :void)
+              (simple-foreign-type-error name :struct
+                                         "In union ~S: void type not allowed in field ~S"
+                                         name slotdef))
+            (let* ((slot (make-struct-slot slotname 0 type count))
+                   (size (* count (foreign-type-size type)))
+                   (align (foreign-type-alignment (slot-type slot))))
+              (setf (gethash slotname (slots union)) slot)
+              (when (> size max-size)
+                (setf max-size size))
+              (when (> align max-align)
+                (setf max-align align)))))
+        (setf (size union) (or size max-size))
+        (setf (alignment union) max-align)))))
 
 (define-parse-method :union (name)
   (funcall (find-type-parser name :union)))

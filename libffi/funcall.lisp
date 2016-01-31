@@ -27,8 +27,7 @@
 
 (in-package #:cffi)
 
-;; TODO this should inherit from cffi-error, but it's not merged yet in master.
-(define-condition libffi-error (error)
+(define-condition libffi-error (cffi-error)
   ((function-name
     :initarg :function-name :reader function-name)))
 
@@ -121,4 +120,9 @@
 
 (setf *foreign-structures-by-value* 'foreign-funcall-form/fsbv-with-libffi)
 
+;; DEPRECATED Its presence encourages the use of #+fsbv which may lead to the
+;; situation where a fasl was produced by an image that has fsbv feature
+;; and then ends up being loaded into an image later that has no fsbv support
+;; loaded. Use explicit ASDF dependencies instead and assume the presence
+;; of the feature accordingly.
 (pushnew :fsbv *features*)

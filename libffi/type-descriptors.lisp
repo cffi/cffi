@@ -64,9 +64,9 @@
                               type-pointer-array :pointer slot-counter)
                              ltp)
                          (incf slot-counter))
-                   (error
-                    "Slot type ~a in foreign structure is unknown to libffi."
-                    (unparse-type (slot-type slot)))))
+                   (libffi-error nil
+                                 "Slot type ~A in foreign structure is unknown to libffi."
+                                 (unparse-type (slot-type slot)))))
       (setf (mem-aref type-pointer-array :pointer nitems)
             (null-pointer))
       (macrolet ((store (slot value)

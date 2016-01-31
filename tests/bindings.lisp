@@ -101,7 +101,7 @@
   (let ((*foreign-library-directories* (list (load-directory))))
     (load-foreign-library 'libtest)
     (load-foreign-library 'libtest2)
-    #+fsbv (load-foreign-library 'libfsbv)
+    (load-foreign-library 'libfsbv)
     (load-foreign-library 'libc)
     #+(or abcl lispworks) (load-foreign-library 'libm)))
 
