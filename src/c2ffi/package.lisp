@@ -24,10 +24,24 @@
 ;;;
 
 (uiop:define-package #:cffi/c2ffi
-  (:mix #:asdf
-        #:uiop
+  (:mix #:uiop
         #:alexandria
         #:common-lisp)
+  (:import-from :asdf
+                #:cl-source-file
+                #:output-file
+                #:output-files
+                #:input-files
+                #:perform
+                #:compile-op
+                #:load-op
+                #:load-source-op
+                #:prepare-op
+                #:component-pathname
+                #:component-depends-on
+                #:downward-operation
+                #:load-system
+                #:component-loaded-p)
   (:export
    #:c2ffi-file
    #:default-ffi-name-transformer

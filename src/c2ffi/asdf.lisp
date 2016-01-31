@@ -88,60 +88,77 @@ file is used to generate a lisp file with CFFI definitions (see
 PROCESS-C2FFI-SPEC-FILE). This file will then be compiled as any other lisp
 file, except that it's will be stored in the fasl cache."))
 
-(defclass generate-op (downward-operation)
+(defun input-file (operation component)
+  (let ((files (input-files operation component)))
+    (assert (length=n-p files 1))
+    (first files)))
+
+(defclass generate-spec-op (downward-operation)
   ())
 
-(defmethod input-files ((op generate-op) (c c2ffi-file))
+(defmethod input-files ((op generate-spec-op) (c c2ffi-file))
   (list (component-pathname c)))
 
-(defmethod input-files ((op compile-op) (c c2ffi-file))
-  (list (first (output-files 'generate-op c))))
-
-(defmethod component-depends-on ((op generate-op) (c c2ffi-file))
+(defmethod component-depends-on ((op generate-spec-op) (c c2ffi-file))
   `((prepare-op ,c) ,@(call-next-method)))
 
-(defmethod component-depends-on ((op compile-op) (c c2ffi-file))
-  `((generate-op ,c) ,@(call-next-method)))
-
-(defmethod component-depends-on ((op load-source-op) (c c2ffi-file))
-  `((generate-op ,c) ,@(call-next-method)))
-
-(defmethod output-files ((op generate-op) (c c2ffi-file))
-  (let* ((input-file (first (input-files op c)))
-         (spec-file (spec-path input-file))
-         (generated-lisp-file (make-pathname :type "lisp"
-                                             :defaults spec-file)))
+(defmethod output-files ((op generate-spec-op) (c c2ffi-file))
+  (let* ((input-file (input-file op c))
+         (spec-file (spec-path input-file)))
     (values
-     (list*
-      ;; NOTE: the order of the list elements influences various other
-      ;; places in this file that call OUTPUT-FILE and take the NTH
-      ;; member of the return value.
-      ;; NOTE: applying ASDF:APPLY-OUTPUT-TRANSLATIONS here would
-      ;; redirect the GENERATED-LISP-FILE into the fasl cache.
-      generated-lisp-file
-      ;; If we unconditionally returned the SPEC-FILE here as an output
-      ;; file, that would make ASDF unconditionally redo the rest of the
-      ;; generation and compilation.
-      (unless (probe-file spec-file)
-        (list spec-file)))
+     (list spec-file)
      ;; Tell ASDF not to apply output translation.
      t)))
 
-(defmethod perform ((op generate-op) (c c2ffi-file))
-  (let* ((output-file (first (output-files op c)))
-         (input-file (first (input-files op c)))
-         (spec-file (let ((*c2ffi-executable* (if (slot-boundp c 'c2ffi-executable)
-                                                  (c2ffi-file/c2ffi-executable c)
-                                                  *c2ffi-executable*))
-                          (*trace-c2ffi* (if (slot-boundp c 'trace-c2ffi)
-                                             (c2ffi-file/trace-c2ffi c)
-                                             *trace-c2ffi*)))
-                      (ensure-spec-file-exists
-                       input-file
-                       :exclude-archs (c2ffi-file/exclude-archs c)
-                       :sys-include-paths (c2ffi-file/sys-include-paths c)))))
-    (with-staging-pathname (tmp-output output-file)
-      (format *debug-io* "~&; CFFI/C2FFI is generating the file ~S~%" output-file)
+(defmethod perform ((op generate-spec-op) (c c2ffi-file))
+  (let ((input-file (input-file op c))
+        (*c2ffi-executable* (if (slot-boundp c 'c2ffi-executable)
+                                (c2ffi-file/c2ffi-executable c)
+                                *c2ffi-executable*))
+        (*trace-c2ffi* (if (slot-boundp c 'trace-c2ffi)
+                           (c2ffi-file/trace-c2ffi c)
+                           *trace-c2ffi*)))
+    ;; NOTE: we don't call OUTPUT-FILE here, which may be a violation
+    ;; of the ASDF contract, that promises that OUTPUT-FILE can be
+    ;; customized by users.
+    (ensure-spec-file-exists input-file
+                             :exclude-archs (c2ffi-file/exclude-archs c)
+                             :sys-include-paths (c2ffi-file/sys-include-paths c))))
+
+(defclass generate-lisp-op (downward-operation)
+  ())
+
+(defmethod component-depends-on ((op generate-lisp-op) (c c2ffi-file))
+  `((generate-spec-op ,c) ,@(call-next-method)))
+
+(defmethod component-depends-on ((op compile-op) (c c2ffi-file))
+  `((generate-lisp-op ,c) ,@(call-next-method)))
+
+(defmethod component-depends-on ((op load-source-op) (c c2ffi-file))
+  `((generate-lisp-op ,c) ,@(call-next-method)))
+
+(defmethod input-files ((op generate-lisp-op) (c c2ffi-file))
+  (list (output-file 'generate-spec-op c)))
+
+(defmethod input-files ((op compile-op) (c c2ffi-file))
+  (list (output-file 'generate-lisp-op c)))
+
+(defmethod output-files ((op generate-lisp-op) (c c2ffi-file))
+  (let* ((spec-file (input-file op c))
+         (generated-lisp-file (make-pathname :type "lisp"
+                                             :defaults spec-file)))
+    (values
+     (list generated-lisp-file)
+     ;; Tell ASDF not to apply output translation.
+     t)))
+
+(defmethod perform ((op generate-lisp-op) (c c2ffi-file))
+  (let ((spec-file (input-file op c))
+        (generated-lisp-file (output-file op c)))
+    (with-staging-pathname (tmp-output generated-lisp-file)
+      (format *debug-io* "~&; CFFI/C2FFI is generating the file ~S~%" generated-lisp-file)
+      (unless (component-loaded-p :cffi/c2ffi-generator)
+        (load-system :cffi/c2ffi-generator))
       (apply 'process-c2ffi-spec-file
              spec-file (c2ffi-file/package c)
              :output tmp-output
