@@ -72,7 +72,8 @@
   :author "Attila Lendvai <attila@lendvai.name>"
   :depends-on (:alexandria
                :cffi
-               :cl-json)
+               :cl-json
+               :cl-ppcre)
   :licence "MIT"
   :components
   ((:module "src/c2ffi"
@@ -81,14 +82,3 @@
      (:file "c2ffi" :depends-on ("package"))
      (:file "generator" :depends-on ("package" "c2ffi"))
      (:file "asdf" :depends-on ("package" "c2ffi" "generator"))))))
-
-(defsystem :cffi/c2ffi+cl-ppcre
-  :description "Adds regexp support to name matching in cffi/c2ffi."
-  :author "Attila Lendvai <attila@lendvai.name>"
-  :depends-on (:cffi/c2ffi
-               :cl-ppcre)
-  :licence "MIT"
-  :components
-  ((:module "src/c2ffi/integration"
-    :components
-    ((:file "cl-ppcre")))))

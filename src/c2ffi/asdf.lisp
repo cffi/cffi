@@ -58,8 +58,6 @@
                          :initform nil)
    (emit-generated-name-mappings :initarg :emit-generated-name-mappings
                                  :initform :t)
-   (rule-matcher :initform :cl-ppcre
-                 :initarg :rule-matcher)
    (include-sources :initarg :include-sources
                     :initform :all)
    (exclude-sources :initarg :exclude-sources
@@ -161,7 +159,6 @@ file, except that it's will be stored in the fasl cache."))
                               foreign-library-name
                               foreign-library-spec
                               emit-generated-name-mappings
-                              rule-matcher
                               include-sources
                               exclude-sources
                               include-definitions

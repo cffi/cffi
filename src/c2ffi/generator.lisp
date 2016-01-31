@@ -97,30 +97,16 @@
 ;;;;;;
 ;;; Utilities
 
-(defun compile-rule/ends-with-subseq (pattern)
-  ;; We use ENDS-WITH-SUBSEQ here to help with file-name matching,
-  ;; but a regexp is needed for anything reasonable.
-  (curry #'ends-with-subseq pattern))
-
-(defun compile-rules (rules rule-matcher)
-  (let ((compiler (ecase rule-matcher
-                    (:cl-ppcre
-                     (unless (fboundp 'compile-rule/cl-ppcre)
-                       (let ((system-name :cffi/c2ffi+cl-ppcre))
-                         (with-simple-restart (try-loading "Try loading ~S." system-name)
-                           (error "~S needs to be loaded to use regex matching. A restart has been ~
-                                   installed that attempts loading it." system-name))
-                         (funcall (or (find-symbol* '#:quickload '#:quicklisp nil)
-                                      'asdf:load-system) system-name)))
-                     'compile-rule/cl-ppcre)
-                    (:ends-with-subseq
-                     'compile-rule/ends-with-subseq))))
-    (case rules
-      (:all rules)
-      (t (mapcar (lambda (rule)
-                   (check-type rule string "Patterns in the inclusion/exclusion rules must be strings.")
-                   (funcall compiler rule))
-                 rules)))))
+(defun compile-rules (rules)
+  (case rules
+    (:all rules)
+    (t (mapcar (lambda (pattern)
+                 (check-type pattern string "Patterns in the inclusion/exclusion rules must be strings.")
+                 (let ((scanner (cl-ppcre:create-scanner pattern)))
+                   (named-lambda cffi/c2ffi/cl-ppcre-rule-matcher
+                       (string)
+                     (funcall scanner string 0 (length string)))))
+               rules))))
 
 (defun include-definition? (name source-location
                             include-definitions exclude-definitions
@@ -495,7 +481,6 @@
                                   foreign-library-name
                                   foreign-library-spec
                                   (emit-generated-name-mappings t)
-                                  (rule-matcher :cl-ppcre)
                                   (include-sources :all)
                                   exclude-sources
                                   (include-definitions :all)
@@ -505,7 +490,7 @@ PACKAGE-NAME will be overwritten, it assumes full control over the
 target package."
   (check-type c2ffi-spec-file (or pathname string))
   (macrolet ((@ (var)
-                 `(setf ,var (compile-rules ,var rule-matcher))))
+                 `(setf ,var (compile-rules ,var))))
     (@ include-sources)
     (@ exclude-sources)
     (@ include-definitions)
