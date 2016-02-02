@@ -587,7 +587,9 @@ The foreign array must be freed with foreign-array-free."
 
 (defmethod foreign-struct-slot-set-form (value ptr (slot aggregate-struct-slot))
   "Return a form to get the value of an aggregate SLOT relative to PTR."
-  `(setf (foreign-struct-slot-value ,ptr ,slot) ,value))
+  `(translate-aggregate-to-foreign (inc-pointer ,ptr ,(slot-offset slot))
+                                   ,value
+                                   ,(parse-type (slot-type slot))))
 
 ;;;## Defining Foreign Structures
 
