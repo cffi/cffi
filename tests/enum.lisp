@@ -38,12 +38,12 @@
   :forty-two)
 
 (defcfun "check_enums" :int
-  (one numeros)
-  (two numeros)
-  (three numeros)
-  (four numeros)
-  (forty-one numeros)
-  (forty-two numeros))
+  (%one numeros)
+  (%two numeros)
+  (%three numeros)
+  (%four numeros)
+  (%forty-one numeros)
+  (%forty-two numeros))
 
 (deftest enum.1
     (check-enums :one :two :three 4 :forty-one :forty-two)
