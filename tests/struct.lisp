@@ -680,3 +680,26 @@
   42
   (1 . 2)
   42)
+
+;; TODO this needs to go through compile-file to exhibit the error
+;; ("don't know how to dump #<CFFI::AGGREGATE-STRUCT-SLOT>"), but
+;; there's no support for that, so let's leave it at toplevel here.
+(defcstruct (aggregate-struct.acc :conc-name acc-)
+  (x :int)
+  (pair (:struct struct-pair))
+  (y :int))
+
+(deftest set-aggregate-struct-slot.acc
+    (with-foreign-objects ((pair-struct '(:struct struct-pair))
+                           (aggregate-struct '(:struct aggregate-struct)))
+      (with-foreign-slots ((a b) pair-struct (:struct struct-pair))
+        (setf a 1 b 2)
+        (setf (acc-x aggregate-struct) 42)
+        (setf (acc-y aggregate-struct) 42)
+        (setf (acc-pair aggregate-struct) pair-struct)
+        (values (acc-x aggregate-struct)
+                (acc-pair aggregate-struct)
+                (acc-y aggregate-struct))))
+  42
+  (1 . 2)
+  42)
