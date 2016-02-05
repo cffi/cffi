@@ -233,8 +233,12 @@ int main(int argc, char**argv) {
   (with-standard-io-syntax
     (let* ((c-file (generate-c-file input-file output-defaults))
            (exe-file (make-exe-file-name c-file))
-           (lisp-file (tmp-lisp-file-name c-file)))
-      (link-executable exe-file (list (cc-include-grovel-argument) c-file))
+           (lisp-file (tmp-lisp-file-name c-file))
+           (inputs (list (cc-include-grovel-argument) c-file)))
+      (handler-case
+          (link-executable exe-file inputs)
+        (error (e)
+          (grovel-error "~a" e)))
       (invoke exe-file lisp-file)
       lisp-file)))
 
@@ -269,15 +273,24 @@ int main(int argc, char**argv) {
   (appendf *cc-flags* (parse-command-flags-list flags)))
 
 (define-grovel-syntax pkg-config-cflags (pkg &key optional)
-  (block nil
-    (handler-bind
-        ((error (lambda (e)
-                  (when optional
-                    (format *debug-io* "~&ERROR: ~a" e)
-                    (format *debug-io* "~&Attempting to continue anyway.~%")
-                    (return)))))
-      (appendf *cc-flags*
-               (parse-command-flags (invoke "pkg-config" pkg "--cflags"))))))
+  (let ((output-stream (make-string-output-stream))
+        (program+args (list "pkg-config" pkg "--cflags")))
+    (format *debug-io* "~&;~{ ~a~}~%" program+args)
+    (handler-case
+        (progn
+          (run-program program+args
+                       :output (make-broadcast-stream output-stream *debug-io*)
+                       :error-output output-stream)
+          (appendf *cc-flags*
+                   (parse-command-flags (get-output-stream-string output-stream))))
+      (error (e)
+        (let ((message (format nil "~a~&~%~a~&"
+                               e (get-output-stream-string output-stream))))
+          (cond (optional
+                 (format *debug-io* "~&; ERROR: ~a" message)
+                 (format *debug-io* "~&~%; Attempting to continue anyway.~%"))
+                (t
+                 (grovel-error "~a" message))))))))
 
 ;;; This form also has some "read time" effects. See GENERATE-C-FILE.
 (define-grovel-syntax in-package (name)
