@@ -126,3 +126,7 @@
 ;; loaded. Use explicit ASDF dependencies instead and assume the presence
 ;; of the feature accordingly.
 (pushnew :fsbv *features*)
+
+;; DEPRECATED This is here only for backwards compatibility until its fate is
+;; decided. See the mailing list discussion for details.
+(defctype :sizet size-t)

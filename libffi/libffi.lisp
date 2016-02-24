@@ -36,7 +36,3 @@
   (t (:default "libffi")))
 
 (load-foreign-library 'libffi)
-
-;; TODO this is here only for backwards compatibility until its fate is decided.
-;; See the mailing list discussion for details.
-(defctype :sizet size-t)
