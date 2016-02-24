@@ -173,10 +173,12 @@
 (deftest bitfield.4
     ;; These should macroexpand to the literals in Slime
     ;; due to the compiler macros. Same below.
-    (values (foreign-bitfield-value 'bf4 'one)
+    (values (foreign-bitfield-value 'bf4 ())
+            (foreign-bitfield-value 'bf4 'one)
             (foreign-bitfield-value 'bf4 '(one two))
             (foreign-bitfield-value 'bf4 '(three)) ; or should it signal an error?
             (foreign-bitfield-value 'bf4 '(sixteen)))
+  0
   1
   3
   3

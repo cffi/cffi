@@ -291,9 +291,13 @@
                  (error "~S is not a valid symbol for bitfield type ~S."
                         symbol type))))
     (declare (dynamic-extent #'process-one))
-    (if (consp symbols)
-        (reduce #'logior symbols :key #'process-one)
-        (process-one symbols))))
+    (cond
+      ((consp symbols)
+       (reduce #'logior symbols :key #'process-one))
+      ((null symbols)
+       0)
+      (t
+       (process-one symbols)))))
 
 (defun foreign-bitfield-value (type symbols)
   "Convert a list of symbols into an integer according to the TYPE bitfield."
