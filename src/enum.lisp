@@ -77,7 +77,7 @@
       (destructuring-bind (keyword &optional (value default-value valuep))
           (ensure-list pair)
         (check-type keyword enum-key)
-        (check-type value integer)
+        ;;(check-type value integer)
         (when (> (abs value) (abs most-extreme-value))
           (setf most-extreme-value value))
         (when (minusp value)

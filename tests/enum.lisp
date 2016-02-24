@@ -112,6 +112,24 @@
               (:too-long #.(expt 2 129)))))
   :error)
 
+;; There are some projects that use non-integer base type. It's not in
+;; adherence with the C standard, but we also don't lose much by
+;; allowing it.
+(defcenum (enum.double :double)
+  (:one 1)
+  (:two 2d0)
+  (:three 3.42)
+  :four)
+
+(deftest enum.double
+    (values-list
+     (mapcar (alexandria:curry 'foreign-enum-value 'enum.double)
+             '(:one :two :three :four)))
+  1
+  2.0d0
+  3.42
+  4.42)
+
 ;;;# Bitfield tests
 
 ;;; Regression test: defbitfield was misbehaving when the first value
@@ -205,6 +223,7 @@
   (one)
   (one two))
 
+#+nil
 (deftest bitfield.base-type-error
     (expecting-error
       (eval '(defbitfield (bf1 :float)
