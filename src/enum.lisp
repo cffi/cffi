@@ -113,6 +113,10 @@
     (if base-type
         (progn
           (setf base-type (canonicalize-foreign-type base-type))
+          ;; I guess we don't lose much by not strictly adhering to
+          ;; the C standard here, and some libs out in the wild are
+          ;; already using e.g. :double.
+          #+nil
           (assert (member base-type +valid-enum-base-types+ :test 'eq) ()
                   "Invalid base type ~S for enum type ~S. Must be one of ~S."
                   base-type type-name +valid-enum-base-types+))
