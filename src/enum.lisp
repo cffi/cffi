@@ -71,14 +71,17 @@
         (bit-index->keyword (make-array 0 :adjustable t
                                         :element-type t))
         (default-value (if field-mode-p 1 0))
-        (largest-value 0))
+        (most-extreme-value 0)
+        (has-negative-value? nil))
     (dolist (pair values)
       (destructuring-bind (keyword &optional (value default-value valuep))
           (ensure-list pair)
         (check-type keyword enum-key)
         (check-type value integer)
-        (when (> value largest-value)
-          (setf largest-value value))
+        (when (> (abs value) (abs most-extreme-value))
+          (setf most-extreme-value value))
+        (when (minusp value)
+          (setf has-negative-value? t))
         (if field-mode-p
             (if valuep
                 (when (and (>= value default-value)
@@ -114,18 +117,28 @@
                   "Invalid base type ~S for enum type ~S. Must be one of ~S."
                   base-type type-name +valid-enum-base-types+))
         ;; details: https://stackoverflow.com/questions/1122096/what-is-the-underlying-type-of-a-c-enum
-        (let ((bits (integer-length largest-value)))
+        (let ((bits (integer-length most-extreme-value)))
           (setf base-type
-                (cond
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-int) 8))))
-                   :unsigned-int)
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-long) 8))))
-                   :unsigned-long)
-                  ((<= bits (load-time-value (1- (* (foreign-type-size :unsigned-long-long) 8))))
-                   :unsigned-long-long)
-                  (t
-                   (error "Enum value ~S of enum ~S is too large to store."
-                          largest-value type-name))))))
+                (let ((most-uint-bits      (load-time-value (* (foreign-type-size :unsigned-int) 8)))
+                      (most-ulong-bits     (load-time-value (* (foreign-type-size :unsigned-long) 8)))
+                      (most-ulonglong-bits (load-time-value (* (foreign-type-size :unsigned-long-long) 8))))
+                  (or (if has-negative-value?
+                          (cond
+                            ((<= (1+ bits) most-uint-bits)
+                             :int)
+                            ((<= (1+ bits) most-ulong-bits)
+                             :long)
+                            ((<= (1+ bits) most-ulonglong-bits)
+                             :long-long))
+                          (cond
+                            ((<= bits most-uint-bits)
+                             :unsigned-int)
+                            ((<= bits most-ulong-bits)
+                             :unsigned-long)
+                            ((<= bits most-ulonglong-bits)
+                             :unsigned-long-long)))
+                      (error "Enum value ~S of enum ~S is too large to store."
+                             most-extreme-value type-name))))))
     (values base-type keyword-values value-keywords
             field-keywords (when field-mode-p
                              (alexandria:copy-array

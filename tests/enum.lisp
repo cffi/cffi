@@ -79,35 +79,31 @@
   t)
 
 (defcenum enum-size.int
-  (enum-size-one 1)
-  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-int) 8)))))
-  (enum-size-two 2))
-
-(defcenum enum-size.long
-  (:long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long) 8)))))
   (:one 1)
+  (enum-size-int #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-int) 8)))))
+  (enum-size-negative-int #.(- (1- (expt 2 (1- (* (foreign-type-size :unsigned-int) 8))))))
   (:two 2))
 
-(defcenum enum-size.long-long
+(defcenum enum-size.uint
   (:one 1)
-  (:two 2)
-  (:long-long #.(1- (expt 2 (1- (* (foreign-type-size :unsigned-long-long) 8))))))
+  (enum-size-uint #.(1- (expt 2 (* (foreign-type-size :unsigned-int) 8))))
+  (:two 2))
 
 (deftest enum.size
-    (mapcar (alexandria:compose 'foreign-type-size
-                                'cffi::unparse-type
+    (mapcar (alexandria:compose 'cffi::unparse-type
                                 'cffi::actual-type
                                 'cffi::parse-type)
             (list 'enum-size.int
-                  'enum-size.long
-                  'enum-size.long-long))
-  (#.(foreign-type-size :unsigned-int)
-   #.(foreign-type-size :unsigned-long)
-   #.(foreign-type-size :unsigned-long-long)))
+                  'enum-size.uint))
+  ;; The C standard only has weak constraints on the size of integer types, so
+  ;; we cannot really test more than one type in a platform independent way due
+  ;; to the possible overlaps.
+  (:int
+   :unsigned-int))
 
 (deftest enum.size.members
     (mapcar (alexandria:conjoin 'boundp 'constantp)
-            '(enum-size-one enum-size-two enum-size-int))
+            '(enum-size-int enum-size-negative-int enum-size-uint))
   (t t t))
 
 (deftest enum.size.error-when-too-large
