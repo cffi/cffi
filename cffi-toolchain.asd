@@ -31,7 +31,7 @@
   :description "The CFFI toolchain"
   :long-description "Portable abstractions for using the C compiler, linker, etc."
   :author "Francois-Rene Rideau <fahree@gmail.com>"
-  :depends-on ((:version "asdf" "3.1.2"))
+  :depends-on ((:version "asdf" "3.1.2") "cffi")
   :licence "MIT"
   :components
   ((:module "toolchain"
