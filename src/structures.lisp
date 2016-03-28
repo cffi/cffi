@@ -38,13 +38,6 @@
                    (let ((slot (gethash name (structure-slots type))))
                      (convert-to-foreign value (slot-type slot)))))))
 
-(defun convert-into-foreign-memory (value type ptr)
-  (let ((ptype (parse-type type)))
-    (if (typep ptype 'foreign-built-in-type)
-        value
-        (translate-into-foreign-memory value ptype ptr)))
-  ptr)
-
 (defmethod translate-to-foreign (value (type foreign-struct-type))
   (let ((ptr (foreign-alloc type)))
     (translate-into-foreign-memory value type ptr)
@@ -138,5 +131,3 @@
        (with-foreign-slots (,slot-names ,value-symbol ,struct-name)
          ,from-form))))
 |#
-
-
