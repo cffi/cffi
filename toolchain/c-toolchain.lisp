@@ -76,7 +76,6 @@
   #+arm '("-marm")
   #+arm64 '()
   #-(or arm arm64)
-  #-arm
   (ecase (cffi:foreign-type-size :pointer)
     (4 '("-m32"))
     (8 '("-m64"))))
