@@ -281,8 +281,13 @@ int main(int argc, char**argv) {
           (run-program program+args
                        :output (make-broadcast-stream output-stream *debug-io*)
                        :error-output output-stream)
-          (appendf *cc-flags*
-                   (parse-command-flags (get-output-stream-string output-stream))))
+          (setf *cc-flags* 
+                (nreverse 
+                 (remove-duplicates 
+                  (append (parse-command-flags 
+                           (get-output-stream-string output-stream))
+                          (nreverse *cc-flags*))
+                  :test #'string=))))
       (error (e)
         (let ((message (format nil "~a~&~%~a~&"
                                e (get-output-stream-string output-stream))))
