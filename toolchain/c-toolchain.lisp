@@ -33,8 +33,7 @@
 ;;; Utils
 
 (defun parse-command-flags (flags)
-  (let ((separators '(#\Space #\Tab #\Newline #\Return)))
-    (remove-if 'emptyp (split-string flags :separator separators))))
+  (remove-if 'emptyp (split-string flags :separator '(#\Space #\Tab #\Newline))))
 
 (defun parse-command-flags-list (strings)
   (loop for flags in strings append (parse-command-flags flags)))
