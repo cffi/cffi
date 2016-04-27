@@ -148,23 +148,23 @@ software or the use or other dealings in the software.}
 
 @menu
 * Introduction::                What is CFFI?
-* Installation::                
-* Implementation Support::      
+* Installation::
+* Implementation Support::
 * Tutorial::                    Interactive intro to using CFFI.
 * Wrapper generators::          CFFI forms from munging C source code.
-* Foreign Types::               
-* Pointers::                    
-* Strings::                     
-* Variables::                   
-* Functions::                   
-* Libraries::                   
-* Callbacks::                   
-* The Groveller::               
+* Foreign Types::
+* Pointers::
+* Strings::
+* Variables::
+* Functions::
+* Libraries::
+* Callbacks::
+* The Groveller::
 * Static Linking::
-* Limitations::                 
+* Limitations::
 * Platform-specific features::  Details about the underlying system.
 * Glossary::                    List of CFFI-specific terms and meanings.
-* Comprehensive Index::         
+* Comprehensive Index::
 
 @detailmenu
  --- Dictionary ---
@@ -1762,43 +1762,43 @@ and Lisp. @cffi{} provides various built-in types and allows the user to
 define new types.
 
 @menu
-* Built-In Types::              
-* Other Types::                 
-* Defining Foreign Types::      
-* Foreign Type Translators::    
-* Optimizing Type Translators:: 
-* Foreign Structure Types::     
-* Allocating Foreign Objects::  
+* Built-In Types::
+* Other Types::
+* Defining Foreign Types::
+* Foreign Type Translators::
+* Optimizing Type Translators::
+* Foreign Structure Types::
+* Allocating Foreign Objects::
 
 Dictionary
 
-* convert-from-foreign::        
-* convert-to-foreign::          
-* defbitfield::                 
-* defcstruct::                  
-* defcunion::                   
-* defctype::                    
-* defcenum::                    
-@c * define-type-spec-parser::  
-* define-foreign-type::         
-* define-parse-method::         
+* convert-from-foreign::
+* convert-to-foreign::
+* defbitfield::
+* defcstruct::
+* defcunion::
+* defctype::
+* defcenum::
+@c * define-type-spec-parser::
+* define-foreign-type::
+* define-parse-method::
 @c * explain-foreign-slot-value:
-* foreign-bitfield-symbols::    
-* foreign-bitfield-value::      
-* foreign-enum-keyword::        
-* foreign-enum-value::          
-* foreign-slot-names::          
-* foreign-slot-offset::         
-* foreign-slot-pointer::        
-* foreign-slot-value::          
-* foreign-type-alignment::      
-* foreign-type-size::           
-* free-converted-object::       
-* free-translated-object::      
-* translate-from-foreign::      
-* translate-to-foreign::        
-* translate-into-foreign-memory::        
-* with-foreign-slots::          
+* foreign-bitfield-symbols::
+* foreign-bitfield-value::
+* foreign-enum-keyword::
+* foreign-enum-value::
+* foreign-slot-names::
+* foreign-slot-offset::
+* foreign-slot-pointer::
+* foreign-slot-value::
+* foreign-type-alignment::
+* foreign-type-size::
+* free-converted-object::
+* free-translated-object::
+* translate-from-foreign::
+* translate-to-foreign::
+* translate-into-foreign-memory::
+* with-foreign-slots::
 @end menu
 
 @node Built-In Types, Other Types, Foreign Types, Foreign Types
@@ -2269,7 +2269,7 @@ possibly calling @code{call-next-method} to translate from and to the
 plists rather than provide a direct interface to the foreign object.
 The macro @code{translation-forms-for-class} will generate the forms
 necessary to translate a Lisp class into a foreign structure and vice
-versa. 
+versa.
 @c Write separate function doc section for translation-forms-for-class?
 @c Examples, perhaps taken from the tests?
 
@@ -2284,7 +2284,99 @@ the cffi-libffi system and specify the structure as @code{(:struct
 either @code{:pointer} or @code{(:pointer (:struct
 @var{structure-name}))}.
 
-@emph{Compatibility note:} Previous versions of CFFI accepted the
+@subheading Optimizing translate-into-foreign-memory
+
+Just like how @ref{translate-from-foreign} had
+@ref{expand-from-foreign} to optimize away the generic function call
+and @ref{translate-to-foreign} had the same in
+@ref{expand-to-foreign}, @ref{translate-into-foreign-memory} has
+@ref{expand-into-foreign-memory}.
+
+Let's use our @code{person} struct in an example. However we are going
+to spice it up by using a lisp struct rather than a plist to represent
+the person in lisp.
+
+First we redefine @code{person} very slightly
+
+@lisp
+(defcstruct (person :class c-person)
+  (number :int)
+  (reason :string))
+@end lisp
+
+By addign @code{:class} we can specialize the @code{translate-*} methods
+on the type @code{c-person}.
+
+Next we define a lisp struct to use instead of the plists
+
+@lisp
+(defstruct lisp-person
+  (number 0 :type integer)
+  (reason "" :type string))
+@end lisp
+
+And now lets define the type translators we know already:
+
+@lisp
+(defmethod translate-from-foreign (ptr (type c-person))
+  (with-foreign-slots ((number reason) ptr (:struct person))
+    (make-lisp-person :number number :reason reason)))
+
+(defmethod expand-from-foreign (ptr (type c-person))
+  `(with-foreign-slots ((number reason) ,ptr (:struct person))
+     (make-lisp-person :number number :reason reason)))
+
+(defmethod translate-into-foreign-memory (value (type c-person) ptr)
+  (with-foreign-slots ((number reason) ptr (:struct person))
+    (setf number (lisp-person-number value)
+          reason (lisp-person-reason value))))
+@end lisp
+
+At this point everything works, we can convert to and from our
+@code{lisp-person} and foreign @code{person}. If we macroexpand
+
+@lisp
+(setf (mem-aref ptr '(:struct person)) x)
+@end lisp
+
+We get something like:
+
+@lisp
+(let ((#:store879 x))
+  (translate-into-foreign-memory #:store879 #<c-person person>
+                                 (inc-pointer ptr 0))
+  #:store879)
+@end lisp
+
+Which is good, but now we can do better and get rid of that generic
+function call to @code{translate-into-foreign-memory}.
+
+@lisp
+(defmethod expand-into-foreign-memory (value (type c-person) ptr)
+  `(with-foreign-slots ((number reason) ,ptr (:struct person))
+     (setf number (lisp-person-number ,value)
+           reason (lisp-person-reason ,value))))
+@end lisp
+
+Now we can expand again so see the changes:
+
+@lisp
+;; this:
+(setf (mem-aref ptr '(:struct person)) x)
+
+;; expands to this
+;; (simplified, downcased, etc..)
+(let ((#:store887 x))
+  (with-foreign-slots ((number reason) (inc-pointer ptr 0) (:struct person))
+    (setf number (lisp-person-number #:store887)
+          reason (lisp-person-reason #:store887))) #:store887)
+@end lisp
+
+And there we are, no generic function overhead.
+
+@subheading Compatibility note
+
+Previous versions of CFFI accepted the
 ``bare'' @var{structure-name} as a type specification, which was
 interpreted as a pointer to the structure.  This is deprecated and
 produces a style warning.  Using this deprecated form means that
@@ -3307,7 +3399,7 @@ of the slot's data is returned. In C, this would be expressed as
 same extent as @var{ptr}.
 
 There are compiler macros for @code{foreign-slot-value} and its
-@code{setf} expansion that open code the memory access when 
+@code{setf} expansion that open code the memory access when
 @var{type} and @var{slot-names} are constant at compile-time.
 
 @subheading Examples
@@ -3745,29 +3837,29 @@ at store time, you may only manipulate its raw data through a pointer.
 The C compiler does this also, albeit informally.
 
 @menu
-* Basic Pointer Operations::    
-* Allocating Foreign Memory::   
-* Accessing Foreign Memory::    
+* Basic Pointer Operations::
+* Allocating Foreign Memory::
+* Accessing Foreign Memory::
 
 Dictionary
 
-* foreign-free::                
-* foreign-alloc::               
-* foreign-symbol-pointer::      
-* inc-pointer::                 
-* incf-pointer::                
-* make-pointer::                
+* foreign-free::
+* foreign-alloc::
+* foreign-symbol-pointer::
+* inc-pointer::
+* incf-pointer::
+* make-pointer::
 * mem-aptr::
-* mem-aref::                    
-* mem-ref::                     
-* null-pointer::                
-* null-pointer-p::              
-* pointerp::                    
-* pointer-address::             
-* pointer-eq::                  
-* with-foreign-object::         
-* with-foreign-objects::        
-* with-foreign-pointer::        
+* mem-aref::
+* mem-ref::
+* null-pointer::
+* null-pointer-p::
+* pointerp::
+* pointer-address::
+* pointer-eq::
+* with-foreign-object::
+* with-foreign-objects::
+* with-foreign-pointer::
 @end menu
 
 @node Basic Pointer Operations, Allocating Foreign Memory, Pointers, Pointers
@@ -4657,13 +4749,13 @@ without referring to any implementation-specific symbols.
 @menu
 Dictionary
 
-* *default-foreign-encoding*::  
-* foreign-string-alloc::        
-* foreign-string-free::         
-* foreign-string-to-lisp::      
-* lisp-string-to-foreign::      
-* with-foreign-string::         
-* with-foreign-strings::        
+* *default-foreign-encoding*::
+* foreign-string-alloc::
+* foreign-string-free::
+* foreign-string-to-lisp::
+* lisp-string-to-foreign::
+* with-foreign-string::
+* with-foreign-strings::
 * with-foreign-pointer-as-string::
 @end menu
 
@@ -5019,8 +5111,8 @@ CFFI> (with-foreign-pointer-as-string (str 6 str-size :encoding :ascii)
 @menu
 Dictionary
 
-* defcvar::                     
-* get-var-pointer::             
+* defcvar::
+* get-var-pointer::
 @end menu
 
 
@@ -5150,14 +5242,14 @@ CFFI> (mem-ref * :int)
 @chapter Functions
 
 @menu
-@c * Defining Foreign Functions::  
-@c * Calling Foreign Functions::   
+@c * Defining Foreign Functions::
+@c * Calling Foreign Functions::
 
 Dictionary
 
-* defcfun::                     
-* foreign-funcall::             
-* foreign-funcall-pointer::     
+* defcfun::
+* foreign-funcall::
+* foreign-funcall-pointer::
 * translate-camelcase-name::
 * translate-name-from-foreign::
 * translate-name-to-foreign::
@@ -5338,7 +5430,7 @@ must be loaded, which in turn depends on
 @uref{http://sourceware.org/libffi/,libffi}, including the header files.
 Failure to load that system will result in an error.
 Variadic functions cannot at present accept or return structures by
-value.  
+value.
 
 @emph{Note: The return value of foreign-funcall on functions with a
 :void return type is still undefined.}
@@ -5680,8 +5772,8 @@ CFFI> (translate-camelcase-name "some_xml_function")
 @chapter Libraries
 
 @menu
-* Defining a library::          
-* Library definition style::    
+* Defining a library::
+* Library definition style::
 
 Dictionary
 
@@ -6215,9 +6307,9 @@ time.@footnote{Namely, @acronym{CMUCL}.  See
 @menu
 Dictionary
 
-* callback::                    
-* defcallback::                 
-* get-callback::                
+* callback::
+* defcallback::
+* get-callback::
 @end menu
 
 

@@ -518,6 +518,23 @@ Signals an error if the type cannot be resolved."
   (declare (ignore value))
   (values *runtime-translator-form* t))
 
+;;; EXPAND-INTO-FOREIGN-MEMORY
+
+(defgeneric expand-into-foreign-memory (value type ptr)
+  (:method (value type ptr)
+    (declare (ignore type))
+    value))
+
+(defmethod expand-into-foreign-memory :around
+    (value (type translatable-foreign-type) ptr)
+  (let ((*runtime-translator-form*
+         `(translate-into-foreign-memory ,value ,type ,ptr)))
+    (call-next-method)))
+
+(defmethod expand-into-foreign-memory (value (type translatable-foreign-type) ptr)
+  (declare (ignore value))
+  *runtime-translator-form*)
+
 ;;; EXPAND-TO-FOREIGN-DYN
 
 (defgeneric expand-to-foreign-dyn (value var body type)
@@ -612,6 +629,14 @@ Signals an error if the type cannot be resolved."
       (expand-from-foreign value (parse-type (eval type)))
       `(translate-from-foreign ,value (parse-type ,type))))
 
+(defun convert-into-foreign-memory (value type ptr)
+  (translate-into-foreign-memory value (parse-type type) ptr))
+
+(define-compiler-macro convert-into-foreign-memory (value type ptr)
+  (if (constantp type)
+      (expand-into-foreign-memory value (parse-type (eval type)) ptr)
+      `(translate-into-foreign-memory ,value (parse-type ,type) ,ptr)))
+
 (defun free-converted-object (value type param)
   (free-translated-object value (parse-type type) param))
 
@@ -640,6 +665,9 @@ Signals an error if the type cannot be resolved."
 
 (defmethod expand-to-foreign-dyn (value var body (type enhanced-typedef))
   (expand-to-foreign-dyn value var body (actual-type type)))
+
+(defmethod expand-into-foreign-memory (value (type enhanced-typedef) ptr)
+  (expand-into-foreign-memory value (actual-type type) ptr))
 
 ;;;# User-defined Types and Translations.
 

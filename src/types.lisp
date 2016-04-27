@@ -208,8 +208,9 @@ to open-code (SETF MEM-REF) forms."
         #+cffi-sys::no-long-long
         (when (member ctype '(:long-long :unsigned-long-long))
           (return-from mem-set form))
-        (if (aggregatep parsed-type)    ; XXX: skip for now.
-            form      ; use expand-into-foreign-memory when available.
+        (if (aggregatep parsed-type)
+            (expand-into-foreign-memory
+             value parsed-type `(inc-pointer ,ptr ,offset))
             `(%mem-set ,(expand-to-foreign value parsed-type)
                        ,ptr ,ctype ,offset)))
       form))
