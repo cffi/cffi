@@ -114,6 +114,7 @@
   (labels
       ((covered-by-a-rule? (name rules)
          (or (eq rules :all)
+             (null name)
              (not (null (some (rcurry #'funcall name) rules)))))
        (weak? (rules)
          (eq :all rules))
