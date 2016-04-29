@@ -94,10 +94,10 @@
                              :keep *trace-c2ffi*)
     nil ; workaround for an UIOP bug; delme eventually (attila, 2016-01-27).
     :close-stream
-    (let* ((arch (when arch (list "-A" arch)))
+    (let* ((arch (when arch (list "--arch" arch)))
            (sys-include-paths (loop
                                 :for dir :in sys-include-paths
-                                :append (list "-i" dir))))
+                                :append (list "--sys-include" dir))))
       ;; Invoke c2ffi to first emit C #define's into TMP-MACRO-FILE. We ask c2ffi
       ;; to first generate a file of C global variables that are assigned the
       ;; value of the corresponding #define's, so that in the second pass below
@@ -106,8 +106,8 @@
       ;; support generating cffi-grovel files, and in grovel mode not rely
       ;; on this kludge anymore.
       (when (run-program* *c2ffi-executable* (list* (namestring input-header-file)
-                                                    "-D" "null"
-                                                    "-M" (namestring tmp-macro-file)
+                                                    "--driver" "null"
+                                                    "--macro-file" (namestring tmp-macro-file)
                                                     (append arch sys-include-paths))
                           :output *standard-output*
                           :ignore-error-status ignore-error-status)
@@ -122,7 +122,7 @@
           :close-stream
           ;; Invoke c2ffi again to generate the final output.
           (run-program* *c2ffi-executable* (list* (namestring tmp-include-file)
-                                                  "-o" (namestring output-spec-path)
+                                                  "--output" (namestring output-spec-path)
                                                   (append arch sys-include-paths))
                         :output *standard-output*
                         :ignore-error-status ignore-error-status))))))
