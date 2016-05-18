@@ -92,7 +92,7 @@
 ;;; when the need arises.
 (deftest library.t-clause
     (eq (cffi::foreign-library-spec
-         (cffi::get-foreign-library 'pseudo-library))
+         (cffi::symbol-foreign-library 'pseudo-library))
         'pseudo-library-spec)
   t)
 

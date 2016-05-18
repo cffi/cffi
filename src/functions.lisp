@@ -80,7 +80,7 @@
            (or convention
                (when libraryp
                  (let ((lib-options (foreign-library-options
-                                     (get-foreign-library library))))
+                                     (symbol-foreign-library library))))
                    (getf lib-options :convention)))
                :cdecl)
            ;; Don't pass the library option if we're dealing with

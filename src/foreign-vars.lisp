@@ -46,7 +46,7 @@
    name (if (eq library :default)
             :default
             (foreign-library-handle
-             (get-foreign-library library)))))
+             (symbol-foreign-library library)))))
 
 (defun fs-pointer-or-lose (foreign-name library)
   "Like foreign-symbol-ptr but throws an error instead of
