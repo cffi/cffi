@@ -46,15 +46,15 @@
     ;; NB: on CLASP and ECL these implementations, we better agree with
     ;; (compile-file-type :type bundle-type))
     ((eql :object) ;; the type of a linkable object file
-     (os-cond ((os-unix-p) "o")
-              ((os-windows-p) (if (featurep '(:or :mingw32 :mingw64)) "o" "obj"))))
+     (cond ((os-unix-p) "o")
+           ((os-windows-p) (if (featurep '(:or :mingw32 :mingw64)) "o" "obj"))))
     ((member :lib :static-library) ;; the type of a linkable library
-     (os-cond ((os-unix-p) "a")
-              ((os-windows-p) (if (featurep '(:or :mingw32 :mingw64)) "a" "lib"))))
+     (cond ((os-unix-p) "a")
+           ((os-windows-p) (if (featurep '(:or :mingw32 :mingw64)) "a" "lib"))))
     ((member :dll :shared-library) ;; the type of a shared library
-     (os-cond ((os-macosx-p) "dylib") ((os-unix-p) "so") ((os-windows-p) "dll")))
+     (cond ((os-macosx-p) "dylib") ((os-unix-p) "so") ((os-windows-p) "dll")))
     ((eql :program) ;; the type of an executable program
-     (os-cond ((os-unix-p) nil) ((os-windows-p) "exe")))))
+     (cond ((os-unix-p) nil) ((os-windows-p) "exe")))))
 
 (defclass gather-op (bundle-op)
   ((gather-op :initform nil :allocation :class :reader gather-op)
