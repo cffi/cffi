@@ -401,9 +401,11 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defmacro %defcallback (name rettype arg-names arg-types body
                         &key convention)
   (declare (ignore convention))
-  (let ((cb-name (intern-callback name)))
+  (let ((cb-name (intern-callback name))
+        (cb-type #.(if (> ext:+ecl-version-number+ 160102)
+                       :default :cdecl)))
     `(progn
-       (ffi:defcallback (,cb-name :cdecl)
+       (ffi:defcallback (,cb-name ,cb-type)
            ,(cffi-type->ecl-type rettype)
            ,(mapcar #'list arg-names
                     (mapcar #'cffi-type->ecl-type arg-types))
