@@ -6186,16 +6186,18 @@ is then searched in @code{*darwin-framework-directories*}, and loaded
 when found.
 
 @item :or
-Each remaining list element, itself a library designator, is loaded in
+Each remaining list element, itself a @dfn{library designator}, is loaded in
 order, until one succeeds.
 
 @item :default
 The name is transformed according to the platform's naming convention
-to shared libraries, and the resultant string is loaded as a library
-designator.  For example, on @sc{unix}, the name is suffixed with
+to shared libraries, and the resultant string is loaded as a @dfn{library
+designator}.  For example, on @sc{unix}, the name is suffixed with
 @file{.so}.
 @end table
 @end enumerate
+
+If the library is already loaded it will be reloaded.
 
 If the load fails, signal a @code{load-foreign-library-error}.
 
