@@ -36,7 +36,7 @@
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
-  :depends-on (:uiop :alexandria :trivial-features :babel)
+  :depends-on (:alexandria :trivial-features :babel)
   :in-order-to ((test-op (load-op :cffi-tests)))
   :perform (test-op (o c) (operate 'asdf:test-op :cffi-tests))
   :components
