@@ -230,12 +230,12 @@
   (defun %foreign-alloc (size)
     "Allocate SIZE bytes on the heap and return a pointer."
     (make-pointer
-     (jcall-raw malloc-jmethod nil size))))
+     (jstatic-raw malloc-jmethod nil size))))
 
 (let ((free-jmethod (private-jmethod "com.sun.jna.Memory" "free")))
   (defun foreign-free (ptr)
     "Free a PTR allocated by FOREIGN-ALLOC."
-    (jcall-raw free-jmethod nil (%pointer-address ptr))
+    (jstatic-raw free-jmethod nil (%pointer-address ptr))
     nil))
 
 ;;; TODO: stack allocation.
