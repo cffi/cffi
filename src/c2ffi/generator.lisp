@@ -27,25 +27,27 @@
 
 (in-package #:cffi/c2ffi)
 
-;;; Output generation goes in one phase, straight into the output
+;;; Output generation happens in one phase, straight into the output
 ;;; stream. There's minimal look-ahead (for source-location and name)
-;;; to be able to apply user requested filters in time.
+;;; which is needed to apply user specified filters in time.
 ;;;
-;;; Each CFFI form is also EVAL'd because the CFFI type lookup/parsing
-;;; mechanism is used while generating the output.
+;;; Each CFFI form is also EVAL'd during generation because the CFFI
+;;; type lookup/parsing mechanism is used while generating the output.
 ;;;
 ;;; Nomenclature:
 ;;;
-;;;  - 'name's in this file are generally in the C,c2ffi,json context,
-;;;    and 'cffi' is added to names that denote the cffi name.
+;;;  - variable names in this file are to be interpreted in the
+;;;    C,c2ffi,json context, and 'cffi' is added to names that denote
+;;;    the cffi name.
 ;;;
 ;;; Possible improvments:
 ;;;
-;;;  - generate a grovel file for inline function declarations and
-;;;    grovel them
+;;;  - generate an additional grovel file for C inline function
+;;;    declarations found in header files
 ;;;
-;;;  - generate struct-by-value defcfun's into a separate file so that
-;;;    users can decide what to depend on
+;;;  - generate struct-by-value DEFCFUN's into a separate file so that
+;;;    users can decide whether to depend on libffi, or they can make do
+;;;    without those definitions
 
 (defvar *allow-pointer-type-simplification* t)
 (defvar *allow-skipping-struct-fields* t)
@@ -533,6 +535,9 @@ target package."
               (setf foreign-library-name (safe-read-from-string foreign-library-name)))
             (output/code `(cffi:define-foreign-library ,foreign-library-name
                             ,@foreign-library-spec))
+            ;; TODO: In case we are in a cross-compiling environment, then emitting an
+            ;; unconditional USE-FOREIGN-LIBRARY may be a source of headaches.
+            ;; Maybe this should be addressed one level higher, on the level of CFFI?
             (output/code `(cffi:use-foreign-library ,foreign-library-name)))
           (etypecase prelude
             (null)
