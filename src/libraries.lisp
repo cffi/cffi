@@ -303,10 +303,11 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
         (fl-error "Unable to find framework ~A" framework-name))))
 
 (defun report-simple-error (name error)
-  (fl-error "Unable to load foreign library (~A).~%  ~A"
-            name
-            (format nil "~?" (simple-condition-format-control error)
-                    (simple-condition-format-arguments error))))
+  (let ((*package* (find-package "KEYWORD")))
+    (fl-error "Unable to load foreign library (~S).~%  ~A"
+              name
+              (format nil "~?" (simple-condition-format-control error)
+                      (simple-condition-format-arguments error)))))
 
 ;;; FIXME: haven't double checked whether all Lisps signal a
 ;;; SIMPLE-ERROR on %load-foreign-library failure.  In any case they
@@ -346,7 +347,7 @@ none of alternatives were successfully loaded."
                      (dolist (triple errors)
                        (destructuring-bind (condition name lib) triple
                          (let ((*package* (find-package "KEYWORD")))
-                           (format message "~%Attempting to load ~S from lib ~S, the error was ~A"
+                           (format message "~%Attempting to load ~S from lib ~S~%~A~%"
                                    name lib condition)))))))
       (fl-error "Unable to load any of the alternatives:~%   ~S~%   ~A"
                 library-list message))))
