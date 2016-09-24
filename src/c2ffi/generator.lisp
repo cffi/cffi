@@ -655,7 +655,7 @@ target package."
   #+nil
   (assume (equal "extern" storage-class)
           "Unexpected function STORAGE-CLASS: ~S for function ~S" storage-class function-name)
-  (expected-json-keys -json-entry- :tag :name :return-type :parameters :variadic :inline :storage-class)
+  (expected-json-keys -json-entry- :tag :name :return-type :parameters :variadic :inline :storage-class :ns)
   (let ((uses-struct-by-value? nil))
     (flet ((process-arg (json-entry index)
              (expected-json-keys json-entry :tag :name :type)
@@ -738,7 +738,7 @@ target package."
          ,value ,@(when test-fn `(:test ',test-fn)))))
 
 (define-processor const (name type (value :value :otherwise nil))
-  (expected-json-keys -json-entry- :tag :name :type :value)
+  (expected-json-keys -json-entry- :tag :name :type :value :ns)
   (let ((cffi-type (json-type-to-cffi-type type `(:contant ,name))))
     (cond
       ((not value)
