@@ -155,7 +155,7 @@
 (defun coerce-to-byte-size (bit-size)
   (let ((byte-size (/ bit-size 8)))
     (unless (integerp byte-size)
-      (error "Non-byte size where it's not expected (~A)" bit-size))
+      (error "Non-byte size encountered where it wasn't expected (~A bits)" bit-size))
     byte-size))
 
 (defmacro assume (condition &optional format-control &rest format-arguments)
@@ -553,9 +553,8 @@ target package."
               (setf foreign-library-name (safe-read-from-string foreign-library-name)))
             (output/code `(cffi:define-foreign-library ,foreign-library-name
                             ,@foreign-library-spec))
-            ;; TODO: In case we are in a cross-compiling environment, then emitting an
-            ;; unconditional USE-FOREIGN-LIBRARY may be a source of headaches.
-            ;; Maybe this should be addressed one level higher, on the level of CFFI?
+            ;; TODO: Unconditionally emitting a USE-FOREIGN-LIBRARY may not be smart.
+            ;; For details see: https://bugs.launchpad.net/cffi/+bug/1593635
             (output/code `(cffi:use-foreign-library ,foreign-library-name)))
           (etypecase prelude
             (null)
