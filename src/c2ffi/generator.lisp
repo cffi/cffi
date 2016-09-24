@@ -253,7 +253,7 @@
      (assert (member (first name) '(:struct :union :enum)))
      (valid-name-or-die (second name)))))
 
-(defun call-transformer-hook (hook &rest args)
+(defun call-hook (hook &rest args)
   (apply hook
          ;; indiscriminately add one keyword arg entry to warn
          (append args '(just-a-warning "Make sure your transformer hook has &key &allow-other-keys for future extendability."))))
@@ -276,7 +276,7 @@
   (check-type name string)
   (check-type kind ffi-name-kind)
   (when *ffi-name-transformer*
-    (setf name (call-transformer-hook *ffi-name-transformer* name kind))
+    (setf name (call-hook *ffi-name-transformer* name kind))
     (unless (or (and (symbolp name)
                      (not (null name)))
                 (stringp name))
@@ -339,7 +339,7 @@
       (camelcase-to-dash-separated name)
       name))
 
-(defun default-ffi-export-predicate (symbol)
+(defun default-ffi-export-predicate (symbol &key &allow-other-keys)
   (declare (ignore symbol))
   nil)
 
@@ -469,12 +469,12 @@
        (symbolp symbol)
        (not (keywordp symbol))
        *ffi-export-predicate*
-       (funcall *ffi-export-predicate* symbol)))
+       (call-hook *ffi-export-predicate* symbol)))
 
 (defun json-type-to-cffi-type (json-entry &optional (context nil context?))
   (let ((cffi-type (%json-type-to-cffi-type json-entry)))
     (if context?
-        (call-transformer-hook *ffi-type-transformer* cffi-type context)
+        (call-hook *ffi-type-transformer* cffi-type context)
         cffi-type)))
 
 ;;;;;;
