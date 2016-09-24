@@ -29,6 +29,7 @@
    ;; Class name
    #:grovel-file
    #:process-grovel-file
+   #:process-grovel-file*
    #:wrapper-file
    #:process-wrapper-file
    ;; Error conditions
