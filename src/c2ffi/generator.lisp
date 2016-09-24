@@ -56,6 +56,7 @@
 (defvar *ffi-name-transformer* 'default-ffi-name-transformer)
 ;; Called on the CFFI type, e.g. to turn (:pointer :char) into a :string.
 (defvar *ffi-type-transformer* 'default-ffi-type-transformer)
+(defvar *ffi-export-predicate* 'default-ffi-export-predicate)
 
 (define-constant +generated-file-header+
     ";;; -*- Mode: lisp -*-~%~
@@ -65,6 +66,10 @@
   :test 'equal)
 
 (defvar *c2ffi-output-stream*)
+
+(defun output/export (names package)
+  (let ((names (uiop:ensure-list names)))
+    (output/code `(export ',names ,(package-name package)))))
 
 (defun output/code (form)
   (check-type form cons)
@@ -334,6 +339,10 @@
       (camelcase-to-dash-separated name)
       name))
 
+(defun default-ffi-export-predicate (symbol)
+  (declare (ignore symbol))
+  nil)
+
 (defun default-ffi-type-transformer (type context &key &allow-other-keys)
   (declare (ignore context))
   (cond
@@ -455,6 +464,13 @@
       (assert cffi-type () "Failed to map ~S to a cffi type" json-entry)
       cffi-type)))
 
+(defun should-export-p (symbol)
+  (and symbol
+       (symbolp symbol)
+       (not (keywordp symbol))
+       *ffi-export-predicate*
+       (funcall *ffi-export-predicate* symbol)))
+
 (defun json-type-to-cffi-type (json-entry &optional (context nil context?))
   (let ((cffi-type (%json-type-to-cffi-type json-entry)))
     (if context?
@@ -481,6 +497,7 @@
                                   (ffi-name-transformer *ffi-name-transformer*)
                                   ;; as per CFFI:DEFINE-FOREIGN-LIBRARY and CFFI:LOAD-FOREIGN-LIBRARY
                                   (ffi-type-transformer *ffi-type-transformer*)
+                                  (ffi-export-predicate *ffi-export-predicate*)
                                   foreign-library-name
                                   foreign-library-spec
                                   (emit-generated-name-mappings t)
@@ -523,10 +540,11 @@ target package."
                (*assume-struct-by-value-support* assume-struct-by-value-support)
                (*ffi-name-transformer* (canonicalize-transformer-hook ffi-name-transformer))
                (*ffi-type-transformer* (canonicalize-transformer-hook ffi-type-transformer))
+               (*ffi-export-predicate* (canonicalize-transformer-hook ffi-export-predicate))
                (json (json:decode-json in)))
           (output/string +generated-file-header+)
           ;; some forms that are always emitted
-          (mapc 'output/code `((defpackage ,package-name (:use))
+          (mapc 'output/code `((uiop:define-package ,package-name (:use))
                                (in-package ,package-name)
                                (cffi:defctype ,(function-pointer-type-name) :pointer)))
           (when (and foreign-library-name
@@ -563,6 +581,15 @@ target package."
                       (output/string "~&~%;; ~S" location)
                       (process-c2ffi-entry json-entry))
                     (output/string "~&;; Skipped ~S due to filters" name)))))
+          ;;
+          ;; emit optional exports
+          (maphash
+           (lambda (package-name symbols)
+             (output/export (sort (remove-if-not #'should-export-p symbols) #'string<)
+                            package-name))
+           (get-all-names-by-package *generated-names*))
+          ;;
+          ;; emit optional mappings
           (when emit-generated-name-mappings
             (mapcar (lambda (entry)
                       (destructuring-bind (kind variable-name) entry
@@ -578,6 +605,20 @@ target package."
                       (:argument #:+argument-names+)
                       (:field    #:+field-names+))))))))
   output)
+
+(defun get-all-names-by-package (name-collection)
+  (let ((tables (mapcar #'cdr name-collection))
+        all
+        (grouped (make-hash-table)))
+    (loop :for table :in tables :do
+         (loop :for s :being :the :hash-values :of table :do
+            (push s all)))
+    (remove-duplicates all :test #'eq)
+    (loop :for name :in all
+       :for package-name := (package-name (symbol-package name))
+       :do (setf (gethash package-name grouped)
+                 (cons name (gethash package-name grouped))))
+    grouped))
 
 ;;;;;;
 ;;; Processors for various definitions
