@@ -80,6 +80,22 @@ int main(int argc, char**argv) {
 }
 ")
 
+(defvar *local-includes*)
+
+(defun push-local-include (path)
+  (let* ((abs-path (apply #'asdf-path path))
+         (file-name (pathname-name abs-path))
+         (ext (pathname-type abs-path))
+         (new-file-name (format nil "~a~a~@[.~a~]" (length *local-includes*)
+                                file-name ext)))
+    (appendf *local-includes* (list (cons abs-path new-file-name)))
+    new-file-name))
+
+(defun asdf-path (system &rest path)
+  (asdf:component-pathname
+   (or (asdf:find-component (asdf:find-system system t) path)
+       (error "System ~S path not found: ~S" system path))))
+
 (defun unescape-for-c (text)
   (with-output-to-string (result)
     (loop for i below (length text)
@@ -179,68 +195,140 @@ int main(int argc, char**argv) {
   ;; found.
   (intern (symbol-name (car form)) '#:cffi-grovel))
 
-(defvar *header-forms* '(c include define flag typedef))
+(defvar *header-forms* '(c include-local include define flag typedef))
 
 (defun header-form-p (form)
   (member (form-kind form) *header-forms*))
 
-(defun generate-c-file (input-file output-defaults)
-  (nest
-   (with-standard-io-syntax)
-   (let ((c-file (make-c-file-name output-defaults "__grovel"))
-         (*print-readably* nil)
-         (*print-escape* t)))
-   (with-open-file (out c-file :direction :output :if-exists :supersede))
-   (with-open-file (in input-file :direction :input))
-   (flet ((read-forms (s)
-            (do ((forms ())
-                 (form (read s nil nil) (read s nil nil)))
-                ((null form) (nreverse forms))
-              (labels
-                  ((process-form (f)
-                     (case (form-kind f)
-                       (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
-                     (case (form-kind f)
-                       (in-package
-                        (setf *package* (find-package (second f)))
-                        (push f forms))
-                       (progn
-                         ;; flatten progn forms
-                         (mapc #'process-form (rest f)))
-                       (t (push f forms)))))
-                (process-form form))))))
-   (let* ((forms (read-forms in))
-          (header-forms (remove-if-not #'header-form-p forms))
-          (body-forms (remove-if #'header-form-p forms)))
-     (write-string *header* out)
-     (dolist (form header-forms)
-       (process-grovel-form out form))
-     (write-string *prologue* out)
-     (dolist (form body-forms)
-       (process-grovel-form out form))
-     (write-string *postscript* out)
-     c-file)))
+(defun generate-c-file (c-file forms)
+  (with-standard-io-syntax
+    (let ((*print-readably* nil)
+          (*print-escape* t))
+      (with-open-file (out c-file :direction :output :if-exists :supersede)
+        (let* ((header-forms (remove-if-not #'header-form-p forms))
+               (body-forms (remove-if #'header-form-p forms)))
+          (write-string *header* out)
+          (dolist (form header-forms)
+            (process-grovel-form out form))
+          (write-string *prologue* out)
+          (dolist (form body-forms)
+            (process-grovel-form out form))
+          (write-string *postscript* out)
+          c-file)))))
 
 (defun tmp-lisp-file-name (defaults)
   (make-pathname :name (strcat (pathname-name defaults) ".grovel-tmp")
                  :type "lisp" :defaults defaults))
 
-
+
+(defun read-grovel-file (input-file)
+  (flet ((read-forms (s)
+           (do ((forms ()) (form (read s nil nil) (read s nil nil)))
+               ((null form) (nreverse forms))
+             (labels
+                 ((process-form (f)
+                    (case (form-kind f)
+                      (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
+                    (case (form-kind f)
+                      (in-package
+                       (setf *package* (find-package (second f)))
+                       (push f forms))
+                      (progn
+                        ;; flatten progn forms
+                        (mapc #'process-form (rest f)))
+                      (t (push f forms)))))
+               (process-form form)))))
+    (with-open-file (in input-file :direction :input)
+      (with-cached-reader-conditionals (read-forms in)))))
+
+(defun touch-file (pathname)
+  (with-open-file (stream pathname :direction :output
+                          :if-exists :append
+                          :if-does-not-exist :create)))
+
+(defun feature-specific-cache-dir (cache-dir feature-expressions)
+  (let ((feature-expressions (copy-seq feature-expressions)))
+    (when cache-dir
+      (ensure-directory-pathname
+       (subpathname cache-dir (gen-feature-hash feature-expressions))))))
+
+(defun feature-specific-cache-file (file-name cache-dir feature-expressions)
+  (let ((fs-cache-dir (feature-specific-cache-dir
+                       cache-dir feature-expressions)))
+    (when fs-cache-dir
+      (subpathname fs-cache-dir (pathname-name file-name)
+                   :type (pathname-type file-name)))))
+
+(defun ensure-fresh-dir (abs-path)
+  (assert (uiop:absolute-pathname-p abs-path))
+  (assert (uiop:directory-pathname-p abs-path))
+  (when (uiop:directory-exists-p abs-path)
+    (uiop:delete-directory-tree abs-path :validate t))
+  (ensure-directories-exist abs-path))
+
+(defun copy-local-includes-to-cache (in-dir)
+  (assert (boundp '*local-includes*))
+  (assert *local-includes*)
+  (let ((local-include-dir
+         (uiop:ensure-directory-pathname
+          (subpathname (uiop:pathname-directory-pathname in-dir)
+                       "local-includes"))))
+    (ensure-fresh-dir local-include-dir)
+    (loop :for (src-file . local-name) :in *local-includes*
+       :for dest-file := (subpathname local-include-dir local-name)
+       :do (alexandria:copy-file src-file dest-file))
+    (format nil "-I~A" (truename local-include-dir))))
+
+
+;; This function is here to maintain backwards compatibility and is used by
+;; tests.
+(defun process-grovel-file (input-file &optional (output-defaults input-file))
+  (let* ((c-file (make-c-file-name output-defaults "__grovel"))
+         (exe-file (make-exe-file-name c-file))
+         (lisp-file (tmp-lisp-file-name c-file)))
+    (process-grovel-file* input-file lisp-file c-file exe-file nil)))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given grovel file.
-(defun process-grovel-file (input-file &optional (output-defaults input-file))
+(defun process-grovel-file* (input-file dest-lisp-file c-file exe-file absolute-cache-dir)
   (with-standard-io-syntax
-    (let* ((c-file (generate-c-file input-file output-defaults))
-           (exe-file (make-exe-file-name c-file))
-           (lisp-file (tmp-lisp-file-name c-file))
-           (inputs (list (cc-include-grovel-argument) c-file)))
-      (handler-case
-          (link-executable exe-file inputs)
-        (error (e)
-          (grovel-error "~a" e)))
-      (invoke exe-file lisp-file)
-      lisp-file)))
+    (multiple-value-bind (forms feature-expressions)
+        (read-grovel-file input-file)
+      (let* ((cached-lisp-file (feature-specific-cache-file
+                                dest-lisp-file absolute-cache-dir
+                                feature-expressions))
+             (*local-includes* nil))
+        (if (and cached-lisp-file (file-exists-p cached-lisp-file))
+            (process-grovel-file-from-cache dest-lisp-file c-file
+                                            cached-lisp-file)
+            (process-grovel-file-from-scratch forms dest-lisp-file c-file
+                                              exe-file cached-lisp-file))
+        dest-lisp-file))))
+
+(defun process-grovel-file-from-cache (dest-lisp-file c-file cached-lisp-file)
+  (touch-file c-file)
+  (alexandria:copy-file cached-lisp-file dest-lisp-file
+                        :if-to-exists :supersede))
+
+(defun process-grovel-file-from-scratch (forms dest-lisp-file c-file exe-file
+                                         cached-lisp-file)
+  (generate-c-file c-file forms)
+  (let* ((lisp-file (tmp-lisp-file-name c-file))
+         (inputs (list (cc-include-grovel-argument)
+                       c-file)))
+    ;;
+    (when *local-includes*
+      (push (copy-local-includes-to-cache c-file) inputs))
+    ;;
+    (handler-case (link-executable exe-file inputs)
+      (error (e) (grovel-error "~a" e)))
+    (invoke exe-file lisp-file)
+    (rename-file-overwriting-target lisp-file dest-lisp-file)
+    (when cached-lisp-file
+      (ensure-directories-exist
+       (pathname-directory-pathname cached-lisp-file))
+      (alexandria:copy-file dest-lisp-file cached-lisp-file
+                            :if-to-exists :supersede))))
 
 ;;; OUT is lexically bound to the output stream within BODY.
 (defmacro define-grovel-syntax (name lambda-list &body body)
@@ -255,6 +343,10 @@ int main(int argc, char**argv) {
 
 (define-grovel-syntax include (&rest includes)
   (format out "~{#include <~A>~%~}" includes))
+
+(define-grovel-syntax include-local (&rest paths)
+  (format out "~{#include <~A>~%~}"
+          (mapcar #'push-local-include paths)))
 
 (define-grovel-syntax define (name &optional value)
   (format out "#define ~A~@[ ~A~]~%" name value))
@@ -431,12 +523,12 @@ int main(int argc, char**argv) {
                    (,slot-names pointer ,struct-lisp-name)
                  (make-instance ',struct-lisp-name
                                 ,@(loop for slot-name in slot-names
-                                        for initarg-name in initarg-names
-                                        for slot-decoder in slot-decoders
-                                        collect initarg-name
-                                        if slot-decoder
-                                        collect `(,slot-decoder ,slot-name)
-                                        else collect slot-name))))))
+                                     for initarg-name in initarg-names
+                                     for slot-decoder in slot-decoders
+                                     collect initarg-name
+                                     if slot-decoder
+                                     collect `(,slot-decoder ,slot-name)
+                                     else collect slot-name))))))
       (c-export out make-function-name)
       (dolist (reader-name reader-names)
         (c-export out reader-name))
@@ -723,21 +815,42 @@ string."
 ;;; written out by PROCESS-WRAPPER-FILE once everything is processed.
 (defvar *lisp-forms*)
 
-(defun generate-c-lib-file (input-file output-defaults)
-  (let ((*lisp-forms* nil)
-        (c-file (make-c-file-name output-defaults "__wrapper")))
-    (with-open-file (out c-file :direction :output :if-exists :supersede)
-      (with-open-file (in input-file :direction :input)
-        (write-string *header* out)
-        (loop for form = (read in nil nil) while form
-              do (process-wrapper-form out form))))
+(defun djb2 (string)
+  (let ((hash 5381)
+        (wrap (- (expt 2 64) 1)))
+    (loop :for c :across string :do
+       (setf hash (mod (+ (ash hash 5) hash (char-code c))
+                       wrap)))
+    hash))
+
+(defun gen-feature-hash (features)
+  (format nil "~a_~a_~x"
+          (or (operating-system) (software-type))
+          (or (architecture) (machine-type))
+          (djb2 (format nil "~{~a~}" features))))
+
+(defun read-wrapper-spec (input-file)
+  (with-cached-reader-conditionals
+    (with-open-file (in input-file :direction :input)
+      (loop :for form = (read in nil nil) :while form :collect form))))
+
+(defun generate-c-lib-file (input-data c-file)
+  (let ((*lisp-forms* nil))
+    (ensure-directory-pathname (pathname-directory-pathname c-file))
+    (with-open-file (out c-file :direction :output
+                         :if-exists :supersede)
+      (write-string *header* out)
+      (loop :for form :in input-data
+         :do (process-wrapper-form out form)))
     (values c-file (nreverse *lisp-forms*))))
+
 
 (defun make-soname (lib-soname output-defaults)
   (make-pathname :name lib-soname
                  :defaults output-defaults))
 
-(defun generate-bindings-file (lib-file lib-soname lisp-forms output-defaults)
+(defun generate-bindings-file (lib-file lib-soname lisp-forms output-defaults
+                               system cached-lib)
   (with-standard-io-syntax
     (let ((lisp-file (tmp-lisp-file-name output-defaults))
           (*print-readably* nil)
@@ -749,12 +862,17 @@ string."
               (named-library-name
                 (let ((*package* (find-package :keyword))
                       (*read-eval* nil))
-                  (read-from-string lib-soname))))
+                  (read-from-string lib-soname)))
+              (search-file (if cached-lib
+                               `(system-relative-pathname
+                                 ,(component-name system)
+                                 ,(pathname-directory-pathname cached-lib))
+                               (directory-namestring lib-file))))
           (pprint `(progn
                      (cffi:define-foreign-library
                          (,named-library-name
                           :type :grovel-wrapper
-                          :search-path ,(directory-namestring lib-file))
+                          :search-path ,search-file)
                        (t ,(namestring (make-lib-file-name lib-soname))))
                      (cffi:use-foreign-library ,named-library-name))
                   out)
@@ -767,22 +885,80 @@ string."
 (defun cc-include-grovel-argument ()
   (format nil "-I~A" (truename (system-source-directory :cffi-grovel))))
 
+(defun process-from-cache-p (system cached-lisp-file cached-lib-file)
+  (and cached-lib-file
+       cached-lisp-file
+       (uiop:file-exists-p (system-relative-pathname system cached-lib-file))
+       (uiop:file-exists-p (system-relative-pathname system cached-lisp-file))))
+
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given wrapper file.
-(defun process-wrapper-file (input-file
-                             &key
-                               (output-defaults (make-pathname :defaults input-file :type "processed"))
-                               lib-soname)
+(defun process-wrapper-file (system input-file dest-lisp-file dest-lib-file c-file
+                             o-file &key lib-soname cache-dir)
   (with-standard-io-syntax
-    (multiple-value-bind (c-file lisp-forms)
-        (generate-c-lib-file input-file output-defaults)
-    (let ((lib-file (make-lib-file-name (make-soname lib-soname output-defaults)))
-          (o-file (make-o-file-name output-defaults "__wrapper")))
-        (cc-compile o-file (list (cc-include-grovel-argument) c-file))
-        (link-shared-library lib-file (list o-file))
-        ;; FIXME: hardcoded library path.
-        (values (generate-bindings-file lib-file lib-soname lisp-forms output-defaults)
-                lib-file)))))
+    (multiple-value-bind (input-data feature-expressions)
+        (read-wrapper-spec input-file)
+      (let* ((cached-lib-file (feature-specific-cache-file
+                               dest-lib-file cache-dir feature-expressions))
+             (cached-lisp-file (feature-specific-cache-file
+                                dest-lisp-file cache-dir feature-expressions))
+             (*local-includes* nil))
+        (if (process-from-cache-p system cached-lisp-file cached-lib-file)
+            (process-wrapper-file-from-cache system dest-lib-file dest-lisp-file
+                                             c-file o-file
+                                             cached-lib-file cached-lisp-file)
+            (process-wrapper-file-from-scratch system input-data dest-lisp-file
+                                               lib-soname dest-lib-file c-file
+                                               o-file cached-lib-file
+                                               cached-lisp-file))
+        (values dest-lisp-file dest-lib-file)))))
+
+(defun process-wrapper-file-from-cache (system dest-lib-file dest-lisp-file
+                                        c-file o-file
+                                        cached-lib-file cached-lisp-file)
+  ;;
+  ;; We don't cache these but asdf is expecting them so make sure they exist
+  (touch-file c-file)
+  (touch-file o-file)
+
+  ;; We need the delete-file-if-exists as if we dont have it then running
+  ;; (asdf:load-system :osicat :force t :verbose nil) twice causes a memory
+  ;; fault.
+  ;; I expect some OS level shenanigans I don't understand yet - [Baggers]
+  (delete-file-if-exists dest-lib-file)
+  (let ((cached-lisp-file (system-relative-pathname system cached-lisp-file))
+        (cached-lib-file (system-relative-pathname system cached-lib-file)))
+    (alexandria:copy-file cached-lisp-file dest-lisp-file
+                          :if-to-exists :supersede)
+    (alexandria:copy-file cached-lib-file dest-lib-file
+                          :if-to-exists :supersede)))
+
+(defun process-wrapper-file-from-scratch (system input-data dest-lisp-file
+                                          lib-soname lib-file c-file o-file
+                                          cached-lib-file cached-lisp-file)
+  ;;
+  (multiple-value-bind (c-file lisp-forms)
+      (generate-c-lib-file input-data c-file)
+    (let ((inputs (list (cc-include-grovel-argument) c-file)))
+      (when *local-includes*
+        (push (copy-local-includes-to-cache c-file) inputs))
+      (cc-compile o-file inputs))
+    (link-shared-library lib-file (list o-file))
+    (let ((tmp-file (generate-bindings-file lib-file lib-soname lisp-forms
+                                            dest-lisp-file system
+                                            cached-lib-file)))
+      (unwind-protect (alexandria:copy-file tmp-file dest-lisp-file
+                                            :if-to-exists :supersede)
+        (delete-file tmp-file))
+      (when (and cached-lisp-file cached-lib-file)
+        (let ((cached-lisp-file (system-relative-pathname system cached-lisp-file))
+              (cached-lib-file (system-relative-pathname system cached-lib-file)))
+          (ensure-directories-exist
+           (pathname-directory-pathname cached-lib-file))
+          (alexandria:copy-file dest-lisp-file cached-lisp-file
+                                :if-to-exists :supersede)
+          (alexandria:copy-file lib-file cached-lib-file
+                                :if-to-exists :supersede))))))
 
 (defgeneric %process-wrapper-form (name out arguments)
   (:method (name out arguments)
@@ -823,6 +999,10 @@ string."
 
 (define-wrapper-syntax include (&rest includes)
   (format out "~{#include <~A>~%~}" includes))
+
+(define-wrapper-syntax include-local (&rest paths)
+  (format out "~{#include <~A>~%~}"
+          (mapcar #'push-local-include paths)))
 
 ;;; FIXME: this function is not complete.  Should probably follow
 ;;; typedefs?  Should definitely understand pointer types.

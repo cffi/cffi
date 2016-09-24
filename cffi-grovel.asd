@@ -32,10 +32,12 @@
   :licence "MIT"
   :components
   ((:module "grovel"
+    :serial t
     :components
     ((:static-file "common.h")
      (:file "package")
-     (:file "grovel" :depends-on ("package"))
-     (:file "asdf" :depends-on ("grovel"))))))
+     (:file "feature-caching-read")
+     (:file "grovel")
+     (:file "asdf")))))
 
 ;; vim: ft=lisp et
