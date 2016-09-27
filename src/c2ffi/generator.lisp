@@ -69,7 +69,9 @@
 
 (defun output/export (names package)
   (let ((names (uiop:ensure-list names)))
-    (output/code `(export ',names ,(package-name package)))))
+    ;; Make sure we have something PRINT-READABLY as a package name,
+    ;; i.e. not a SIMPLE-BASE-STRING on SBCL.
+    (output/code `(export ',names ',(make-symbol (package-name package))))))
 
 (defun output/code (form)
   (check-type form cons)
@@ -544,9 +546,12 @@ target package."
                (json (json:decode-json in)))
           (output/string +generated-file-header+)
           ;; some forms that are always emitted
-          (mapc 'output/code `((uiop:define-package ,package-name (:use))
-                               (in-package ,package-name)
-                               (cffi:defctype ,(function-pointer-type-name) :pointer)))
+          (mapc 'output/code
+                ;; Make sure the package exists. We don't even want to :use COMMON-LISP here,
+                ;; to avoid any possible name clashes.
+                `((uiop:define-package ,package-name (:use))
+                  (in-package ,package-name)
+                  (cffi:defctype ,(function-pointer-type-name) :pointer)))
           (when (and foreign-library-name
                      foreign-library-spec)
             (when (stringp foreign-library-name)
