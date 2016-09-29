@@ -57,7 +57,7 @@
 ;; Called on the CFFI type, e.g. to turn (:pointer :char) into a :string.
 (defvar *ffi-type-transformer* 'default-ffi-type-transformer)
 (defvar *ffi-export-predicate* 'default-ffi-export-predicate)
-(defvar *ffi-form-generators* nil)
+(defvar *ffi-form-generator* 'default-ffi-form-generator)
 
 (define-constant +generated-file-header+
     ";;; -*- Mode: lisp -*-~%~
@@ -167,25 +167,6 @@
      ,(if format-control
           `(warn ,format-control ,@format-arguments)
           `(warn "ASSUME failed: ~S" ',condition))))
-
-
-(defvar *supported-generator-form-types*
-  '(cffi:defcfun cffi:defcstruct cffi:defcunion cffi:defctype cffi:defcvar
-    cffi:defbitfield cffi:defcenum :begin :end))
-
-(defun canonicalize-generator-hooks (hook-forms)
-  (mapcar #'canonicalize-generator-hook hook-forms))
-
-(defun canonicalize-generator-hook (form)
-  (destructuring-bind (cffi-pattern generator-name) form
-    (assert (and (keywordp cffi-pattern)
-                 (or (symbolp generator-name) (stringp generator-name)))
-            nil "CFFI/C2FFI: Invalid generator form ~s" form)
-    (let ((cffi-form-name (find cffi-pattern *supported-generator-form-types*
-                                :test #'string=)))
-      (assert cffi-form-name nil "CFFI/C2FFI: ~s is not a valid CFFI form to generate for.~%Try one of the following:~{~%:~a~}"
-              cffi-pattern *supported-generator-form-types*)
-      (cons cffi-form-name (canonicalize-transformer-hook generator-name)))))
 
 (defun canonicalize-transformer-hook (hook)
   (etypecase hook
@@ -312,6 +293,10 @@
             cffi-name))
     cffi-name))
 
+(defun default-ffi-form-generator (definition &key &allow-other-keys)
+  (declare (ignore definition))
+  nil)
+
 (defun default-ffi-name-transformer (name kind &key &allow-other-keys)
   (check-type name string)
   (case kind
@@ -360,22 +345,15 @@
       (camelcase-to-dash-separated name)
       name))
 
-(defclass ffi-generator-context () ((data :accessor context-data)))
-
-(defvar *ffi-generator-context*)
-
 (defun possibly-generate-additional-form (definition-form generator-context)
-  (when (and *ffi-form-generators*)
-    (let* ((form-type (etypecase definition-form
-                        (keyword definition-form)
-                        (list (first definition-form))))
-           (generator-func (cdr (assoc form-type *ffi-form-generators*)))
-           (*print-readably* nil))
-      (when generator-func
-        (let ((new-form (call-hook generator-func definition-form
-                                   generator-context)))
-          (when new-form
-            (output/code new-form)))))))
+  (when (and *ffi-form-generator* generator-context)
+    (let* ((*print-readably* nil))
+      (multiple-value-bind (new-form dedup-key)
+          (call-hook *ffi-form-generator* definition-form)
+        (when new-form
+          (if dedup-key
+              (setf (gethash dedup-key generator-context) new-form)
+              (output/code new-form)))))))
 
 (defun default-ffi-export-predicate (symbol &key &allow-other-keys)
   (declare (ignore symbol))
@@ -536,7 +514,7 @@
                                   ;; as per CFFI:DEFINE-FOREIGN-LIBRARY and CFFI:LOAD-FOREIGN-LIBRARY
                                   (ffi-type-transformer *ffi-type-transformer*)
                                   (ffi-export-predicate *ffi-export-predicate*)
-                                  (ffi-form-generators *ffi-form-generators*)
+                                  (ffi-form-generator *ffi-form-generator*)
                                   foreign-library-name
                                   foreign-library-spec
                                   (emit-generated-name-mappings t)
@@ -580,8 +558,8 @@ target package."
                (*ffi-name-transformer* (canonicalize-transformer-hook ffi-name-transformer))
                (*ffi-type-transformer* (canonicalize-transformer-hook ffi-type-transformer))
                (*ffi-export-predicate* (canonicalize-transformer-hook ffi-export-predicate))
-               (*ffi-form-generators* (canonicalize-generator-hooks ffi-form-generators))
-               (*ffi-generator-context* (make-instance 'ffi-generator-context))
+               (*ffi-form-generator* (canonicalize-transformer-hook ffi-form-generator))
+               (ffi-generator-context (make-hash-table :test #'equal))
                (json (json:decode-json in)))
           (output/string +generated-file-header+)
           ;; some forms that are always emitted
@@ -610,7 +588,6 @@ target package."
                                        :element-type 'character)))
             ((or symbol function)
              (funcall prelude 'output/code)))
-          (possibly-generate-additional-form :begin *ffi-generator-context*)
           (dolist (json-entry json)
             (with-json-values (json-entry name location)
               (let ((source-location-file (subseq location
@@ -623,9 +600,16 @@ target package."
                      include-sources exclude-sources)
                     (progn
                       (output/string "~&~%;; ~S" location)
-                      (process-c2ffi-entry json-entry))
+                      (process-c2ffi-entry json-entry ffi-generator-context))
                     (output/string "~&;; Skipped ~S due to filters" name)))))
-          (possibly-generate-additional-form :end *ffi-generator-context*)
+          ;;
+          ;; emit deduped generated forms
+          (maphash
+           (lambda (key form)
+             (declare (ignore key))
+             (output/code form))
+           ffi-generator-context)
+
           ;;
           ;; emit optional exports
           (maphash
@@ -670,7 +654,7 @@ target package."
 
 (defvar *c2ffi-entry-processors* (make-hash-table :test 'equal))
 
-(defun process-c2ffi-entry (json-entry)
+(defun process-c2ffi-entry (json-entry &optional generator-context)
   (let* ((kind (json-value json-entry :tag))
          (processor (gethash kind *c2ffi-entry-processors*)))
     (if processor
@@ -689,8 +673,8 @@ target package."
                  (funcall processor json-entry))))
           (when definition-form
             (output/code definition-form))
-          (possibly-generate-additional-form definition-form
-                                             *ffi-generator-context*)
+          (when generator-context
+            (possibly-generate-additional-form definition-form generator-context))
           definition-form)
         (progn
           (warn "No cffi/c2ffi processor defined for ~A" json-entry)

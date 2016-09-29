@@ -54,8 +54,8 @@
                          :initform 'default-ffi-type-transformer)
    (ffi-export-predicate :initarg :ffi-export-predicate
                          :initform 'default-ffi-export-predicate)
-   (ffi-form-generators :initarg :ffi-form-generators
-                        :initform nil)
+   (ffi-form-generator :initarg :ffi-form-generator
+                        :initform 'default-ffi-form-generator)
    (foreign-library-name :initarg :foreign-library-name
                          :initform nil)
    (foreign-library-spec :initarg :foreign-library-spec
@@ -178,7 +178,7 @@ file, except that it's will be stored in the fasl cache."))
                :for arg :in '(ffi-name-transformer
                               ffi-type-transformer
                               ffi-export-predicate
-                              ffi-form-generators
+                              ffi-form-generator
                               foreign-library-name
                               foreign-library-spec
                               emit-generated-name-mappings

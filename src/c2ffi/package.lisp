@@ -49,5 +49,4 @@
    #:change-case-to-readtable-case
    #:camelcased?
    #:camelcase-to-dash-separated
-   #:maybe-camelcase-to-dash-separated
-   #:context-data))
+   #:maybe-camelcase-to-dash-separated))
