@@ -765,6 +765,12 @@ The foreign array must be freed with foreign-array-free."
   "Return the address of SLOT-NAME in the structure at PTR."
   (foreign-struct-slot-pointer ptr (get-slot-info type slot-name)))
 
+(define-compiler-macro foreign-slot-pointer (&whole whole ptr type slot-name)
+  (if (and (constantp type) (constantp slot-name))
+      (foreign-struct-slot-pointer-form
+       ptr (get-slot-info (eval type) (eval slot-name)))
+      whole))
+
 (defun foreign-slot-type (type slot-name)
   "Return the type of SLOT in a struct TYPE."
   (slot-type (get-slot-info type slot-name)))
