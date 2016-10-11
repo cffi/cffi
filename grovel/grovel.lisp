@@ -802,8 +802,12 @@ string."
     (process-wrapper-form out form)))
 
 (define-wrapper-syntax in-package (name)
-  (setq *package* (find-package name))
-  (push `(in-package ,name) *lisp-forms*))
+  (assert (find-package name) (name)
+          "Wrapper file specified (in-package ~s)~%however that does not name a known package."
+          name)
+  (let ((desired-package (find-package name)))
+    (setq *package* desired-package)
+    (push `(in-package ,name) *lisp-forms*)))
 
 (define-wrapper-syntax c (&rest strings)
   (dolist (string strings)
