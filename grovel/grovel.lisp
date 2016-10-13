@@ -802,6 +802,10 @@ string."
     (process-wrapper-form out form)))
 
 (define-wrapper-syntax in-package (name)
+  (assert (find-package name) (name)
+          "Wrapper file specified (in-package ~s)~%~
+           however that does not name a known package."
+          name)
   (setq *package* (find-package name))
   (push `(in-package ,name) *lisp-forms*))
 
