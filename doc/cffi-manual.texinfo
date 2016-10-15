@@ -2287,10 +2287,10 @@ either @code{:pointer} or @code{(:pointer (:struct
 @subheading Optimizing translate-into-foreign-memory
 
 Just like how @ref{translate-from-foreign} had
-@ref{expand-from-foreign} to optimize away the generic function call
+@code{expand-from-foreign} to optimize away the generic function call
 and @ref{translate-to-foreign} had the same in
-@ref{expand-to-foreign}, @ref{translate-into-foreign-memory} has
-@ref{expand-into-foreign-memory}.
+@code{expand-to-foreign}, @ref{translate-into-foreign-memory} has
+@code{expand-into-foreign-memory}.
 
 Let's use our @code{person} struct in an example. However we are going
 to spice it up by using a lisp struct rather than a plist to represent
