@@ -123,12 +123,12 @@
   (labels
       ((covered-by-a-rule? (name rules)
          (or (eq rules :all)
-             (null name)
              (not (null (some (rcurry #'funcall name) rules)))))
        (weak? (rules)
          (eq :all rules))
        (strong? (name rules)
-         (and (not (weak? rules))
+         (and name
+              (not (weak? rules))
               (covered-by-a-rule? name rules))))
     (let* ((excl-def/weak   (weak? exclude-definitions))
            (excl-def/strong (strong? name exclude-definitions))
