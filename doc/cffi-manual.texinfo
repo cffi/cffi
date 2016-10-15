@@ -2292,11 +2292,11 @@ and @ref{translate-to-foreign} had the same in
 @code{expand-to-foreign}, @ref{translate-into-foreign-memory} has
 @code{expand-into-foreign-memory}.
 
-Let's use our @code{person} struct in an example. However we are going
-to spice it up by using a lisp struct rather than a plist to represent
-the person in lisp.
+Let's use our @code{person} struct in an example. However, we are
+going to spice it up by using a lisp struct rather than a plist to
+represent the person in lisp.
 
-First we redefine @code{person} very slightly
+First we redefine @code{person} very slightly.
 
 @lisp
 (defcstruct (person :class c-person)
@@ -2304,10 +2304,10 @@ First we redefine @code{person} very slightly
   (reason :string))
 @end lisp
 
-By addign @code{:class} we can specialize the @code{translate-*} methods
-on the type @code{c-person}.
+By adding @code{:class} we can specialize the @code{translate-*}
+methods on the type @code{c-person}.
 
-Next we define a lisp struct to use instead of the plists
+Next we define a lisp struct to use instead of the plists.
 
 @lisp
 (defstruct lisp-person
@@ -2315,7 +2315,7 @@ Next we define a lisp struct to use instead of the plists
   (reason "" :type string))
 @end lisp
 
-And now lets define the type translators we know already:
+And now let's define the type translators we know already:
 
 @lisp
 (defmethod translate-from-foreign (ptr (type c-person))
@@ -2339,7 +2339,7 @@ At this point everything works, we can convert to and from our
 (setf (mem-aref ptr '(:struct person)) x)
 @end lisp
 
-We get something like:
+we get something like:
 
 @lisp
 (let ((#:store879 x))
