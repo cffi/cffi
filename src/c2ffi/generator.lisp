@@ -543,6 +543,7 @@ target package."
                (*ffi-name-transformer* (canonicalize-transformer-hook ffi-name-transformer))
                (*ffi-type-transformer* (canonicalize-transformer-hook ffi-type-transformer))
                (*ffi-export-predicate* (canonicalize-transformer-hook ffi-export-predicate))
+               (*read-default-float-format* 'double-float)
                (json (json:decode-json in)))
           (output/string +generated-file-header+)
           ;; some forms that are always emitted
