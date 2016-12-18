@@ -327,12 +327,12 @@ ourselves."
               (report-simple-error name error)))
           (report-simple-error name error))))))
 
-(defun try-foreign-library-alternatives (name library-list)
+(defun try-foreign-library-alternatives (name library-list &optional search-path)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
   (dolist (lib library-list)
     (multiple-value-bind (handle pathname)
-        (ignore-errors (load-foreign-library-helper name lib))
+        (ignore-errors (load-foreign-library-helper name lib search-path))
       (when handle
         (return-from try-foreign-library-alternatives
           (values handle pathname)))))
@@ -369,7 +369,7 @@ This will need to be extended as we test on more OSes."
                             (second thing)
                             (default-library-suffix))))
           (load-foreign-library-path name library-path search-path)))
-       (:or (try-foreign-library-alternatives name (rest thing)))))))
+       (:or (try-foreign-library-alternatives name (rest thing) search-path))))))
 
 (defun %do-load-foreign-library (library search-path)
   (flet ((%do-load (lib name spec)
