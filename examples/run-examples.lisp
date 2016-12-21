@@ -27,12 +27,13 @@
 
 (setf *load-verbose* nil *compile-verbose* nil)
 
-#+(and (not asdf) (or sbcl openmcl))
-(require "asdf")
-#+clisp
-(load "~/Downloads/asdf")
+#-asdf
+(ignore-errors (require "asdf"))
+#-asdf
+(load "~/common-lisp/asdf/build/asdf.lisp")
 
-(asdf:operate 'asdf:load-op 'cffi-examples :verbose nil)
+(asdf:load-system 'cffi-examples :verbose nil)
 (cffi-examples:run-examples)
 (force-output)
+
 (quit)

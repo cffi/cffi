@@ -92,6 +92,16 @@ This is a collection of TODO items and ideas in no particular order.
 
 -> Look into making the C output more concise.
 
+### CFFI-Toolchain
+
+-> Port the toolchain parameter detection to more implementations
+-> Port the static linking support to more implementations
+-> Add a mechanism to configure and/or detect dynamic libraries against
+   which to link for instance.
+   It could be a variable in which flags are accumulated,
+   or an autodetection after loading everything, see
+    https://github.com/borodust/cl-bodge/blob/0.3.0/distribution/build.lisp#L79
+
 ### Other
 
 -> Type-checking pointer interface.

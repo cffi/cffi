@@ -232,11 +232,15 @@ int main(int argc, char**argv) {
 (defun process-grovel-file (input-file &optional (output-defaults input-file))
   (with-standard-io-syntax
     (let* ((c-file (generate-c-file input-file output-defaults))
+           (o-file (make-o-file-name c-file))
            (exe-file (make-exe-file-name c-file))
            (lisp-file (tmp-lisp-file-name c-file))
            (inputs (list (cc-include-grovel-argument) c-file)))
       (handler-case
-          (link-executable exe-file inputs)
+          (progn
+            ;; at least MKCL wants to separate compile and link
+            (cc-compile o-file inputs)
+            (link-executable exe-file (list o-file)))
         (error (e)
           (grovel-error "~a" e)))
       (invoke exe-file lisp-file)
@@ -755,7 +759,7 @@ string."
                          (,named-library-name
                           :type :grovel-wrapper
                           :search-path ,(directory-namestring lib-file))
-                       (t ,(namestring (make-lib-file-name lib-soname))))
+                       (t ,(namestring (make-so-file-name lib-soname))))
                      (cffi:use-foreign-library ,named-library-name))
                   out)
           (fresh-line out))
@@ -776,7 +780,7 @@ string."
   (with-standard-io-syntax
     (multiple-value-bind (c-file lisp-forms)
         (generate-c-lib-file input-file output-defaults)
-    (let ((lib-file (make-lib-file-name (make-soname lib-soname output-defaults)))
+    (let ((lib-file (make-so-file-name (make-soname lib-soname output-defaults)))
           (o-file (make-o-file-name output-defaults "__wrapper")))
         (cc-compile o-file (list (cc-include-grovel-argument) c-file))
         (link-shared-library lib-file (list o-file))
