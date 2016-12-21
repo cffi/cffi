@@ -25,23 +25,22 @@
 
 (uiop:define-package #:cffi-toolchain
   (:mix #:asdf #:uiop #:common-lisp)
-  (:import-from #:asdf/bundle #:link-op)
+  (:import-from #:asdf/bundle
+   #:link-op #:bundle-pathname-type #:bundle-type
+   #:gather-operation #:gather-type)
   (:export
    ;; Variables
-   #:*cc*
-   #:*cc-flags*
-   #:*ld*
-   #:*ld-flags*
+   #:*cc* #:*cc-flags*
+   #:*ld* #:*ld-exe-flags* #:*ld-dll-flags*
+   #:*linkkit-start* #:*linkkit-end*
    ;; Functions from c-toolchain
-   #:make-c-file-name
-   #:make-o-file-name
-   #:make-lib-file-name
-   #:make-exe-file-name
-   #:parse-command-flags
-   #:parse-command-flags-list
-   #:invoke
-   #:invoke-cc
-   #:cc-compile
-   #:link-static-library
-   #:link-shared-library
-   #:link-executable))
+   #:make-c-file-name #:make-o-file-name
+   #:make-so-file-name #:make-exe-file-name
+   #:parse-command-flags #:parse-command-flags-list
+   #:invoke #:invoke-build #:cc-compile
+   #:link-static-library #:link-shared-library
+   #:link-executable #:link-lisp-executable
+   ;; ASDF classes
+   #:c-file #:o-file
+   #:static-runtime-op #:static-image-op #:static-program-op
+   ))

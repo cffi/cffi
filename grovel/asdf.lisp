@@ -122,7 +122,7 @@
          (o-file (make-o-file-name output-file "__wrapper"))
          (lib-soname (wrapper-soname c)))
     (list output-file
-          (make-lib-file-name (make-soname lib-soname output-file))
+          (make-so-file-name (make-soname lib-soname output-file))
           c-file
           o-file)))
 

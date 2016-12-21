@@ -74,7 +74,7 @@
      (:file "fsbv" :depends-on ("bindings" "enum"))
      (:file "misc-types" :depends-on ("bindings"))
      (:file "misc" :depends-on ("bindings"))
-     (:file "asdf" :depends-on ("package"))
+     (:file "test-asdf" :depends-on ("package"))
      (:file "grovel" :depends-on ("package")))))
   :perform (test-op (o c) (symbol-call :cffi-tests '#:run-all-cffi-tests)))
 

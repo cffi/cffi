@@ -25,6 +25,8 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+;; Make sure to upgrade ASDF before the #.(if ...) below may be read.
+(load-system "asdf")
 #-asdf3.1 (error "CFFI-toolchain requires ASDF 3.1!")
 
 (defsystem "cffi-toolchain"
@@ -36,9 +38,11 @@
   :components
   ((:module "toolchain"
     :components
-    ((:file "asdf-compat" :if-feature (#.(if (version<= "3.1.6" (asdf-version)) :or :and)))
+    (;; This is a plain copy of bundle.lisp from ASDF 3.2.0
+     ;; in case your asdf isn't up to snuff.
+     (:file "bundle" :if-feature (#.(if (version< "3.2.0" (asdf-version)) :or :and)))
      (:file "package")
      (:file "c-toolchain" :depends-on ("package"))
-     (:file "static-link" :depends-on ("asdf-compat" "c-toolchain"))))))
+     (:file "static-link" :depends-on ("bundle" "c-toolchain"))))))
 
 ;; vim: ft=lisp et
