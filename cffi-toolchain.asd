@@ -35,11 +35,10 @@
   :licence "MIT"
   :components
   ((:module "toolchain"
-    :serial t
     :components
-    ((:file "package")
-     (:file "asdf-compat" :if-feature (#.(if (version<= "3.1.6" (asdf-version)) :or :and)))
-     (:file "c-toolchain")
-     (:file "static-link")))))
+    ((:file "asdf-compat" :if-feature (#.(if (version<= "3.1.6" (asdf-version)) :or :and)))
+     (:file "package")
+     (:file "c-toolchain" :depends-on ("package"))
+     (:file "static-link" :depends-on ("asdf-compat" "c-toolchain"))))))
 
 ;; vim: ft=lisp et
