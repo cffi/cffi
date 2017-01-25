@@ -140,10 +140,11 @@
 (defmethod print-object ((library foreign-library) stream)
   (with-slots (name pathname) library
     (print-unreadable-object (library stream :type t)
-      (when name
-        (format stream "~A" name))
+      (let ((*package* (find-package :keyword)))
+        (when name
+          (format stream "~S" name))
       (when pathname
-        (format stream " ~S" (file-namestring pathname))))))
+        (format stream " ~S" (file-namestring pathname)))))))
 
 (define-condition foreign-library-undefined-error (error)
   ((name :initarg :name :reader fl-name))
@@ -302,10 +303,11 @@ it signals a LOAD-FOREIGN-LIBRARY-ERROR."
         (fl-error "Unable to find framework ~A" framework-name))))
 
 (defun report-simple-error (name error)
-  (fl-error "Unable to load foreign library (~A).~%  ~A"
-            name
-            (format nil "~?" (simple-condition-format-control error)
-                    (simple-condition-format-arguments error))))
+  (let ((*package* (find-package "KEYWORD")))
+    (fl-error "Unable to load foreign library (~S).~%  ~A"
+              name
+              (format nil "~?" (simple-condition-format-control error)
+                      (simple-condition-format-arguments error)))))
 
 ;;; FIXME: haven't double checked whether all Lisps signal a
 ;;; SIMPLE-ERROR on %load-foreign-library failure.  In any case they
@@ -330,15 +332,25 @@ ourselves."
 (defun try-foreign-library-alternatives (name library-list)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
-  (dolist (lib library-list)
-    (multiple-value-bind (handle pathname)
-        (ignore-errors (load-foreign-library-helper name lib))
-      (when handle
-        (return-from try-foreign-library-alternatives
-          (values handle pathname)))))
-  ;; Perhaps we should show the error messages we got for each
-  ;; alternative if we can figure out a nice way to do that.
-  (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
+  (let (errors)
+    (dolist (lib library-list)
+      (multiple-value-bind (handle pathname)
+          (handler-case (load-foreign-library-helper name lib)
+            (error (condition)
+              (push (list condition name lib) errors)
+              (values nil condition)))
+        (when handle
+          (return-from try-foreign-library-alternatives
+            (values handle pathname)))))
+    ;; We now show the error messages we got for each alternative
+    (let ((message (with-output-to-string (message)
+                     (dolist (triple errors)
+                       (destructuring-bind (condition name lib) triple
+                         (let ((*package* (find-package "KEYWORD")))
+                           (format message "~%Attempting to load ~S from lib ~S~%~A~%"
+                                   name lib condition)))))))
+      (fl-error "Unable to load any of the alternatives:~%   ~S~%   ~A"
+                library-list message))))
 
 (defparameter *cffi-feature-suffix-map*
   '((:windows . ".dll")
