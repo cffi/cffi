@@ -75,7 +75,7 @@
 ;;;# ASDF component: GROVEL-FILE
 
 (defclass grovel-file (process-op-input cc-flags-mixin)
-  ()
+  ((cache-dir :initform nil :initarg :cache-dir :accessor cache-dir-of))
   (:default-initargs
    :generated-lisp-file-type "processed-grovel-file")
   (:documentation
@@ -86,22 +86,25 @@
   (let* ((input-file (first (input-files op c)))
          (output-file (make-pathname :type (generated-lisp-file-type c)
                                      :defaults input-file))
-         (c-file (make-c-file-name output-file "__grovel")))
+         (c-file (make-c-file-name output-file "__grovel"))
+         (exe-file (make-exe-file-name c-file)))
     (list output-file
           c-file
-          (make-exe-file-name c-file))))
+          exe-file)))
+
 
 (defmethod perform ((op process-op) (c grovel-file))
-  (let* ((output-file (first (output-files op c)))
-         (input-file (first (input-files op c)))
-         (tmp-file (process-grovel-file input-file output-file)))
-    (rename-file-overwriting-target tmp-file output-file)))
+  (destructuring-bind (output-file c-file exe-file) (output-files op c)
+    (let* ((input-file (first (input-files op c)))
+           (absolute-cache-dir (absolute-cache-dir input-file (cache-dir-of c))))
+      (process-grovel-file* input-file output-file c-file exe-file absolute-cache-dir))))
 
 
 ;;;# ASDF component: WRAPPER-FILE
 
 (defclass wrapper-file (process-op-input cc-flags-mixin)
-  ((soname :initform nil :initarg :soname :accessor soname-of))
+  ((soname :initform nil :initarg :soname :accessor soname-of)
+   (cache-dir :initform nil :initarg :cache-dir :accessor cache-dir-of))
   (:default-initargs
    :generated-lisp-file-type "processed-wrapper-file")
   (:documentation
@@ -120,9 +123,10 @@
                                      :defaults input-file))
          (c-file (make-c-file-name output-file "__wrapper"))
          (o-file (make-o-file-name output-file "__wrapper"))
-         (lib-soname (wrapper-soname c)))
+         (lib-soname (wrapper-soname c))
+         (lib-file (make-lib-file-name (make-soname lib-soname output-file))))
     (list output-file
-          (make-lib-file-name (make-soname lib-soname output-file))
+          lib-file
           c-file
           o-file)))
 
@@ -135,19 +139,37 @@
         (multiple-value-bind (files translatedp) (call-next-method)
           (values (append files (list lib-file o-file)) translatedp)))))
 
+(defun absolute-cache-dir (input-file cache-dir)
+  (when cache-dir
+    (let ((input-dir (uiop:pathname-directory-pathname input-file)))
+      (uiop:ensure-directory-pathname
+       (uiop:subpathname input-dir cache-dir)))))
+
+(defun system-to-component-path (component)
+  (let* ((sys (component-system component))
+         (sys-dir (pathname-directory (component-pathname sys)))
+         (comp-dir (pathname-directory (component-pathname component))))
+    (make-pathname* :directory (cons :relative (subseq comp-dir (length sys-dir))))))
+
+(defun sys-relative-cache-dir (c)
+  (let ((cache-dir (cache-dir-of c)))
+    (when cache-dir
+      (ensure-directory-pathname
+       (subpathname* (system-to-component-path c) cache-dir)))))
+
 (defmethod perform ((op process-op) (c wrapper-file))
-  (let* ((output-file (first (output-files op c)))
-         (input-file (first (input-files op c)))
-         (tmp-file (process-wrapper-file
-                    input-file
-                    :output-defaults output-file
-                    :lib-soname (wrapper-soname c))))
-      (unwind-protect
-           (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
-        (delete-file tmp-file))))
+  (destructuring-bind (output-file lib-name c-file o-file) (output-files op c)
+    (let* ((input-file (first (input-files op c))))
+      (process-wrapper-file (component-system c)
+                            input-file
+                            output-file
+                            lib-name
+                            c-file
+                            o-file
+                            :lib-soname (wrapper-soname c)
+                            :cache-dir (sys-relative-cache-dir c)))))
 
 
 ;; Allow for naked :grovel-file and :wrapper-file in asdf definitions.
 (setf (find-class 'asdf::cffi-grovel-file) (find-class 'grovel-file))
 (setf (find-class 'asdf::cffi-wrapper-file) (find-class 'wrapper-file))
-
