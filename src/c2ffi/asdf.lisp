@@ -50,12 +50,12 @@
    ;; SLOT-VALUE and a LOOP.
    (ffi-name-transformer :initarg :ffi-name-transformer
                          :initform 'default-ffi-name-transformer)
+   (ffi-name-export-predicate :initarg :ffi-name-export-predicate
+                              :initform 'default-ffi-name-export-predicate)
    (ffi-type-transformer :initarg :ffi-type-transformer
                          :initform 'default-ffi-type-transformer)
-   (ffi-export-predicate :initarg :ffi-export-predicate
-                         :initform 'default-ffi-export-predicate)
-   (ffi-plugin-factory :initarg :ffi-plugin-factory
-                        :initform 'default-ffi-plugin-factory)
+   (callback-factory :initarg :callback-factory
+                     :initform 'default-callback-factory)
    (foreign-library-name :initarg :foreign-library-name
                          :initform nil)
    (foreign-library-spec :initarg :foreign-library-spec
@@ -176,9 +176,9 @@ file, except that it's will be stored in the fasl cache."))
              ;; component and in PROCESS-C2FFI-SPEC-FILE, and this loop copies them.
              (loop
                :for arg :in '(ffi-name-transformer
+                              ffi-name-export-predicate
                               ffi-type-transformer
-                              ffi-export-predicate
-                              ffi-plugin-factory
+                              callback-factory
                               foreign-library-name
                               foreign-library-spec
                               emit-generated-name-mappings

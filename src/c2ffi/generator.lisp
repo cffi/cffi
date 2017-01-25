@@ -54,10 +54,14 @@
 (defvar *assume-struct-by-value-support* t)
 ;; Called on the json name and may return a symbol to be used, or a string.
 (defvar *ffi-name-transformer* 'default-ffi-name-transformer)
+;; Called on the already transformed name to decide whether to export it
+(defvar *ffi-name-export-predicate* 'default-ffi-name-export-predicate)
 ;; Called on the CFFI type, e.g. to turn (:pointer :char) into a :string.
 (defvar *ffi-type-transformer* 'default-ffi-type-transformer)
-(defvar *ffi-export-predicate* 'default-ffi-export-predicate)
-(defvar *ffi-plugin-factory* 'default-ffi-plugin-factory)
+;; May return up to two closures using VALUES. The first one will be called
+;; with each emitted form, and the second one once, at the end. They both may
+;; return a list of forms that will be emitted using OUTPUT/CODE.
+(defvar *callback-factory* 'default-callback-factory)
 
 (define-constant +generated-file-header+
     ";;; -*- Mode: lisp -*-~%~
@@ -293,7 +297,7 @@
             cffi-name))
     cffi-name))
 
-(defun default-ffi-plugin-factory (&key &allow-other-keys)
+(defun default-callback-factory (&key &allow-other-keys)
   (values))
 
 (defun default-ffi-name-transformer (name kind &key &allow-other-keys)
@@ -344,7 +348,7 @@
       (camelcase-to-dash-separated name)
       name))
 
-(defun default-ffi-export-predicate (symbol &key &allow-other-keys)
+(defun default-ffi-name-export-predicate (symbol &key &allow-other-keys)
   (declare (ignore symbol))
   nil)
 
@@ -423,6 +427,7 @@
               ;; kind of inline anonymous declaration. Let's call PROCESS-C2FFI-ENTRY
               ;; to emit it for us, and return with the generated name (first value)
               ;; as if it was a standalone toplevel struct definition.
+              ;; TODO is it a problem that we don't invoke the CALLBACK-FACTORY stuff here?
               (let ((form (process-c2ffi-entry json-entry))
                     (kind (if (equal tag "struct")
                               :struct
@@ -473,8 +478,8 @@
   (and symbol
        (symbolp symbol)
        (not (keywordp symbol))
-       *ffi-export-predicate*
-       (call-hook *ffi-export-predicate* symbol)))
+       *ffi-name-export-predicate*
+       (call-hook *ffi-name-export-predicate* symbol)))
 
 (defun json-type-to-cffi-type (json-entry &optional (context nil context?))
   (let ((cffi-type (%json-type-to-cffi-type json-entry)))
@@ -500,10 +505,10 @@
                                   ;; The args following this point are mirrored in the ASDF
                                   ;; component on the same name.
                                   (ffi-name-transformer *ffi-name-transformer*)
+                                  (ffi-name-export-predicate *ffi-name-export-predicate*)
                                   ;; as per CFFI:DEFINE-FOREIGN-LIBRARY and CFFI:LOAD-FOREIGN-LIBRARY
                                   (ffi-type-transformer *ffi-type-transformer*)
-                                  (ffi-export-predicate *ffi-export-predicate*)
-                                  (ffi-plugin-factory *ffi-plugin-factory*)
+                                  (callback-factory *callback-factory*)
                                   foreign-library-name
                                   foreign-library-spec
                                   (emit-generated-name-mappings t)
@@ -545,9 +550,9 @@ target package."
                (*allow-skipping-struct-fields* allow-skipping-struct-fields)
                (*assume-struct-by-value-support* assume-struct-by-value-support)
                (*ffi-name-transformer* (canonicalize-transformer-hook ffi-name-transformer))
+               (*ffi-name-export-predicate* (canonicalize-transformer-hook ffi-name-export-predicate))
                (*ffi-type-transformer* (canonicalize-transformer-hook ffi-type-transformer))
-               (*ffi-export-predicate* (canonicalize-transformer-hook ffi-export-predicate))
-               (*ffi-plugin-factory* (canonicalize-transformer-hook ffi-plugin-factory))
+               (*callback-factory* (canonicalize-transformer-hook callback-factory))
                (*read-default-float-format* 'double-float)
                (json (json:decode-json in)))
           (output/string +generated-file-header+)
@@ -577,9 +582,10 @@ target package."
                                        :element-type 'character)))
             ((or symbol function)
              (funcall prelude 'output/code)))
-
-          (multiple-value-bind (every-form-plugin after-forms-plugin)
-              (funcall *ffi-plugin-factory*)
+          ;;
+          ;; Let's enumerate the entries
+          (multiple-value-bind (form-callback epilogue-callback)
+              (funcall *callback-factory*)
             (dolist (json-entry json)
               (with-json-values (json-entry name location)
                 (let ((source-location-file (subseq location
@@ -592,23 +598,19 @@ target package."
                        include-sources exclude-sources)
                       (progn
                         (output/string "~&~%;; ~S" location)
-                        (let ((emitted-definition (process-c2ffi-entry json-entry every-form-plugin)))
+                        (let ((emitted-definition (process-c2ffi-entry json-entry)))
                           ;;
                           ;; Call the plugin to let the user emit a form after the given
                           ;; definition
-                          (when (and emitted-definition every-form-plugin)
-                            (let ((generated-code (call-hook every-form-plugin emitted-definition)))
-                              (when generated-code
-                                (output/code generated-code))))))
+                          (when (and emitted-definition
+                                     form-callback)
+                            (map nil 'output/code (call-hook form-callback emitted-definition)))))
                       (output/string "~&;; Skipped ~S due to filters" name)))))
             ;;
             ;; Call the plugin to let the user append multiple forms after the
             ;; emitted definitions
-            (when after-forms-plugin
-              (let ((generated-code (call-hook after-forms-plugin)))
-                (when generated-code
-                  (map nil #'output/code (remove nil generated-code))))))
-
+            (when epilogue-callback
+              (map nil 'output/code (call-hook epilogue-callback))))
           ;;
           ;; emit optional exports
           (maphash
@@ -654,7 +656,7 @@ target package."
 
 (defvar *c2ffi-entry-processors* (make-hash-table :test 'equal))
 
-(defun process-c2ffi-entry (json-entry &optional every-form-plugin)
+(defun process-c2ffi-entry (json-entry)
   (let* ((kind (json-value json-entry :tag))
          (processor (gethash kind *c2ffi-entry-processors*)))
     (if processor
