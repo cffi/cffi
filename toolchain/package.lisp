@@ -29,7 +29,9 @@
   (:export
    ;; Variables
    #:*cc*
+   #:cc
    #:*cc-flags*
+   #:cc-flags
    #:*ld*
    #:*ld-flags*
    ;; Functions from c-toolchain

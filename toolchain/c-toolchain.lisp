@@ -57,18 +57,25 @@
 
 ;;; C support
 
-(defparameter *cc*
-  #+(or cygwin (not windows)) "cc"
-  #+(and windows (not cygwin)) "gcc")
+(defparameter *default-cc*
+  ;; the copy-seq ensures we have a fresh string
+  ;; which allows for safe testing with EQ for someone else
+  ;; having set it.
+  (copy-seq
+   (or (getenv "CC")
+       #+(or cygwin (not windows)) "cc"
+       #+(and windows (not cygwin)) "gcc")))
 
-(defparameter *cc-flags*
-  (append
-   ;; For MacPorts
-   #+darwin (list "-I" "/opt/local/include/")
-   ;; ECL internal flags
-   #+ecl (parse-command-flags c::*cc-flags*)
-   ;; FreeBSD non-base header files
-   #+freebsd (list "-I" "/usr/local/include/")))
+(defparameter *cc* *default-cc*)
+
+(defun cc ()
+  "Determine name of C compiler.
+
+Uses CC if it is present in the environment and *cc* has not
+been changed by the user.  Otherwise uses *cc*"
+  (if (eq *cc* *default-cc*)
+      (or (getenv "CC") *cc*)
+      *cc*))
 
 
 ;;; FIXME: is there a better way to detect whether these flags
@@ -81,12 +88,34 @@
     (4 '("-m32"))
     (8 '("-m64"))))
 
+(defparameter *default-cc-flags* 
+  (copy-seq
+   (or (parse-command-flags (getenv "CFLAGS"))
+       (append
+        ;; For MacPorts
+        #+darwin (list "-I" "/opt/local/include/")
+        ;; ECL internal flags
+        #+ecl (parse-command-flags c::*cc-flags*)
+        ;; FreeBSD non-base header files
+        #+freebsd (list "-I" "/usr/local/include/")))))
+
+(defparameter *cc-flags* *default-cc-flags*)
+
+(defun cc-flags ()
+  "Determine flags to pass to the C compiler.
+
+Uses CFLAGS if it is present in the environment and *cc-flags* has not
+been changed by the user.  Otherwise uses *cc-flags*"
+  (if (eq *cc-flags* *default-cc-flags*)
+      (or (parse-command-flags (getenv "CFLAGS")) *cc-flags*)
+      *cc-flags*))
+      
 (defparameter *shared-library-flags*
   (list #+darwin "-dynamiclib" ;; should we sometimes use -bundle ?
         #-darwin "-shared"))
 
 (defun cc-invocation ()
-  `(,(or (getenv "CC") *cc*) ,@*cpu-word-size-flags* ,@*cc-flags*))
+  `(,(cc) ,@*cpu-word-size-flags* ,@(cc-flags)))
 
 (defun call-with-temporary-output (output-file fun)
   (let ((output-file (ensure-pathname output-file :want-file t :ensure-absolute t :truenamize t)))

@@ -35,7 +35,7 @@
 
 (defmethod perform :around ((op compile-op) (file cc-flags-mixin))
   (let ((*cc-flags* (append (ensure-list (cc-flags-of file))
-                            *cc-flags*)))
+                            (cc-flags))))
     (call-next-method)))
 
 (defclass process-op (downward-operation)
