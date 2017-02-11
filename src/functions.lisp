@@ -110,10 +110,21 @@
   "A function that produces a form suitable for calling structures by value.")
 
 (defun foreign-funcall-form (thing options args pointerp)
+  ;;(break)
   (multiple-value-bind (types ctypes fargs rettype)
       (parse-args-and-types args)
     (let ((syms (make-gensym-list (length fargs)))
           (fsbvp (fn-call-by-value-p ctypes rettype)))
+      (format *debug-io* "~&foreign-funcall-form: *foreign-tructures-by-value* = ~S, thing = ~S, fargs = ~S, syms = ~S, types = ~S, rettype = ~S, ctypes = ~S, pointerp = ~S~&"
+              *foreign-structures-by-value*
+              thing
+              fargs
+              syms
+              types
+              rettype
+              ctypes
+              pointerp
+              ) ;; frgo
       (if fsbvp
           ;; Structures by value call through *foreign-structures-by-value*
           (funcall *foreign-structures-by-value*
@@ -127,16 +138,17 @@
           (translate-objects
            syms fargs types rettype
            `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
-             ;; No structures by value, direct call
-             ,thing
-             (,@(mapcan #'list ctypes syms)
-              ,(canonicalize-foreign-type rettype))
-             ,@(parse-function-options options :pointer pointerp)))))))
+              ;; No structures by value, direct call
+              ,thing
+              (,@(mapcan #'list ctypes syms)
+                 ,(canonicalize-foreign-type rettype))
+              ,@(parse-function-options options :pointer pointerp)))))))
 
 (defmacro foreign-funcall (name-and-options &rest args)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments."
   (let ((name (car (ensure-list name-and-options)))
         (options (cdr (ensure-list name-and-options))))
+    (format *debug-io* "~&foreign-funcall: name = ~S, options = ~S, args = ~S, pointerp = nil~&" name options args) ;; frgo
     (foreign-funcall-form name options args nil)))
 
 (defmacro foreign-funcall-pointer (pointer options &rest args)
@@ -384,6 +396,7 @@ arguments and does type promotion for the variadic arguments."
   (let ((docstring (when (stringp (car args)) (pop args))))
     (multiple-value-bind (lisp-name foreign-name options)
         (parse-name-and-options name-and-options)
+      (format *debug-io* "~&defcfun: lisp-name = ~S, foreign-name = ~S, options = ~S~&" lisp-name foreign-name options) ;; frgo
       (if (eq (lastcar args) '&rest)
           (%defcfun-varargs lisp-name foreign-name return-type
                             (butlast args) options docstring)
