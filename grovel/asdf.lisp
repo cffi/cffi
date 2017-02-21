@@ -146,8 +146,7 @@
            (alexandria:copy-file tmp-file output-file :if-to-exists :supersede)
         (delete-file tmp-file))))
 
-
-;; Allow for naked :grovel-file and :wrapper-file in asdf definitions.
+;; Allow for naked :cffi-grovel-file and :cffi-wrapper-file in asdf definitions.
 (setf (find-class 'asdf::cffi-grovel-file) (find-class 'grovel-file))
 (setf (find-class 'asdf::cffi-wrapper-file) (find-class 'wrapper-file))
 

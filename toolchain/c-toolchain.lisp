@@ -248,7 +248,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 
 (defun cc-compile (output-file inputs)
   (apply 'invoke-builder (list *cc* "-o") output-file
-         "-c" #-windows "-fPIC" (append *cc-flags* inputs)))
+         "-c" (append *cc-flags* #-windows '("-fPIC") inputs)))
 
 (defun link-executable (output-file inputs)
   (apply 'invoke-builder (list *ld* "-o") output-file
@@ -354,7 +354,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 (defmethod perform ((o compile-op) (c c-file))
   (let ((i (first (input-files o c))))
     (destructuring-bind (.o .so) (output-files o c)
-      (cc-compile .o (list #-windows "-fPIC" i))
+      (cc-compile .o (list i))
       (link-shared-library .so (list .o)))))
 
 (defmethod perform ((o load-op) (c c-file))
