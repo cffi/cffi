@@ -1,36 +1,42 @@
-branches:
-  only:
-    - master
+language: common-lisp
+sudo: false
 
-language: lisp
+addons:
+  apt:
+    packages:
+      - libc6-i386
+      - clisp
+      - openjdk-7-jre
 
 env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
   matrix:
-    #- LISP=abcl
-    #- LISP=allegro
-    - LISP=sbcl
-    - LISP=sbcl32
-    - LISP=ccl
-    - LISP=ccl32
-    #- LISP=clisp
-    #- LISP=clisp32
-    #- LISP=cmucl
-    #- LISP=ecl
+    - LISP=ecl
+    - LISP=cmucl                # cmucl tests for 32bit
+    - LISP=sbcl-bin
+    - LISP=ccl-bin
+    - LISP=abcl
+    - LISP=clisp
+    - LISP=alisp
+
+os:
+  - osx
+  - linux
 
 matrix:
   allow_failures:
-    - env: LISP=ccl32
+    - env: LISP=clisp
+    - env: LISP=alisp
 
 install:
-  - curl -L https://github.com/luismbo/cl-travis/raw/master/install.sh | sh
-  - if [ "${LISP:(-2)}" = "32" ]; then
-      sudo apt-get install -y libc6-dev-i386 libffi-dev:i386;
-    fi
-  - git clone --depth=1 git://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
-  - git clone https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
-  - git clone --depth=1 git://github.com/cl-babel/babel.git ~/lisp/babel
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+
+cache:
+  directories:
+    - $HOME/.roswell
+    - $HOME/.config/common-lisp
 
 script:
-  - cl -e '(ql:quickload :cffi-tests)
-           (when (cffi-tests:run-all-cffi-tests)
-             (uiop:quit 1))'
+  - ros -e '(ql:quickload :cffi-tests) (when (cffi-tests:run-all-cffi-tests) (uiop:quit 1))'
