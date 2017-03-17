@@ -66,7 +66,7 @@
      (:file "functions")
      (:file "foreign-vars")
      (:file "features")
-     (:file "doc"))))
+     (:file "doc")))))
 
 ;; when you get CFFI from git, its defsystem doesn't have a version,
 ;; so we assume it satisfies any version requirements whatsoever.
