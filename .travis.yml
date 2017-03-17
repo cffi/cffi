@@ -39,4 +39,6 @@ cache:
     - $HOME/.config/common-lisp
 
 script:
+  - ros install trivial-features
+  - ros install cffi-grovel
   - ros -e '(ql:quickload :cffi-tests) (when (cffi-tests:run-all-cffi-tests) (uiop:quit 1))'
