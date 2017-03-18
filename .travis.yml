@@ -39,6 +39,7 @@ cache:
     - $HOME/.config/common-lisp
 
 script:
-  - ros install trivial-features
+  - ros install trivial-features/trivial-features
+  - ros install cl-babel/babel
   - ros install cffi-grovel
   - ros testscr.ros
