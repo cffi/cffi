@@ -12,12 +12,13 @@ exec ros -Q -- $0 "$@"
   (:use :cl))
 (in-package :ros.script.testscr.3698767692)
 
+(ql:quickload :uiop)
+(ql:quickload :cffi-tests)
+
 (defun main (&rest argv)
   (declare (ignorable argv))
   (handler-case
       (progn
-        (ql:quickload :uiop)
-        (ql:quickload :cffi-tests)
         (when (cffi-tests:run-all-cffi-tests)
           (uiop:quit 1))
         (uiop:quit 0))
