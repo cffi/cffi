@@ -2663,8 +2663,16 @@ type, such as @code{:long} or @code{:pointer}.  Used for simple
 @cffi{} types.
 
 @item Aggregate
-Contain an embedded structure or union, or an array of objects.  Used
-for aggregate @cffi{} types.
+Contain an embedded structure or union, or an array of objects, such
+as @code{(:struct my-struct)}, @code{(:struct my-union)}. Used for
+aggregate @cffi{} types. To represent an array of objects, use the
+@code{:count} keyword.
+
+Slot types also support nested @cffi{} struct/union types a.l.a C,
+when the CDR of the type specifier is a list of slot descriptions.
+A temporary type name in a form of ``@code{name}/@code{slot-name}'' is
+given to the internally nested union/struct.
+See examples below.
 @end table
 
 The use of @acronym{CLOS} terminology for the structure-related
@@ -2711,6 +2719,39 @@ CFFI> (foreign-type-size 'foo)
 (defcstruct video_tuner
   (name :char :count 32))
 @end lisp
+
+
+@lisp
+;; @lispcmt{An example of using a nested union.}
+;; @lispcmt{This code defines two structures: dd-node (for the entire}
+;; @lispcmt{struct) and dd-node/type (for the nested union).}
+
+(defcstruct dd-node
+  (index dd-half-word)
+  (ref   dd-half-word)
+  (next  (:pointer (:struct dd-node)))
+  (type  (:union
+           ; @lispcmt{Since :union is followed by a list,}
+           ; @lispcmt{ this is parsed as a nested union.}
+           (value cudd-value-type)
+           (kids dd-children))))
+@end lisp
+
+This is equivalent to the C code below:
+
+@example
+/* Example from CUDD library (http://vlsi.colorado.edu/%7Efabio/CUDD/html/structDdNode.html) */
+struct DdNode @{
+    DdHalfWord index;		/**< variable index */
+    DdHalfWord ref;		/**< reference count */
+    DdNode *next;		/**< next pointer for unique table */
+    union @{
+	CUDD_VALUE_TYPE value;	/**< for constant (terminal) nodes */
+	DdChildren kids;	/**< for internal nodes */
+    @} type;			/**< terminal or internal */
+@};
+@end example
+
 
 @subheading See Also
 @seealso{foreign-slot-pointer} @*
