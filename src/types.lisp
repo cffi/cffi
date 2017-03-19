@@ -946,11 +946,14 @@ slots will be defined and stored."
   (destructuring-bind (name &key size)
       (ensure-list name-and-options)
     (declare (ignore size))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-union-definition ',name-and-options ',fields)
-       (define-parse-method ,name ()
-         (parse-deprecated-struct-type ',name :union))
-       '(:union ,name))))
+    (let (*nested-structs*)
+      (setf fields (mapcar (lambda (field) (parse-substructure name field)) fields))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         ,@*nested-structs*
+         (notice-foreign-union-definition ',name-and-options ',fields)
+         (define-parse-method ,name ()
+           (parse-deprecated-struct-type ',name :union))
+         '(:union ,name)))))
 
 ;;;# Operations on Types
 
