@@ -63,7 +63,7 @@
 
 ;;;# Mis-features
 
-(pushnew 'flat-namespace *features*)
+(pushnew 'flat-namespace cl:*features*)
 
 ;;;# Symbol Case
 
@@ -75,11 +75,11 @@
 
 (defun %foreign-alloc (size)
   "Allocate SIZE bytes of foreign-addressable memory."
-  (clasp-ffi:%allocate-foreign-data size))
+  (clasp-ffi:%foreign-alloc size))
 
 (defun foreign-free (ptr)
   "Free a pointer PTR allocated by FOREIGN-ALLOC."
-  (clasp-ffi:%free-foreign-data ptr))
+  (clasp-ffi:%foreign-free ptr))
 
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
@@ -99,17 +99,25 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (deftype foreign-pointer ()
   'clasp-ffi:foreign-data)
 
-(defun null-pointer ()
-  "Construct and return a null pointer."
-  (clasp-ffi:%make-nullpointer))
-
 (defun null-pointer-p ( ptr )
   "Test if PTR is a null pointer."
   (clasp-ffi:%null-pointer-p ptr))
 
+(defun null-pointer ()
+  "Construct and return a null pointer."
+  (clasp-ffi:%make-nullpointer))
+
+(defun make-pointer (address)
+  "Return a pointer pointing to ADDRESS."
+  (clasp-ffi:%make-pointer address))
+
 (defun inc-pointer (ptr offset)
   "Return a pointer OFFSET bytes past PTR."
   (clasp-ffi:%inc-pointer ptr offset))
+
+(defun pointer-address (ptr)
+  "Return the address pointed to by PTR."
+  (clasp-ffi:%foreign-data-address ptr))
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
@@ -117,15 +125,11 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
-  (eql ptr1 ptr2))
+  (when (or (not (pointerp ptr1))
+            (not (pointerp ptr2)))
+    (error "POINTER-EQ: An argument is not of type ~S: Arg1 ~S (~S), Arg2 ~S (~S)" 'foreign-pointer ptr1 (type-of ptr1) ptr2 (type-of ptr2)))
+  (eql (pointer-address ptr1) (pointer-address ptr2)))
 
-(defun make-pointer (address)
-  "Return a pointer pointing to ADDRESS."
-  (clasp-ffi:%make-pointer address))
-
-(defun pointer-address (ptr)
-  "Return the address pointed to by PTR."
-  (clasp-ffi:%foreign-data-address ptr))
 
 ;;;# Shareable Vectors
 ;;;
@@ -156,6 +160,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun %mem-ref (ptr type &optional (offset 0))
   "Dereference an object of TYPE at OFFSET bytes from PTR."
+  #+clasp-ffi.debug (format *debug-io* "~&%mem-ref: ptr = ~S, type = ~S, offset = ~S.~&" ptr type offset)
   (clasp-ffi:%mem-ref ptr type offset))
 
 (defun %mem-set (value ptr type &optional (offset 0))
@@ -195,8 +200,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 (defmacro %defcallback (name rettype arg-names arg-types body
                         &key convention)
   (declare (ignorable convention))
-  (format *debug-io* "~&*** cffi::%defcallback: name = ~S, rettype = ~S, arg-names = ~S, arg-tyoes = ~S, body = ~S, convention = ~S~&"
-          name rettype arg-names arg-types body convention)
   (if convention
       `(clasp-ffi:%defcallback (,name :convention ,convention) ,rettype ,arg-names ,arg-types ,body)
       `(clasp-ffi:%defcallback ,name ,rettype ,arg-names ,arg-types ,body)
