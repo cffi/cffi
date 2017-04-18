@@ -50,7 +50,7 @@
      #+scl        (:file "cffi-scl")
      #+clisp      (:file "cffi-clisp")
      #+lispworks  (:file "cffi-lispworks")
-     #+(and ecl (not clasp)) (:file "cffi-ecl")
+     #+ecl        (:file "cffi-ecl")
      #+allegro    (:file "cffi-allegro")
      #+cormanlisp (:file "cffi-corman")
      #+abcl       (:file "cffi-abcl")
