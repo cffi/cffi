@@ -55,6 +55,7 @@
      #+cormanlisp (:file "cffi-corman")
      #+abcl       (:file "cffi-abcl")
      #+mkcl       (:file "cffi-mkcl")
+     #+clasp      (:file "cffi-clasp")
      (:file "package")
      (:file "utils")
      (:file "libraries")
