@@ -377,9 +377,9 @@ dependencies.
 @chapter Implementation Support
 
 @cffi{} supports various free and commercial Lisp implementations:
-@acronym{ABCL}, Allegro CL, @sc{clisp}, Clozure CL, @acronym{CMUCL},
-Corman CL, @acronym{ECL}, @acronym{GCL}, LispWorks, @acronym{MCL},
-@acronym{SBCL} and the Scieneer CL.
+@acronym{ABCL}, Allegro CL, Clasp, @sc{clisp}, Clozure CL,
+@acronym{CMUCL}, Corman CL, @acronym{ECL}, @acronym{GCL}, LispWorks,
+@acronym{MCL}, @acronym{SBCL} and the Scieneer CL.
 
 In general, you should work with the latest versions of each
 implementation since those will usually be tested against recent
@@ -401,6 +401,13 @@ Does not support the @code{:long-long} type natively.
 @item
 Unicode support is limited to the Basic Multilingual Plane (16-bit
 code points).
+@end itemize
+
+@subheading Clasp
+
+@itemize
+@item
+Only supports a flat namespace.
 @end itemize
 
 @subheading CMUCL
