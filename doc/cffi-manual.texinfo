@@ -379,7 +379,7 @@ dependencies.
 @cffi{} supports various free and commercial Lisp implementations:
 @acronym{ABCL}, Allegro CL, @sc{clisp}, Clozure CL, @acronym{CMUCL},
 Corman CL, @acronym{ECL}, @acronym{GCL}, LispWorks, @acronym{MCL},
-@acronym{SBCL} and the Scieneer CL.
+@acronym{SBCL}, @acronym{CLASP} and the Scieneer CL.
 
 In general, you should work with the latest versions of each
 implementation since those will usually be tested against recent
@@ -447,6 +447,14 @@ code points).
 @itemize
 @item
 Not all platforms support callbacks.
+
+@end itemize
+
+@subheading @acronym{CLASP}
+
+@itemize
+@item
+Only supports a flat namespace.
 
 @end itemize
 
