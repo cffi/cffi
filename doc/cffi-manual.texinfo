@@ -6519,6 +6519,7 @@ necessary calls to the C compiler and resulting file management.
 * Groveller Syntax::            How grovel files should look like.
 * Groveller ASDF Integration::  ASDF components for grovel files.
 * Groveller Implementation Notes:: Implementation notes.
+* Wrapper for Inline/Static Functions and Macros:: Wrapper
 @end menu
 
 @node Groveller Syntax, Groveller ASDF Integration, The Groveller, The Groveller
@@ -6740,7 +6741,7 @@ written by @cffi{}-Grovel; if your specification file is
 @cffi{} definitions needed by the rest of your project.
 @xref{Groveller Syntax}.
 
-@node Groveller Implementation Notes,  , Groveller ASDF Integration, The Groveller
+@node Groveller Implementation Notes,  Wrapper for Inline/Static Functions and Macros, Groveller ASDF Integration, The Groveller
 @section Implementation Notes
 
 @cffi{}-Grovel will generate many files that not only architecture-specific,
@@ -6767,6 +6768,89 @@ lisp-implementation independent.  This way the same @code{.c} file
 between the implementations running on a given system.}
 
 @c TODO: document the new wrapper stuff.
+
+@node Wrapper for Inline/Static Functions and Macros,  , Groveller Implementation Notes, The Groveller
+@section Wrapper for Inline/Static Functions and Macros
+
+In a shared library, information in static/inlined functions and
+macros are already removed during the compilation.  Wrapper file
+enables to write an uninlined function wrapping the call to them.
+
+A wrapper file compilation/loading proceeds as follows: 
+Unlike groveller which generates C code that emits lisp files
+containing cffi definitions, it generates C code, compiles it as a
+shared library, loads the library, generate the cffi definitions (as
+lisp code) and then loads the lisp code.
+
+It has asdf integration similar to groveller. 
+
+@lisp
+(defsystem "example-software"
+  :defsystem-depends-on ("cffi-grovel")
+  :depends-on ("cffi")
+  :serial t
+  :components
+  ((:file "package")
+   (:cffi-grovel-file "example-grovelling")
+   (:cffi-wrapper-file "example-wrappers")  ;; <<--- this part
+   (:file "example")))
+@end lisp
+
+@deffn {Wrapper Form} defwrapper name-and-options return-type &rest args
+@end deffn
+
+@example
+static inline int foo(int i) @{
+  return 1+i;
+@};
+#define bar(i) (1+(i))
+@end example
+
+@lisp
+(in-package :mypackage)
+(defwrapper ("foo" foo) :int
+  (i :int))
+(defwrapper ("bar" bar) :int
+  (i :int))
+@end lisp
+
+Other forms are similar to grovel files.
+
+@deffn {Wrapper Form} progn &rest forms
+
+Processes a list of forms. Useful for conditionalizing several
+forms. For example:
+@end deffn
+
+@lisp
+#+freebsd
+(progn
+  (constant (ev-enable "EV_ENABLE"))
+  (constant (ev-disable "EV_DISABLE")))
+@end lisp
+
+@deffn {Wrapper Form} include &rest files
+
+Include the specified files (specified as strings) in the generated C
+source code.
+@end deffn
+
+@deffn {Wrapper Form} in-package symbol
+
+Set the package to be used for the final Lisp output.
+@end deffn
+
+@deffn {Wrapper Form} flags &rest flags
+
+Adds @var{cc-flags} to the command line arguments used for the C compiler
+invocation.
+@end deffn
+
+@deffn {Wrapper Form} proclaim &rest proclaimations
+@end deffn
+@deffn {Wrapper Form} declaim &rest declaimations
+@end deffn
+
 
 
 @c ===================================================================
