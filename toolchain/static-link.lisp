@@ -55,30 +55,32 @@
              #+clisp "-M" #+sbcl "--core" image
              `(#+clisp ,@'("--silent" "-ansi" "-norc" "-x")
                #+sbcl ,@'("--noinform" "--non-interactive" "--no-sysinit" "--no-userinit" "--eval")
-               ,(with-safe-io-syntax ()
+               ,(with-safe-io-syntax (:package :asdf)
                   (let ((*print-pretty* nil)
                         (*print-case* :downcase))
                     (format
                      ;; This clever staging allows to put things in a single form,
                      ;; as required for CLISP not to print output for the first form,
                      ;; yet allow subsequent forms to rely on packages defined by former forms.
-                     nil "'(#.~S #.~S)"
+                     nil "'(~@{#.~S~^ ~})"
                      '(require "asdf")
+                     '(in-package :asdf)
                      `(progn
-                        ,@(if-let (ql-home (symbol-value
-                                            (find-symbol* '*quicklisp-home* 'ql-setup nil)))
-                            `((load ,(subpathname ql-home "setup.lisp"))))
-                        (setf *central-registry* ',*central-registry*)
-                        (initialize-source-registry
-                         ',asdf/source-registry:*source-registry-parameter*)
-                        (initialize-output-translations
-                         ',asdf/output-translations:*output-translations-parameter*)
+                        ,@(if-let (ql-home (find-symbol* :*quicklisp-home* :ql-setup nil))
+                            `((load ,(subpathname (symbol-value ql-home) "setup.lisp"))))
+                        (setf asdf:*central-registry* ',asdf:*central-registry*)
+                        (initialize-source-registry ',asdf::*source-registry-parameter*)
+                        (initialize-output-translations ',asdf::*output-translations-parameter*)
                         (load-system "cffi-grovel")
-                        (defmethod operation-done-p ((operation ,child-op)
-                                                     (system (eql (find-system ,name))))
+                        ;; We force the operation to take place
+                        (defmethod operation-done-p
+                            ((operation ,child-op) (system (eql (find-system ,name))))
                           nil)
-                        (defmethod output-files ((operation ,child-op)
-                                                 (system (eql (find-system ,name))))
+                        ;; Some implementations (notably SBCL) die as part of dumping an image,
+                        ;; so redirect output-files to desired destination, for this processs might
+                        ;; never otherwise get a chance to move the file to destination.
+                        (defmethod output-files
+                            ((operation ,child-op) (system (eql (find-system ,name))))
                           (values (list ,tmp) t))
                         (operate ',child-op ,name)
                         (quit))))))))))
