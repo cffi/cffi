@@ -38,7 +38,6 @@
   :licence "MIT"
   :depends-on (:uiop :alexandria :trivial-features :babel)
   :in-order-to ((test-op (load-op :cffi-tests)))
-  :perform (test-op (o c) (operate 'asdf:test-op :cffi-tests))
   :components
   ((:module "src"
     :serial t
@@ -72,7 +71,8 @@
 ;; so we assume it satisfies any version requirements whatsoever.
 (defmethod version-satisfies ((c (eql (find-system :cffi))) version)
   (declare (ignorable version))
-  (or (null (component-version c))
+  (or (not (slot-boundp c 'version))
+      (null (component-version c))
       (call-next-method)))
 
 (defsystem :cffi/c2ffi
