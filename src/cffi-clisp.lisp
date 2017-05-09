@@ -269,7 +269,7 @@ takes care of converting the calling convention names."
   (flet ((find-cffi-symbol (symbol)
            (find-symbol (symbol-name symbol) '#:cffi)))
     `(,(find-cffi-symbol '#:foreign-library-handle)
-       (,(find-cffi-symbol '#:get-foreign-library) ',name))))
+       (,(find-cffi-symbol '#:symbol-foreign-library) ',name))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; version 2.40 (CVS 2006-09-03, to be more precise) added a

@@ -126,9 +126,6 @@
 ;;; USE-FOREIGN-LIBRARY) the first clause matched by FEATUREP is
 ;;; processed.
 
-(defvar *foreign-libraries* (make-hash-table :test 'eq)
-  "Hashtable of defined libraries.")
-
 (defclass foreign-library ()
   ((name :initform nil :initarg :name :accessor foreign-library-name)
    (type :initform :system :initarg :type)
@@ -145,27 +142,13 @@
       (when pathname
         (format stream " ~S" (file-namestring pathname))))))
 
-(define-condition foreign-library-undefined-error (error)
-  ((name :initarg :name :reader fl-name))
-  (:report (lambda (c s)
-             (format s "Undefined foreign library: ~S"
-                     (fl-name c)))))
-
-(defun get-foreign-library (lib)
-  "Look up a library by NAME, signalling an error if not found."
-  (if (typep lib 'foreign-library)
-      lib
-      (or (gethash lib *foreign-libraries*)
-          (error 'foreign-library-undefined-error :name lib))))
-
-(defun (setf get-foreign-library) (value name)
-  (setf (gethash name *foreign-libraries*) value))
+(lisp-namespace:define-namespace foreign-library foreign-library nil "Namespace for foreign libraries defined by CFFI:define-foreign-library.")
 
 (defun foreign-library-type (lib)
-  (slot-value (get-foreign-library lib) 'type))
+  (slot-value (symbol-foreign-library lib) 'type))
 
 (defun foreign-library-pathname (lib)
-  (slot-value (get-foreign-library lib) 'pathname))
+  (slot-value (symbol-foreign-library lib) 'pathname))
 
 (defun %foreign-library-spec (lib)
   (assoc-if (lambda (feature)
@@ -187,14 +170,14 @@
         finally (return (mapcar #'pathname search-path))))
 
 (defun foreign-library-loaded-p (lib)
-  (not (null (foreign-library-handle (get-foreign-library lib)))))
+  (not (null (foreign-library-handle (symbol-foreign-library lib)))))
 
 (defun list-foreign-libraries (&key (loaded-only t) type)
   "Return a list of defined foreign libraries.
 If LOADED-ONLY is non-null only loaded libraries are returned.
 TYPE restricts the output to a specific library type: if NIL
 all libraries are returned."
-  (let ((libs (hash-table-values *foreign-libraries*)))
+  (let ((libs (hash-table-values *foreign-library-table*)))
     (remove-if (lambda (lib)
                  (or (and type
                           (not (eql type (foreign-library-type lib))))
@@ -253,9 +236,12 @@ all libraries are returned."
 
 (defun register-foreign-library (name spec &rest options)
   (let ((old-handle
-         (when-let ((old-lib (gethash name *foreign-libraries*)))
+         (when-let ((old-lib (ignore-errors (symbol-foreign-library name))))
            (foreign-library-handle old-lib))))
-    (setf (get-foreign-library name)
+    (setf (documentation name 'foreign-library)
+          (getf options :documentation))
+    (remf options :documentation)
+    (setf (symbol-foreign-library name)
           (apply #'make-instance 'foreign-library
                  :name name
                  :spec spec
@@ -381,7 +367,7 @@ This will need to be extended as we test on more OSes."
            lib))
     (etypecase library
       (symbol
-       (let* ((lib (get-foreign-library library))
+       (let* ((lib (symbol-foreign-library library))
               (spec (foreign-library-spec lib)))
          (%do-load lib library spec)))
       ((or string list)
@@ -398,7 +384,7 @@ This will need to be extended as we test on more OSes."
          ;; first try to load the anonymous library
          ;; and register it only if that worked
          (%do-load lib lib-name library)
-         (setf (get-foreign-library lib-name) lib))))))
+         (setf (symbol-foreign-library lib-name) lib))))))
 
 (defun filter-pathname (thing)
   (typecase thing
@@ -419,7 +405,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
           ;; counter, and thus thwarting dlclose, then we need to try
           ;; to call CLOSE-FOREIGN-LIBRARY and ignore any signaled
           ;; errors.
-          (ignore-some-conditions (foreign-library-undefined-error)
+          (ignore-some-conditions (unbound-foreign-library)
             (close-foreign-library library))
           (%do-load-foreign-library library search-path))
       ;; Offer these restarts that will retry the call to
@@ -440,7 +426,7 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
 (defun close-foreign-library (library)
   "Closes a foreign library."
   (let* ((library (filter-pathname library))
-         (lib (get-foreign-library library))
+         (lib (symbol-foreign-library library))
          (handle (foreign-library-handle lib)))
     (when handle
       (%close-foreign-library handle)
