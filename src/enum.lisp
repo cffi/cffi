@@ -229,7 +229,7 @@
         (translate-to-foreign value type)))
 
 (defmethod translate-from-foreign (value (type foreign-enum))
-  (%foreign-enum-keyword type value :errorp t))
+  (%foreign-enum-keyword type value :errorp nil))
 
 (defmethod expand-to-foreign (value (type foreign-enum))
   (once-only (value)
