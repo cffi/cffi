@@ -2,6 +2,9 @@ branches:
   only:
     - master
 
+os:
+  - linux
+  - osx
 language: lisp
 
 env:
@@ -20,6 +23,7 @@ env:
 matrix:
   allow_failures:
     - env: LISP=ccl32
+    - os: osx
 
 install:
   - curl -L https://github.com/luismbo/cl-travis/raw/master/install.sh | sh
