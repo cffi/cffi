@@ -33,6 +33,7 @@ SBCL     ?= sbcl
 CLISP    ?= clisp
 ALLEGRO  ?= alisp
 SCL      ?= scl
+ECL      ?= ecl
 
 shlibs:
 	@$(MAKE) -wC tests shlibs
@@ -63,6 +64,9 @@ test-clisp-modern:
 test-allegro:
 	@-$(ALLEGRO) -L tests/run-tests.lisp
 
-test: test-openmcl test-sbcl test-cmucl test-clisp
+test-ecl:
+	@-$(ECL) --quiet --load tests/run-tests.lisp
+
+test: test-openmcl test-sbcl test-cmucl test-clisp test-ecl
 
 # vim: ft=make ts=3 noet
