@@ -38,6 +38,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 /* MSVC doesn't have stdint.h and uses a different syntax for stdcall */
 #ifndef _MSC_VER
@@ -838,6 +839,21 @@ double sum_double26(double a1, double a2, double a3, double a4, double a5,
     return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 +
         a14 + a15 + a16 + a17 + a18 + a19 + a20 + a21 + a22 + a23 + a24 + a25 +
         a26;
+}
+
+/*
+ * DEFCFUN.VARARGS.NOSTDLIB and FUNCALL.VARARGS.NOSTDLIB
+ */
+DLLEXPORT
+double sum_double_arbitrary(int n, ...)
+{
+    va_list ap;
+    double sum = 0;
+    va_start(ap, n);
+    for(int j=0; j<n; j++)
+      sum += va_arg(ap, double);
+    va_end(ap);
+    return sum;
 }
 
 /*

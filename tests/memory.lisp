@@ -427,8 +427,8 @@
 
 ;;; RT: FOREIGN-ALLOC with :COUNT 0 on CLISP signalled an error.
 (deftest foreign-alloc.10
-    (foreign-free (foreign-alloc :char :count 0))
-  nil)
+    (null (foreign-free (foreign-alloc :char :count 0)))
+  t)
 
 ;;; Tests for mem-ref with a non-constant type. This is a way to test
 ;;; the functional interface (without compiler macros).
