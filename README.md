@@ -16,4 +16,6 @@ making use of the low-level operators exported by CFFI-SYS.
 Please consult [the manual][1] for further details, including
 installation instructions.
 
+[File a bug report here!](https://bugs.launchpad.net/cffi)
+
 [1]: http://common-lisp.net/project/cffi/manual/html_node/
