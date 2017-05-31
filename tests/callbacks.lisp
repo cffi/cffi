@@ -268,8 +268,8 @@
 
 (defcfun "call_sum_127_no_ll" :long (cb :pointer))
 
-;;; CMUCL, ECL and CCL choke on this one.
-#-(or ecl cmucl clozure
+;;; CMUCL and CCL choke on this one.
+#-(or cmucl clozure
       #.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:or) '(:and)))
 (defcallback sum-127-no-ll :long
     ((a1 :unsigned-long) (a2 :pointer) (a3 :long) (a4 :double)
@@ -326,7 +326,7 @@
           (format t "a~A: ~A~%" i arg))
     (reduce #'+ args)))
 
-#+(or openmcl cmucl ecl (and darwin (or allegro lispworks)))
+#+(or openmcl cmucl (and darwin (or allegro lispworks)))
 (push 'callbacks.bff.1 regression-test::*expected-failures*)
 
 #+#.(cl:if (cl:>= cl:lambda-parameters-limit 127) '(:and) '(:or))
@@ -341,8 +341,8 @@
 (progn
   (defcfun "call_sum_127" :long-long (cb :pointer))
 
-  ;;; CMUCL, ECL and CCL choke on this one.
-  #-(or cmucl ecl clozure)
+  ;;; CMUCL and CCL choke on this one.
+  #-(or cmucl clozure)
   (defcallback sum-127 :long-long
       ((a1 :short) (a2 :char) (a3 :pointer) (a4 :float) (a5 :long) (a6 :double)
        (a7 :unsigned-long-long) (a8 :unsigned-short) (a9 :unsigned-char)
@@ -393,7 +393,7 @@
        (values (floor a108)) a109 a110 a111 a112 a113 a114 a115 a116 a117 a118
        a119 a120 a121 (values (floor a122)) a123 a124 a125 a126 a127))
 
-  #+(or openmcl cmucl ecl)
+  #+(or openmcl cmucl)
   (push 'callbacks.bff.2 rt::*expected-failures*)
 
   (deftest callbacks.bff.2

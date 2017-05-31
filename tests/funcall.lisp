@@ -104,6 +104,19 @@
 
 ;;;# Calling Varargs Functions
 
+(deftest funcall.varargs.nostdlib
+    (foreign-funcall-varargs
+     "sum_double_arbitrary" (:int 26)
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0
+     :double)
+  81.64d0)
+
 ;; The CHAR argument must be passed as :INT because chars are promoted
 ;; to ints when passed as variable arguments.
 (deftest funcall.varargs.char

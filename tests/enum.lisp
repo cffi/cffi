@@ -50,7 +50,7 @@
   1)
 
 (defcenum another-boolean :false :true)
-(defcfun "return_enum" another-boolean (x :int))
+(defcfun "return_enum" another-boolean (x :uint))
 
 (deftest enum.2
     (and (eq :false (return-enum 0))

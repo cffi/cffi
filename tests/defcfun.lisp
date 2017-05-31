@@ -264,6 +264,20 @@
 
 ;;;# Calling varargs functions
 
+(defcfun "sum_double_arbitrary" :double (n :int) &rest)
+
+(deftest defcfun.varargs.nostdlib
+    (sum-double-arbitrary
+     26
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0 :double 3.14d0 :double 3.14d0
+     :double 3.14d0 :double 3.14d0)
+  81.64d0)
+
 (defcfun "sprintf" :int
   "sprintf docstring"
   (str (:pointer :char))
