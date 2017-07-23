@@ -1,0 +1,352 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Bugs-To: enometh@meer.net
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2007-2017.  All Rights Reserved.
+;;;
+;;; * 2017-07-23, madhu
+;;; cffi_0.19.1
+;;;
+;;; * 2016-05-15, Madhu
+;;;   cffi_0.17.1
+;;;
+;;; * 2014-11-14, Madhu
+;;;   cffi_0.14.0
+;;;
+;;; * 2010-10-01, Madhu
+;;;   cffi_0.10.6
+;;;
+;;; * 2008-08-20, Madhu
+;;;   cffi_0.10.0, babel_0.3.0 alexandria-2008-07-29 trivial-features_0.1
+;;;
+(in-package "CL-USER")
+
+(defvar *cffi-source-directory*
+  (merge-pathnames "cffi/" (translate-logical-pathname "EXTERN:")))
+
+(defvar *cffi-binary-directory* (binary-directory *cffi-source-directory*))
+
+#+nil
+(mapcar 'truename (list *cffi-source-directory*
+			*cffi-binary-directory*))
+
+(defun mk-oos (&rest args)
+  (let ((mk::*operations-propagate-to-subsystems* nil)
+	(extra-args nil)
+	(real-args nil))
+    (flet ((frob (k v)
+	     (let ((elt (member k (cddr args))))
+	       (if (not elt)
+		   (setq extra-args (append `(,k ,v) extra-args))))))
+      (frob :compile-during-load t)
+      (frob :force t))
+    (setq real-args (append (list (car args))
+			    (list (if (endp (cdr args))
+				 :compile
+				 (cadr args)))
+			    extra-args))
+    (format t "MK-OOS ~{~A~^ ~}~&" real-args)
+    (apply #'mk:oos real-args)))
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(mk:defsystem :cffi
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:uiop :alexandria :trivial-features :babel)
+  :components
+  ((:module "src"
+    :components
+    (#+openmcl    (:file "cffi-openmcl")
+     #+mcl        (:file "cffi-mcl")
+     #+sbcl       (:file "cffi-sbcl")
+     #+cmu        (:file "cffi-cmucl")
+     #+scl        (:file "cffi-scl")
+     #+clisp      (:file "cffi-clisp")
+     #+lispworks  (:file "cffi-lispworks")
+     #+ecl        (:file "cffi-ecl")
+     #+allegro    (:file "cffi-allegro")
+     #+cormanlisp (:file "cffi-corman")
+     #+abcl       (:file "cffi-abcl")
+     #+mkcl       (:file "cffi-mkcl")
+     #+clasp      (:file "cffi-clasp")
+     (:file "package")
+     (:file "utils")
+     (:file "libraries")
+     (:file "early-types")
+     (:file "types")
+     (:file "enum")
+     (:file "strings")
+     (:file "structures")		; libffi
+     (:file "functions")
+     (:file "foreign-vars")
+     (:file "features")))))
+
+#||
+(mk:oos :cffi :compile)
+(mk:oos :cffi :load :compile-during-load t)
+||#
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+
+(mk:defsystem :cffi-examples
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:cffi)
+  :components
+  ((:module "examples"
+    :components
+    ((:file "examples")
+     (:file "gethostname")
+     (:file "gettimeofday")))))
+
+#||
+(mk:oos :cffi-examples :load :compile-during-load t)
+(cffi-examples:run-examples)
+||#
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+
+(mk:defsystem :cffi/c2ffi
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:alexandria :cffi)
+  :components
+  ((:module "src"
+    :components
+    ((:module
+      "c2ffi"
+      :components
+      ((:file "package")
+       (:file "c2ffi" :depends-on ("package"))
+       (:file "asdf" :depends-on ("package" "c2ffi"))))))))
+
+#+nil
+(mk:oos :cffi/c2ffi :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+#||
+gcc  -o libtest.so -shared -Wall -std=c99 -pedantic -fPIC libtest.c -lm
+gcc  -o libtest2.so -shared -Wall -std=c99 -pedantic -fPIC libtest2.c -lm
+gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
+||#
+
+#+nil
+(defpackage "BORDEAUX-THREADS"
+  (:use)
+  (:export "MAKE-CONDITION-VARIABLE" "CONDITION-NOTIFY" "CONDITION-WAIT"
+   "MAKE-LOCK" "WITH-LOCK-HELD" "MAKE-THREAD"))
+
+(mk:defsystem :cffi-tests
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :depends-on (:cffi #-ecl :rt)
+  :source-extension "lisp"
+  :components
+  ((:module "tests"
+    :components
+    (;;:serial
+     #+nil
+     (:file "libtest" :language :c-test-lib)
+     (:file "package")
+     (:file "bindings")
+     (:file "funcall")
+     (:file "defcfun")
+     (:file "callbacks")
+     (:file "foreign-globals")
+     (:file "memory")
+     (:file "strings")
+     (:file "struct")
+     (:file "union")
+     (:file "enum")
+     (:file "misc-types")
+     (:file "misc")
+     #|
+     (:file "test-asdf" :depends-on ("package")) ; cffi-toolchain
+     (:file "grovel" :depends-on ("package"))
+     |#
+     ))))
+
+#||
+(lc "/home/madhu/cmu/Authors/rozenberg/uffi-1.5.1/tests/rt.lisp")
+(lc "/home/madhu/cmu/Authors/rozenberg/uffi-2.1.2/tests/rt.lisp")
+(mk:oos :cffi-tests :load :compile-during-load t)
+(defun run-cffi-tests (&key (compiled nil))
+  (funcall (intern (symbol-name '#:run-cffi-tests) '#:cffi-tests)
+	   :compiled compiled))
+(unless (and (run-cffi-tests :compiled nil)
+	     (run-cffi-tests :compiled t))
+  (error "test-op failed."))
+
+(progn (require 'rt)
+(package-add-nicknames :regression-test :rt))
+||#
+
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+(mk:defsystem :cffi-uffi-compat
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :components
+  ((:module "uffi-compat"
+    :components
+    ((:file "uffi-compat"))))
+  :depends-on (:cffi))
+
+#+nil
+(mk:oos :cffi-uffi-compat :load :compile-during-load t)
+
+#+nil
+(mk-oos :cffi-uffi-compat)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+
+#+nil
+(mk:defsystem :cffi-toolchain
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:cffi)
+  :components
+  ((:module "toolchain"
+    :components
+    ((:file "bundle")
+     (:file "package")
+     (:file "c-toolchain" :depends-on ("package"))
+     (:file "static-link" :depends-on ("bundle" "c-toolchain"))
+     ))))
+
+#+nil
+(mk:oos :cffi-toolchain :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+
+(mk:defsystem :cffi-grovel
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:cffi :alexandria #+fake :cffi-toolchain)
+  :components
+  ((:module "grovel"
+    :components
+    (;;(:static-file "common.h")
+     (:file "fake-toolchain")
+     (:file "package")
+     (:file "grovel" :depends-on ("package"))
+     #+fake
+     (:file "asdf" :depends-on ("grovel"))))))
+
+#+nil
+(mk:oos :cffi-grovel :load :compile-during-load t)
+
+#+nil
+(mk-oos :cffi-grovel :compile)
+
+#+nil
+(lc "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/package.lisp")
+
+;; HERE
+#+nil
+(cffi-grovel:process-grovel-file
+ "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/grovel-example.lisp"
+ "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/grovel-example.lisp")
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(mk:defsystem :cffi-libffi
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (#:cffi #:cffi-grovel #:trivial-features)
+  :components
+  ((:module
+    "libffi"
+    :components
+    ((:file "libffi")
+;;     (cffi-grovel:grovel-file "libffi-types")
+     (:file "libffi-types__grovel.grovel-tmp")
+     (:file "libffi-functions")
+     (:file "type-descriptors")
+     (:file "funcall")))))
+
+#+nil
+(mk:oos :cffi-libffi :load :compile-during-load t)
+
+#+nil
+(cffi-grovel:process-grovel-file
+ #1="/home/madhu/cl/extern/cffi/libffi/libffi-types.lisp"
+ #1#)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+
+(mk:defsystem "cffi-tests/example"
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (#:cffi-grovel)
+  :components
+  ((:module "examples" :components
+     ((:file "package")
+      ;;(:cffi-wrapper-file "wrapper-example" :depends-on ("package"))
+      "grovel-example__grovel.grovel-tmp"
+      ;;(:cffi-grovel-file "grovel-example" :depends-on ("package"))
+      "wrapper-example.grovel-tmp"
+      (:file "main-example" :depends-on ("package"))
+))))
+
+#+nil
+(mk:oos :cffi-tests/example :load :compile-during-load t)
+
+#+nil
+(cffi-grovel:process-grovel-file
+ #1="/home/madhu/cl/extern/cffi/examples/grovel-example.lisp"
+ #1#)
+
+#+nil
+(let ((cffi-toolchain::*cc-flags* (cons "-m64" cffi-toolchain::*cc-flags*))
+      (cffi-toolchain::*ld-dll-flags* (cons "-m64" cffi-toolchain::*ld-dll-flags*)))
+  (cffi-grovel:process-wrapper-file
+   #1="/home/madhu/cl/extern/cffi/examples/wrapper-example.lisp"
+   :output-defaults
+   "/home/madhu/cl/extern/cffi/examples/wrapper-example.processed-wrapper-file"
+   :lib-soname
+   "wrapper-example"))
+
+;; #P"/home/madhu/cl/extern/cffi/examples/wrapper-example.grovel-tmp.lisp"
+;; #P"/home/madhu/cl/extern/cffi/examples/wrapper-example.so"
+
