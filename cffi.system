@@ -260,6 +260,7 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
     (;;(:static-file "common.h")
      (:file "fake-toolchain")
      (:file "package")
+     (:file "mkdefsystem-hooks" :depends-on ("package"))
      (:file "grovel" :depends-on ("package"))
      #+fake
      (:file "asdf" :depends-on ("grovel"))))))
@@ -269,15 +270,6 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
 
 #+nil
 (mk-oos :cffi-grovel :compile)
-
-#+nil
-(lc "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/package.lisp")
-
-;; HERE
-#+nil
-(cffi-grovel:process-grovel-file
- "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/grovel-example.lisp"
- "/nfs/alumni/m/madhu/scratch/extern/cffi_0.19.0/examples/grovel-example.lisp")
 
 
 ;;; ----------------------------------------------------------------------
@@ -294,8 +286,8 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
     "libffi"
     :components
     ((:file "libffi")
-;;     (cffi-grovel:grovel-file "libffi-types")
-     (:file "libffi-types__grovel.grovel-tmp")
+     (:file "libffi-types" :language :cffi-grovel)
+;;   (:file "libffi-types__grovel.grovel-tmp");generated
      (:file "libffi-functions")
      (:file "type-descriptors")
      (:file "funcall")))))
@@ -322,31 +314,11 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
   :components
   ((:module "examples" :components
      ((:file "package")
-      ;;(:cffi-wrapper-file "wrapper-example" :depends-on ("package"))
-      "grovel-example__grovel.grovel-tmp"
-      ;;(:cffi-grovel-file "grovel-example" :depends-on ("package"))
-      "wrapper-example.grovel-tmp"
-      (:file "main-example" :depends-on ("package"))
-))))
+      ("wrapper-example" :depends-on ("package") :language :cffi-wrapper)
+      ;;generaated "wrapper-example.grovel-tmp"
+      ("grovel-example" :depends-on ("package") :language :cffi-grovel)
+      ;;generated "grovel-example__grovel.grovel-tmp"
+      (:file "main-example" :depends-on ("package"))))))
 
 #+nil
 (mk:oos :cffi-tests/example :load :compile-during-load t)
-
-#+nil
-(cffi-grovel:process-grovel-file
- #1="/home/madhu/cl/extern/cffi/examples/grovel-example.lisp"
- #1#)
-
-#+nil
-(let ((cffi-toolchain::*cc-flags* (cons "-m64" cffi-toolchain::*cc-flags*))
-      (cffi-toolchain::*ld-dll-flags* (cons "-m64" cffi-toolchain::*ld-dll-flags*)))
-  (cffi-grovel:process-wrapper-file
-   #1="/home/madhu/cl/extern/cffi/examples/wrapper-example.lisp"
-   :output-defaults
-   "/home/madhu/cl/extern/cffi/examples/wrapper-example.processed-wrapper-file"
-   :lib-soname
-   "wrapper-example"))
-
-;; #P"/home/madhu/cl/extern/cffi/examples/wrapper-example.grovel-tmp.lisp"
-;; #P"/home/madhu/cl/extern/cffi/examples/wrapper-example.so"
-

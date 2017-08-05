@@ -22,9 +22,17 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
-
+#||
 (uiop:define-package #:cffi-grovel
-  (:mix #:cffi-toolchain #:asdf #:uiop #:alexandria #:common-lisp)
+  (:mix #:cffi-toolchain #:asdf #:uiop #:alexandria #:common-lisp))
+||#
+
+(defpackage #:cffi-grovel
+  (:use "CL" #+nil "ALEXANDRIA" "CFFI-TOOLCHAIN")
+  (:import-from "UIOP" "STRCAT" "NEST" "RUN-PROGRAM")
+  (:import-from "ALEXANDRIA" "WITH-UNIQUE-NAMES" "SYMBOLICATE" "APPENDF"
+   "FORMAT-SYMBOL" "ENSURE-LIST")
+;;  (:import-from "ASDF" "COMPILE-OP" "LOAD-SOURCE-OP"  "LINK-OP" "LOAD-OP" "SYSTEM")
   (:export
    ;; Class name
    #:grovel-file
