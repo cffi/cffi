@@ -66,13 +66,15 @@
                      '(require "asdf")
                      '(in-package :asdf)
                      `(progn
-                        ,@(if-let (ql-home (find-symbol* :*quicklisp-home* :ql-setup nil))
-                            `((load ,(subpathname (symbol-value ql-home) "setup.lisp"))))
                         (setf asdf:*central-registry* ',asdf:*central-registry*)
                         (initialize-source-registry ',asdf::*source-registry-parameter*)
                         (initialize-output-translations ',asdf::*output-translations-parameter*)
+                        (upgrade-asdf)
+                        ,@(if-let (ql-home
+                                   (symbol-value (find-symbol* '*quicklisp-home* 'ql-setup nil)))
+                            `((load ,(subpathname ql-home "setup.lisp"))))
                         (load-system "cffi-grovel")
-                        ;; We force the operation to take place
+                        ;; We force the (final step of the) operation to take place
                         (defmethod operation-done-p
                             ((operation ,child-op) (system (eql (find-system ,name))))
                           nil)
