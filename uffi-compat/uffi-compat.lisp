@@ -31,6 +31,7 @@
 (defpackage #:cffi-uffi-compat
   (:nicknames #:uffi) ;; is this a good idea?
   (:use #:cl)
+  (:import-from #:cffi #:*default-foreign-encoding*)
   (:export
 
    ;; immediate types
@@ -97,6 +98,8 @@
    ;; os
    #:getenv
    #:run-shell-command
+
+   #:*default-foreign-encoding*
    ))
 
 (in-package #:cffi-uffi-compat)
@@ -129,8 +132,11 @@
            (* :pointer)
            (:array `(uffi-array ,(convert-uffi-type (second uffi-type))
                                 ,(third uffi-type)))
-           (:union (second uffi-type))
-           (:struct (convert-uffi-type (second uffi-type)))
+           ;;madhu 170813 - avoid a deprecated
+           ;;parse-deprecated-struct-type warning where cffi was the
+           ;;culprit
+           (:union `(:union ,(second uffi-type)))
+           (:struct `(:struct ,(convert-uffi-type (second uffi-type))))
            (:struct-pointer :pointer))
          uffi-type))))
 
@@ -648,6 +654,10 @@ output to *trace-output*.  Returns the shell's exit code."
 
 ;;;; String Encodings
 
+#|| ;madhu 170813 On ECL (format "~A" "str") does not produce a
+simple-string but babel:concatenate-strings-to-octets checks for
+unicode-simple-string. prefer the unoptimized implementation
+
 (defmacro string-to-octets (str &key encoding null-terminate)
   `(babel:concatenate-strings-to-octets
     (or ,encoding cffi:*default-foreign-encoding*)
@@ -655,6 +665,15 @@ output to *trace-output*.  Returns the shell's exit code."
     (if ,null-terminate
         #.(string #\Nul)
         "")))
+||#
+
+(defmacro string-to-octets (str &key encoding null-terminate)
+  `(babel:string-to-octets
+    (apply #'concatenate 'string
+           (list ,str (if ,null-terminate
+                          #.(string #\Nul)
+                          "")))
+    :encoding (or ,encoding cffi:*default-foreign-encoding*)))
 
 (defmacro octets-to-string (octets &key encoding)
   `(babel:octets-to-string ,octets
