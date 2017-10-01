@@ -109,19 +109,23 @@
 (deftest funcall.varargs.char
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%c" :int 65 :int))
+      (foreign-funcall-varargs
+       "sprintf" (:pointer s :string "%c") :int 65 :int))
   "A")
 
 (deftest funcall.varargs.int
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%d" :int 1000 :int))
+      (foreign-funcall-varargs
+       "sprintf" (:pointer s :string "%d") :int 1000 :int))
   "1000")
 
 (deftest funcall.varargs.long
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%ld" :long 131072 :int))
+      (foreign-funcall-varargs
+       "sprintf" (:pointer s :string "%ld")
+       :long 131072 :int))
   "131072")
 
 ;;; There is no FUNCALL.VARARGS.FLOAT as floats are promoted to double
@@ -130,23 +134,23 @@
 (deftest funcall.varargs.double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%.2f"
-                       :double (coerce pi 'double-float) :int))
+      (foreign-funcall-varargs
+       "sprintf" (:pointer s :string "%.2f") :double (coerce pi 'double-float) :int))
   "3.14")
 
 #+(and scl long-float)
 (deftest funcall.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%.2Lf"
-                       :long-double pi :int))
+      (foreign-funcall-varargs
+       "sprintf" :pointer s :string "%.2Lf" :long-double pi :int))
   "3.14")
 
 (deftest funcall.varargs.string
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (foreign-funcall "sprintf" :pointer s :string "%s, %s!"
-                       :string "Hello" :string "world" :int))
+      (foreign-funcall-varargs
+       "sprintf" (:pointer s :string "%s, %s!") :string "Hello" :string "world" :int))
   "Hello, world!")
 
 ;;; See DEFCFUN.DOUBLE26.
