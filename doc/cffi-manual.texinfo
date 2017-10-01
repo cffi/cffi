@@ -5257,6 +5257,8 @@ Dictionary
 * defcfun::
 * foreign-funcall::
 * foreign-funcall-pointer::
+* foreign-funcall-varargs::
+* foreign-funcall-pointer-varargs::
 * translate-camelcase-name::
 * translate-name-from-foreign::
 * translate-name-to-foreign::
@@ -5500,7 +5502,7 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @c FOREIGN-FUNCALL-POINTER
 
 @page
-@node foreign-funcall-pointer,  translate-camelcase-name, foreign-funcall, Functions
+@node foreign-funcall-pointer, foreign-funcall-varargs, foreign-funcall, Functions
 @heading foreign-funcall-pointer
 @subheading Syntax
 @Macro{foreign-funcall-pointer pointer options &rest arguments @res{} return-value}
@@ -5559,12 +5561,118 @@ CFFI> (foreign-funcall-pointer (foreign-symbol-pointer "abs") ()
 @seealso{defcfun} @*
 @seealso{foreign-funcall}
 
+@c ===================================================================
+@c FOREIGN-FUNCALL-VARARGS
+
+@page
+@node foreign-funcall-varargs, foreign-funcall-pointer-varargs, foreign-funcall-pointer, Functions
+@heading foreign-funcall-varargs
+@subheading Syntax
+@Macro{foreign-funcall-varargs name-and-options (fixed-arguments) &rest arguments @res{} return-value}
+
+fixed-arguments ::= @{ arg-type arg @}* [return-type]
+arguments ::= @{ arg-type arg @}* [return-type]
+name-and-options ::= name | ( name &key library convention)
+
+@subheading Arguments and Values
+
+@table @var
+@item name
+A Lisp string.
+
+@item arg-type
+A foreign type.
+
+@item arg
+An argument of type @var{arg-type}.
+
+@item return-type
+A foreign type, @code{:void} by default.
+
+@item return-value
+A lisp object.
+
+@item library
+A lisp symbol; not evaluated.
+
+@item convention
+One of @code{:cdecl} (default) or @code{:stdcall}.
+@end table
+
+@subheading Description
+The @code{foreign-funcall-varargs} macro is the main primitive for
+calling foreign variadic functions. It behaves similarily to
+@code{foreign-funcall} except @code{fixed-arguments} are distinguished
+from the remaining arguments.
+
+@subheading Examples
+
+@lisp
+CFFI> (with-foreign-pointer-as-string (s 100)
+          (setf (mem-ref s :char) 0)
+          (foreign-funcall-varargs
+           "sprintf" (:pointer s :string "%.2f")
+           :double (coerce pi 'double-float) :int))
+@result{} 3.14
+@end lisp
+
+@c ===================================================================
+@c FOREIGN-FUNCALL-POINTER-VARARGS
+
+@page
+@node foreign-funcall-pointer-varargs, translate-camelcase-name, foreign-funcall-varargs, Functions
+@heading foreign-funcall-pointer-varargs
+@subheading Syntax
+@Macro{foreign-funcall-pointer-varargs pointer options (fixed-arguments) &rest arguments @res{} return-value}
+
+fixed-arguments ::= @{ arg-type arg @}* [return-type]
+arguments ::= @{ arg-type arg @}* [return-type]
+options ::= ( &key convention )
+
+@subheading Arguments and Values
+
+@table @var
+@item pointer
+A foreign pointer.
+
+@item arg-type
+A foreign type.
+
+@item arg
+An argument of type @var{arg-type}.
+
+@item return-type
+A foreign type, @code{:void} by default.
+
+@item return-value
+A lisp object.
+
+@item convention
+One of @code{:cdecl} (default) or @code{:stdcall}.
+@end table
+
+@subheading Description
+The @code{foreign-funcall-pointer-varargs} macro is the main primitive
+for calling foreign variadic functions. It behaves similarily to
+@code{foreign-funcall-pointer} except @code{fixed-arguments} are
+distinguished from the remaining arguments.
+
+@subheading Examples
+
+@lisp
+CFFI> (with-foreign-pointer-as-string (s 100)
+          (setf (mem-ref s :char) 0)
+          (foreign-funcall-pointer-varargs
+           (foreign-symbol-pointer "sprintf") () (:pointer s :string "%.2f")
+           :double (coerce pi 'double-float) :int))
+@result{} 3.14
+@end lisp
 
 @c ===================================================================
 @c TRANSLATE-CAMELCASE-NAME
 
 @page
-@node translate-camelcase-name, translate-name-from-foreign, foreign-funcall-pointer, Functions
+@node translate-camelcase-name, translate-name-from-foreign, foreign-funcall-pointer-varargs, Functions
 @heading translate-camelcase-name
 @subheading Syntax
 @Function{translate-camelcase-name name &key upper-initial-p special-words @res{} return-value}
