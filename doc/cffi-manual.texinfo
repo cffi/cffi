@@ -432,10 +432,6 @@ On platforms where ECL's dynamic FFI is not supported (ie. when
 @code{:dffi} is not present in @code{*features*}),
 @code{cffi:load-foreign-library} does not work and you must use ECL's
 own @code{ffi:load-foreign-library} with a constant string argument.
-@item
-Does not support the @code{:long-long} type natively.
-@item
-Unicode support is not enabled by default.
 @end itemize
 
 @subheading Lispworks
