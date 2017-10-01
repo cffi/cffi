@@ -150,6 +150,20 @@
     ((:unsigned-char :unsigned-short) :unsigned-int)
     (t builtin-type)))
 
+;; If cffi-sys doesn't provide a %foreign-funcall-varargs macros we
+;; define one that use %foreign-funcall.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (fboundp '%foreign-funcall-varargs)
+    (defmacro %foreign-funcall-varargs (name fixed-args varargs
+                                        &rest args &key convention library)
+      (declare (ignore convention library))
+      `(%foreign-funcall ,name ,(append fixed-args varargs) ,@args)))
+  (unless (fboundp '%foreign-funcall-pointer-varargs)
+    (defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
+                                                &rest args &key convention)
+      (declare (ignore convention))
+      `(%foreign-funcall-pointer ,pointer ,(append fixed-args varargs) ,@args))))
+
 (defun foreign-funcall-varargs-form (thing options fixed-args varargs pointerp)
   (multiple-value-bind (fixed-types fixed-ctypes fixed-fargs)
       (parse-args-and-types fixed-args)
@@ -162,27 +176,20 @@
          (append fixed-fargs varargs-fargs)
          (append fixed-types varargs-types)
          rettype
-         `(,(if pointerp '%foreign-funcall-pointer '%foreign-funcall)
+         `(,(if pointerp '%foreign-funcall-pointer-varargs '%foreign-funcall-varargs)
             ,thing
+            ,(mapcan #'list fixed-ctypes fixed-syms)
             ,(append
               (mapcan #'list
-                      (nconc fixed-ctypes
-                             (mapcar #'promote-varargs-type varargs-ctypes))
-                      (append fixed-syms
-                              (loop for sym in varargs-syms
-                                    and type in varargs-ctypes
-                                    if (eq type :float)
-                                    collect `(float ,sym 1.0d0)
-                                    else collect sym)))
+                      (mapcar #'promote-varargs-type varargs-ctypes)
+                      (loop for sym in varargs-syms
+                            and type in varargs-ctypes
+                            if (eq type :float)
+                              collect `(float ,sym 1.0d0)
+                            else collect sym))
               (list (canonicalize-foreign-type rettype)))
             ,@options))))))
 
-;;; For now, the only difference between this macro and
-;;; FOREIGN-FUNCALL is that it does argument promotion for that
-;;; variadic argument. This could be useful to call an hypothetical
-;;; %foreign-funcall-varargs on some hypothetical lisp on an
-;;; hypothetical platform that has different calling conventions for
-;;; varargs functions. :-)
 (defmacro foreign-funcall-varargs (name-and-options fixed-args
                                    &rest varargs)
   "Wrapper around %FOREIGN-FUNCALL that translates its arguments
