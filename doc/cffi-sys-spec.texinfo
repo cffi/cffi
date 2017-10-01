@@ -270,6 +270,26 @@ function, as returned by @code{foreign-symbol-pointer}, rather than a
 string @var{name}.
 @end defmac
 
+@defmac %foreign-funcall-varargs name (@{fixed-type arg@}*) @{vararg-type arg@}* &optional result-type @result{} object
+@defmacx %foreign-funcall-varargs-pointer ptr (@{fixed-type arg@}*) @{vararg-type arg@}* &optional result-type @result{} object
+Invoke a foreign variadic function called @var{name} in the foreign
+source code.
+
+Each @var{fixed-type} and @var{vararg-type} is a foreign type
+specifier, followed by @var{arg}, Lisp data to be converted to foreign
+data of type @var{arg-type}.  @var{result-type} is the foreign type of
+the function's return value, and is assumed to be @code{:void} if not
+supplied.
+
+@code{%foreign-funcall-pointer-varargs} takes a pointer @var{ptr} to
+the variadic function, as returned by @code{foreign-symbol-pointer},
+rather than a string @var{name}.
+
+Both functions have default implementation which call
+@code{%foreign-funcall} and @code{%foreign-funcall-pointer}
+approprietly.
+@end defmac
+
 @heading Examples
 
 @lisp
