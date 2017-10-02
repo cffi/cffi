@@ -48,6 +48,8 @@
    #:%mem-set
    #:%foreign-funcall
    #:%foreign-funcall-pointer
+   #:%foreign-funcall-varargs
+   #:%foreign-funcall-pointer-varargs
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -269,39 +271,34 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defconstant +ecl-inline-codes+ "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z")
 
-(defun c-inline-function-pointer-call (pointer types values return-type)
-  (cond ((not (stringp pointer))
-         `(ffi:c-inline
-           ,(list* pointer values)
-           ,(list* :pointer-void types) ,return-type
-           ,(with-output-to-string (s)
-              (let ((types (mapcar #'ecl-type->c-type types)))
-                ;; On AMD64, the following code only works with the extra
-                ;; argument ",...". If this is not present, functions
-                ;; like sprintf do not work
-                (format s "((~A (*)(~@[~{~A,~}...~]))(#0))(~A)"
-                        (ecl-type->c-type return-type) types
-                        (subseq +ecl-inline-codes+ 3
-                                (max 3 (+ 2 (* (length values) 3)))))))
-           :one-liner t :side-effects t))
-        ((eq *cffi-ecl-method* :c/c++)
-         `(ffi:c-inline ,values ,types ,return-type
-           ,(with-output-to-string (s)
-              (let ((types (mapcar #'ecl-type->c-type types)))
-                ;; On AMD64, the following code only works with the extra
-                ;; argument ",...". If this is not present, functions
-                ;; like sprintf do not work
-                (format s "{ extern ~A ~A(~@[~{~A~^, ~}~]); ~A~A(~A); }"
-                        (ecl-type->c-type return-type) pointer types
-                        (if (eq return-type :void) "" "@(return) = ")
-                        pointer
-                        (subseq +ecl-inline-codes+ 0
-                                (max 0 (1- (* (length values) 3)))))))
-           :one-liner nil :side-effects t))
-        (t
-         (c-inline-function-pointer-call
-          `(%foreign-symbol-pointer ,pointer nil)
-          types values return-type))))
+(defun c-inline-function-call (thing fixed-types types values return-type dynamic-call variadic)
+  (when dynamic-call
+    (when (stringp thing)
+      (setf thing `(%foreign-symbol-pointer ,thing nil)))
+    (push thing values)
+    (push :pointer-void types))
+  (let* ((decl-args
+          (format nil "~{~A~^, ~}~A"
+                  (mapcar #'ecl-type->c-type fixed-types) (if (null variadic) "" ", ...")))
+         (call-args
+          (if dynamic-call
+              ;; #0 is already used in a cast (it is a function pointer)
+              (subseq +ecl-inline-codes+ 3 (max 3 (1- (* (length values) 3))))
+              ;; #0 is not used, so we start from the beginning
+              (subseq +ecl-inline-codes+ 0 (max 0 (1- (* (length values) 3))))))
+         (clines
+          (if dynamic-call
+              nil
+              (format nil "extern ~A ~A(~A);"
+                      (ecl-type->c-type return-type) thing decl-args)))
+         (call-code
+          (if dynamic-call
+              (format nil "((~A (*)(~A))(#0))(~A)"
+                      (ecl-type->c-type return-type) decl-args call-args)
+              (format nil "~A(~A)" thing call-args))))
+    `(progn
+       (ffi:clines ,@(ensure-list clines))
+       (ffi:c-inline ,values ,types ,return-type ,call-code :one-liner t :side-effects t))))
 
 (defun dffi-function-pointer-call (pointer types values return-type)
   (when (stringp pointer)
@@ -311,25 +308,6 @@ WITH-POINTER-TO-VECTOR-DATA."
              but ECL was built without support for that." ,pointer)
   #+dffi
   `(si::call-cfun ,pointer ,return-type (list ,@types) (list ,@values)))
-
-#.(cl:when (>= ext:+ecl-version-number+ 100402)
-    (cl:pushnew :ecl-with-backend cl:*features*)
-    cl:nil)
-
-(defun produce-function-pointer-call (pointer types values return-type)
-  #-ecl-with-backend
-  (progn
-    (if (eq *cffi-ecl-method* :dffi)
-        (dffi-function-pointer-call pointer types values return-type)
-        (c-inline-function-pointer-call pointer types values return-type)))
-  #+ecl-with-backend
-  `(ext:with-backend
-     :bytecodes
-     ,(dffi-function-pointer-call pointer types values return-type)
-     :c/c++
-     (if (eq *cffi-ecl-method* :dffi)
-         ,(dffi-function-pointer-call pointer types values return-type)
-         ,(c-inline-function-pointer-call pointer types values return-type))))
 
 (defun foreign-funcall-parse-args (args)
   "Return three values, lists of arg types, values, and result type."
@@ -345,14 +323,60 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore library convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
-    (produce-function-pointer-call name types values return-type)))
+    `(ext:with-backend
+      :bytecodes
+      ,(dffi-function-pointer-call name types values return-type)
+      :c/c++
+      ,(ecase *cffi-ecl-method*
+         (:dffi   (dffi-function-pointer-call name types values return-type))
+         (:dlopen (c-inline-function-call name types types values return-type t nil))
+         (:c/c++  (c-inline-function-call name types types values return-type nil nil))))))
 
-(defmacro %foreign-funcall-pointer (ptr args &key convention)
+(defmacro %foreign-funcall-pointer (pointer args &key convention)
   "Funcall a pointer to a foreign function."
   (declare (ignore convention))
   (multiple-value-bind (types values return-type)
       (foreign-funcall-parse-args args)
-    (produce-function-pointer-call ptr types values return-type)))
+    `(ext:with-backend
+      :bytecodes
+      ,(dffi-function-pointer-call pointer types values return-type)
+      :c/c++
+      ,(if (eq *cffi-ecl-method* :dffi)
+           (dffi-function-pointer-call pointer types values return-type)
+           (c-inline-function-call pointer types types values return-type t nil)))))
+
+(defmacro %foreign-funcall-varargs (name args varargs &key library convention)
+  (declare (ignore library convention))
+  (multiple-value-bind (fixed-types fixed-values)
+      (foreign-funcall-parse-args args)
+    (multiple-value-bind (varargs-types varargs-values return-type)
+        (foreign-funcall-parse-args varargs)
+      (let ((all-types (append fixed-types varargs-types))
+            (values (append fixed-values varargs-values)))
+       `(ext:with-backend
+         :bytecodes
+         ,(dffi-function-pointer-call name all-types values return-type)
+         :c/c++
+         ,(ecase *cffi-ecl-method*
+            (:dffi   (dffi-function-pointer-call name all-types values return-type))
+            (:dlopen (c-inline-function-call name fixed-types all-types values return-type t t))
+            (:c/c++  (c-inline-function-call name fixed-types all-types values return-type nil t))))))))
+
+(defmacro %foreign-funcall-pointer-varargs (pointer args varargs &key convention)
+  (declare (ignore convention))
+  (multiple-value-bind (fixed-types fixed-values)
+      (foreign-funcall-parse-args args)
+    (multiple-value-bind (varargs-types varargs-values return-type)
+        (foreign-funcall-parse-args varargs)
+      (let ((all-types (append fixed-types varargs-types))
+            (values (append fixed-values varargs-values)))
+       `(ext:with-backend
+         :bytecodes
+         ,(dffi-function-pointer-call pointer all-types values return-type)
+         :c/c++
+         ,(if (eq *cffi-ecl-method* :dffi)
+            (dffi-function-pointer-call pointer all-types values return-type)
+            (c-inline-function-call pointer fixed-types all-types values return-type t t)))))))
 
 ;;;# Foreign Libraries
 
