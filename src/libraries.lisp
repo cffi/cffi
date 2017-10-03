@@ -317,7 +317,7 @@ ourselves."
   (handler-case
       (values (%load-foreign-library name path)
               (pathname path))
-    (error (error)
+    (simple-error (error)
       (let ((dirs (parse-directories *foreign-library-directories*)))
         (if-let (file (find-file path (append search-path dirs)))
           (handler-case
@@ -357,7 +357,7 @@ This will need to be extended as we test on more OSes."
 (defun load-foreign-library-helper (name thing &optional search-path)
   (etypecase thing
     ((or pathname string)
-     (load-foreign-library-path (filter-pathname name) thing search-path))
+     (load-foreign-library-path name (filter-pathname thing) search-path))
     (cons
      (ecase (first thing)
        (:framework (load-darwin-framework name (second thing)))
