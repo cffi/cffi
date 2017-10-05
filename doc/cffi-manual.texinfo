@@ -5280,9 +5280,9 @@ Dictionary
 @Macro{defcfun name-and-options return-type &body [docstring] arguments [&rest] @
                @res{} lisp-name}
 
-@var{name-and-options} ::= name | (name &key library convention) @*
+@var{name-and-options} ::= @var{name} | (@var{name} &key @var{library} @var{convention}) @*
 @var{name} ::= @var{lisp-name} [@var{foreign-name}] | @var{foreign-name} [@var{lisp-name}] @*
-@var{arguments} ::= @{ (arg-name arg-type) @}* @*
+@var{arguments} ::= @{ (@var{arg-name} @var{arg-type}) @}* @*
 
 @subheading Arguments and Values
 
@@ -5399,8 +5399,8 @@ CFFI> (with-foreign-pointer-as-string (s 100)
 @subheading Syntax
 @Macro{foreign-funcall name-and-options &rest arguments @res{} return-value}
 
-arguments ::= @{ arg-type arg @}* [return-type]
-name-and-options ::= name | ( name &key library convention)
+@var{arguments} ::= @{ @var{arg-type} @var{arg} @}* [@var{return-type}] @*
+@var{name-and-options} ::= @var{name} | (@var{name} &key @var{library} @var{convention}) @*
 
 @subheading Arguments and Values
 
@@ -5505,8 +5505,8 @@ CFFI> (foreign-funcall "printf" :string (format nil "%s: %d.~%")
 @subheading Syntax
 @Macro{foreign-funcall-pointer pointer options &rest arguments @res{} return-value}
 
-arguments ::= @{ arg-type arg @}* [return-type]
-options ::= ( &key convention )
+@var{arguments} ::= @{ @var{arg-type} @var{arg} @}* [@var{return-type}] @*
+@var{options} ::= (&key @var{convention}) @*
 
 @subheading Arguments and Values
 
