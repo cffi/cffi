@@ -2,7 +2,7 @@
 ;;;
 ;;; libffi-types.lisp -- CFFI-Grovel definitions for libffi
 ;;;
-;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
+;;; Copyright (C) 2009, 2010, 2011, 2017 Liam M. Healy  <lhealy@common-lisp.net>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -36,6 +36,9 @@
 (cc-flags "-I/opt/local/include/")
 
 #+openbsd
+(cc-flags "-I/usr/local/include")
+
+#+freebsd
 (cc-flags "-I/usr/local/include")
 
 (pkg-config-cflags "libffi" :optional t)
