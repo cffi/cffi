@@ -177,6 +177,16 @@
           *ld-dll-flags* (list* #+darwin "-dynamiclib" #-darwin "-shared"
                                 *cc-flags*))))
 
+;;; Taken from sb-grovel
+(defun split-cflags (string)
+  (remove-if (lambda (flag)
+               (zerop (length flag)))
+             (loop
+               for start = 0 then (if end (1+ end) nil)
+               for end = (and start (position #\Space string :start start))
+               while start
+               collect (subseq string start end))))
+
 (defun default-toolchain-parameters ()
   ;; The values below are legacy guesses from previous versions of CFFI.
   ;; It would be nice to clean them up, remove unneeded guesses,
@@ -196,15 +206,15 @@
               #+(or cygwin (not windows)) "cc"
               "gcc")
           *cc-flags*
-          (or (getenv "CFLAGS")
-              (append
-               arch-flags
-               ;; For MacPorts
-               #+darwin (list "-I" "/opt/local/include/")
-               ;; ECL internal flags
-               #+ecl (parse-command-flags c::*cc-flags*)
-               ;; FreeBSD non-base header files
-               #+freebsd (list "-I" "/usr/local/include/")))
+          (append
+           arch-flags
+           ;; For MacPorts
+           #+darwin (list "-I" "/opt/local/include/")
+           ;; ECL internal flags
+           #+ecl (parse-command-flags c::*cc-flags*)
+           ;; FreeBSD non-base header files
+           #+freebsd (list "-I" "/usr/local/include/")
+           (split-cflags (getenv "CFLAGS")))
           *ld* *cc*
           *ld-exe-flags* `(,@arch-flags #-darwin "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
