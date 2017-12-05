@@ -6,9 +6,10 @@
   (ensure-toolchain-parameters)
   (and (or *linkkit-start* *linkkit-end*) t))
 
-(defclass static-runtime-op (monolithic-bundle-op link-op selfward-operation)
-  ((selfward-operation :initform 'monolithic-lib-op :allocation :class))
+(defclass static-runtime-op (monolithic-bundle-op link-op selfward-operation) ()
   (:documentation "Create a Lisp runtime linkable library for the system and its dependencies."))
+(defmethod bundle-type ((o static-runtime-op)) :program)
+(defmethod selfward-operation ((o static-runtime-op)) 'monolithic-lib-op)
 
 (defmethod output-files ((o static-runtime-op) (s system))
   #-(or ecl mkcl)
@@ -21,20 +22,13 @@
    (output-file o s)
    (link-all-library (first (input-files o s)))))
 
-(defclass static-image-op (image-op)
-  (#-(or ecl mkcl) (selfward-operation :initform '(load-op static-runtime-op) :allocation :class)
-   #+(or ecl mkcl)
-   (gather-operation :initform 'compile-op :allocation :class)
-   #+(or ecl mkcl)
-   (gather-type :initform :object :allocation :class))
+(defclass static-image-op (image-op) ()
   (:documentation "Create a statically linked standalone image for the system."))
+#-(or ecl mkcl) (defmethod selfward-operation ((o static-image-op)) '(load-op static-runtime-op))
+#+(or ecl mkcl) (defmethod gather-operation ((o static-image-op)) 'compile-op)
+#+(or ecl mkcl) (defmethod gather-operation ((o static-image-op)) :object)
 
-(defclass static-program-op (program-op static-image-op)
-  (#-(or ecl mkcl) (selfward-operation :initform '(load-op static-runtime-op) :allocation :class)
-   #+(or ecl mkcl)
-   (gather-operation :initform 'compile-op :allocation :class)
-   #+(or ecl mkcl)
-   (gather-type :initform :object :allocation :class))
+(defclass static-program-op (program-op static-image-op) ()
   (:documentation "Create a statically linked standalone executable for the system."))
 
 ;; Problem? Its output may conflict with the program-op output :-/
