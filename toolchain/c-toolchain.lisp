@@ -273,6 +273,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
   #+mkcl (compiler::build-program
           output-file :lisp-object-files (mapcar 'program-argument inputs)
           :on-missing-lisp-object-initializer nil)
+  #+(and sbcl (not sb-linkable-runtime)) (error "Your SBCL doesn't support :SB-LINKABLE-RUNTIME")
   #-(or ecl mkcl)
   (link-executable output-file `(,@*linkkit-start* ,@inputs ,@*linkkit-end*)))
 
