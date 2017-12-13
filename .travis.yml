@@ -34,3 +34,5 @@ script:
   - cl -e '(ql:quickload :cffi-tests)
            (when (cffi-tests:run-all-cffi-tests)
              (uiop:quit 1))'
+
+sudo: required
