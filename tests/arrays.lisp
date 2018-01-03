@@ -31,7 +31,41 @@
 
 (in-package #:cffi-tests)
 
-(deftest array.round-trip
+(deftest array.foreign-to-lisp.basic
     (with-foreign-array (ptr #(1 2 3 4 5) '(:array :int32 5))
       (foreign-array-to-lisp ptr '(:array :int32 5)))
   #(1 2 3 4 5))
+
+(deftest array.foreign-to-lisp.adjustable
+    (with-foreign-array (ptr #(1 2 3 4 5) '(:array :int32 5))
+      (let ((array (foreign-array-to-lisp ptr '(:array :int32 5)
+                                          :adjustable t)))
+        (adjustable-array-p array)))
+  t)
+
+(deftest array.foreign-to-lisp.displaced
+    (let ((array (make-array 10 :initial-contents '(1 2 3 4 5 6 7 8 9 0))))
+      (with-foreign-array (ptr #(10 20 30 40 50) '(:array :int32 5))
+        (let ((displaced (foreign-array-to-lisp ptr '(:array :int32 5)
+                                                :displaced-to array
+                                                :displaced-index-offset 5)))
+          array)))
+  #(1 2 3 4 5 10 20 30 40 50))
+
+;;; Implementation detail: 15.1.2.2 of the CL standard states that the only
+;;; truly portable array specializations are for bits (bit-vectors) and
+;;; characters (strings). Since char-codes are implementation-dependent, it
+;;; would be tricky to write a portable test for them without generating
+;;; characters at runtime. So, for a truly portable test, we are only left with
+;;; bits, which are luckily numeric, and equal to (UNSIGNED-BYTE 1).
+;;; This is why the below test is so terribly wasteful, spending a whole byte
+;;; for a single bit - CFFI has no capabilities for dealing with single bits,
+;;; and this test is only meant to check correctness of the :ELEMENT-TYPE
+;;; argument to MAKE-ARRAY. In actual use cases of specialized
+;;; FOREIGN-ARRAY-TO-LISP, capable implementations will be able to make
+;;; specialized arrays of types that are commonly optimized for and/or
+;;; representable in hardware, such as (UNSIGNED-BYTE 8) on x86 architectures.
+(deftest array.foreign-to-lisp.specialized
+    (with-foreign-array (ptr #(1 0 1 0 1 1 1 0) '(:array :int8 8))
+      (foreign-array-to-lisp ptr '(:array :int8 8) :element-type 'bit))
+  #*10101110)

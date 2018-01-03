@@ -388,7 +388,8 @@ newly allocated memory."
       form))
 
 (defun lisp-array-to-foreign (array pointer array-type)
-  "Copy elements from a Lisp array to POINTER."
+  "Copy elements from a Lisp array to POINTER. ARRAY-TYPE must be a CFFI array
+type."
   (let* ((type (ensure-parsed-base-type array-type))
          (el-type (element-type type))
          (dimensions (dimensions type)))
@@ -400,14 +401,15 @@ newly allocated memory."
                                (row-major-index-to-indexes i dimensions))
           do (setf (mem-ref pointer el-type offset) element))))
 
-(defun foreign-array-to-lisp (pointer array-type)
-  "Copy elements from ptr into a Lisp array. If POINTER is a null
-pointer, returns NIL."
+(defun foreign-array-to-lisp (pointer array-type &rest make-array-args)
+  "Copy elements from pointer into a Lisp array. ARRAY-TYPE must be a CFFI array
+type; the type of the resulting Lisp array can be defined in MAKE-ARRAY-ARGS
+that are then passed to MAKE-ARRAY. If POINTER is a null pointer, returns NIL."
   (unless (null-pointer-p pointer)
     (let* ((type (ensure-parsed-base-type array-type))
            (el-type (element-type type))
            (dimensions (dimensions type))
-           (array (make-array dimensions)))
+           (array (apply #'make-array dimensions make-array-args)))
       (loop with foreign-type-size = (array-element-size type)
             with size = (reduce #'* dimensions)
             for i from 0 below size
