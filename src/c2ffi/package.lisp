@@ -29,6 +29,7 @@
         #:common-lisp)
   (:import-from :asdf
                 #:cl-source-file
+                #:find-system
                 #:output-file
                 #:output-files
                 #:input-files

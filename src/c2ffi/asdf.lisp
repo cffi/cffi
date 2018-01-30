@@ -133,7 +133,9 @@ file, except that it's will be stored in the fasl cache."))
   ())
 
 (defmethod component-depends-on ((op generate-lisp-op) (c c2ffi-file))
-  `((generate-spec-op ,c) ,@(call-next-method)))
+  `((generate-spec-op ,c)
+    (load-op ,(the (not null) (find-system "cffi/c2ffi-generator")))
+    ,@(call-next-method)))
 
 (defmethod component-depends-on ((op compile-op) (c c2ffi-file))
   `((generate-lisp-op ,c) ,@(call-next-method)))
@@ -161,8 +163,6 @@ file, except that it's will be stored in the fasl cache."))
         (generated-lisp-file (output-file op c)))
     (with-staging-pathname (tmp-output generated-lisp-file)
       (format *debug-io* "~&; CFFI/C2FFI is generating the file ~S~%" generated-lisp-file)
-      (unless (component-loaded-p :cffi/c2ffi-generator)
-        (load-system :cffi/c2ffi-generator))
       (apply 'process-c2ffi-spec-file
              spec-file (c2ffi-file/package c)
              :output tmp-output
