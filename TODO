@@ -102,6 +102,14 @@ This is a collection of TODO items and ideas in no particular order.
    or an autodetection after loading everything, see
     https://github.com/borodust/cl-bodge/blob/0.3.0/distribution/build.lisp#L79
 
+### CFFI/C2FFI
+
+-> Generate wrappers for C inline function definitions (and maybe for some
+   #define's?)
+-> It would be nice if c2ffi emitted its output in a stable order
+   for details see https://github.com/rpav/c2ffi/issues/28
+-> Handle va_list. For now it's treated as any other argument.
+
 ### Other
 
 -> Type-checking pointer interface.

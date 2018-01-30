@@ -293,6 +293,9 @@
                        (intern name))))
     (when (and (not anonymous)
                (boundp '*generated-names*))
+      ;; TODO FIXME this function also gets called for e.g. argument types of a function. and
+      ;; if the function ends up *not* getting emitted, e.g. because of a missing type, then
+      ;; we wrongly record here the missing type in the *generated-names* registry.
       (setf (gethash name (cdr (assoc kind *generated-names*)))
             cffi-name))
     cffi-name))
@@ -469,6 +472,10 @@
              (t
               (assert (not (starts-with #\: tag)))
               (let ((cffi-name (json-name-to-cffi-name tag :type)))
+                ;; TODO FIXME json-name-to-cffi-name collects the mentioned
+                ;; types to later emit +TYPE-NAMES+, but if this next
+                ;; find-cffi-type-or-die dies then the entire function is
+                ;; skipped.
                 (find-cffi-type-or-die cffi-name)
                 cffi-name)))))
       (assert cffi-type () "Failed to map ~S to a cffi type" json-entry)
