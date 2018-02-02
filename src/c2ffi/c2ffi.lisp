@@ -147,11 +147,11 @@
           (error "c2ffi spec file not found for base name ~S" base-name)))))
 
 (defun ensure-spec-file-exists (header-file-path &key exclude-archs sys-include-paths version)
-  (multiple-value-bind
-        (h-name m-name)
-      (find-local-spec header-file-path nil)
-    (if h-name
-        (values h-name m-name)
+  (let ((spec-path (find-local-spec header-file-path nil)))
+    (if (and spec-path
+             (uiop:timestamp< (file-write-date header-file-path)
+                              (file-write-date spec-path)))
+        spec-path
         (let ((local-arch (local-arch)))
           (unless (c2ffi-executable-available?)
             (error "No spec found for ~S on arch '~A' and c2ffi not found"
