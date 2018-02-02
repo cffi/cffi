@@ -146,7 +146,8 @@
         (when errorp
           (error "c2ffi spec file not found for base name ~S" base-name)))))
 
-(defun ensure-spec-file-exists (header-file-path &key exclude-archs sys-include-paths version)
+(defun ensure-spec-file-is-up-to-date (header-file-path
+                                       &key exclude-archs sys-include-paths version)
   (let ((spec-path (find-local-spec header-file-path nil)))
     (if (and spec-path
              (uiop:timestamp< (file-write-date header-file-path)

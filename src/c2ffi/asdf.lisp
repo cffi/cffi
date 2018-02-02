@@ -82,7 +82,7 @@ An external program based on clang/llvm called 'c2ffi' is then invoked with
 this header file to generate a json file for various platforms. The generation
 of the underlying platform's json file must succeed to continue, but the
 generation for the other platforms is allowed to fail
-\(see ENSURE-SPEC-FILE-EXISTS).
+\(see ENSURE-SPEC-FILE-IS-UP-TO-DATE).
 
 It's advisable to deliver these json files with the project, so that users
 don't need to have c2ffi installed.
@@ -125,16 +125,17 @@ file, except that it's will be stored in the fasl cache."))
     ;; NOTE: we don't call OUTPUT-FILE here, which may be a violation
     ;; of the ASDF contract, that promises that OUTPUT-FILE can be
     ;; customized by users.
-    (ensure-spec-file-exists input-file
-                             :exclude-archs (c2ffi-file/exclude-archs c)
-                             :sys-include-paths (c2ffi-file/sys-include-paths c))))
+    (ensure-spec-file-is-up-to-date
+     input-file
+     :exclude-archs (c2ffi-file/exclude-archs c)
+     :sys-include-paths (c2ffi-file/sys-include-paths c))))
 
 (defclass generate-lisp-op (downward-operation)
   ())
 
 (defmethod component-depends-on ((op generate-lisp-op) (c c2ffi-file))
   `((generate-spec-op ,c)
-    (load-op ,(the (not null) (find-system "cffi/c2ffi-generator")))
+    (load-op ,(find-system "cffi/c2ffi-generator"))
     ,@(call-next-method)))
 
 (defmethod component-depends-on ((op compile-op) (c c2ffi-file))
