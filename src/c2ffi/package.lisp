@@ -45,9 +45,10 @@
                 #:component-loaded-p)
   (:export
    #:c2ffi-file
-   #:default-ffi-name-transformer
-   #:default-ffi-type-transformer
-   #:change-case-to-readtable-case
    #:camelcased?
    #:camelcase-to-dash-separated
+   #:change-case-to-readtable-case
+   #:default-ffi-name-transformer
+   #:default-ffi-type-transformer
+   #:generate-spec
    #:maybe-camelcase-to-dash-separated))
