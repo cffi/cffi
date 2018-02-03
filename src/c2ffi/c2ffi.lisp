@@ -149,30 +149,46 @@
 (defun ensure-spec-file-is-up-to-date (header-file-path
                                        &key exclude-archs sys-include-paths version)
   (let ((spec-path (find-local-spec header-file-path nil)))
-    (if (and spec-path
-             (uiop:timestamp< (file-write-date header-file-path)
-                              (file-write-date spec-path)))
-        spec-path
-        (let ((local-arch (local-arch)))
-          (unless (c2ffi-executable-available?)
-            (error "No spec found for ~S on arch '~A' and c2ffi not found"
-                   header-file-path local-arch))
-          (generate-spec-with-c2ffi header-file-path
-                                    (spec-path header-file-path
-                                               :arch local-arch
-                                               :version version)
-                                    :arch local-arch
-                                    :sys-include-paths sys-include-paths)
-          ;; also run c2ffi for other architectures, but tolerate failure
-          (dolist (arch *known-archs*)
-            (unless (or (string= local-arch arch)
-                        (member arch exclude-archs :test #'string=))
-              (unless (generate-spec-with-c2ffi header-file-path
-                                                (spec-path header-file-path
-                                                           :arch arch
-                                                           :version version)
-                                                :arch arch
-                                                :sys-include-paths sys-include-paths
-                                                :ignore-error-status t)
-                (warn "Failed to generate spec for other arch: ~S" arch))))
-          (find-local-spec header-file-path)))))
+    (flet ((regenerate-spec-file ()
+             (let ((local-arch (local-arch)))
+               (unless (c2ffi-executable-available?)
+                 (error "No spec found for ~S on arch '~A' and c2ffi not found"
+                        header-file-path local-arch))
+               (generate-spec-with-c2ffi header-file-path
+                                         (spec-path header-file-path
+                                                    :arch local-arch
+                                                    :version version)
+                                         :arch local-arch
+                                         :sys-include-paths sys-include-paths)
+               ;; Try to run c2ffi for other architectures, but tolerate failure
+               (dolist (arch *known-archs*)
+                 (unless (or (string= local-arch arch)
+                             (member arch exclude-archs :test #'string=))
+                   (unless (generate-spec-with-c2ffi header-file-path
+                                                     (spec-path header-file-path
+                                                                :arch arch
+                                                                :version version)
+                                                     :arch arch
+                                                     :sys-include-paths sys-include-paths
+                                                     :ignore-error-status t)
+                     (warn "Failed to generate spec for other arch: ~S" arch))))
+               (find-local-spec header-file-path))))
+      (if (and spec-path
+               (uiop:timestamp< (file-write-date header-file-path)
+                                (file-write-date spec-path)))
+          spec-path            ; it's up to date, just return it as is
+          (restart-case
+              (regenerate-spec-file)
+            (touch-old-copy ()
+              :report (lambda (stream)
+                        (format stream "Update the modification time of the out-of-date copy ~S" spec-path))
+              ;; Make it only be visible when the spec file exists (but it's out of date)
+              :test (lambda (condition)
+                      (declare (ignore condition))
+                      (not (null spec-path)))
+              ;; Update the last modification time. Yes, it's convoluted and wasteful,
+              ;; but I can't see any other way.
+              (with-staging-pathname (tmp-file spec-path)
+                (copy-file spec-path tmp-file))
+              ;; The return value of RESTART-CASE
+              spec-path))))))
