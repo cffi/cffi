@@ -55,11 +55,11 @@
 (defmacro deftest (name &rest body)
   (destructuring-bind (name &key expected-to-fail)
       (alexandria:ensure-list name)
-    (let ((result `(rt:deftest ,name ,@body)))
+    (let ((result `(#-sbcl rt:deftest #+sbcl sb-rt:deftest ,name ,@body)))
       (when expected-to-fail
         (setf result `(progn
                         (when ,expected-to-fail
-                          (pushnew ',name rt::*expected-failures*))
+                          (pushnew ',name #-sbcl rt::*expected-failures* #+sbcl sb-rt::*expected-failures*))
                         ,result)))
       result)))
 
@@ -132,12 +132,12 @@
 (defcvar "double_min" :double)
 
 (defun run-cffi-tests (&key (compiled nil))
-  (let ((regression-test::*compile-tests* compiled)
+  (let ((#-sbcl regression-test::*compile-tests* #+sbcl sb-rt::*compile-tests*compiled)
         (*package* (find-package '#:cffi-tests)))
     (format t "~&;;; running tests (~Acompiled)" (if compiled "" "un"))
     (do-tests)
-    (set-difference (regression-test:pending-tests)
-                    regression-test::*expected-failures*)))
+    (set-difference (#-sbcl regression-test:pending-tests #+sbcl sb-rt:pending-tests)
+                    #-sbcl regression-test::*expected-failures* #+sbcl sb-rt::*expected-failures*)))
 
 (defun run-all-cffi-tests ()
   (append (run-cffi-tests :compiled nil)

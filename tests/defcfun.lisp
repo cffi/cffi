@@ -436,7 +436,7 @@
     (a121 :int) (a122 :float) (a123 :unsigned-char) (a124 :unsigned-char)
     (a125 :double) (a126 :unsigned-long-long) (a127 :char))
 
-  #+(and sbcl x86) (push 'defcfun.bff.2 rtest::*expected-failures*)
+  #+(and sbcl x86) (push 'defcfun.bff.2 sb-rt::*expected-failures*)
 
   (deftest defcfun.bff.2
       (sum-127

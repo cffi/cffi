@@ -28,6 +28,6 @@
 (in-package #:cl-user)
 
 (defpackage #:cffi-tests
-  (:use #:cl #:cffi #:cffi-sys #:regression-test)
+  (:use #:cl #:cffi #:cffi-sys #-sbcl #:regression-test #+sbcl #:sb-rt)
   (:export #:do-tests #:run-cffi-tests #:run-all-cffi-tests)
   (:shadow #:deftest))

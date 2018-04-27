@@ -83,7 +83,7 @@
   #.*ascii-test-bytes*)
 
 ;;; FIXME: bogus test. We need support for BOM or UTF-16{BE,LE}.
-(pushnew 'string.encoding.utf-16.basic rtest::*expected-failures*)
+(pushnew 'string.encoding.utf-16.basic #-sbcl rtest::*expected-failures* #+sbcl sb-rt::*expected-failures*)
 
 ;;; Test UTF-16 conversion of a string back and forth.  Tests proper
 ;;; null terminator handling for wide character strings and ensures no

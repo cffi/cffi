@@ -36,7 +36,7 @@
 ;;; this code can generate.
 
 (defpackage #:cffi-random-tester
-  (:use #:cl #:cffi #:alexandria #:regression-test))
+  (:use #:cl #:cffi #:alexandria #-sbcl #:regression-test #+sbcl #:sb-rt))
 (in-package #:cffi-random-tester)
 
 (defstruct (c-type (:conc-name type-))
