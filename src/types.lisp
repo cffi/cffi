@@ -660,9 +660,9 @@ The foreign array must be freed with foreign-array-free."
   "Return alignment for TYPE according to ALIGNMENT-TYPE."
   (declare (ignorable firstp))
   (ecase alignment-type
-    (:normal #-(and darwin ppc)
+    (:normal #-(or (and clozure x86 (not x86-64)) (and darwin ppc))
              (foreign-type-alignment type)
-             #+(and darwin ppc)
+             #+(or (and clozure x86 (not x86-64)) (and darwin ppc))
              (if firstp
                  (foreign-type-alignment type)
                  (min 4 (foreign-type-alignment type))))))
