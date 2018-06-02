@@ -672,13 +672,15 @@ depending on the last slot offset."
         last-slot-offset
         (+ last-slot-offset tail-padding))))
 
-(defun adjust-for-alignment (type offset alignment-type firstp)
-  "Return OFFSET aligned properly for TYPE according to ALIGNMENT-TYPE."
-  (let* ((align (get-alignment type alignment-type firstp))
-         (rem (mod offset align)))
+(defun find-slot-offset (slot-alignment previous-slot-offset)
+  "Find an offset of the slot based on SLOT-ALIGNMENT AND PREVIOUS-SLOT-OFFSET.
+Each slot is assigned to the lowest available offset
+with the appropriate alignment. This may require internal
+padding, depending on the previous slot."
+  (let ((rem (mod previous-slot-offset slot-alignment)))
     (if (zerop rem)
-        offset
-        (+ offset (- align rem)))))
+        previous-slot-offset
+        (+ previous-slot-offset (- slot-alignment rem)))))
 
 (defmacro with-tentative-type-definition ((name value namespace) &body body)
   (once-only (name namespace)
@@ -704,15 +706,14 @@ depending on the last slot offset."
               (simple-foreign-type-error type :struct
                                          "In struct ~S: void type not allowed in field ~S"
                                          name slotdef))
-            (setq current-offset
-                  (or offset
-                      (adjust-for-alignment type current-offset :normal firstp)))
-            (let* ((slot (make-struct-slot slotname current-offset type count))
-                   (align (get-alignment (slot-type slot) :normal firstp)))
+            (let* ((slot-alignment (get-alignment type :normal firstp))
+                   (slot-offset (or offset (find-slot-offset slot-alignment current-offset)))
+                   (slot (make-struct-slot slotname slot-offset type count)))
               (setf (gethash slotname (slots struct)) slot)
-              (when (> align max-align)
-                (setq max-align align)))
-            (incf current-offset (* count (foreign-type-size type))))
+              (when (> slot-alignment max-align)
+                (setf max-align slot-alignment))
+              (setf current-offset slot-offset)
+              (incf current-offset (* count (foreign-type-size type)))))
           (setq firstp nil))
         ;; calculate padding and alignment
         (setf (alignment struct) max-align) ; See point 1 above.
