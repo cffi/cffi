@@ -27,11 +27,12 @@
 
 (in-package #:cffi)
 
-(defmacro discard-docstring (body-var &optional force)
-  "Discards the first element of the list in body-var if it's a
-string and the only element (or if FORCE is T)."
-  `(when (and (stringp (car ,body-var)) (or ,force (cdr ,body-var)))
-     (pop ,body-var)))
+(defun omit-docstring (body-var)
+  "Return the original elements of BODY-VAR list but
+without the first element if the type of this element is the string."
+  (if (stringp (first body-var))
+      (rest body-var)
+      body-var))
 
 (defun single-bit-p (integer)
   "Answer whether INTEGER, which must be an integer, is a single

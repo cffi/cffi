@@ -726,10 +726,10 @@ The foreign array must be freed with foreign-array-free."
 
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
-  (discard-docstring fields)
   (destructuring-bind (name . options)
       (ensure-list name-and-options)
-    (let ((conc-name (getf options :conc-name)))
+    (let ((conc-name (getf options :conc-name))
+          (slots (omit-docstring fields)))
       (remf options :conc-name)
       (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -738,15 +738,15 @@ The foreign array must be freed with foreign-array-free."
             `(defclass ,class (foreign-struct-type
                                translatable-foreign-type)
                ()))
-         (notice-foreign-struct-definition ',name ',options ',fields)
+         (notice-foreign-struct-definition ',name ',options ',slots)
          ,@(when conc-name
              (generate-struct-accessors name conc-name
-                                        (mapcar #'car fields)))
+                                        (mapcar #'car slots)))
          ,@(when *defcstruct-hook*
              ;; If non-nil, *defcstruct-hook* should be a function
              ;; of the arguments that returns NIL or a list of
              ;; forms to include in the expansion.
-             (apply *defcstruct-hook* name-and-options fields))
+             (apply *defcstruct-hook* name-and-options slots))
          (define-parse-method ,name ()
            (parse-deprecated-struct-type ',name :struct))
          '(:struct ,name)))))
@@ -923,12 +923,11 @@ slots will be defined and stored."
 
 (defmacro defcunion (name-and-options &body fields)
   "Define the layout of a foreign union."
-  (discard-docstring fields)
   (destructuring-bind (name &key size)
       (ensure-list name-and-options)
     (declare (ignore size))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-union-definition ',name-and-options ',fields)
+       (notice-foreign-union-definition ',name-and-options ',(omit-docstring fields))
        (define-parse-method ,name ()
          (parse-deprecated-struct-type ',name :union))
        '(:union ,name))))
