@@ -722,7 +722,15 @@ The foreign array must be freed with foreign-array-free."
 (define-parse-method :struct (name)
   (funcall (find-type-parser name :struct)))
 
-(defvar *defcstruct-hook* nil)
+(defvar *defcstruct-hook* nil
+  "If non-nil, *defcstruct-hook* should be a function
+of two arguments (NAME-AND-OPTIONS and SLOTS)
+that returns NIL or a list of forms
+to include in the expansion of `defcstruct'.
+NAME-AND-OPTIONS and SLOTS are equivalent to `defcstruct' arguments
+except that SLOTS doesn't contain a documentation string.
+Note: *defcstruct-hook* function must not destructively modify
+any part of its arguments.")
 
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
@@ -743,9 +751,6 @@ The foreign array must be freed with foreign-array-free."
              (generate-struct-accessors name conc-name
                                         (mapcar #'car slots)))
          ,@(when *defcstruct-hook*
-             ;; If non-nil, *defcstruct-hook* should be a function
-             ;; of the arguments that returns NIL or a list of
-             ;; forms to include in the expansion.
              (apply *defcstruct-hook* name-and-options slots))
          (define-parse-method ,name ()
            (parse-deprecated-struct-type ',name :struct))
