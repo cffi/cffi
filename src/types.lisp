@@ -661,6 +661,17 @@ The foreign array must be freed with foreign-array-free."
                  (foreign-type-alignment type)
                  (min 4 (foreign-type-alignment type))))))
 
+(defun find-structure-size (structure-alignment last-slot-offset)
+  "Find a structure size based on STRUCTURE-ALIGNMENT and LAST-SLOT-OFFSET.
+The structure's size is increased, if necessary, to make it a
+multiple of the alignment. This may require tail padding,
+depending on the last slot offset."
+  (let ((tail-padding (- structure-alignment
+                         (rem last-slot-offset structure-alignment))))
+    (if (= tail-padding structure-alignment)
+        last-slot-offset
+        (+ last-slot-offset tail-padding))))
+
 (defun adjust-for-alignment (type offset alignment-type firstp)
   "Return OFFSET aligned properly for TYPE according to ALIGNMENT-TYPE."
   (let* ((align (get-alignment type alignment-type firstp))
@@ -705,10 +716,7 @@ The foreign array must be freed with foreign-array-free."
           (setq firstp nil))
         ;; calculate padding and alignment
         (setf (alignment struct) max-align) ; See point 1 above.
-        (let ((tail-padding (- max-align (rem current-offset max-align))))
-          (unless (= tail-padding max-align) ; See point 3 above.
-            (incf current-offset tail-padding)))
-        (setf (size struct) (or size current-offset))))))
+        (setf (size struct) (or size (find-structure-size max-align current-offset)))))))
 
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
