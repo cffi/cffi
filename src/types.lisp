@@ -952,6 +952,8 @@ based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, and COUNT."
         :size (* count (foreign-type-size type))
         :alignment (foreign-type-alignment type)))
 
+;;; See also the notes regarding ABI requirements in
+;;; EXPAND-NOTICE-FOREIGN-STRUCT-DEFINITION
 (defmacro expand-notice-foreign-union-definition (name class slot-defs size)
   "Expand into `notice-foreign-type-definition' using
 a union NAME, CLASS, SLOT-DEFS and SIZE."
@@ -967,33 +969,6 @@ a union NAME, CLASS, SLOT-DEFS and SIZE."
                                          ,union-alignment
                                          ,union-slots)))))
 
-;;; See also the notes regarding ABI requirements in
-;;; NOTICE-FOREIGN-STRUCT-DEFINITION
-(defun notice-foreign-union-definition (name-and-options slots)
-  "Parse and install a foreign union definition."
-  (destructuring-bind (name &key size)
-      (ensure-list name-and-options)
-    (let ((union (make-instance 'foreign-union-type :name name))
-          (max-size 0)
-          (max-align 0))
-      (with-tentative-type-definition (name union :union)
-        (dolist (slotdef slots)
-          (destructuring-bind (slotname type &key (count 1)) slotdef
-            (when (eq (canonicalize-foreign-type type) :void)
-              (simple-foreign-type-error name :struct
-                                         "In union ~S: void type not allowed in field ~S"
-                                         name slotdef))
-            (let* ((slot (make-struct-slot slotname 0 type count))
-                   (size (* count (foreign-type-size type)))
-                   (align (foreign-type-alignment (slot-type slot))))
-              (setf (gethash slotname (slots union)) slot)
-              (when (> size max-size)
-                (setf max-size size))
-              (when (> align max-align)
-                (setf max-align align)))))
-        (setf (size union) (or size max-size))
-        (setf (alignment union) max-align)))))
-
 (define-parse-method :union (name)
   (funcall (find-type-parser name :union)))
 
@@ -1001,12 +976,13 @@ a union NAME, CLASS, SLOT-DEFS and SIZE."
   "Define the layout of a foreign union."
   (destructuring-bind (name &key size)
       (ensure-list name-and-options)
-    (declare (ignore size))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-union-definition ',name-and-options ',(omit-docstring fields))
-       (define-parse-method ,name ()
-         (parse-deprecated-struct-type ',name :union))
-       '(:union ,name))))
+    (let ((class 'foreign-union-type)
+          (slots (omit-docstring fields)))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         (expand-notice-foreign-union-definition ,name ,class ,slots ,size)
+         (define-parse-method ,name ()
+           (parse-deprecated-struct-type ',name :union))
+         '(:union ,name)))))
 
 ;;;# Operations on Types
 
