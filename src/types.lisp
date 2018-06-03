@@ -986,6 +986,21 @@ based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, and COUNT."
         :size (* count (foreign-type-size type))
         :alignment (foreign-type-alignment type)))
 
+(defmacro expand-notice-foreign-union-definition (name class slot-defs size)
+  "Expand into `notice-foreign-type-definition' using
+a union NAME, CLASS, SLOT-DEFS and SIZE."
+  (with-unique-names (union-size union-alignment union-slots)
+    `(with-defined-slots (slots ,slot-defs union-slot-def->slot)
+       (let* ((,union-size ,(or size '(apply #'max 0
+                                       (%get-slots-prop slots :size))))
+              (,union-alignment (apply #'max 0
+                                       (%get-slots-prop slots :alignment)))
+              (,union-slots (%get-slots-prop slots :slot)))
+         (notice-foreign-type-definition ',name :union ',class
+                                         ,union-size
+                                         ,union-alignment
+                                         ,union-slots)))))
+
 ;;; See also the notes regarding ABI requirements in
 ;;; NOTICE-FOREIGN-STRUCT-DEFINITION
 (defun notice-foreign-union-definition (name-and-options slots)
