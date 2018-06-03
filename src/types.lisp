@@ -720,6 +720,10 @@ that are collected into SLOTS-VAR. Then evaluate BODY forms."
                (,slots-var (list ,@(mapcar #'first slots))))
           ,@body))))
 
+(defun %get-slots-prop (slots prop-name)
+  "Convert each slot plist from SLOTS into list of values of PROP-NAME."
+  (mapcar #'(lambda (slot) (getf slot prop-name)) slots))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
