@@ -690,6 +690,18 @@ padding, depending on the previous slot."
             ,@body)
        (:abort (undefine-foreign-type ,name ,namespace)))))
 
+(defun notice-foreign-type-definition (name namespace class
+                                       size alignment slots)
+  "Install a foreign type NAME of namespace NAMESPACE and of class CLASS
+with relevant SIZE, ALIGNMENT, and SLOTS."
+  (check-type size (integer 0))
+  (let ((type (make-instance class :name name)))
+    (with-tentative-type-definition (name type namespace)
+      (dolist (slot slots)
+        (setf (gethash (slot-name slot) (slots type)) slot))
+      (setf (size type) size)
+      (setf (alignment type) alignment))))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
