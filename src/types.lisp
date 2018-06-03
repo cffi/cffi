@@ -742,6 +742,22 @@ based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, COUNT, and OFFSET."
           :offset (+ final-offset (* count (foreign-type-size type)))
           :alignment alignment)))
 
+(defmacro expand-notice-foreign-struct-definition (name class slot-defs size)
+  "Expand into `notice-foreign-type-definition' using
+a structure NAME, CLASS, SLOT-DEFS and SIZE."
+  (with-unique-names (struct-alignment struct-size struct-slots)
+    `(with-defined-slots (slots ,slot-defs struct-slot-def->slot)
+       (let* ((,struct-alignment (apply #'max 1
+                                        (%get-slots-prop slots :alignment)))
+              (,struct-size ,(or size `(find-structure-size
+                                        ,struct-alignment
+                                        (getf (first (last slots)) :offset 0))))
+              (,struct-slots (%get-slots-prop slots :slot)))
+         (notice-foreign-type-definition ',name :struct ',class
+                                         ,struct-size
+                                         ,struct-alignment
+                                         ,struct-slots)))))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
