@@ -702,6 +702,24 @@ with relevant SIZE, ALIGNMENT, and SLOTS."
       (setf (size type) size)
       (setf (alignment type) alignment))))
 
+(defmacro with-defined-slots ((slots-var slot-defs slot-def->slot) &body body)
+  "Convert each slot definition from SLOT-DEFS
+using a SLOT-DEF->SLOT function into actual slots instances
+that are collected into SLOTS-VAR. Then evaluate BODY forms."
+  (loop :with previous-slot-var = nil
+     :for slot-var = (gensym)
+     :for (slot-name slot-type . slot-args) :in slot-defs
+     :collect `(,slot-var (,slot-def->slot ,previous-slot-var
+                                           ',slot-name ',slot-type
+                                           ,@slot-args))
+     :into slots
+     :do (setf previous-slot-var slot-var)
+     :finally
+     (return
+       `(let* (,@slots
+               (,slots-var (list ,@(mapcar #'first slots))))
+          ,@body))))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
