@@ -724,6 +724,24 @@ that are collected into SLOTS-VAR. Then evaluate BODY forms."
   "Convert each slot plist from SLOTS into list of values of PROP-NAME."
   (mapcar #'(lambda (slot) (getf slot prop-name)) slots))
 
+(defun struct-slot-def->slot (previous-slot name type &key (count 1) offset)
+  "Convert structure slot definition to actual slot instance
+based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, COUNT, and OFFSET."
+  (check-type count (integer 1))
+  (check-type offset (or (integer 0) null))
+  (when (eql (canonicalize-foreign-type type) :void)
+    (simple-foreign-type-error type :struct
+                               "void type isn't allowed in struct slot ~S"
+                               name))
+  (let* ((first-slot-p (null previous-slot))
+         (alignment (get-alignment type :normal first-slot-p))
+         (previous-slot-offset (getf previous-slot :offset 0))
+         (auto-offset (find-slot-offset alignment previous-slot-offset))
+         (final-offset (or offset auto-offset)))
+    (list :slot (make-struct-slot name final-offset type count)
+          :offset (+ final-offset (* count (foreign-type-size type)))
+          :alignment alignment)))
+
 (defun notice-foreign-struct-definition (name options slots)
   "Parse and install a foreign structure definition."
   (destructuring-bind (&key size (class 'foreign-struct-type))
