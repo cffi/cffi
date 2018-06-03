@@ -758,35 +758,6 @@ a structure NAME, CLASS, SLOT-DEFS and SIZE."
                                          ,struct-alignment
                                          ,struct-slots)))))
 
-(defun notice-foreign-struct-definition (name options slots)
-  "Parse and install a foreign structure definition."
-  (destructuring-bind (&key size (class 'foreign-struct-type))
-      options
-    (let ((struct (make-instance class :name name))
-          (current-offset 0)
-          (max-align 1)
-          (firstp t))
-      (with-tentative-type-definition (name struct :struct)
-        ;; determine offsets
-        (dolist (slotdef slots)
-          (destructuring-bind (slotname type &key (count 1) offset) slotdef
-            (when (eq (canonicalize-foreign-type type) :void)
-              (simple-foreign-type-error type :struct
-                                         "In struct ~S: void type not allowed in field ~S"
-                                         name slotdef))
-            (let* ((slot-alignment (get-alignment type :normal firstp))
-                   (slot-offset (or offset (find-slot-offset slot-alignment current-offset)))
-                   (slot (make-struct-slot slotname slot-offset type count)))
-              (setf (gethash slotname (slots struct)) slot)
-              (when (> slot-alignment max-align)
-                (setf max-align slot-alignment))
-              (setf current-offset slot-offset)
-              (incf current-offset (* count (foreign-type-size type)))))
-          (setq firstp nil))
-        ;; calculate padding and alignment
-        (setf (alignment struct) max-align) ; See point 1 above.
-        (setf (size struct) (or size (find-structure-size max-align current-offset)))))))
-
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
         for slot in slot-names
@@ -811,22 +782,17 @@ any part of its arguments.")
 
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
-  (destructuring-bind (name . options)
+  (destructuring-bind (name . (&key size conc-name
+                                    (class (symbolicate name '-tclass))))
       (ensure-list name-and-options)
-    (let ((conc-name (getf options :conc-name))
-          (slots (omit-docstring fields)))
-      (remf options :conc-name)
-      (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
+    (let ((slots (omit-docstring fields)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
-         ,(when-let (class (getf options :class))
-            `(defclass ,class (foreign-struct-type
-                               translatable-foreign-type)
-               ()))
-         (notice-foreign-struct-definition ',name ',options ',slots)
+         (defclass ,class (foreign-struct-type translatable-foreign-type)
+           ())
+         (expand-notice-foreign-struct-definition ,name ,class ,slots ,size)
          ,@(when conc-name
-             (generate-struct-accessors name conc-name
-                                        (mapcar #'car slots)))
+             (generate-struct-accessors name conc-name (mapcar #'car slots)))
          ,@(when *defcstruct-hook*
              (apply *defcstruct-hook* name-and-options slots))
          (define-parse-method ,name ()
