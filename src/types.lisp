@@ -973,6 +973,19 @@ slots will be defined and stored."
 ;;; A union is a subclass of FOREIGN-STRUCT-TYPE in which all slots
 ;;; have an offset of zero.
 
+(defun union-slot-def->slot (previous-slot name type &key (count 1))
+  "Convert union slot definition to actual slot instance
+based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, and COUNT."
+  (declare (ignore previous-slot))
+  (check-type count (integer 1))
+  (when (eql (canonicalize-foreign-type type) :void)
+    (simple-foreign-type-error name :union
+                               "void type isn't allowed in union slot ~S"
+                               name))
+  (list :slot (make-struct-slot name 0 type count)
+        :size (* count (foreign-type-size type))
+        :alignment (foreign-type-alignment type)))
+
 ;;; See also the notes regarding ABI requirements in
 ;;; NOTICE-FOREIGN-STRUCT-DEFINITION
 (defun notice-foreign-union-definition (name-and-options slots)
