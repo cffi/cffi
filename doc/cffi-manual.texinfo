@@ -2744,14 +2744,16 @@ CFFI> (foreign-type-size 'foo)
 @node defcunion, defctype, defcstruct, Foreign Types
 @heading defcunion
 @subheading Syntax
-@Macro{defcunion name &body doc-and-slots @res{} name}
+@Macro{defcunion name-and-options &body doc-and-slots @res{} name}
+
+name-and-options ::= union-name | (union-name &key size)
 
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count) @}*
 
 @subheading Arguments and Values
 
 @table @var
-@item name
+@item union-name
 The name of new union type.
 
 @item docstring
@@ -2760,12 +2762,20 @@ A documentation string, ignored.
 @item slot-name
 A symbol naming the slot.
 
+@item size
+Use this option to override the size (in bytes) of the union.
+Can accept form that will be evaluated.
+Signals type-error when not evaluated to a non-negative integer.
+
 @item slot-type
 The type specifier for the slot.
 
 @item count
 Used to declare an array of size @var{count} inside the
-structure.
+union. Defaults to @code{1} as such an array and a single element
+are semantically equivalent.
+Can accept form that will be evaluated.
+Signals type-error when not evaluated to a positive integer.
 @end table
 
 @subheading Description
