@@ -703,3 +703,93 @@
   42
   (1 . 2)
   42)
+
+;; Check whether structure option :size can accept
+;; form(that is evaluated to non-negative number)
+;; instead of plain numbers.
+
+(deftest struct.size-accept-good-form
+    (let ((a 6) (b 6))
+      (defcstruct (size-accept-good-form :size (+ a b))
+        (first :int)
+        (second :int))
+      (foreign-type-size '(:struct size-accept-good-form)))
+  12)
+
+(deftest struct.size-accept-bad-form
+    (let ((a 6) (b 8))
+      (handler-case
+          (defcstruct (size-accept-bad-form :size (- a b))
+            (first :int)
+            (second :int))
+        (type-error () 'type-error)))
+  type-error)
+
+(deftest struct.size-accept-invalid-form
+    (let ((empty-list nil))
+      (handler-case
+          (defcstruct (size-accept-invalid-form :size (mapcar #'+ empty-list))
+            (first :int)
+            (second :int))
+        (type-error () 'type-error)))
+  type-error)
+
+;; Check whether structure slot option :count can accept
+;; form(that is evaluated to positive number)
+;; instead of plain numbers.
+
+(deftest struct.count-accept-good-form
+    (let ((a 8) (b 4))
+      (defcstruct count-accept-good-form
+        (first :char :count a)
+        (second :char :count b))
+      (foreign-type-size '(:struct count-accept-good-form)))
+  12)
+
+(deftest struct.count-accept-bad-form
+    (let ((a 8) (b 8))
+      (handler-case
+          (defcstruct count-accept-bad-form
+            (first :char :count a)
+            (second :char :count (- b a)))
+        (type-error () 'type-error)))
+  type-error)
+
+(deftest struct.count-accept-invalid-form
+    (let ((a "hello, world") (b 8))
+      (handler-case
+          (defcstruct count-accept-invalid-form
+            (first :char :count b)
+            (second :char :count a))
+        (type-error () 'type-error)))
+  type-error)
+
+;; Check whether structure slot option :offset can accept
+;; form(that is evaluated to non-negative number)
+;; instead of plain numbers.
+
+(deftest struct.offset-accept-good-form
+    (let ((a 8) (b 4))
+      (defcstruct offset-accept-good-form
+        (first :char :offset a)
+        (second :char :offset b))
+      (foreign-type-size '(:struct offset-accept-good-form)))
+  5)
+
+(deftest struct.offset-accept-bad-form
+    (let ((a -12) (b 8))
+      (handler-case
+          (defcstruct offset-accept-bad-form
+            (first :char :offset (+ a b))
+            (second :char :offset b))
+        (type-error () 'type-error)))
+  type-error)
+
+(deftest struct.offset-accept-invalid-form
+    (let ((a nil) (b 8))
+      (handler-case
+          (defcstruct offset-accept-invalid-form
+            (first :char :offset a)
+            (second :char :offset b))
+        (type-error () 'type-error)))
+  type-error)
