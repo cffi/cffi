@@ -742,21 +742,27 @@ based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, COUNT, and OFFSET."
         :offset (+ offset (* count (foreign-type-size type)))
         :alignment (get-alignment type :normal (null previous-slot))))
 
-(defmacro expand-notice-foreign-struct-definition (name class slot-defs size)
+(defmacro expand-notice-foreign-struct-definition (name-and-options class
+                                                   slot-defs)
   "Expand into `notice-foreign-type-definition' using
 a structure NAME, CLASS, SLOT-DEFS and SIZE."
   (with-unique-names (struct-alignment struct-size struct-slots)
-    `(with-defined-slots (slots ,slot-defs struct-slot-def->slot)
-       (let* ((,struct-alignment (apply #'max 1
-                                        (%get-slots-prop slots :alignment)))
-              (,struct-size ,(or size `(find-structure-size
-                                        ,struct-alignment
-                                        (getf (first (last slots)) :offset 0))))
-              (,struct-slots (%get-slots-prop slots :slot)))
-         (notice-foreign-type-definition ',name :struct ',class
-                                         ,struct-size
-                                         ,struct-alignment
-                                         ,struct-slots)))))
+    (destructuring-bind (name &key (size nil size-supplied-p)
+                              &allow-other-keys)
+        (ensure-list name-and-options)
+      `(with-defined-slots (slots ,slot-defs struct-slot-def->slot)
+         (let* ((,struct-alignment (apply #'max 1
+                                          (%get-slots-prop slots :alignment)))
+                (,struct-size ,(if size-supplied-p
+                                   size
+                                   `(find-structure-size
+                                     ,struct-alignment
+                                     (getf (first (last slots)) :offset 0))))
+                (,struct-slots (%get-slots-prop slots :slot)))
+           (notice-foreign-type-definition ',name :struct ',class
+                                           ,struct-size
+                                           ,struct-alignment
+                                           ,struct-slots))))))
 
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
@@ -782,15 +788,17 @@ any part of its arguments.")
 
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
-  (destructuring-bind (name . (&key size conc-name
-                                    (class (symbolicate name '-tclass))))
+  (destructuring-bind (name &key conc-name
+                            (class (symbolicate name '-tclass))
+                            &allow-other-keys)
       (ensure-list name-and-options)
     (let ((slots (omit-docstring fields)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
          (defclass ,class (foreign-struct-type translatable-foreign-type)
            ())
-         (expand-notice-foreign-struct-definition ,name ,class ,slots ,size)
+         (expand-notice-foreign-struct-definition ,name-and-options ,class
+                                                  ,slots)
          ,@(when conc-name
              (generate-struct-accessors name conc-name (mapcar #'car slots)))
          ,@(when *defcstruct-hook*
