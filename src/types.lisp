@@ -962,32 +962,38 @@ based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, and COUNT."
 
 ;;; See also the notes regarding ABI requirements in
 ;;; EXPAND-NOTICE-FOREIGN-STRUCT-DEFINITION
-(defmacro expand-notice-foreign-union-definition (name class slot-defs size)
+(defmacro expand-notice-foreign-union-definition (name-and-options class
+                                                  slot-defs)
   "Expand into `notice-foreign-type-definition' using
 a union NAME, CLASS, SLOT-DEFS and SIZE."
   (with-unique-names (union-size union-alignment union-slots)
-    `(with-defined-slots (slots ,slot-defs union-slot-def->slot)
-       (let* ((,union-size ,(or size '(apply #'max 0
-                                       (%get-slots-prop slots :size))))
-              (,union-alignment (apply #'max 0
-                                       (%get-slots-prop slots :alignment)))
-              (,union-slots (%get-slots-prop slots :slot)))
-         (notice-foreign-type-definition ',name :union ',class
-                                         ,union-size
-                                         ,union-alignment
-                                         ,union-slots)))))
+    (destructuring-bind (name &key (size nil size-supplied-p))
+        (ensure-list name-and-options)
+      `(with-defined-slots (slots ,slot-defs union-slot-def->slot)
+         (let* ((,union-size ,(if size-supplied-p
+                                  size
+                                  '(apply #'max 0
+                                    (%get-slots-prop slots :size))))
+                (,union-alignment (apply #'max 0
+                                         (%get-slots-prop slots :alignment)))
+                (,union-slots (%get-slots-prop slots :slot)))
+           (notice-foreign-type-definition ',name :union ',class
+                                           ,union-size
+                                           ,union-alignment
+                                           ,union-slots))))))
 
 (define-parse-method :union (name)
   (funcall (find-type-parser name :union)))
 
 (defmacro defcunion (name-and-options &body fields)
   "Define the layout of a foreign union."
-  (destructuring-bind (name &key size)
+  (destructuring-bind (name &key &allow-other-keys)
       (ensure-list name-and-options)
     (let ((class 'foreign-union-type)
           (slots (omit-docstring fields)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
-         (expand-notice-foreign-union-definition ,name ,class ,slots ,size)
+         (expand-notice-foreign-union-definition ,name-and-options ,class
+                                                 ,slots)
          (define-parse-method ,name ()
            (parse-deprecated-struct-type ',name :union))
          '(:union ,name)))))
