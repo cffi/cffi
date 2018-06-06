@@ -672,16 +672,6 @@ depending on the last slot offset."
         last-slot-offset
         (+ last-slot-offset tail-padding))))
 
-(defun find-slot-offset (slot-alignment previous-slot-offset)
-  "Find an offset of the slot based on SLOT-ALIGNMENT AND PREVIOUS-SLOT-OFFSET.
-Each slot is assigned to the lowest available offset
-with the appropriate alignment. This may require internal
-padding, depending on the previous slot."
-  (let ((rem (mod previous-slot-offset slot-alignment)))
-    (if (zerop rem)
-        previous-slot-offset
-        (+ previous-slot-offset (- slot-alignment rem)))))
-
 (defmacro with-tentative-type-definition ((name value namespace) &body body)
   (once-only (name namespace)
     `(unwind-protect-case ()
@@ -724,23 +714,33 @@ that are collected into SLOTS-VAR. Then evaluate BODY forms."
   "Convert each slot plist from SLOTS into list of values of PROP-NAME."
   (mapcar #'(lambda (slot) (getf slot prop-name)) slots))
 
-(defun struct-slot-def->slot (previous-slot name type &key (count 1) offset)
+(defun find-slot-offset (slot-type previous-slot)
+  "Find an offset of the slot based on SLOT-TYPE AND PREVIOUS-SLOT.
+Each slot is assigned to the lowest available offset
+with the appropriate alignment. This may require internal
+padding, depending on the previous slot."
+  (let* ((first-slot-p (null previous-slot))
+         (slot-alignment (get-alignment slot-type :normal first-slot-p))
+         (previous-slot-offset (getf previous-slot :offset 0))
+         (rem (mod previous-slot-offset slot-alignment)))
+    (if (zerop rem)
+        previous-slot-offset
+        (+ previous-slot-offset (- slot-alignment rem)))))
+
+(defun struct-slot-def->slot (previous-slot name type
+                              &key (count 1)
+                                (offset (find-slot-offset type previous-slot)))
   "Convert structure slot definition to actual slot instance
 based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, COUNT, and OFFSET."
   (check-type count (integer 1))
-  (check-type offset (or (integer 0) null))
+  (check-type offset (integer 0))
   (when (eql (canonicalize-foreign-type type) :void)
     (simple-foreign-type-error type :struct
                                "void type isn't allowed in struct slot ~S"
                                name))
-  (let* ((first-slot-p (null previous-slot))
-         (alignment (get-alignment type :normal first-slot-p))
-         (previous-slot-offset (getf previous-slot :offset 0))
-         (auto-offset (find-slot-offset alignment previous-slot-offset))
-         (final-offset (or offset auto-offset)))
-    (list :slot (make-struct-slot name final-offset type count)
-          :offset (+ final-offset (* count (foreign-type-size type)))
-          :alignment alignment)))
+  (list :slot (make-struct-slot name offset type count)
+        :offset (+ offset (* count (foreign-type-size type)))
+        :alignment (get-alignment type :normal (null previous-slot))))
 
 (defmacro expand-notice-foreign-struct-definition (name class slot-defs size)
   "Expand into `notice-foreign-type-definition' using
