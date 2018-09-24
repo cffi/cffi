@@ -6685,6 +6685,13 @@ constant will be a symbol of the same name interned in the current
 package.
 @end deffn
 
+@deffn {Grovel Form} feature lisp-feature-name c-name &key feature-list
+
+Adds @var{lisp-feature-name} to the list @var{feature-list} if the @var{c-name}
+string is known to the C preprocessor. @var{feature-list} defaults
+to @code{cl:*features*}.
+@end deffn
+
 @deffn {Grovel Form} define name &optional value
 
 Defines an additional C preprocessor symbol, which is useful for

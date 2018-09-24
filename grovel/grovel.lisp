@@ -354,6 +354,16 @@ int main(int argc, char**argv) {
   (dotimes (i (length c-names))
     (format out "~&#endif~%")))
 
+(define-grovel-syntax feature (lisp-feature-name c-name &key (feature-list 'cl:*features*))
+  (c-section-header out "feature" lisp-feature-name)
+  (format out "~&#ifdef ~A~%" c-name)
+  (c-format out "(cl:pushnew '")
+  (c-print-symbol out lisp-feature-name t)
+  (c-format out " ")
+  (c-print-symbol out feature-list)
+  (c-format out ")~%")
+  (format out "~&#endif~%"))
+
 (define-grovel-syntax cunion (union-lisp-name union-c-name &rest slots)
   (let ((documentation (when (stringp (car slots)) (pop slots))))
     (c-section-header out "cunion" union-lisp-name)
