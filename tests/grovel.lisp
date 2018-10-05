@@ -31,25 +31,28 @@
     (cffi-grovel::invoke "echo" "test")
   nil nil 0)
 
+(defun grovel-forms (forms &key (quiet t))
+  (uiop:with-temporary-file (:stream grovel-stream :pathname grovel-file)
+    (with-standard-io-syntax
+      (with-open-stream (*standard-output* grovel-stream)
+        (let ((*package* (find-package :keyword)))
+          (mapc #'write forms))))
+    (let ((lisp-file (let ((*debug-io* (if quiet (make-broadcast-stream) *debug-io*)))
+                       (cffi-grovel:process-grovel-file grovel-file))))
+      (unwind-protect
+           (load lisp-file)
+        (uiop:delete-file-if-exists lisp-file)))))
+
 (defun bug-1395242-helper (enum-type base-type constant-name)
   (check-type enum-type (member constantenum cenum))
   (check-type base-type string)
   (check-type constant-name string)
   (let ((enum-name (intern (symbol-name (gensym))))
         (base-type-name (intern (symbol-name (gensym)))))
-    (uiop:with-temporary-file (:stream grovel-stream :pathname grovel-file)
-      ;; Write the grovel file
-      (with-open-stream (*standard-output* grovel-stream)
-        (write `(ctype ,base-type-name ,base-type))
-        (write `(,enum-type (,enum-name :base-type ,base-type-name)
-                            ((:value ,constant-name)))))
-      ;; Get the value of :inaddr-broadcast
-      (let ((lisp-file (cffi-grovel:process-grovel-file grovel-file)))
-        (unwind-protect
-             (progn
-               (load lisp-file)
-               (cffi:foreign-enum-value enum-name :value))
-          (uiop/filesystem:delete-file-if-exists lisp-file))))))
+    (grovel-forms `((ctype ,base-type-name ,base-type)
+                    (,enum-type (,enum-name :base-type ,base-type-name)
+                                ((:value ,constant-name)))))
+    (cffi:foreign-enum-value enum-name :value)))
 
 (deftest bug-1395242
     (labels
@@ -72,3 +75,22 @@
                ("uint32_t" ("UINT32_MAX" 4294967295) ("INT8_MIN" 4294967168))
                ("int32_t" ("INT32_MIN" -2147483648) ("INT32_MAX" 2147483647)))))
   t)
+
+(defvar *grovelled-features*)
+
+(deftest grovel-feature
+    (let ((*grovelled-features* nil))
+      (grovel-forms `((in-package :cffi-tests)
+                      (include "limits.h")
+                      (feature grovel-test-feature "CHAR_BIT")
+                      (feature :char-bit "CHAR_BIT"
+                               :feature-list *grovelled-features*)
+                      (feature :inexistent-grovel-feature
+                               "INEXISTENT_CFFI_GROVEL_FEATURE"
+                               :feature-list *grovelled-features*)))
+      (unwind-protect
+           (values (and (member 'grovel-test-feature *features*) t)
+                   (and (member :char-bit *grovelled-features*) t)
+                   (member :inexistent-grovel-feature *grovelled-features*))
+        (alexandria:removef *features* 'grovel-test-feature)))
+  t t nil)
