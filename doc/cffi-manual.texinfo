@@ -2578,7 +2578,7 @@ which is @code{:int} by default.
   ;; @lispcmt{etc@dots{}}
 
 CFFI> (foreign-bitfield-symbols 'open-flags #b1101)
-@result{} (:RDONLY :WRONLY :NONBLOCK :APPEND)
+@result{} (:WRONLY :NONBLOCK :APPEND)
 
 CFFI> (foreign-bitfield-value 'open-flags '(:rdwr :creat))
 @result{} 514   ; #x0202
@@ -3077,7 +3077,7 @@ list of symbols that correspond to @var{value} in @var{type}.
   (flag-b 2)
   (flag-c 4))
 
-CFFI> (foreign-bitfield-symbols 'boolean #b101)
+CFFI> (foreign-bitfield-symbols 'flags #b101)
 @result{} (FLAG-A FLAG-C)
 @end lisp
 
