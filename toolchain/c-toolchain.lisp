@@ -295,7 +295,8 @@ is bound to a temporary file name, then atomically renaming that temporary file 
              ;; ,@`("libtool" "--mode=link" ,*cc* ,@*cc-flags* "-static" "-o" ,output-file)
              ;; "Solution": never link .a's into further .a's, only link .o's into .a's,
              ;; which implied changes that are now the case in ASDF 3.2.0.
-             #+bsd ,@`("ar" "rcs" ,output-file) ;; NB: includes darwin
+             #+darwin ,@`("libtool" "-static" "-o" ,output-file)
+             #+(:and bsd (:not darwin)) ,@`("ar" "rcs" ,output-file)
              #+linux ,@`("ar" "rcsDT" ,output-file)
              #+windows ,@`("lib" "-nologo" ,(strcat "-out:" (native-namestring output-file)))
              ,@inputs))
