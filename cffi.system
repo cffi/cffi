@@ -119,6 +119,7 @@
 ;;;
 ;;;
 
+#+nil
 (mk:defsystem :cffi/c2ffi
   :source-pathname *cffi-source-directory*
   :binary-pathname *cffi-binary-directory*
@@ -322,3 +323,41 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
 
 #+nil
 (mk:oos :cffi-tests/example :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+
+(mk:defsystem :cffi-c2ffi
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:alexandria :cffi)
+  :components
+  ((:module "src/c2ffi"
+    :components
+    ((:file "package")
+     (:file "c2ffi" :depends-on ("package"))
+     #+nil
+     (:file "asdf" :depends-on ("package" "c2ffi"))))))
+
+#+nil
+(mk:compile-system :cffi-c2ffi)
+#+nil
+(mk:load-system :cffi-c2ffi :compile-during-load t)
+
+(mk:defsystem :cffi-c2ffi-generator
+  :source-pathname *cffi-source-directory*
+  :binary-pathname *cffi-binary-directory*
+  :source-extension "lisp"
+  :depends-on (:alexandria :cffi-c2ffi :cl-ppcre :cl-json)
+  :components
+  ((:module "src/c2ffi"
+    :components
+    ((:file "generator")
+     (:file "mk-defsystem-c2ffi-hooks")))))
+
+#+nil
+(mk:load-system :cffi-c2ffi-generator :compile-during-load t)

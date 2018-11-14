@@ -23,6 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+#||
 (uiop:define-package #:cffi/c2ffi
   (:mix #:uiop
         #:alexandria
@@ -46,6 +47,11 @@
                 #:selfward-operation
                 #:load-system
                 #:component-loaded-p)
+
+||#
+
+(defpackage "CFFI/C2FFI"
+  (:use "CL")
   (:export
    #:c2ffi-file
    #:camelcased?
