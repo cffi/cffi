@@ -219,7 +219,7 @@
         (%foreign-enum-keyword type-obj value :errorp errorp))))
 
 (defmethod translate-to-foreign (value (type foreign-enum))
-  (if (keywordp value)
+  (if (typep value 'enum-key)
       (%foreign-enum-value type value :errorp t)
       value))
 
@@ -233,7 +233,7 @@
 
 (defmethod expand-to-foreign (value (type foreign-enum))
   (once-only (value)
-    `(if (keywordp ,value)
+    `(if (typep ,value 'enum-key)
          (%foreign-enum-value ,type ,value :errorp t)
          ,value)))
 
