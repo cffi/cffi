@@ -57,7 +57,7 @@
   :source-pathname *cffi-source-directory*
   :binary-pathname *cffi-binary-directory*
   :source-extension "lisp"
-  :depends-on (:uiop :alexandria :trivial-features :babel)
+  :depends-on (:uiop :alexandria :trivial-features :babel :defsystem)
   :components
   ((:module "src"
     :components
@@ -155,6 +155,31 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
   (:export "MAKE-CONDITION-VARIABLE" "CONDITION-NOTIFY" "CONDITION-WAIT"
    "MAKE-LOCK" "WITH-LOCK-HELD" "MAKE-THREAD"))
 
+(mk:define-language
+ :c-test-lib
+ :source-extension "c"
+ :binary-extension "so"
+ :compiler #'(lambda (input-file &rest args &key output-file)
+	       (format t "~S~%" `(compile-c-test-lib ,input-file ,@args))
+	       (user::with-open-pipe (stream (format nil "cc -o ~S ~S -shared -Wall -std=c99 -pedantic -fPIC -lm" (namestring output-file) (namestring input-file)))
+		 (format t "~A~&" (user::slurp-stream stream))
+		 (values output-file t t)))
+ :loader #'(lambda (filespec &rest args)
+	     (format t "~S~%" `(load-c-test-lib ,filespec ,@args))
+	     (funcall (find-symbol "LOAD-FOREIGN-LIBRARY" :cffi)
+		      ;;cffi:load-foreign-library
+		      (file-namestring filespec)
+		      :search-path (list (make-pathname :name nil :type nil :version nil :defaults filespec)))))
+
+#+nil
+(mk:defsystem :foo
+  :source-pathname "/dev/shm/foo/"
+  :binary-pathname (binary-directory "/dev/shm/foo/")
+  :components ((:file "foo" :language :c-test-lib)))
+
+#+nil
+(mk:compile-system :foo)
+
 (mk:defsystem :cffi-tests
   :source-pathname *cffi-source-directory*
   :binary-pathname *cffi-binary-directory*
@@ -164,11 +189,12 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
   ((:module "tests"
     :components
     (;;:serial
-     #+nil
      (:file "libtest" :language :c-test-lib)
+     (:file "libtest2" :language :c-test-lib)
+     (:file "libfsbv" :language :c-test-lib)
      (:file "package")
-     (:file "bindings")
-     (:file "funcall")
+     (:file "bindings" :depends-on ("package" "libtest" "libtest2" "libfsbv"))
+     (:file "funcall" :depends-on ("bindings"))
      (:file "defcfun")
      (:file "callbacks")
      (:file "foreign-globals")
@@ -198,6 +224,7 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
 
 (progn (require 'rt)
 (package-add-nicknames :regression-test :rt))
+(require 'bordeaux-threads)
 ||#
 
 
@@ -316,7 +343,7 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
   ((:module "examples" :components
      ((:file "package")
       ("wrapper-example" :depends-on ("package") :language :cffi-wrapper)
-      ;;generaated "wrapper-example.grovel-tmp"
+      ;;generated "wrapper-example.grovel-tmp"
       ("grovel-example" :depends-on ("package") :language :cffi-grovel)
       ;;generated "grovel-example__grovel.grovel-tmp"
       (:file "main-example" :depends-on ("package"))))))

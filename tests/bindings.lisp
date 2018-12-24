@@ -92,10 +92,19 @@
 ;;; loading this file.  We don't use *LOAD-TRUENAME* because the fasl
 ;;; file may be in a different directory than the source with certain
 ;;; ASDF extensions loaded.
+#+nil
 (defun load-directory ()
   (let ((here #.(or *compile-file-truename* *load-truename*)))
     (make-pathname :name nil :type nil :version nil
                    :defaults here)))
+
+(defun load-directory ()
+  (make-pathname :name nil :version nil :type nil
+                 :defaults (mk::component-full-pathname
+                            (mk::find-component 'cffi-tests '(tests libtest))
+                            :binary)))
+#+nil
+(load-directory)
 
 (defun load-test-libraries ()
   (let ((*foreign-library-directories* (list (load-directory))))
