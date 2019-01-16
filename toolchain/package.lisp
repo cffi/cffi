@@ -40,6 +40,9 @@
    #:invoke #:invoke-build #:cc-compile
    #:link-static-library #:link-shared-library
    #:link-executable #:link-lisp-executable
+   ;; Functions from static-link
+   #:static-image-new-features
+   #:static-image-remove-features-on-dump
    ;; ASDF classes
    #:c-file #:o-file
    #:static-runtime-op #:static-image-op #:static-program-op

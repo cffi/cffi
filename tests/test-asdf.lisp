@@ -28,12 +28,19 @@
 (in-package #:cffi-tests)
 
 #.(when (cffi-toolchain::static-ops-enabled-p)
-    '(deftest test-static-program
-      (progn
-        (asdf:operate :static-program-op :cffi-tests/example)
-        (let ((program (asdf:output-file :static-program-op :cffi-tests/example)))
-          (uiop:run-program `(,(native-namestring program) "1" "2 3") :output :lines)))
-      ("Arguments: 1 \"2 3\"" "hello, world!") nil 0))
+    '(progn
+      (defmethod cffi-toolchain:static-image-new-features
+          (o (s (eql (asdf:find-system :cffi-tests/example))))
+        (list :cffi-tests-a :cffi-tests-b))
+      (defmethod cffi-toolchain:static-image-remove-features-on-dump
+          (o (s (eql (asdf:find-system :cffi-tests/example))))
+        (list :cffi-tests-b))
+      (deftest test-static-program
+       (progn
+         (asdf:operate :static-program-op :cffi-tests/example)
+         (let ((program (asdf:output-file :static-program-op :cffi-tests/example)))
+           (uiop:run-program `(,(native-namestring program) "1" "2 3") :output :lines)))
+       ("Arguments: 1 \"2 3\"" ":CFFI-TESTS-A" "hello, world!") nil 0)))
 
 (deftest test-asdf-load
     (progn
