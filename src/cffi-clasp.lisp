@@ -137,13 +137,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 (defun make-shareable-byte-vector (size)
   "Create a Lisp vector of SIZE bytes that can passed to
 WITH-POINTER-TO-VECTOR-DATA."
-  (make-array size :element-type '(unsigned-byte 8)))
-
-;; frgo, 2016-07-02: TODO: Implemenent!
-;; (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
-;;   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-;;   `(let ((,ptr-var (si:make-foreign-data-from-array ,vector)))
-;;      ,@body))
+  ;; borrowed from static.vectors
+  (core:make-static-vector '#.(upgraded-array-element-type '(unsigned-byte 8)) size))
+  
+;; borrowed from static.vectors
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  `(let ((,ptr-var (core:static-vector-pointer ,vector 0)))
+     ,@body))
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
