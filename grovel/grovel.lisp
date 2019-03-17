@@ -174,6 +174,7 @@ int main(int argc, char**argv) {
   (%process-grovel-form (form-kind form) out (cdr form)))
 
 (defun form-kind (form)
+  "Returns a symbol from the CFFI-GROVEL package representing FORM's kind."
   ;; Using INTERN here instead of FIND-SYMBOL will result in less
   ;; cryptic error messages when an undefined grovel/wrapper form is
   ;; found.
@@ -738,6 +739,11 @@ string."
 (defvar *lisp-forms*)
 
 (defun generate-c-lib-file (input-file output-defaults)
+  "Translate the wrapper forms in INPUT-FILE to C code and write the results to
+a C file. If the file already exists, overwrite it.
+
+Returns two values: the C file's pathname, and a list of the wrapper forms that
+were translated to C code. "
   (let ((*lisp-forms* nil)
         (c-file (make-c-file-name output-defaults "__wrapper")))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
@@ -845,6 +851,7 @@ string."
 ;;; FIXME: this function is not complete.  Should probably follow
 ;;; typedefs?  Should definitely understand pointer types.
 (defun c-type-name (typespec)
+  "Returns TYPESPEC's C typename as a string."
   (let ((spec (ensure-list typespec)))
     (if (stringp (car spec))
         (car spec)
