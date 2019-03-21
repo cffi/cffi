@@ -862,6 +862,7 @@ were translated to C code. "
           ((:unsigned-long :ulong) "unsigned long")
           ((:long-long :llong) "long long")
           ((:unsigned-long-long :ullong) "unsigned long long")
+          (:struct (strcat "struct " (cffi::foreign-name (cadr spec) nil)))
           (:pointer (if (cdr spec)
                         (strcat (c-type-name (cadr spec)) "*")
                         "void*"))
