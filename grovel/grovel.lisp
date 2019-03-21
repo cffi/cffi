@@ -889,7 +889,9 @@ were translated to C code. "
       ;; output C code
       (format out "~A ~A" (c-type-name rettype) foreign-name-wrap)
       (format out "(~{~{~A ~A~}~^, ~})~%" fargs)
-      (format out "{~%  return ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames)
+      (if (eq rettype :void)
+          (format out "{~%  ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames)
+          (format out "{~%  return ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames))
       ;; matching bindings
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
