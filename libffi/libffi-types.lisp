@@ -71,8 +71,9 @@
 #-(or freebsd windows)
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI"))
- #-x86-64
+ #+(not x86-64)                         ;since 3.3-rc0 
  ((:sysv "FFI_SYSV"))
+ #+(and x86-64)
  ((:unix64 "FFI_UNIX64")))
 
 (ctype ffi-abi "ffi_abi")
