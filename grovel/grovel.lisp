@@ -275,11 +275,22 @@ int main(int argc, char**argv) {
 (define-grovel-syntax ffi-typedef (new-type base-type)
   (c-format out "(cffi:defctype ~S ~S)~%" new-type base-type))
 
+
+(defun append-new (&rest lists)
+  (reduce (lambda (a b)
+            (append a (loop for x in b unless (find x a :test #'equal) collect x)))
+          lists))
+
+(define-modify-macro appendf-new (&rest lists) append-new
+  "Modify-macro for APPEND-NEW. Appends LISTS to the place designated
+by the first argument.")
+
+
 (define-grovel-syntax flag (&rest flags)
-  (appendf *cc-flags* (parse-command-flags-list flags)))
+  (appendf-new *cc-flags* (parse-command-flags-list flags)))
 
 (define-grovel-syntax cc-flags (&rest flags)
-  (appendf *cc-flags* (parse-command-flags-list flags)))
+  (appendf-new *cc-flags* (parse-command-flags-list flags)))
 
 (define-grovel-syntax pkg-config-cflags (pkg &key optional)
   (let ((output-stream (make-string-output-stream))
@@ -289,8 +300,8 @@ int main(int argc, char**argv) {
         (progn
           (run-program program+args
                        :output (make-broadcast-stream output-stream *debug-io*)
-                       :error-output output-stream)
-          (appendf *cc-flags*
+                       :error-output *debug-io*)
+          (appendf-new *cc-flags*
                    (parse-command-flags (get-output-stream-string output-stream))))
       (error (e)
         (let ((message (format nil "~a~&~%~a~&"
@@ -835,7 +846,7 @@ string."
     (write-line string out)))
 
 (define-wrapper-syntax flag (&rest flags)
-  (appendf *cc-flags* (parse-command-flags-list flags)))
+  (appendf-new *cc-flags* (parse-command-flags-list flags)))
 
 (define-wrapper-syntax proclaim (&rest proclamations)
   (push `(proclaim ,@proclamations) *lisp-forms*))
