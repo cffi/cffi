@@ -94,7 +94,7 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     :source-extension "h"
     :binary-extension (cdr mk::*filename-extensions*))
 
-(defun mk-clean (system &key dry-run)
+(defun mk-clean-c2ffi (system &key dry-run)
   (let (ret)
     (mk::%mk-traverse
      (mk:find-system system)

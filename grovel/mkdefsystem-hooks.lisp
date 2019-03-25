@@ -59,6 +59,65 @@
     :source-extension (car mk::*filename-extensions*)
     :binary-extension (cdr mk::*filename-extensions*))
 
+;; TODO rename - and wrapper
+(defun mk-clean-grovel (system &key dry-run)
+  (let (ret)
+    (mk::%mk-traverse
+     (mk:find-system system)
+     #'(lambda (c)
+	 (when (and (eq (mk::component-type c) :file)
+		    (or (eq (mk::component-language c) :cffi-grovel)
+			(eq (mk::component-language c) :cffi-wrapper)))
+	   (let* ((input (mk::component-full-pathname c :source))
+		  (output (mk::component-full-pathname c :binary)))
+	     (ecase (mk::component-language c)
+	       (:cffi-grovel
+		(let* ((c-file (generate-c-file input output))
+		       (o-file (make-o-file-name c-file))
+		       (exe-file (make-exe-file-name c-file))
+		       (lisp-file (tmp-lisp-file-name c-file)))
+		  (setq ret (append (list c-file o-file exe-file lisp-file
+					  output)
+				    ret))))
+	       (:cffi-wrapper
+		(let* ((c-file (generate-c-lib-file input output))
+		       (o-file (make-o-file-name output "__wrapper"))
+		       (lib-soname (pathname-name input))
+		       (lib-file (make-so-file-name
+				  (make-soname lib-soname output)))
+		       (lisp-file (tmp-lisp-file-name output)))
+		  (setq ret (append (list c-file o-file lib-file lisp-file)
+				    ret))))))))
+     nil
+     t)
+    (prog1
+	ret
+      (when (and nil dry-run)
+	(mapcar #'delete-file ret)
+	))))
+
+#+nil
+(mk-clean-grovel :osicat)
+
+#+nil
+(remove-if 
+ 'probe-file
+'(#P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/wrappers__wrapper.c"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/wrappers__wrapper.o"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/wrappers.so"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/wrappers.grovel-tmp.lisp"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/unixint__grovel.c"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/unixint__grovel.o"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/unixint__grovel"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/unixint__grovel.grovel-tmp.lisp"
+ "/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/unixint.ufasl" #P
+"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/basic-unixint__grovel.c"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/basic-unixint__grovel.o"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/basic-unixint__grovel"
+ #P"/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/basic-unixint__grovel.grovel-tmp.lisp"
+ "/home/madhu/fasl/osicat-glibc2.23/binary-lispworks/6.1.1/posix/basic-unixint.ufasl"))
+
+
 
 #||
 ;; HERE
