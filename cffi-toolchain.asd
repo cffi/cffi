@@ -40,7 +40,7 @@
     :components
     (;; This is a plain copy of bundle.lisp from ASDF 3.2.0
      ;; in case your asdf isn't up to snuff.
-     (:file "bundle" :if-feature (#.(if (version< "3.2.0" (asdf-version)) :or :and)))
+     (:file "bundle" :if-feature (#.(if (version< "3.1.8" (asdf-version)) :or :and)))
      (:file "package")
      (:file "c-toolchain" :depends-on ("package"))
      (:file "static-link" :depends-on ("bundle" "c-toolchain"))))))
