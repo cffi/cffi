@@ -94,3 +94,13 @@
                    (member :inexistent-grovel-feature *grovelled-features*))
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
+
+(deftest c-type-name-structs
+    (cffi-grovel::c-type-name '(:struct timeval))
+  "struct timeval")
+
+(deftest c-type-name-pointers
+    (values (cffi-grovel::c-type-name '(:pointer :int))
+            (cffi-grovel::c-type-name '(:pointer (:pointer :int))))
+  "int*"
+  "int**")
