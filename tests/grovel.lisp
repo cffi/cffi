@@ -95,6 +95,45 @@
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
 
+(deftest defwrapper-void-return-value
+    (let (cffi-grovel::*lisp-forms*
+          (code-string (make-array '(0) :adjustable t :fill-pointer 0 :element-type 'base-char)))
+      (with-output-to-string (out code-string)
+        (cffi-grovel::process-wrapper-form out '(defwrapper void-return-test :void
+                                                 (dummy-arg :int)))
+        (values (third (first cffi-grovel::*lisp-forms*)) ; the return type
+                code-string)))
+  :void
+  "void void_return_test_cffi_wrap(int dummy_arg)
+{
+  void_return_test(dummy_arg);
+}
+
+")
+
+(deftest defwrapper-pointer-test
+    (let (cffi-grovel::*lisp-forms*
+          (code-string (make-array '(0) :adjustable t :fill-pointer 0 :element-type 'base-char)))
+      (with-output-to-string (out code-string)
+        (cffi-grovel::process-wrapper-form out '(defwrapper pointer-test (:pointer c-type)
+                                                 (pointer-arg (:pointer c-type))))
+        (values (third (first cffi-grovel::*lisp-forms*)) ; the return type
+                (second (fourth (first cffi-grovel::*lisp-forms*))) ; the arg type
+                code-string)))
+  ;; the full form expected to be pushed onto cffi-grovel::*lisp-forms*. We're
+  ;; only interested in the return and arg types for this test.
+  ;; (CFFI:DEFCFUN ("pointer_test_cffi_wrap" POINTER-TEST :CONVENTION :CDECL :LIBRARY :DEFAULT)
+  ;;     (:POINTER C-TYPE)
+  ;;   (POINTER-ARG (:POINTER C-TYPE)))
+  (:pointer c-type)
+  (:pointer c-type)
+  "c_type* pointer_test_cffi_wrap(c_type* pointer_arg)
+{
+  return pointer_test(pointer_arg);
+}
+
+")
+
 (deftest c-type-name-structs
     (cffi-grovel::c-type-name '(:struct timeval))
   "struct timeval")
