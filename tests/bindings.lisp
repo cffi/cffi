@@ -53,6 +53,10 @@
   (t (:default "libm")))
 
 (defmacro deftest (name &rest body)
+  "A thin wrapper around RT:DEFTEST. If NAME is a symbol, behavior is identical
+to RT:DEFTEST. If NAME is a list of the form (<symbol> :expected-to-fail <test-form>)
+then the test name <symbol> will be present in RT::*EXPECTED-FAILURES* when the
+test is run if <test-form> returns true."
   (destructuring-bind (name &key expected-to-fail)
       (alexandria:ensure-list name)
     (let ((result `(rt:deftest ,name ,@body)))
