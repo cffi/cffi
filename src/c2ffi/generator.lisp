@@ -471,6 +471,8 @@
               (function-pointer-type-name))
              ((equal tag ":function")
               (unsupported-type json-entry))
+             ((equal tag ":bitfield")
+              (unsupported-type json-entry))
              (t
               (assert (not (alexandria:starts-with #\: tag)))
               (let ((cffi-name (json-name-to-cffi-name tag :type)))
