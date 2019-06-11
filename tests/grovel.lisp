@@ -95,7 +95,7 @@
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
 
-(deftest defwrapper-void-return-value
+(deftest defwrapper.void
     (let (cffi-grovel::*lisp-forms*
           (code-string (make-array '(0) :adjustable t :fill-pointer 0 :element-type 'base-char)))
       (with-output-to-string (out code-string)
@@ -111,7 +111,7 @@
 
 ")
 
-(deftest defwrapper-pointer-test
+(deftest defwrapper.pointer
     (let (cffi-grovel::*lisp-forms*
           (code-string (make-array '(0) :adjustable t :fill-pointer 0 :element-type 'base-char)))
       (with-output-to-string (out code-string)
@@ -134,11 +134,11 @@
 
 ")
 
-(deftest c-type-name-structs
+(deftest c-type-name.struct
     (cffi-grovel::c-type-name '(:struct timeval))
   "struct timeval")
 
-(deftest c-type-name-pointers
+(deftest c-type-name.pointer
     (values (cffi-grovel::c-type-name '(:pointer :int))
             (cffi-grovel::c-type-name '(:pointer (:pointer :int))))
   "int*"
