@@ -374,7 +374,11 @@ This will need to be extended as we test on more OSes."
                (concatenate 'string
                             (second thing)
                             (default-library-suffix))))
-          (load-foreign-library-path name library-path search-path)))
+          (load-foreign-library-path name library-path
+                                     ;; ;madhu 190627 handle (:default name :search-path)
+                                     (append (ensure-list search-path)
+                                             (getf thing :search-path)
+                                             ))))
        (:or (try-foreign-library-alternatives name (rest thing) search-path))))))
 
 (defun %do-load-foreign-library (library search-path)
@@ -388,7 +392,11 @@ This will need to be extended as we test on more OSes."
                 (with-slots (handle pathname) lib
                   (setf (values handle pathname)
                         (load-foreign-library-helper
-                         name spec (foreign-library-search-path lib)))
+                         name spec
+                         ;;madhu 190627 search-path is ignored if LIBRARY
+                         ;; is a symbol. fix that:
+                         (append (ensure-list search-path)
+                                 (foreign-library-search-path lib))))
                   (setf (foreign-library-load-state lib) :external)))))
            lib))
     (etypecase library
