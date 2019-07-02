@@ -874,10 +874,10 @@ Each var can be of the form:
 		 (if (listp var)
 		     (let ((p1 (first var)) (p2 (second var)) (p3 (third var)))
 		       (if (eq p1 :pointer)	
-			   `(p2 (foreign-slot-pointer ,ptr-var ',type ',p2))
+			   `(,p2 (foreign-slot-pointer ,ptr-var ',type ',p2))
 			   (if (eq p2 :pointer)
-			       `(p1 (foreign-slot-pointer ,ptr-var ',type ',p3))
-			       `(p1 (foreign-slot-value ,ptr-var ',type ',p2)))))
+			       `(,p1 (foreign-slot-pointer ,ptr-var ',type ',p3))
+			       `(,p1 (foreign-slot-value ,ptr-var ',type ',p2)))))
 		     `(,var (foreign-slot-value ,ptr-var ',type ',var))))
          ,@body))))
 
