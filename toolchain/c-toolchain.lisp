@@ -221,10 +221,10 @@
 (defun common-toolchain-parameters ()
   (setf *cc-flags*
         (append
+         (split-cflags (getenv "CFLAGS"))
          *cc-flags*
          ;; For MacPorts
          #+darwin (list "-I" "/opt/local/include/")
-         (split-cflags (getenv "CFLAGS"))
          ;; FreeBSD non-base header files
          #+(or freebsd openbsd) (list "-I" "/usr/local/include/"))))
 
