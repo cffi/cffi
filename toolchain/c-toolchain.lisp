@@ -229,12 +229,13 @@
          #+(or freebsd openbsd) (list "-I" "/usr/local/include/"))))
 
 (defun ensure-toolchain-parameters ()
-  #+clisp (unless *cc* (clisp-toolchain-parameters))
-  #+ecl (unless *cc* (ecl-toolchain-parameters))
-  #+mkcl (unless *cc* (mkcl-toolchain-parameters))
-  #+sbcl (unless *cc* (sbcl-toolchain-parameters))
-  (unless *cc* (default-toolchain-parameters))
-  (common-toolchain-parameters))
+  (unless *cc*
+    #+clisp (clisp-toolchain-parameters)
+    #+ecl (ecl-toolchain-parameters)
+    #+mkcl (mkcl-toolchain-parameters)
+    #+sbcl (sbcl-toolchain-parameters)
+    (unless *cc* (default-toolchain-parameters))
+    (common-toolchain-parameters)))
 
 ;; Actually initialize toolchain parameters
 (ignore-errors (ensure-toolchain-parameters))
