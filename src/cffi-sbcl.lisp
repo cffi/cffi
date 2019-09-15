@@ -167,7 +167,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 
 (declaim (inline make-shareable-byte-vector))
 (defun make-shareable-byte-vector (size)
-  "Create a Lisp vector of SIZE bytes can passed to
+  "Create a Lisp vector of SIZE bytes that can be passed to
 WITH-POINTER-TO-VECTOR-DATA."
   ; (declare (type sb-int:index size))
   (make-array size :element-type '(unsigned-byte 8)))
