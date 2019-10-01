@@ -493,7 +493,7 @@ Used with jna-4.0.0 or later.")
           else do (setf return-type type)
           finally (return (values types fargs return-type)))))
 
-(defmacro %foreign-funcall (name args &key library convention)
+(defmacro %foreign-funcall (name args &key (library :default) convention)
   (declare (ignore convention))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
