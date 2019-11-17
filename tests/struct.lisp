@@ -709,7 +709,7 @@
 
 (deftest struct.with-foreign-slots.3
     (with-foreign-object (tv 'struct.wfs)
-      (with-foreign-slots (((psecs :pointer tv-secs) (pusecs :pointer tv-usecs) (secs tv-secs) (usecs tv-usecs)) tv timeval)
+      (with-foreign-slots (((psecs (:pointer tv-secs)) (pusecs (:pointer tv-usecs)) (secs tv-secs) (usecs tv-usecs)) tv timeval)
         (setf secs 100 usecs 200)
         (values (mem-ref psecs :long) (mem-ref pusecs :long))))
   100 200)
