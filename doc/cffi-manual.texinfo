@@ -3775,9 +3775,7 @@ pointer.  The return value is not used.
 
 @table @var
 @item vars
-A list with binding descriptors; each is either a symbol, or list with
-up to 3 elements: an optional new name to bind, an optional symbol 
-@code{:pointer} and finally the required slot symbol.
+A list of binding descriptors; described below.
 
 @item ptr
 A foreign pointer to a structure.
@@ -3790,14 +3788,42 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-slots} macro establishes a lexical environment for
-referring to the foreign slots of @var{type} addressed by @var{ptr}.
-Like Common Lisp's @code{with-slots} macro, each var in @var{vars} may
-be a symbol naming a slot, or a list @code{(name slot)} which creates a 
-binding to a slot with a different name.
-Prefixing the slot name with @code{:pointer} creates a binding to a
-foreign pointer that addresses the slot rather than its value.  Both
-@code{(:pointer slot)} and @code{(name :pointer slot)} are acceptable.
+The @code{with-foreign-slots} macro establishes a lexical environment
+for referring to the foreign slots of @var{type} addressed by @var{ptr}.
+
+This is similar to the Common Lisp's @code{with-slots} macro. Within the
+context of @code{with-foreign-slots}, if the binding form is a symbol
+@code{slot-name} which names the slot, the foreign slot value can be
+specified by using @code{slot-name} as if it were a lexically bound
+variable.  If the binding form is a list @code{(variable-name
+slot-name)} then @code{variable-name} is bound to the foreign slot value
+of @code{slot-name}.
+
+This syntax is extended to enable access to foreign slot pointers. If
+the binding form is a list @code{(slot-name :pointer)}, then
+@code{slot-name} is bound to foreign slot pointer instead of the foreign
+slot value.
+
+In light of this extension each binding in @var{vars} may take one of
+the following six forms
+
+@code{slot-name} a symbol which is the name of the slot and is bound to
+the value of the slot
+
+@code{(:pointer slot-name)}
+@code{(slot-name :pointer)}
+
+Each of these creates a binding to a foreign pointer that addresses the
+slot rather than its value
+
+@code{(variable-name slot-name)} binds the foreign slot value to a
+variable with a different name.
+
+@code{(variable-name (slot-name :pointer))}
+@code{((slot-name :pointer) variable-name)}
+
+Each of these binds variable-name to the foreign slot pointer of the
+named slot.
 
 @subheading Examples
 @lisp

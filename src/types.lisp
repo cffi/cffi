@@ -845,24 +845,38 @@ The foreign array must be freed with foreign-array-free."
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
 foreign slots in PTR of TYPE. Similar to WITH-SLOTS.
-Each var can be of the form: 
-  name                       name bound to slot of same name              
-  (:pointer name)            name bound to pointer to slot of same name
-  (name slot-name)           name bound to slot-name
-  (name :pointer slot-name)  name bound to pointer to slot-name"
+Each var can be of the form:
+
+SLOT - SLOT is bound to the slot of the same
+name. i.e. to (FOREIGN-SLOT-VALUE SLOT)
+
+(:pointer SLOT) - SLOT is bound to the pointer to the slot of the same
+name. i.e. to (FOREIGN-SLOT-POINTER SLOT)
+
+(NAME SLOT) - NAME is bound to (FOREIGN-SLOT-VALUE SLOT)
+
+(:POINTER (NAME SLOT)) - NAME is bound to (FOREIGN-SLOT-POINTER SLOT)
+
+(NAME (:POINTER SLOT)) - NAME is bound to (FOREIGN-SLOT-POINTER SLOT)
+"
+  (when (consp type)
+    (assert (not (eql (car type) 'quote))))
   (let ((ptr-var (gensym "PTR")))
     `(let ((,ptr-var ,ptr))
        (symbol-macrolet
            ,(loop :for var :in vars
-               :collect
-                 (if (listp var)
-                     (let ((p1 (first var)) (p2 (second var)) (p3 (third var)))
-                        (if (eq p1 :pointer)	
-                           `(,p2 (foreign-slot-pointer ,ptr-var ',type ',p2))
-                           (if (eq p2 :pointer)
-                               `(,p1 (foreign-slot-pointer ,ptr-var ',type ',p3))
-                               `(,p1 (foreign-slot-value ,ptr-var ',type ',p2)))))
-                     `(,var (foreign-slot-value ,ptr-var ',type ',var))))
+              :collect
+              (if (atom var)
+                  `(,var (foreign-slot-value ,ptr-var ',type ',var))
+                  (if (eq (first var) :pointer)
+                      (if (atom (second var))
+                          `(,(second var) (foreign-slot-pointer ,ptr-var ',type ',(second var)))
+                          `(,(first (second var)) (foreign-slot-pointer ,ptr-var ',type ',(second (second var)))))
+                      (if (atom (second var))
+                          `(,(first var) (foreign-slot-value ,ptr-var ',type ',(second var)))
+                          (if (eq (first (second var)) :pointer)
+                              `(,(first var) (foreign-slot-pointer ,ptr-var ',type ',(second (second var))))
+                              (error  "Malformed slot specificcation ~a: must be VAR or (VAR NAME) or (:POINTER VAR) or (VAR (:POINTER NAME)) or (:POINTER (VAR NAME))" var))))))
          ,@body))))
 
 ;;; We could add an option to define a struct instead of a class, in
