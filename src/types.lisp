@@ -569,18 +569,25 @@ The foreign array must be freed with foreign-array-free."
   ((count :initarg :count :accessor slot-count))
   (:documentation "Aggregate structure slots."))
 
-;;; Since MEM-REF returns a pointer for struct types we are able to
-;;; chain together slot names when accessing slot values in nested
-;;; structures.
 (defmethod foreign-struct-slot-value (ptr (slot aggregate-struct-slot))
-  "Return a pointer to SLOT relative to PTR."
-  (convert-from-foreign (inc-pointer ptr (slot-offset slot))
-                        (slot-type slot)))
+  "Return the value of an aggregate SLOT from a struct at PTR."
+  (let ((type (slot-type slot))
+        (input-ptr (inc-pointer ptr (slot-offset slot))))
+    (if (= 1 (slot-count slot))
+        (convert-from-foreign input-ptr type)
+        (loop for i below (slot-count slot)
+              collect (mem-aref input-ptr type i)))))
 
 (defmethod foreign-struct-slot-value-form (ptr (slot aggregate-struct-slot))
   "Return a form to get the value of SLOT relative to PTR."
-  `(convert-from-foreign (inc-pointer ,ptr ,(slot-offset slot))
-                         ',(slot-type slot)))
+  (let ((type (slot-type slot))
+        (input-ptr `(inc-pointer ,ptr ,(slot-offset slot)))
+        (count (slot-count slot))
+        (i (gensym)))
+    (if (= 1 count)
+        `(convert-from-foreign ,input-ptr ',type)
+        `(loop for ,i below ,count
+               collect (mem-aref ,input-ptr ',type ,i)))))
 
 (defmethod translate-aggregate-to-foreign (ptr value (type foreign-struct-type))
   ;;; FIXME: use the block memory interface instead.
@@ -590,15 +597,28 @@ The foreign array must be freed with foreign-array-free."
 (defmethod (setf foreign-struct-slot-value)
     (value ptr (slot aggregate-struct-slot))
   "Set the value of an aggregate SLOT to VALUE in PTR."
-  (translate-aggregate-to-foreign (inc-pointer ptr (slot-offset slot))
-                                  value
-                                  (parse-type (slot-type slot))))
+  (let ((type (slot-type slot))
+        (output-ptr (inc-pointer ptr (slot-offset slot))))
+    (if (= 1 (slot-count slot))
+        (translate-aggregate-to-foreign output-ptr value (parse-type type))
+        (loop for i below (slot-count slot)
+              for v in value
+              do (setf (mem-aref output-ptr type i)
+                       (translate-to-foreign v type))))))
 
 (defmethod foreign-struct-slot-set-form (value ptr (slot aggregate-struct-slot))
   "Return a form to get the value of an aggregate SLOT relative to PTR."
-  `(translate-aggregate-to-foreign (inc-pointer ,ptr ,(slot-offset slot))
-                                   ,value
-                                   ,(parse-type (slot-type slot))))
+  (let ((type (slot-type slot))
+        (output-ptr `(inc-pointer ,ptr ,(slot-offset slot)))
+        (i (gensym))
+        (v (gensym))
+        (count (slot-count slot)))
+    (if (= 1 count)
+        `(translate-aggregate-to-foreign ,output-ptr ,value ,(parse-type type))
+        `(loop for ,i below ,count
+               for ,v in ,value
+               do (setf (mem-aref ,output-ptr ',type ,i)
+                        (translate-to-foreign ,v ',type))))))
 
 ;;;## Defining Foreign Structures
 
