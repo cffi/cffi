@@ -50,3 +50,63 @@
              t)
             (t bytes)))
   t)
+
+;; Check whether union option :size can accept
+;; form(that is evaluated to non-negative number)
+;; instead of plain numbers.
+
+(deftest union.size-accept-good-form
+    (let ((a 8) (b 8))
+      (defcunion (size-accept-good-form :size (+ a b))
+        (first :int)
+        (second :int))
+      (foreign-type-size '(:union size-accept-good-form)))
+  16)
+
+(deftest union.size-accept-bad-form
+    (let ((a 5) (b 10))
+      (handler-case
+          (defcunion (size-accept-bad-form :size (+ -25 a b))
+            (first :int)
+            (second :int))
+        (type-error () 'type-error)))
+  type-error)
+
+(deftest union.size-accept-invalid-form
+    (let ((empty-list nil))
+      (handler-case
+          (defcunion (size-accept-invalid-form :size (mapcar #'+ empty-list))
+            (first :int)
+            (second :int))
+        (type-error () 'type-error)))
+  type-error)
+
+;; Check whether union slot option :count can accept
+;; form(that is evaluated to positive number)
+;; instead of plain numbers.
+
+(deftest union.count-accept-good-form
+    (let ((a 8) (b 4))
+      (defcunion count-accept-good-form
+        (first :char :count a)
+        (second :char :count b))
+      (foreign-type-size '(:union count-accept-good-form)))
+  8)
+
+(deftest union.count-accept-bad-form
+    (let ((a 8) (b 8))
+      (handler-case
+          (defcunion count-accept-bad-form
+            (first :char :count a)
+            (second :char :count (- b a)))
+        (type-error () 'type-error)))
+  type-error)
+
+(deftest union.count-accept-invalid-form
+    (let ((a "hello, world") (b 8))
+      (handler-case
+          (defcunion count-accept-invalid-form
+            (first :char :count b)
+            (second :char :count a))
+        (type-error () 'type-error)))
+  type-error)

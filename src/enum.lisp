@@ -161,15 +161,15 @@
                    :value-keywords value-keywords)))
 
 (defun %defcenum-like (name-and-options enum-list type-factory)
-  (discard-docstring enum-list)
   (destructuring-bind (name &optional base-type)
       (ensure-list name-and-options)
-    (let ((type (funcall type-factory name base-type enum-list)))
+    (let* ((pure-enum-list (omit-docstring enum-list))
+           (type (funcall type-factory name base-type pure-enum-list)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-foreign-type ',name
                               ;; ,type is not enough here, someone needs to
                               ;; define it when we're being loaded from a fasl.
-                              (,type-factory ',name ',base-type ',enum-list))
+                              (,type-factory ',name ',base-type ',pure-enum-list))
          ,@(remove nil
                    (mapcar (lambda (key)
                              (unless (keywordp key)

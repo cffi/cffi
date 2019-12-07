@@ -661,13 +661,16 @@ The foreign array must be freed with foreign-array-free."
                  (foreign-type-alignment type)
                  (min 4 (foreign-type-alignment type))))))
 
-(defun adjust-for-alignment (type offset alignment-type firstp)
-  "Return OFFSET aligned properly for TYPE according to ALIGNMENT-TYPE."
-  (let* ((align (get-alignment type alignment-type firstp))
-         (rem (mod offset align)))
-    (if (zerop rem)
-        offset
-        (+ offset (- align rem)))))
+(defun find-structure-size (structure-alignment last-slot-offset)
+  "Find a structure size based on STRUCTURE-ALIGNMENT and LAST-SLOT-OFFSET.
+The structure's size is increased, if necessary, to make it a
+multiple of the alignment. This may require tail padding,
+depending on the last slot offset."
+  (let ((tail-padding (- structure-alignment
+                         (rem last-slot-offset structure-alignment))))
+    (if (= tail-padding structure-alignment)
+        last-slot-offset
+        (+ last-slot-offset tail-padding))))
 
 (defmacro with-tentative-type-definition ((name value namespace) &body body)
   (once-only (name namespace)
@@ -677,38 +680,89 @@ The foreign array must be freed with foreign-array-free."
             ,@body)
        (:abort (undefine-foreign-type ,name ,namespace)))))
 
-(defun notice-foreign-struct-definition (name options slots)
-  "Parse and install a foreign structure definition."
-  (destructuring-bind (&key size (class 'foreign-struct-type))
-      options
-    (let ((struct (make-instance class :name name))
-          (current-offset 0)
-          (max-align 1)
-          (firstp t))
-      (with-tentative-type-definition (name struct :struct)
-        ;; determine offsets
-        (dolist (slotdef slots)
-          (destructuring-bind (slotname type &key (count 1) offset) slotdef
-            (when (eq (canonicalize-foreign-type type) :void)
-              (simple-foreign-type-error type :struct
-                                         "In struct ~S: void type not allowed in field ~S"
-                                         name slotdef))
-            (setq current-offset
-                  (or offset
-                      (adjust-for-alignment type current-offset :normal firstp)))
-            (let* ((slot (make-struct-slot slotname current-offset type count))
-                   (align (get-alignment (slot-type slot) :normal firstp)))
-              (setf (gethash slotname (slots struct)) slot)
-              (when (> align max-align)
-                (setq max-align align)))
-            (incf current-offset (* count (foreign-type-size type))))
-          (setq firstp nil))
-        ;; calculate padding and alignment
-        (setf (alignment struct) max-align) ; See point 1 above.
-        (let ((tail-padding (- max-align (rem current-offset max-align))))
-          (unless (= tail-padding max-align) ; See point 3 above.
-            (incf current-offset tail-padding)))
-        (setf (size struct) (or size current-offset))))))
+(defun notice-foreign-type-definition (name namespace class
+                                       size alignment slots)
+  "Install a foreign type NAME of namespace NAMESPACE and of class CLASS
+with relevant SIZE, ALIGNMENT, and SLOTS."
+  (check-type size (integer 0))
+  (let ((type (make-instance class :name name)))
+    (with-tentative-type-definition (name type namespace)
+      (dolist (slot slots)
+        (setf (gethash (slot-name slot) (slots type)) slot))
+      (setf (size type) size)
+      (setf (alignment type) alignment))))
+
+(defmacro with-defined-slots ((slots-var slot-defs slot-def->slot) &body body)
+  "Convert each slot definition from SLOT-DEFS
+using a SLOT-DEF->SLOT function into actual slots instances
+that are collected into SLOTS-VAR. Then evaluate BODY forms."
+  (loop :with previous-slot-var = nil
+     :for slot-var = (gensym)
+     :for (slot-name slot-type . slot-args) :in slot-defs
+     :collect `(,slot-var (,slot-def->slot ,previous-slot-var
+                                           ',slot-name ',slot-type
+                                           ,@slot-args))
+     :into slots
+     :do (setf previous-slot-var slot-var)
+     :finally
+     (return
+       `(let* (,@slots
+               (,slots-var (list ,@(mapcar #'first slots))))
+          ,@body))))
+
+(defun %get-slots-prop (slots prop-name)
+  "Convert each slot plist from SLOTS into list of values of PROP-NAME."
+  (mapcar #'(lambda (slot) (getf slot prop-name)) slots))
+
+(defun find-slot-offset (slot-type previous-slot)
+  "Find an offset of the slot based on SLOT-TYPE AND PREVIOUS-SLOT.
+Each slot is assigned to the lowest available offset
+with the appropriate alignment. This may require internal
+padding, depending on the previous slot."
+  (let* ((first-slot-p (null previous-slot))
+         (slot-alignment (get-alignment slot-type :normal first-slot-p))
+         (previous-slot-offset (getf previous-slot :offset 0))
+         (rem (mod previous-slot-offset slot-alignment)))
+    (if (zerop rem)
+        previous-slot-offset
+        (+ previous-slot-offset (- slot-alignment rem)))))
+
+(defun struct-slot-def->slot (previous-slot name type
+                              &key (count 1)
+                                (offset (find-slot-offset type previous-slot)))
+  "Convert structure slot definition to actual slot instance
+based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, COUNT, and OFFSET."
+  (check-type count (integer 1))
+  (check-type offset (integer 0))
+  (when (eql (canonicalize-foreign-type type) :void)
+    (simple-foreign-type-error type :struct
+                               "void type isn't allowed in struct slot ~S"
+                               name))
+  (list :slot (make-struct-slot name offset type count)
+        :offset (+ offset (* count (foreign-type-size type)))
+        :alignment (get-alignment type :normal (null previous-slot))))
+
+(defmacro expand-notice-foreign-struct-definition (name-and-options class
+                                                   slot-defs)
+  "Expand into `notice-foreign-type-definition' using
+a structure NAME, CLASS, SLOT-DEFS and SIZE."
+  (with-unique-names (struct-alignment struct-size struct-slots)
+    (destructuring-bind (name &key (size nil size-supplied-p)
+                              &allow-other-keys)
+        (ensure-list name-and-options)
+      `(with-defined-slots (slots ,slot-defs struct-slot-def->slot)
+         (let* ((,struct-alignment (apply #'max 1
+                                          (%get-slots-prop slots :alignment)))
+                (,struct-size ,(if size-supplied-p
+                                   size
+                                   `(find-structure-size
+                                     ,struct-alignment
+                                     (getf (first (last slots)) :offset 0))))
+                (,struct-slots (%get-slots-prop slots :slot)))
+           (notice-foreign-type-definition ',name :struct ',class
+                                           ,struct-size
+                                           ,struct-alignment
+                                           ,struct-slots))))))
 
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
@@ -722,31 +776,33 @@ The foreign array must be freed with foreign-array-free."
 (define-parse-method :struct (name)
   (funcall (find-type-parser name :struct)))
 
-(defvar *defcstruct-hook* nil)
+(defvar *defcstruct-hook* nil
+  "If non-nil, *defcstruct-hook* should be a function
+of two arguments (NAME-AND-OPTIONS and SLOTS)
+that returns NIL or a list of forms
+to include in the expansion of `defcstruct'.
+NAME-AND-OPTIONS and SLOTS are equivalent to `defcstruct' arguments
+except that SLOTS doesn't contain a documentation string.
+Note: *defcstruct-hook* function must not destructively modify
+any part of its arguments.")
 
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
-  (discard-docstring fields)
-  (destructuring-bind (name . options)
+  (destructuring-bind (name &key conc-name
+                            (class (symbolicate name '-tclass))
+                            &allow-other-keys)
       (ensure-list name-and-options)
-    (let ((conc-name (getf options :conc-name)))
-      (remf options :conc-name)
-      (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
+    (let ((slots (omit-docstring fields)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          ;; m-f-s-t could do with this with mop:ensure-class.
-         ,(when-let (class (getf options :class))
-            `(defclass ,class (foreign-struct-type
-                               translatable-foreign-type)
-               ()))
-         (notice-foreign-struct-definition ',name ',options ',fields)
+         (defclass ,class (foreign-struct-type translatable-foreign-type)
+           ())
+         (expand-notice-foreign-struct-definition ,name-and-options ,class
+                                                  ,slots)
          ,@(when conc-name
-             (generate-struct-accessors name conc-name
-                                        (mapcar #'car fields)))
+             (generate-struct-accessors name conc-name (mapcar #'car slots)))
          ,@(when *defcstruct-hook*
-             ;; If non-nil, *defcstruct-hook* should be a function
-             ;; of the arguments that returns NIL or a list of
-             ;; forms to include in the expansion.
-             (apply *defcstruct-hook* name-and-options fields))
+             (apply *defcstruct-hook* name-and-options slots))
          (define-parse-method ,name ()
            (parse-deprecated-struct-type ',name :struct))
          '(:struct ,name)))))
@@ -891,47 +947,56 @@ slots will be defined and stored."
 ;;; A union is a subclass of FOREIGN-STRUCT-TYPE in which all slots
 ;;; have an offset of zero.
 
+(defun union-slot-def->slot (previous-slot name type &key (count 1))
+  "Convert union slot definition to actual slot instance
+based on PREVIOUS-SLOT and slot parameters: NAME, TYPE, and COUNT."
+  (declare (ignore previous-slot))
+  (check-type count (integer 1))
+  (when (eql (canonicalize-foreign-type type) :void)
+    (simple-foreign-type-error name :union
+                               "void type isn't allowed in union slot ~S"
+                               name))
+  (list :slot (make-struct-slot name 0 type count)
+        :size (* count (foreign-type-size type))
+        :alignment (foreign-type-alignment type)))
+
 ;;; See also the notes regarding ABI requirements in
-;;; NOTICE-FOREIGN-STRUCT-DEFINITION
-(defun notice-foreign-union-definition (name-and-options slots)
-  "Parse and install a foreign union definition."
-  (destructuring-bind (name &key size)
-      (ensure-list name-and-options)
-    (let ((union (make-instance 'foreign-union-type :name name))
-          (max-size 0)
-          (max-align 0))
-      (with-tentative-type-definition (name union :union)
-        (dolist (slotdef slots)
-          (destructuring-bind (slotname type &key (count 1)) slotdef
-            (when (eq (canonicalize-foreign-type type) :void)
-              (simple-foreign-type-error name :struct
-                                         "In union ~S: void type not allowed in field ~S"
-                                         name slotdef))
-            (let* ((slot (make-struct-slot slotname 0 type count))
-                   (size (* count (foreign-type-size type)))
-                   (align (foreign-type-alignment (slot-type slot))))
-              (setf (gethash slotname (slots union)) slot)
-              (when (> size max-size)
-                (setf max-size size))
-              (when (> align max-align)
-                (setf max-align align)))))
-        (setf (size union) (or size max-size))
-        (setf (alignment union) max-align)))))
+;;; EXPAND-NOTICE-FOREIGN-STRUCT-DEFINITION
+(defmacro expand-notice-foreign-union-definition (name-and-options class
+                                                  slot-defs)
+  "Expand into `notice-foreign-type-definition' using
+a union NAME, CLASS, SLOT-DEFS and SIZE."
+  (with-unique-names (union-size union-alignment union-slots)
+    (destructuring-bind (name &key (size nil size-supplied-p))
+        (ensure-list name-and-options)
+      `(with-defined-slots (slots ,slot-defs union-slot-def->slot)
+         (let* ((,union-size ,(if size-supplied-p
+                                  size
+                                  '(apply #'max 0
+                                    (%get-slots-prop slots :size))))
+                (,union-alignment (apply #'max 0
+                                         (%get-slots-prop slots :alignment)))
+                (,union-slots (%get-slots-prop slots :slot)))
+           (notice-foreign-type-definition ',name :union ',class
+                                           ,union-size
+                                           ,union-alignment
+                                           ,union-slots))))))
 
 (define-parse-method :union (name)
   (funcall (find-type-parser name :union)))
 
 (defmacro defcunion (name-and-options &body fields)
   "Define the layout of a foreign union."
-  (discard-docstring fields)
-  (destructuring-bind (name &key size)
+  (destructuring-bind (name &key &allow-other-keys)
       (ensure-list name-and-options)
-    (declare (ignore size))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-union-definition ',name-and-options ',fields)
-       (define-parse-method ,name ()
-         (parse-deprecated-struct-type ',name :union))
-       '(:union ,name))))
+    (let ((class 'foreign-union-type)
+          (slots (omit-docstring fields)))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         (expand-notice-foreign-union-definition ,name-and-options ,class
+                                                 ,slots)
+         (define-parse-method ,name ()
+           (parse-deprecated-struct-type ',name :union))
+         '(:union ,name)))))
 
 ;;;# Operations on Types
 
