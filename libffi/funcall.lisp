@@ -70,7 +70,7 @@
    types
    return-type
    (if (or (eql return-type :void)
-           (typep (parse-type return-type) 'translatable-foreign-type))
+           (typep (parse-type return-type) 'foreign-struct-type))
        call-form
        ;; built-in types won't be translated by
        ;; expand-from-foreign, we have to do it here
