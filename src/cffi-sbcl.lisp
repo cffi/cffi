@@ -367,8 +367,8 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore name))
   ;; As of MacOS X 10.6.6, loading things like CoreFoundation from a
   ;; thread other than the initial one results in a crash.
-  #+darwin (call-within-initial-thread 'load-shared-object path)
-  #-darwin (load-shared-object path))
+  #+(and darwin sb-thread) (call-within-initial-thread 'load-shared-object path)
+  #-(and darwin sb-thread) (load-shared-object path))
 
 ;;; SBCL 1.0.21.15 renamed SB-ALIEN::SHARED-OBJECT-FILE but introduced
 ;;; SB-ALIEN:UNLOAD-SHARED-OBJECT which we can use instead.
