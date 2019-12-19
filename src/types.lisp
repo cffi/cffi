@@ -123,6 +123,12 @@
 
 ;;;# Foreign Pointers
 
+(define-compiler-macro inc-pointer (&whole form pointer offset)
+  (if (and (constantp offset)
+           (eql 0 (eval offset)))
+      pointer
+      form))
+
 (define-modify-macro incf-pointer (&optional (offset 1)) inc-pointer)
 
 (defun mem-ref (ptr type &optional (offset 0))
