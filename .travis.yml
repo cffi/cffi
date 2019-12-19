@@ -20,6 +20,7 @@ env:
 matrix:
   allow_failures:
     - env: LISP=ccl32
+    - env: LISP=sbcl32
 
 install:
   - curl -L https://github.com/luismbo/cl-travis/raw/master/install.sh | sh
