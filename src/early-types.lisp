@@ -522,7 +522,7 @@ Signals an error if the type cannot be resolved."
 
 (defgeneric expand-into-foreign-memory (value type ptr)
   (:method (value type ptr)
-    (declare (ignore type))
+    (declare (ignore type ptr))
     value))
 
 (defmethod expand-into-foreign-memory :around
@@ -532,7 +532,7 @@ Signals an error if the type cannot be resolved."
     (call-next-method)))
 
 (defmethod expand-into-foreign-memory (value (type translatable-foreign-type) ptr)
-  (declare (ignore value))
+  (declare (ignore value ptr))
   *runtime-translator-form*)
 
 ;;; EXPAND-TO-FOREIGN-DYN
