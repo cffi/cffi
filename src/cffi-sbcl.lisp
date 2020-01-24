@@ -393,7 +393,7 @@ WITH-POINTER-TO-VECTOR-DATA."
       (when obj
         (sb-alien::dlclose-or-lose obj)
         (removef sb-alien::*shared-objects* obj)
-        #+(and linkage-table (not win32))
+        #-win32
         (sb-alien::update-linkage-table)))))
 
 (defun native-namestring (pathname)
