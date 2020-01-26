@@ -13,7 +13,16 @@ declarative interface for defining foreign functions, structures,
 typedefs, enumerated types, etc. It is implemented in portable ANSI CL
 making use of the low-level operators exported by CFFI-SYS.
 
+CFFI/C2FFI is a mechanism to automatically generate CFFI bindings
+based on the output of [c2ffi][2]. Until it is properly documented
+please see the following projects as examples:
+* [hu.dwim.bluez](https://github.com/hu-dwim/hu.dwim.bluez)
+* [hu.dwim.zlib](https://github.com/hu-dwim/hu.dwim.zlib)
+* [hu.dwim.sdl](https://github.com/hu-dwim/hu.dwim.sdl)
+* [hu.dwim.mosquitto](https://github.com/attila-lendvai/hu.dwim.mosquitto)
+
 Please consult [the manual][1] for further details, including
 installation instructions.
 
 [1]: http://common-lisp.net/project/cffi/manual/html_node/
+[2]: https://github.com/rpav/c2ffi
