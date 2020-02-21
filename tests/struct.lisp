@@ -122,9 +122,9 @@
 
 (deftest struct.alignment.1
     (list 'a-char (foreign-slot-value
-                   (foreign-slot-pointer *the-s-s-ch* 's-s-ch 'a-s-ch)
+                   (foreign-slot-pointer (get-var-pointer '*the-s-s-ch*) 's-s-ch 'a-s-ch)
                    's-ch 'a-char)
-          'another-char (foreign-slot-value *the-s-s-ch* 's-s-ch 'another-char))
+          'another-char (foreign-slot-value (get-var-pointer '*the-s-s-ch*) 's-s-ch 'another-char))
   (a-char 1 another-char 2))
 
 
@@ -144,7 +144,7 @@
 (defcvar "the_s_s_short" s-s-short)
 
 (deftest struct.alignment.2
-    (with-foreign-slots ((yet-another-char a-s-short) *the-s-s-short* s-s-short)
+    (with-foreign-slots ((yet-another-char (:pointer a-s-short)) (get-var-pointer '*the-s-s-short*) s-s-short)
       (with-foreign-slots ((a-char another-char a-short) a-s-short s-short)
         (list 'a-char           a-char
               'another-char     another-char
@@ -171,7 +171,7 @@
 
 (deftest struct.alignment.3
     (with-foreign-slots
-        ((yet-another-char a-s-double a-short) *the-s-s-double* s-s-double)
+        ((yet-another-char (:pointer a-s-double) a-short) (get-var-pointer '*the-s-s-double*) s-s-double)
       (with-foreign-slots ((a-char a-double another-char) a-s-double s-double)
         (list 'a-char            a-char
               'a-double          a-double
@@ -192,9 +192,9 @@
 
 (deftest struct.alignment.4
     (with-foreign-slots
-        ((another-short a-s-s-double last-char) *the-s-s-s-double* s-s-s-double)
+        ((another-short (:pointer a-s-s-double) last-char) (get-var-pointer '*the-s-s-s-double*) s-s-s-double)
       (with-foreign-slots
-          ((yet-another-char a-s-double a-short) a-s-s-double s-s-double)
+          ((yet-another-char (:pointer a-s-double) a-short) a-s-s-double s-s-double)
         (with-foreign-slots ((a-char a-double another-char) a-s-double s-double)
           (list 'a-char            a-char
                 'a-double          a-double
@@ -224,7 +224,7 @@
 
 (deftest struct.alignment.5
     (with-foreign-slots
-        ((a-char a-s-double2 another-short) *the-s-s-double2* s-s-double2)
+        ((a-char (:pointer a-s-double2) another-short) (get-var-pointer '*the-s-s-double2*) s-s-double2)
       (with-foreign-slots ((a-double a-short) a-s-double2 s-double2)
         (list 'a-double       a-double
               'a-short        a-short
@@ -249,7 +249,7 @@
 
 (deftest struct.alignment.6
     (with-foreign-slots
-        ((a-char a-s-long-long another-short) *the-s-s-long-long* s-s-long-long)
+        ((a-char (:pointer a-s-long-long) another-short) (get-var-pointer '*the-s-s-long-long*) s-s-long-long)
       (with-foreign-slots ((a-long-long a-short) a-s-long-long s-long-long)
         (list 'a-long-long    a-long-long
               'a-short        a-short
@@ -272,8 +272,8 @@
 (defcvar "the_s_s_s_double3" s-s-s-double3)
 
 (deftest struct.alignment.7
-    (with-foreign-slots ((a-s-s-double3 a-char) *the-s-s-s-double3* s-s-s-double3)
-      (with-foreign-slots ((a-s-double2 another-short) a-s-s-double3 s-s-double3)
+    (with-foreign-slots (((:pointer a-s-s-double3) a-char) (get-var-pointer '*the-s-s-s-double3*) s-s-s-double3)
+      (with-foreign-slots (((:pointer a-s-double2) another-short) a-s-s-double3 s-s-double3)
         (with-foreign-slots ((a-double a-short) a-s-double2 s-double2)
           (list 'a-double      a-double
                 'a-short       a-short
@@ -317,10 +317,10 @@
 
 (deftest struct.nested-setf
     (with-foreign-object (an-s2 's2)
-      (setf (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
+      (setf (foreign-slot-value (foreign-slot-pointer an-s2 's2 'an-s1)
                                 's1 'an-int)
             1984)
-      (foreign-slot-value (foreign-slot-value an-s2 's2 'an-s1)
+      (foreign-slot-value (foreign-slot-pointer an-s2 's2 'an-s1)
                           's1 'an-int))
   1984)
 
@@ -344,8 +344,8 @@
 
 (deftest struct.alignment.8
     (with-foreign-slots
-        ((a-char a-s-unsigned-long-long another-short)
-         *the-s-s-unsigned-long-long* s-s-unsigned-long-long)
+        ((a-char (:pointer a-s-unsigned-long-long) another-short)
+         (get-var-pointer '*the-s-s-unsigned-long-long*) s-s-unsigned-long-long)
       (with-foreign-slots ((an-unsigned-long-long a-short)
                            a-s-unsigned-long-long s-unsigned-long-long)
         (list 'an-unsigned-long-long  an-unsigned-long-long
@@ -605,6 +605,39 @@
 (deftest struct-values.fn.2
     (make-pair 13 17)
   (13 . 17))
+
+
+;; Test if a field defined by a typedef is translated by default to a
+;; lisp object
+(defcstruct struct-pair-plus-one-a
+  (p (:struct struct-pair))
+  (c :int))
+
+(defcstruct struct-pair-plus-one-b
+  (p struct-pair-typedef1)
+  (c :int))
+
+(defcfun ("make_pair_plus_one" make-pair-plus-one-a)
+    (:struct struct-pair-plus-one-a)
+  (a :int) (b :int) (c :int))
+
+(defcfun ("make_pair_plus_one" make-pair-plus-one-b)
+    (:struct struct-pair-plus-one-b)
+  (a :int) (b :int) (c :int))
+
+(deftest struct-values.fsbv.1
+    (let ((a (make-pair-plus-one-a 1 2 3)))
+      (values (getf a 'p) (getf a 'c)))
+  (1 . 2) 3)
+
+(deftest struct-values.fsbv.2
+    (let ((b (make-pair-plus-one-b 1 2 3)))
+      (values (getf b 'p) (getf b 'c)))
+  (1 . 2) 3)
+
+;;;
+;;;
+;;;
 
 (defcstruct single-byte-struct
   (a :uint8))
