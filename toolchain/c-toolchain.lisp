@@ -173,8 +173,9 @@
              (if normalizep (normalize-flags sbcl-home val) val))))
     (unless (featurep :sb-linkable-runtime)
       (setf *linkkit-start* nil *linkkit-end* nil))
+    #+openbsd
+    (setf *cc-flags* (list "-I" "/usr/local/include/"))
     (setf *ld* *cc* ;; !
-          #+openbsd *cc-flags* (list "-I" "/usr/local/include/")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" #-darwin "-shared"
                                 *cc-flags*))))
 
