@@ -174,6 +174,7 @@
     (unless (featurep :sb-linkable-runtime)
       (setf *linkkit-start* nil *linkkit-end* nil))
     (setf *ld* *cc* ;; !
+          #+openbsd *cc-flags* (list "-I" "/usr/local/include/")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" #-darwin "-shared"
                                 *cc-flags*))))
 
@@ -212,6 +213,8 @@
            #+darwin (list "-I" "/opt/local/include/")
            ;; ECL internal flags
            #+ecl (parse-command-flags c::*cc-flags*)
+           ;; OpenBSD non-base header files
+           #+openbsd (list "-I" "/usr/local/include/")
            ;; FreeBSD non-base header files
            #+freebsd (list "-I" "/usr/local/include/")
            (split-cflags (getenv "CFLAGS")))
