@@ -5050,12 +5050,6 @@ foreign string in octets including the null terminator.
 CFFI> (with-foreign-string (foo "12345")
         (foreign-funcall "strlen" :pointer foo :int))
 @result{} 5
-
-CFFI> (let ((array (coerce #(84 117 114 97 110 103 97)
-                           '(array (unsigned-byte 8)))))
-        (with-foreign-string (foreign-string array)
-          (foreign-string-to-lisp foreign-string)))
-@result{} "Turanga"
 @end lisp
 
 @subheading See Also
