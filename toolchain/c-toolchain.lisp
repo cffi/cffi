@@ -174,9 +174,20 @@
     (unless (featurep :sb-linkable-runtime)
       (setf *linkkit-start* nil *linkkit-end* nil))
     #+openbsd
-    (setf *cc-flags* (list "-I" "/usr/local/include/"))
-    (setf *ld* *cc* ;; !
-          *ld-dll-flags* (list* #+darwin "-dynamiclib" #-darwin "-shared"
+    (progn
+      (if (getenv "CC")
+          (setf *cc* (getenv "CC"))
+          (setf *cc* "cc"))
+      (setf *cc-flags* (list "-I" "/usr/local/include/")))
+    #+freebsd
+    (progn
+      (if (getenv "CC")
+          (setf *cc* (getenv "CC"))
+          (setf *cc* "cc"))
+      (setf *cc-flags* (list "-I" "/usr/local/include/")))
+    (setf *ld* *cc*) ;; !
+    (setf *ld-dll-flags* (list* #+darwin "-dynamiclib"
+                                #-darwin "-shared"
                                 *cc-flags*))))
 
 ;;; Taken from sb-grovel
@@ -205,9 +216,9 @@
                 (8 '("-m64")))))
     (setf *cc*
           (or (getenvp "CC")
-              #+(or cygwin (not windows)) "cc"
-              "gcc")
-          *cc-flags*
+              #+cygwin "cc"
+              #+(or linux netbsd freebsd openbsd windows) "gcc"))
+    (setf *cc-flags*
           (append
            arch-flags
            ;; For MacPorts
@@ -218,14 +229,14 @@
            #+openbsd (list "-I" "/usr/local/include/")
            ;; FreeBSD non-base header files
            #+freebsd (list "-I" "/usr/local/include/")
-           (split-cflags (getenv "CFLAGS")))
-          *ld* *cc*
-          *ld-exe-flags* `(,@arch-flags #-darwin "-Wl,--export-dynamic")
-          *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
+           (split-cflags (getenv "CFLAGS"))))
+    (setf *ld* *cc*)
+    (setf *ld-exe-flags* `(,@arch-flags #-darwin "-Wl,--export-dynamic"))
+    (setf *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
                                 #-darwin "-shared"
-                                *cc-flags*)
-          *linkkit-start* nil
-          *linkkit-end* nil)))
+                                *cc-flags*))
+    (setf *linkkit-start* nil)
+    (setf *linkkit-end* nil)))
 
 (defun ensure-toolchain-parameters ()
   #+clisp (unless *cc* (clisp-toolchain-parameters))
