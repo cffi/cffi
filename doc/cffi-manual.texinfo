@@ -2839,7 +2839,8 @@ A symbol denoting a foreign type.
 A keyword symbol.
 
 @item value
-An index value for a keyword.
+An index value for a keyword. If value is a keyword then previously
+specified keyword's value is used.
 @end table
 
 @subheading Description
@@ -2871,11 +2872,15 @@ CFFI> (foreign-enum-value 'boolean :no)
 @lisp
 (defcenum numbers
   (:one 1)
+  (:another_one :one)
   :two
   (:four 4))
 
 CFFI> (foreign-enum-keyword 'numbers 2)
 @result{} :TWO
+
+CFFI> (foreign-enum-value 'numbers :another_one)
+@result{} 1
 @end lisp
 
 @subheading See Also
