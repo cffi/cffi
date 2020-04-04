@@ -1,7 +1,6 @@
 branches:
   only:
     - master
-    - enum-field-references
 
 language: lisp
 
