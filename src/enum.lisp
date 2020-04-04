@@ -82,6 +82,9 @@
           (ensure-list pair)
         (check-type keyword enum-key)
         ;;(check-type value integer)
+        ;; resolve field reference
+        (when (keywordp value)
+          (setf value (gethash value keyword-values)))
         (when (> (abs value) (abs most-extreme-value))
           (setf most-extreme-value value))
         (when (minusp value)
