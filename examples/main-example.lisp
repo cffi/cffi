@@ -11,6 +11,10 @@
 (defun entry-point ()
   (when uiop:*command-line-arguments*
     (uiop:format! t "Arguments: ~A~%" (uiop:escape-command uiop:*command-line-arguments*)))
+  (when (uiop:featurep :cffi-tests-a)
+    (uiop:format! t ":CFFI-TESTS-A~%"))
+  (when (uiop:featurep :cffi-tests-b)
+    (uiop:format! t ":CFFI-TESTS-B~%"))
   (puts "hello, world!")
   (check-groveller)
   (uiop:finish-outputs)

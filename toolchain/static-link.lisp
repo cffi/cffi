@@ -31,6 +31,26 @@
 (defclass static-program-op (program-op static-image-op) ()
   (:documentation "Create a statically linked standalone executable for the system."))
 
+(defgeneric static-image-new-features (op system)
+  (:documentation "Returns a list of symbols that should be added to the
+*features* list in the static runtime when performing a static op on system. All
+symbols should likely be keywords as they are added before anything else (even
+ASDF) is loaded."))
+
+(defmethod static-image-new-features (o s)
+  "Default is to add no new keywords."
+  nil)
+
+(defgeneric static-image-remove-features-on-dump (op system)
+  (:documentation "Returns a list of symbols that should be removed from the
+*features* list just prior to dumping a static image when performing a static op
+on system. All symbols should likely be keywords as they will be read in by
+the static runtime before the target system is operated on."))
+
+(defmethod static-image-remove-features-on-dump (o s)
+  "Default is to remove no new keywords."
+  nil)
+
 ;; Problem? Its output may conflict with the program-op output :-/
 
 #-(or ecl mkcl)
@@ -57,6 +77,10 @@
                      ;; as required for CLISP not to print output for the first form,
                      ;; yet allow subsequent forms to rely on packages defined by former forms.
                      nil "'(~@{#.~S~^ ~})"
+                     `(progn
+                        ,@(loop
+                            for new-feature in (static-image-new-features o s)
+                            collect `(pushnew ,new-feature *features*)))
                      '(require "asdf")
                      '(in-package :asdf)
                      `(progn
@@ -78,6 +102,18 @@
                         (defmethod output-files
                             ((operation ,child-op) (system (eql (find-system ,name))))
                           (values (list ,tmp) t))
+                        ;; Additionally register an image dump hook to ensure features are removed
+                        ;; that should not appear in the final image. We call this function
+                        ;; ASDF:OPERATE because we're sure that symbol will exist in the static
+                        ;; runtime and will can be READ without error. The LABELS keeps it self
+                        ;; contained so we don't stomp on the actual ASDF:OPERATE.
+                        (labels ((operate ()
+                                   (setf *features*
+                                         (set-difference *features*
+                                                         ',(static-image-remove-features-on-dump o s)))
+                                   ;; Remove ourselves from the image dump hook.
+                                   (setf *image-dump-hook* (remove #'operate *image-dump-hook*))))
+                          (register-image-dump-hook #'operate))
                         (operate ',child-op ,name)
                         (quit))))))))))
 
