@@ -130,6 +130,23 @@
   3.42
   4.42)
 
+;; Test undeclared values
+(defcenum (enum.undeclared :int :allow-undeclared-values T)
+  (:one 1)
+  (:two 2))
+
+(deftest enum.undeclared
+    (with-foreign-object (enum 'enum.undeclared 3)
+      (setf (mem-aref enum 'enum.undeclared 0) 1)
+      (setf (mem-aref enum 'enum.undeclared 1) 2)
+      (setf (mem-aref enum 'enum.undeclared 2) 3)
+      (values (mem-aref enum 'enum.undeclared 0)
+              (mem-aref enum 'enum.undeclared 1)
+              (mem-aref enum 'enum.undeclared 2)))
+  :one
+  :two
+  3)
+
 ;;;# Bitfield tests
 
 ;;; Regression test: defbitfield was misbehaving when the first value
