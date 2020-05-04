@@ -2821,7 +2821,7 @@ you should use @ref{define-foreign-type}.
 @Macro{defcenum name-and-options &body enum-list}
 
 enum-list ::= [docstring] @{ keyword | (keyword value) @}*
-name-and-options ::= name | (name &optional (base-type :int))
+name-and-options ::= name | (name &optional (base-type :int) &key allow-undeclared-values)
 
 @subheading Arguments and Values
 
@@ -2834,6 +2834,10 @@ A documentation string, ignored.
 
 @item base-type
 A symbol denoting a foreign type.
+
+@item allow-undeclared-values
+Whether to pass through integer values that were not explicitly declared
+in the enum when translating from foreign memory.
 
 @item keyword
 A keyword symbol.
@@ -2854,6 +2858,14 @@ Keywords will be automatically converted to values and vice-versa when
 being passed as arguments to or returned from foreign functions,
 respectively. The same applies to any other situations where an object
 of an @code{enum} type is expected.
+
+If a value should be translated to lisp that is not declared in the
+enum, an error will be signalled. You can elide this error and instead
+make it pass the original enum value by specifying
+@var{allow-undeclared-values}. This can be useful for very large
+enumerations of which we only care about a subset of values, or for
+enumerations that should allow for client or vendor extensions that we
+cannot know about.
 
 Types defined with @code{defcenum} canonicalize to @var{base-type}
 which is @code{:int} by default.
