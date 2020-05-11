@@ -228,7 +228,7 @@
   (setq *int* (mem-ref a :int)))
 
 #+(and darwin cmucl)
-(pushnew 'callbacks.void rt::*expected-failures*)
+(pushnew 'callbacks.void rtest::*expected-failures*)
 
 (deftest callbacks.void
     (progn
@@ -394,7 +394,7 @@
        a119 a120 a121 (values (floor a122)) a123 a124 a125 a126 a127))
 
   #+(or openmcl cmucl)
-  (push 'callbacks.bff.2 rt::*expected-failures*)
+  (push 'callbacks.bff.2 rtest::*expected-failures*)
 
   (deftest callbacks.bff.2
       (call-sum-127 (callback sum-127))
@@ -428,14 +428,14 @@
 (defcfun "call_double26" :double (f :pointer))
 
 #+(and darwin (or allegro cmucl))
-(pushnew 'callbacks.double26 rt::*expected-failures*)
+(pushnew 'callbacks.double26 rtest::*expected-failures*)
 
 (deftest callbacks.double26
     (call-double26 (callback double26))
   81.64d0)
 
 #+(and darwin cmucl)
-(pushnew 'callbacks.double26.funcall rt::*expected-failures*)
+(pushnew 'callbacks.double26.funcall rtest::*expected-failures*)
 
 #-cffi-sys::no-foreign-funcall
 (deftest callbacks.double26.funcall

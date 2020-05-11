@@ -175,7 +175,7 @@
     (n :unsigned-long-long))
 
   #+allegro ; lp#914500
-  (pushnew 'defcfun.unsigned-long-long rt::*expected-failures*)
+  (pushnew 'defcfun.unsigned-long-long rtest::*expected-failures*)
 
   (deftest defcfun.unsigned-long-long
       (let ((ullong-max (1- (expt 2 (* 8 (foreign-type-size :unsigned-long-long))))))
@@ -256,7 +256,7 @@
 
 (defcfun "noop" :void)
 
-#+(or allegro openmcl ecl) (pushnew 'defcfun.noop rt::*expected-failures*)
+#+(or allegro openmcl ecl) (pushnew 'defcfun.noop rtest::*expected-failures*)
 
 (deftest defcfun.noop
     (noop)
@@ -286,7 +286,7 @@
 
 ;;; CLISP and ABCL discard macro docstrings.
 #+(or clisp abcl)
-(pushnew 'defcfun.varargs.docstrings rt::*expected-failures*)
+(pushnew 'defcfun.varargs.docstrings rtest::*expected-failures*)
 
 (deftest defcfun.varargs.docstrings
     (documentation 'sprintf 'function)
@@ -470,7 +470,7 @@
 ;;; throw some sort of warning, not signal an error.
 
 #+(or cmucl (and sbcl win32))
-(pushnew 'defcfun.undefined rt::*expected-failures*)
+(pushnew 'defcfun.undefined rtest::*expected-failures*)
 
 (deftest defcfun.undefined
     (progn

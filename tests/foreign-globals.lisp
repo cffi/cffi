@@ -104,7 +104,7 @@
     *var-string*
   "Hello, foreign world!")
 
-#+openmcl (push 'foreign-globals.set.long-long rt::*expected-failures*)
+#+openmcl (push 'foreign-globals.set.long-long rtest::*expected-failures*)
 
 (deftest foreign-globals.ref.long-long
     *var-long-long*

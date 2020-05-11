@@ -76,7 +76,7 @@
   536870912)
 
 #+(and darwin openmcl)
-(pushnew 'deref.long-long rt::*expected-failures*)
+(pushnew 'deref.long-long rtest::*expected-failures*)
 
 (deftest deref.long-long
     (with-foreign-object (p :long-long)
@@ -490,7 +490,7 @@
   536870912)
 
 #+(and darwin openmcl)
-(pushnew 'deref.nonconst.long-long rt::*expected-failures*)
+(pushnew 'deref.nonconst.long-long rtest::*expected-failures*)
 
 (deftest deref.nonconst.long-long
     (let ((type :long-long))
