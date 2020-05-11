@@ -271,9 +271,10 @@
     (setf namespace :default))
   (cffi::find-type-parser type-name namespace))
 
-(define-constant +name-kinds+ '(:struct :union :function :variable :type
-                                :constant :field :argument :enum :member)
-  :test 'equal)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +name-kinds+ '(:struct :union :function :variable :type
+                                  :constant :field :argument :enum :member)
+    :test 'equal))
 
 (deftype ffi-name-kind ()
   '#.(list* 'member +name-kinds+))
