@@ -33,6 +33,12 @@
 
 ;; Problem? Its output may conflict with the program-op output :-/
 
+#+sbcl
+(defmethod perform :before ((op static-image-op) (s system))
+  (loop for object in sb-alien::*shared-objects*
+     do (setf (sb-alien::shared-object-dont-save object) t))
+  (setf *image-entry-point* (ensure-function (asdf/system:component-entry-point s))))
+
 #-(or ecl mkcl)
 (defmethod perform ((o static-image-op) (s system))
   #-(or clisp sbcl) (error "Not implemented yet")
