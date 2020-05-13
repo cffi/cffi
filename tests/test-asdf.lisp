@@ -27,13 +27,13 @@
 
 (in-package #:cffi-tests)
 
-#.(when (cffi-toolchain::static-ops-enabled-p)
-    '(deftest test-static-program
+(when (cffi-toolchain::static-ops-enabled-p)
+  (deftest test-static-program
       (progn
         (asdf:operate :static-program-op :cffi-tests/example)
         (let ((program (asdf:output-file :static-program-op :cffi-tests/example)))
           (uiop:run-program `(,(native-namestring program) "1" "2 3") :output :lines)))
-      ("Arguments: 1 \"2 3\"" "hello, world!") nil 0))
+    ("Arguments: 1 \"2 3\"" "hello, world!") nil 0))
 
 (deftest test-asdf-load
     (progn
