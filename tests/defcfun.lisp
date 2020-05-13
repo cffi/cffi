@@ -314,20 +314,20 @@
 
 (deftest defcfun.varargs.float
     (with-foreign-pointer-as-string (s 100)
-      (sprintf s "%.2f" :float (float pi)))
-  "3.14")
+      (sprintf s "%.0f" :float (* pi 100)))
+  "314")
 
 (deftest defcfun.varargs.double
     (with-foreign-pointer-as-string (s 100)
-      (sprintf s "%.2f" :double (float pi 1.0d0)))
-  "3.14")
+      (sprintf s "%.0f" :double (* pi 100d0)))
+  "314")
 
 #+(and scl long-float)
 (deftest defcfun.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (sprintf s "%.2Lf" :long-double pi))
-  "3.14")
+      (sprintf s "%.0Lf" :long-double (* pi 100)))
+  "314")
 
 (deftest defcfun.varargs.string
     (with-foreign-pointer-as-string (s 100)
