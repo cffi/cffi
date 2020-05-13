@@ -33,6 +33,16 @@
 
 ;; Problem? Its output may conflict with the program-op output :-/
 
+(defmethod perform :before ((op static-image-op) (s system))
+  ;; Close non-system foreign libraries, as grovel ones are embedded
+  ;; in the static-image. System foreign libraries still need to be
+  ;; explicitly loaded on startup, so we're keeping them loaded.
+  (register-image-dump-hook
+   (lambda ()
+     (dolist (library (list-foreign-libraries))
+       (when (eql (foreign-library-type library) :grovel-wrapper)
+	 (close-foreign-library library))))))
+
 #-(or ecl mkcl)
 (defmethod perform ((o static-image-op) (s system))
   #-(or clisp sbcl) (error "Not implemented yet")

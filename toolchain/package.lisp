@@ -24,7 +24,7 @@
 ;;;
 
 (uiop:define-package #:cffi-toolchain
-  (:mix #:asdf #:uiop #:common-lisp)
+  (:mix #:asdf #:uiop #:cffi #:common-lisp)
   (:import-from #:asdf/bundle
    #:link-op #:bundle-pathname-type #:bundle-type
    #:gather-operation #:gather-type)
