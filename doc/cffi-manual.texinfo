@@ -6983,13 +6983,21 @@ invocation.
 @node Static Linking, Limitations, The Groveller, Top
 @chapter Static Linking
 
-On recent enough versions of supported implementations (currently,
-GNU CLISP 2.49, CMUCL 2015-11, and SBCL 1.2.17), and with a recent
-enough ASDF (3.1.2 or later), you can create a statically linked
-Lisp executable image that includes all the C extensions
-(wrappers and any other objects output by @code{compile-op})
-as well as your Lisp code --- or a standalone application executable.
-This makes it easier to deliver your code as a single file.
+On recent enough versions of supported implementations (currently, GNU
+CLISP 2.49 or later, CMUCL 2015-11 or later, and SBCL 1.2.17 or later,
+except SBCL 2.0.4), and with a recent enough ASDF (3.1.2 or later),
+you can create a statically linked Lisp executable image (or a
+standalone application executable) that includes all the C extensions
+defined via @ref{The Groveller}'s @code{:cffi-wrapper-file} ASDF
+components (and any other such objects output by
+@code{asdf:compile-op}), as well as those defined by @code{:c-file} or
+@code{:o-file} ASDF components, and your Lisp code.  This makes it
+easier to deliver your code as a single file.
+
+Note that the resulting binary will typically still depend on any
+shared libraries loaded via @xref{load-foreign-library} or
+@xref{use-foreign-library} as well as core libraries such as
+@code{libc}.
 
 To dump a statically linked executable image, use:
 
