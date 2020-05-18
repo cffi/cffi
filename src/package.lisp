@@ -114,6 +114,7 @@
    #:*foreign-library-directories*
    #:*darwin-framework-directories*
    #:foreign-library
+   #:foreign-library-load-state
    #:foreign-library-name
    #:foreign-library-pathname
    #:foreign-library-type

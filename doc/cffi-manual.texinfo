@@ -6062,7 +6062,7 @@ CFFI> (let ((lib (load-foreign-library '(:framework "OpenGL"))))
 
 @Macro{define-foreign-library name-and-options @{ load-clause @}* @res{} name}
 
-name-and-options ::= name | (name &key convention search-path)
+name-and-options ::= name | (name &key canary convention search-path)
 load-clause ::= (feature library &key convention search-path)
 
 @subheading Arguments and Values
@@ -6076,6 +6076,15 @@ A feature expression.
 
 @item library
 A library designator.
+
+@item canary
+A string denoting a foreign symbol that will be searched in core
+before attempting to load the library. If that symbol is found, the
+library is assumed to be statically linked and
+@code{load-foreign-library} only marks the library as loaded.
+
+Some implementations (Clisp, ECL, SBCL) natively support static
+linking, sometimes referred to as a @emph{link kit}.
 
 @item convention
 One of @code{:cdecl} (default) or @code{:stdcall}
