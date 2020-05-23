@@ -121,11 +121,13 @@
    #:foreign-library-loaded-p
    #:list-foreign-libraries
    #:define-foreign-library
+   #:register-foreign-library
    #:load-foreign-library
    #:load-foreign-library-error
    #:use-foreign-library
    #:close-foreign-library
    #:reload-foreign-libraries
+   #:get-foreign-library
 
    ;; Callbacks.
    #:callback
