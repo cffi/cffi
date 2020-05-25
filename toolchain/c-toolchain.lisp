@@ -367,8 +367,13 @@ is bound to a temporary file name, then atomically renaming that temporary file 
       (link-shared-library .so (list .o)))))
 
 (defmethod perform ((o load-op) (c c-file))
-  (let ((o (second (input-files o c))))
-    (cffi:load-foreign-library (file-namestring o) :search-path (list (pathname-directory-pathname o)))))
+  (let* ((o (second (input-files o c)))
+         (p (file-namestring o)))
+    (cffi:define-foreign-library
+        (p
+         :reload-on-restart nil
+         :search-path (list (pathname-directory-pathname o))))
+    (cffi:use-foreign-library p)))
 
 (setf (find-class 'asdf::c-file) (find-class 'c-file))
 
@@ -383,8 +388,13 @@ is bound to a temporary file name, then atomically renaming that temporary file 
     (values (list o so) t)))
 
 (defmethod perform ((o load-op) (c o-file))
-  (let ((so (second (input-files o c))))
-    (cffi:load-foreign-library (file-namestring so) :search-path (list (pathname-directory-pathname so)))))
+  (let* ((so (second (input-files o c)))
+         (p (file-namestring so)))
+    (cffi:define-foreign-library
+        (p
+         :reload-on-restart nil
+         :search-path (list (pathname-directory-pathname so))))
+    (cffi:use-foreign-library p)))
 
 (setf (find-class 'asdf::o-file) (find-class 'o-file))
 
