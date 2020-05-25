@@ -231,7 +231,7 @@ all libraries are returned."
           spec))
 
 (defmethod initialize-instance :after
-    ((lib foreign-library) &key canary search-path
+    ((lib foreign-library) &key canary (reload-on-restart t) search-path
      (cconv :cdecl cconv-p)
      (calling-convention cconv calling-convention-p)
      (convention calling-convention))
@@ -252,7 +252,8 @@ all libraries are returned."
         (set-option :convention convention)
         (set-option :search-path
                     (mapcar #'pathname (ensure-list search-path)))
-        (set-option :canary canary)))))
+        (set-option :canary canary)
+        (set-option :reload-on-restart reload-on-restart)))))
 
 (defun register-foreign-library (name spec &rest options)
   (let ((old-handle
@@ -375,23 +376,33 @@ This will need to be extended as we test on more OSes."
        (:or (try-foreign-library-alternatives name (rest thing) search-path))))))
 
 (defun %do-load-foreign-library (library search-path)
-  (flet ((%do-load (lib name spec)
-           (let ((canary (getf (foreign-library-options lib) :canary)))
-             (cond
-               ((and canary (foreign-symbol-pointer canary))
-                ;; Do nothing because the library is already loaded.
-                (setf (foreign-library-load-state lib) :static))
-               ((foreign-library-spec lib)
-                (with-slots (handle pathname) lib
-                  (setf (values handle pathname)
-                        (load-foreign-library-helper
-                         name spec (foreign-library-search-path lib)))
-                  (setf (foreign-library-load-state lib) :external)))))
-           lib))
+  (labels
+      ((%do-load (lib name spec)
+         (let ((canary (getf (foreign-library-options lib) :canary)))
+           (cond
+             ((and canary (foreign-symbol-pointer canary))
+              ;; Do nothing because the library is already loaded.
+              (setf (foreign-library-load-state lib) :static))
+             ((foreign-library-spec lib)
+              (with-slots (handle pathname) lib
+                (setf (values handle pathname)
+                      (load-foreign-library-helper
+                       name spec (foreign-library-search-path lib)))
+                (setf (foreign-library-load-state lib) :external)))))
+         lib)
+       (dump-hook (lib)
+         (let () (lambda () (close-foreign-library lib))))
+       (restore-hook (lib name spec)
+         (let ()
+           (lambda ()
+             (when (getf (foreign-library-options lib) :reload-on-restart)
+               (%do-load lib name spec))))))
     (etypecase library
       (symbol
        (let* ((lib (get-foreign-library library))
               (spec (foreign-library-spec lib)))
+         (uiop:register-image-dump-hook (dump-hook lib))
+         (uiop:register-image-restore-hook (restore-hook lib library spec))
          (%do-load lib library spec)))
       ((or string list)
        (let* ((lib-name (gensym
@@ -407,6 +418,8 @@ This will need to be extended as we test on more OSes."
          ;; first try to load the anonymous library
          ;; and register it only if that worked
          (%do-load lib lib-name library)
+         (uiop:register-image-dump-hook (dump-hook lib))
+         (uiop:register-image-restore-hook (restore-hook lib lib-name library))
          (setf (get-foreign-library lib-name) lib))))))
 
 (defun filter-pathname (thing)
