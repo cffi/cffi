@@ -23,5 +23,8 @@ please see [these]((https://github.com/hu-dwim/hu.dwim.bluez)
 Please consult [the manual][1] for further details, including
 installation instructions.
 
+Please visit [Launchpad][3] for bug reports and feature suggestions.
+
 [1]: http://common-lisp.net/project/cffi/manual/html_node/
 [2]: https://github.com/rpav/c2ffi
+[3]: http://bugs.launchpad.net/cffi
