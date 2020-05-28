@@ -2526,7 +2526,7 @@ CFFI-USER> (code-char (mem-aref * :char 5))
 @Macro{defbitfield name-and-options &body masks}
 
 masks ::= [docstring] @{ (symbol value) @}* @*
-name-and-options ::= name | (name &optional (base-type :int))
+name-and-options ::= name | (name &optional (base-type :int)) @*
 
 @subheading Arguments and Values
 
@@ -2610,8 +2610,7 @@ CFFI> (unix-open "/tmp/foo" '(:wronly :creat) #o644)
 @subheading Syntax
 @Macro{defcstruct name-and-options &body doc-and-slots @res{} name}
 
-name-and-options ::= structure-name | (structure-name &key size)
-
+name-and-options ::= structure-name | (structure-name &key size) @*
 doc-and-slots ::= [docstring] @{ (slot-name slot-type &key count offset) @}*
 
 @subheading Arguments and Values
@@ -2820,8 +2819,8 @@ you should use @ref{define-foreign-type}.
 @subheading Syntax
 @Macro{defcenum name-and-options &body enum-list}
 
-enum-list ::= [docstring] @{ keyword | (keyword value) @}*
-name-and-options ::= name | (name &optional (base-type :int) &key allow-undeclared-values)
+enum-list ::= [docstring] @{ keyword | (keyword value) @}* @*
+name-and-options ::= name | (name &optional (base-type :int) &key allow-undeclared-values) @*
 
 @subheading Arguments and Values
 
@@ -4661,7 +4660,7 @@ CFFI> (pointer-eq (null-pointer) (null-pointer))
 @anchor{with-foreign-objects}
 @Macro{with-foreign-objects (bindings) &body body}
 
-bindings ::= @{(var type &optional count)@}*
+bindings ::= @{(var type &optional count)@}* @*
 
 @subheading Arguments and Values
 
@@ -5032,7 +5031,7 @@ CFFI> (with-foreign-pointer-as-string (str 255)
 @anchor{with-foreign-strings}
 @Macro{with-foreign-strings (bindings) &body body}
 
-var-or-vars ::= var | (var &optional octet-size-var)
+var-or-vars ::= var | (var &optional octet-size-var) @*
 bindings ::= @{(var-or-vars string &rest args)@}*
 
 @subheading Arguments and Values
@@ -5135,7 +5134,7 @@ Dictionary
 @Macro{defcvar name-and-options type &optional documentation @res{} lisp-name}
 
 @var{name-and-options} ::= name | (name &key read-only (library :default)) @*
-@var{name} ::= lisp-name [foreign-name] | foreign-name [lisp-name]
+@var{name} ::= lisp-name [foreign-name] | foreign-name [lisp-name] @*
 
 @subheading Arguments and Values
 
@@ -6062,8 +6061,8 @@ CFFI> (let ((lib (load-foreign-library '(:framework "OpenGL"))))
 
 @Macro{define-foreign-library name-and-options @{ load-clause @}* @res{} name}
 
-name-and-options ::= name | (name &key canary convention search-path)
-load-clause ::= (feature library &key convention search-path)
+name-and-options ::= name | (name &key canary convention search-path) @*
+load-clause ::= (feature library &key convention search-path) @*
 
 @subheading Arguments and Values
 
@@ -6495,8 +6494,8 @@ CFFI> (callback sum)
 @subheading Syntax
 @Macro{defcallback name-and-options return-type arguments &body body @res{} name}
 
-name-and-options ::= name | (name &key convention)
-arguments ::= (@{ (arg-name arg-type) @}*)
+name-and-options ::= name | (name &key convention) @*
+arguments ::= (@{ (arg-name arg-type) @}*) @*
 
 @subheading Arguments and Values
 
