@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stddef.h>
 
 #ifndef offsetof
 #define offsetof(type, slot) ((long) ((char *) &(((type *) 0)->slot)))
