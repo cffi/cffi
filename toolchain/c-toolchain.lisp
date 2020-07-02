@@ -116,7 +116,7 @@
        (setf (symbol-value sym)
              (if normalizep (normalize-flags linkset val) val))))
     (setf *ld* *cc*
-          *ld-exe-flags* `(,@*cc-flags* #-(or sunos solaris darwin) "-Wl,--export-dynamic")
+          *ld-exe-flags* `(,@*cc-flags* #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
                                 #-darwin "-shared"
                                 *cc-flags*))))
@@ -214,7 +214,7 @@
            #+freebsd (list "-I" "/usr/local/include/")
            (split-cflags (getenv "CFLAGS")))
           *ld* *cc*
-          *ld-exe-flags* `(,@arch-flags #-(or sunos solaris darwin) "-Wl,--export-dynamic")
+          *ld-exe-flags* `(,@arch-flags #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
                                 #-darwin "-shared"
                                 *cc-flags*)
