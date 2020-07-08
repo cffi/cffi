@@ -770,10 +770,7 @@ string."
                           :type :grovel-wrapper
                           :search-path ,(directory-namestring lib-file))
                        (t ,(namestring (make-so-file-name lib-soname))))
-		       (uiop/image:register-image-restore-hook
-			 (lambda () (cffi:use-foreign-library ,named-library-name)))
-		       (uiop/image:register-image-dump-hook
-			 (lambda () (cffi:close-foreign-library ,named-library-name))))
+                     (cffi:use-foreign-library ,named-library-name))
                   out)
           (fresh-line out))
         (dolist (form lisp-forms)
