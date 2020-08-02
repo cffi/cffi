@@ -66,6 +66,7 @@
    #:ppc32
    #:x86
    #:x86-64
+   #:arm64
    #:sparc
    #:sparc64
    #:hppa
@@ -100,6 +101,7 @@ that belong to the CFFI-FEATURES package."
         #+ppc ppc32
         #+x86 x86
         #+x86-64 x86-64
+	#+arm64 arm64
         #+sparc sparc
         #+sparc64 sparc64
         #+hppa hppa
