@@ -31,6 +31,7 @@
 #define DLLEXPORT
 #endif
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
@@ -39,11 +40,8 @@
 #include <float.h>
 #include <stdbool.h>
 #include <stdarg.h>
-
-/* MSVC doesn't have stdint.h and uses a different syntax for stdcall */
-#ifndef _MSC_VER
 #include <stdint.h>
-#endif
+#include <stddef.h>
 
 #ifdef WIN32
 #ifdef _MSC_VER
@@ -983,3 +981,37 @@ int call_stdcall_fun(int __attribute__((stdcall)) (*f)(int, int, int))
 
 /* vim: ts=4 et
 */
+
+/*
+ * STDINT.TYPES.1
+ */
+
+DLLEXPORT
+unsigned sizeof_ptrdiff(void)
+{
+  return (unsigned) sizeof(ptrdiff_t);
+}
+
+DLLEXPORT
+unsigned sizeof_size(void)
+{
+  return (unsigned) sizeof(size_t);
+}
+
+DLLEXPORT
+unsigned sizeof_offset(void)
+{
+  return (unsigned) sizeof(off_t);
+}
+
+DLLEXPORT
+unsigned sizeof_uintptr(void)
+{
+  return (unsigned) sizeof(uintptr_t);
+}
+
+DLLEXPORT
+unsigned sizeof_intptr(void)
+{
+  return (unsigned) sizeof(intptr_t);
+}
