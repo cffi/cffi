@@ -1848,13 +1848,16 @@ respectively.
 @ForeignType{:uint32}
 @ForeignType{:int64}
 @ForeignType{:uint64}
+@ForeignType{:size}
+@ForeignType{:ssize}
+@ForeignType{:intptr}
+@ForeignType{:uintptr}
+@ForeignType{:ptrdiff}
+@ForeignType{:offset}
 
 Foreign integer types of specific sizes, corresponding to the C types
 defined in @code{stdint.h}.
 
-@c @ForeignType{:size}
-@c @ForeignType{:ssize}
-@c @ForeignType{:ptrdiff}
 @c @ForeignType{:time}
 
 @c Foreign integer types corresponding to the standard C types (without
