@@ -8,17 +8,22 @@ package, and a portable frontend in the CFFI package.
 The CFFI-SYS backend package defines a low-level interface to the
 native FFI support in the Lisp implementation. It offers operators for
 allocating and dereferencing foreign memory, calling foreign
-functions, and loading shared libraries. The CFFI frontend provides a
+functions, and loading shared libraries.
+
+The CFFI frontend provides a
 declarative interface for defining foreign functions, structures,
 typedefs, enumerated types, etc. It is implemented in portable ANSI CL
 making use of the low-level operators exported by CFFI-SYS.
 
-CFFI/C2FFI is a mechanism to automatically generate CFFI bindings
-based on the output of [c2ffi][2]. Until it is properly documented
-please see [these]((https://github.com/hu-dwim/hu.dwim.bluez)
-[projects](https://github.com/hu-dwim/hu.dwim.zlib)
-[as](https://github.com/hu-dwim/hu.dwim.sdl)
-[examples](https://github.com/attila-lendvai/hu.dwim.mosquitto).
+CFFI/C2FFI is an ASDF-integrated mechanism to automatically
+generate a complete CFFI binding for a C project using the JSON output of
+[c2ffi][2]. c2ffi generates its output by using LLVM/Clang as a library
+to parse any C project. Until CFFI/C2FFI is properly documented, please
+see these projects as examples:
+[here](https://github.com/hu-dwim/hu.dwim.bluez),
+[here](https://github.com/hu-dwim/hu.dwim.zlib),
+[here](https://github.com/hu-dwim/hu.dwim.sdl),
+and [here](https://github.com/attila-lendvai/hu.dwim.mosquitto).
 
 Please consult [the manual][1] for further details, including
 installation instructions.
