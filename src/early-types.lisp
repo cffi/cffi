@@ -402,15 +402,14 @@ Signals an error if FOREIGN-TYPE is undefined."))
 
 ;;; Checks NAMEs, not object identity.
 (defun check-for-typedef-cycles (type)
-  (let ((seen (make-hash-table :test 'eq)))
-    (labels ((%check (cur-type)
-               (when (typep cur-type 'foreign-typedef)
-                 (when (gethash (name cur-type) seen)
-                   (simple-foreign-type-error type :default
-                                              "Detected cycle in type ~S." type))
-                 (setf (gethash (name cur-type) seen) t)
-                 (%check (actual-type cur-type)))))
-      (%check type))))
+  (labels ((%check (cur-type seen)
+             (when (typep cur-type 'foreign-typedef)
+               (when (member (name cur-type) seen)
+                 (simple-foreign-type-error type :default
+                                            "Detected cycle in type ~S." type))
+               (%check (actual-type cur-type)
+                       (cons (name cur-type) seen)))))
+    (%check type nil)))
 
 ;;; Only now we define PARSE-TYPE because it needs to do some extra
 ;;; work for ENHANCED-FOREIGN-TYPES.
