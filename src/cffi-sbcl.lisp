@@ -347,8 +347,7 @@ WITH-POINTER-TO-VECTOR-DATA."
         error
         (sem (sb-thread:make-semaphore)))
     (sb-thread:interrupt-thread
-     ;; KLUDGE: find a better way to get the initial thread.
-     (car (last (sb-thread:list-all-threads)))
+     sb-thread::*initial-thread*
      (lambda ()
        (multiple-value-setq (result error)
          (ignore-errors (apply fn args)))
