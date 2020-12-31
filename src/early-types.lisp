@@ -50,8 +50,14 @@
 ;;; Type parsers, defined with DEFINE-PARSE-METHOD should return a
 ;;; subtype of the foreign-type class.
 
-(defvar *type-parsers* (make-hash-table :test 'equal)
-  "Hash table of defined type parsers.")
+;; (defvar *type-parsers* (make-hash-table :test 'equal)
+;;  "Hash table of defined type parsers.")
+(defvar *default-type-parsers* (make-hash-table)
+  "Hash table for :DEFAULT namespace")
+(defvar *struct-type-parsers* (make-hash-table)
+  "Hash table for :STRUCT namespace")
+(defvar *union-type-parsers* (make-hash-table)
+  "Hash table for :UNION namespace")
 
 (define-condition cffi-error (error)
   ())
@@ -92,26 +98,35 @@
 (deftype c-namespace-name ()
   '(member :default :struct :union))
 
+(defun namespace-table (namespace)
+  (ecase namespace
+    (:default *default-type-parsers*)
+    (:struct *struct-type-parsers*)
+    (:union *union-type-parsers*)))
+
 ;; for C namespaces read: https://stackoverflow.com/questions/12579142/type-namespace-in-c
 ;; (section 6.2.3 Name spaces of identifiers)
 ;; NOTE: :struct is probably an unfortunate name for the tagged (?) namespace
 (defun find-type-parser (symbol &optional (namespace :default))
-  "Return the type parser for SYMBOL. NAMESPACE is either :DEFAULT (for
+    "Return the type parser for SYMBOL. NAMESPACE is either :DEFAULT (for
 variables, functions, and typedefs) or :STRUCT (for structs, unions, and enums)."
   (check-type symbol (and symbol (not null)))
-  (check-type namespace c-namespace-name)
-  (or (gethash (cons namespace symbol) *type-parsers*)
+  (or (gethash symbol (namespace-table namespace))
       (undefined-foreign-type-error symbol namespace)))
+
+(defun find-default-type-parser (symbol)
+  (check-type symbol (and symbol (not null)))
+  (or (gethash symbol *default-type-parsers*)
+      (undefined-foreign-type-error symbol :default)))
 
 (defun (setf find-type-parser) (func symbol &optional (namespace :default))
   "Set the type parser for SYMBOL."
   (check-type symbol (and symbol (not null)))
-  (check-type namespace c-namespace-name)
   ;; TODO Shall we signal a redefinition warning here?
-  (setf (gethash (cons namespace symbol) *type-parsers*) func))
+  (setf (gethash symbol (namespace-table namespace)) func))
 
 (defun undefine-foreign-type (symbol &optional (namespace :default))
-  (remhash (cons namespace symbol) *type-parsers*)
+  (remhash symbol (namespace-table namespace))
   (values))
 
 ;;; Using a generic function would have been nicer but generates lots
@@ -415,7 +430,7 @@ Signals an error if FOREIGN-TYPE is undefined."))
 ;;; work for ENHANCED-FOREIGN-TYPES.
 (defun parse-type (type)
   (let* ((spec (ensure-list type))
-         (ptype (apply (find-type-parser (car spec)) (cdr spec))))
+         (ptype (apply (find-default-type-parser (car spec)) (cdr spec))))
     (when (typep ptype 'foreign-typedef)
       (check-for-typedef-cycles ptype))
     (when (typep ptype 'enhanced-foreign-type)
