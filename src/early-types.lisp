@@ -432,8 +432,9 @@ Signals an error if FOREIGN-TYPE is undefined."))
 ;;; Only now we define PARSE-TYPE because it needs to do some extra
 ;;; work for ENHANCED-FOREIGN-TYPES.
 (defun parse-type (type)
-  (let* ((spec (ensure-list type))
-         (ptype (apply (find-default-type-parser (car spec)) (cdr spec))))
+  (let ((ptype (if (listp type)
+                   (apply (find-default-type-parser (car type)) (cdr type))
+                   (funcall (find-default-type-parser type)))))
     (when (typep ptype 'foreign-typedef)
       (check-for-typedef-cycles ptype))
     (when (typep ptype 'enhanced-foreign-type)
