@@ -548,7 +548,9 @@ target package."
                ;; the previous state. This avoids redefinition warning
                ;; when the generated file gets compiled and loaded
                ;; later.
-               (cffi::*type-parsers* (copy-hash-table cffi::*type-parsers*))
+               (cffi::*default-type-parsers* (copy-hash-table cffi::*default-type-parsers*))
+               (cffi::*struct-type-parsers* (copy-hash-table cffi::*struct-type-parsers*))
+               (cffi::*union-type-parsers* (copy-hash-table cffi::*union-type-parsers*))
                (*anon-name-counter* 0)
                (*anon-entities* (make-hash-table))
                (*generated-names* (mapcar (lambda (key)
