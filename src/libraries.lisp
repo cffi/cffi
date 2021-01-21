@@ -98,13 +98,13 @@
 (defun find-darwin-framework (framework-name)
   "Searches for FRAMEWORK-NAME in *DARWIN-FRAMEWORK-DIRECTORIES*."
   (dolist (directory (parse-directories *darwin-framework-directories*))
-    (let ((path (make-pathname
-                 :name framework-name
-                 :directory
-                 (append (pathname-directory directory)
-                         (list (format nil "~A.framework" framework-name))))))
-      (when (probe-file path)
-        (return-from find-darwin-framework path)))))
+    (let ((framework-directory
+            (merge-pathnames (format nil "~A.framework/" framework-name)
+                             directory)))
+
+      (when (probe-file framework-directory)
+        (let ((path (merge-pathnames framework-name framework-directory)))
+          (return-from find-darwin-framework path))))))
 
 ;;;# Defining Foreign Libraries
 ;;;
