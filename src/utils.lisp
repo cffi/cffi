@@ -27,10 +27,10 @@
 
 (in-package #:cffi)
 
-(defmacro discard-docstring (body-var &optional force)
+(defmacro discard-docstring (body-var)
   "Discards the first element of the list in body-var if it's a
-string and the only element (or if FORCE is T)."
-  `(when (and (stringp (car ,body-var)) (or ,force (cdr ,body-var)))
+string."
+  `(when (stringp (car ,body-var))
      (pop ,body-var)))
 
 (defun single-bit-p (integer)
