@@ -54,6 +54,7 @@
 (defun darwin-fallback-library-path ()
   (or (explode-path-environment-variable "DYLD_FALLBACK_LIBRARY_PATH")
       (list (merge-pathnames #p"lib/" (user-homedir-pathname))
+            #+arm64 #p"/opt/homebrew/lib/"
             #p"/opt/local/lib/"
             #p"/usr/local/lib/"
             #p"/usr/lib/")))
