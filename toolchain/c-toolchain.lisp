@@ -33,10 +33,14 @@
 ;;; Utils
 
 (defun parse-command-flags (flags)
+  "Takes a string of command FLAGS and returns a list of strings, each
+containing one flag. The original ordering of the flags is preserved."
   (let ((separators '(#\Space #\Tab #\Newline #\Return)))
     (remove-if 'emptyp (split-string flags :separator separators))))
 
 (defun parse-command-flags-list (strings)
+  "Takes a list of STRINGS containing command flags and returns a list of strings,
+each containing one flag. The original ordering of the flags is preserved."
   (loop for flags in strings append (parse-command-flags flags)))
 
 (defun program-argument (x)
@@ -317,6 +321,9 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 ;;; Computing file names
 
 (defun make-c-file-name (output-defaults &optional suffix)
+  "Returns a pathname object with filetype \"c\", whose name and default
+component values are specified by the pathname designator OUTPUT-DEFAULTS. If
+SUFFIX is supplied, it is concatenated onto the end of the pathname's name."
   (make-pathname :type "c"
                  :name (strcat (pathname-name output-defaults) suffix)
                  :defaults output-defaults))
