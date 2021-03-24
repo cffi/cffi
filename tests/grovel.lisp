@@ -94,3 +94,82 @@
                    (member :inexistent-grovel-feature *grovelled-features*))
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
+
+(deftest autotype
+  (let* ((header "struct autotype_struct {
+  signed char slot_int8;
+  short slot_int16;
+  int slot_int32;
+  long long slot_int64;
+  unsigned char slot_uint8;
+  unsigned short slot_uint16;
+  unsigned int slot_uint32;
+  unsigned long long slot_uint64;
+  float slot_float;
+  double slot_double;
+};
+
+typedef signed char ctype_int8;
+typedef short ctype_int16;
+typedef int ctype_int32;
+typedef long long ctype_int64;
+typedef unsigned char ctype_uint8;
+typedef unsigned short ctype_uint16;
+typedef unsigned int ctype_uint32;
+typedef unsigned long long ctype_uint64;
+typedef float ctype_float;
+typedef double ctype_double;"))
+    (uiop:with-temporary-file (:stream output :pathname header-file)
+      (write-string header output)
+      :close-stream
+      (let ((forms `((in-package :cffi-tests)
+                     (include ,header-file)
+                     (cstruct test-autotype_struct "struct autotype_struct"
+                              (slot_int8 "slot_int8" :type :auto)
+                              (slot_int16 "slot_int16" :type :auto)
+                              (slot_int32 "slot_int32" :type :auto)
+                              (slot_int64 "slot_int64" :type :auto)
+                              (slot_uint8 "slot_uint8" :type :auto)
+                              (slot_uint16 "slot_uint16" :type :auto)
+                              (slot_uint32 "slot_uint32" :type :auto)
+                              (slot_uint64 "slot_uint64" :type :auto)
+                              (slot_float "slot_float" :type :auto)
+                              (slot_double "slot_double" :type :auto))
+                     (ctype ctype_int8 "ctype_int8")
+                     (ctype ctype_int16 "ctype_int16")
+                     (ctype ctype_int32 "ctype_int32")
+                     (ctype ctype_int64 "ctype_int64")
+                     (ctype ctype_uint8 "ctype_uint8")
+                     (ctype ctype_uint16 "ctype_uint16")
+                     (ctype ctype_uint32 "ctype_uint32")
+                     (ctype ctype_uint64 "ctype_uint64")
+                     (ctype ctype_float "ctype_float")
+                     (ctype ctype_double "ctype_double"))))
+        (grovel-forms forms)
+        (flet ((slot-type (slot)
+                 (cffi:foreign-slot-type '(:struct test-autotype_struct) slot))
+               (canonicalize (type-name)
+                 (cffi::canonicalize-foreign-type type-name)))
+          (assert (eq :int8 (slot-type 'slot_int8)))
+          (assert (eq :int16 (slot-type 'slot_int16)))
+          (assert (eq :int32 (slot-type 'slot_int32)))
+          (assert (eq :int64 (slot-type 'slot_int64)))
+          (assert (eq :uint8 (slot-type 'slot_uint8)))
+          (assert (eq :uint16 (slot-type 'slot_uint16)))
+          (assert (eq :uint32 (slot-type 'slot_uint32)))
+          (assert (eq :uint64 (slot-type 'slot_uint64)))
+          (assert (eq :float (slot-type 'slot_float)))
+          (assert (eq :double (slot-type 'slot_double)))
+          ;;
+          (assert (eq :char (canonicalize 'ctype_int8)))
+          (assert (eq :short (canonicalize 'ctype_int16)))
+          (assert (eq :int (canonicalize 'ctype_int32)))
+          (assert (eq :long (canonicalize 'ctype_int64)))
+          (assert (eq :unsigned-char (canonicalize 'ctype_uint8)))
+          (assert (eq :unsigned-short (canonicalize 'ctype_uint16)))
+          (assert (eq :unsigned-int (canonicalize 'ctype_uint32)))
+          (assert (eq :unsigned-long (canonicalize 'ctype_uint64)))
+          (assert (eq :float (canonicalize 'ctype_float)))
+          (assert (eq :double (canonicalize 'ctype_double))))
+        t)))
+  t)
