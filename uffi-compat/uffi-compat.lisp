@@ -599,9 +599,14 @@ output to *trace-output*.  Returns the shell's exit code."
   ;; NULL-TERMINATED-P in CFFI:FOREIGN-STRING-TO-LISP.
   (declare (ignore locale null-terminated-p))
   (let ((ret (gensym)))
-    `(let ((,ret (cffi:foreign-string-to-lisp ,obj
-                                              :count ,length
-                                              :encoding ,encoding)))
+    `(let ((,ret (cffi:foreign-string-to-lisp
+                  ,obj
+                  :count ,length
+                  ;; There are code paths e.g. in clsql leading here
+                  ;; with encoding being nil. UFFI replaces nil
+                  ;; encoding with default foreign encoding in those
+                  ;; cases. Copy that behavior here
+                  :encoding (or ,encoding cffi:*default-foreign-encoding*))))
        (if (equal ,ret "")
            nil
            ,ret))))
