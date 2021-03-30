@@ -590,9 +590,7 @@ output to *trace-output*.  Returns the shell's exit code."
 ;;; Some undocumented UFFI operators...
 
 (defmacro convert-from-foreign-string
-    (obj &key length (locale :default)
-     (encoding 'cffi:*default-foreign-encoding*)
-     (null-terminated-p t))
+    (obj &key length (locale :default) encoding (null-terminated-p t))
   ;; in effect, (eq NULL-TERMINATED-P (null LENGTH)). Hopefully,
   ;; that's compatible with the intended semantics, which are
   ;; undocumented.  If that's not the case, we can implement
@@ -602,23 +600,20 @@ output to *trace-output*.  Returns the shell's exit code."
     `(let ((,ret (cffi:foreign-string-to-lisp
                   ,obj
                   :count ,length
-                  ;; There are code paths e.g. in clsql leading here
-                  ;; with encoding being nil. UFFI replaces nil
-                  ;; encoding with default foreign encoding in those
-                  ;; cases. Copy that behavior here
                   :encoding (or ,encoding cffi:*default-foreign-encoding*))))
        (if (equal ,ret "")
            nil
            ,ret))))
 
 ;; What's the difference between this and convert-to-cstring?
-(defmacro convert-to-foreign-string
-    (obj &optional (encoding 'cffi:*default-foreign-encoding*))
+(defmacro convert-to-foreign-string (obj &optional encoding)
   (let ((str (gensym)))
     `(let ((,str ,obj))
        (if (null ,str)
            (cffi:null-pointer)
-           (cffi:foreign-string-alloc ,str :encoding ,encoding)))))
+           (cffi:foreign-string-alloc
+            ,str
+            :encoding (or ,encoding cffi:*default-foreign-encoding*))))))
 
 (defmacro allocate-foreign-string (size &key unsigned)
   (declare (ignore unsigned))
