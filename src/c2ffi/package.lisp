@@ -33,6 +33,7 @@
                 #:output-file
                 #:output-files
                 #:input-files
+                #:operation-done-p
                 #:perform
                 #:compile-op
                 #:load-op
@@ -40,7 +41,9 @@
                 #:prepare-op
                 #:component-pathname
                 #:component-depends-on
+                #:operation
                 #:downward-operation
+                #:selfward-operation
                 #:load-system
                 #:component-loaded-p)
   (:export
