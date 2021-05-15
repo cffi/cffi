@@ -461,14 +461,18 @@ WITH-POINTER-TO-VECTOR-DATA."
             (jcall-raw (jmethod "com.sun.jna.NativeLibrary" "getFunction"
                                 "java.lang.String")
                    library name))))
-    (if (eq library :default)
-        (or (find-it
-             (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
-            ;; The above should find it, but I'm not exactly sure, so
-            ;; let's still do it manually just in case.
-            (loop for lib being the hash-values of *loaded-libraries*
-                  thereis (find-it lib)))
-        (find-it (gethash library *loaded-libraries*)))))
+    (or (if (eq library :default)
+            (or (find-it
+                 (jstatic "getProcess" "com.sun.jna.NativeLibrary"))
+                ;; The above should find it, but I'm not exactly sure, so
+                ;; let's still do it manually just in case.
+                (loop for lib being the hash-values of *loaded-libraries*
+                        thereis (find-it lib)))
+            (find-it (or (gethash library *loaded-libraries*)
+                         (error "Foreign library ~S is not loaded" library))))
+        (error "Undefined foreign function ~S~@[ in library ~S~]"
+               name
+               (if (eq library :default) nil library)))))
 
 (defun convert-calling-convention (convention)
   (ecase convention
