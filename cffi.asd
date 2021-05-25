@@ -36,7 +36,7 @@
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
-  :depends-on (:uiop :alexandria :trivial-features :babel)
+  :depends-on (:uiop :alexandria :trivial-features :babel :split-sequence)
   :in-order-to ((test-op (load-op :cffi-tests)))
   :perform (test-op (o c) (operate 'asdf:test-op :cffi-tests))
   :components
@@ -66,7 +66,8 @@
      (:file "structures")
      (:file "functions")
      (:file "foreign-vars")
-     (:file "features")))))
+     (:file "features")
+     (:file "doc")))))
 
 ;; when you get CFFI from git, its defsystem doesn't have a version,
 ;; so we assume it satisfies any version requirements whatsoever.
