@@ -5,6 +5,7 @@ language: generic
 branches:
   only:
     - master
+    - enum-field-references
 
 env:
   jobs:
