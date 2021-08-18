@@ -703,6 +703,7 @@
   42
   (1 . 2)
   42)
+
 ;; Test with-foreign-slots :pointer access and new binding syntax
 (defcstruct struct.wfs
   (tv-secs :long)
