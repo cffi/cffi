@@ -835,28 +835,7 @@ The foreign array must be freed with foreign-array-free."
       (foreign-struct-slot-set-form
        value ptr (get-slot-info (eval type) (eval slot-name)))
       form))
-#||
-(defmacro with-foreign-slots ((vars ptr type) &body body)
-  "Create local symbol macros for each var in VARS to reference
-foreign slots in PTR of TYPE. Similar to WITH-SLOTS.
-Each var can be of the form: slot-name - in which case slot-name will
-be bound to the value of the slot or: (:pointer slot-name) - in which
-case slot-name will be bound to the pointer to that slot."
-  (let ((ptr-var (gensym "PTR")))
-    `(let ((,ptr-var ,ptr))
-       (symbol-macrolet
-           ,(loop :for var :in vars
-              :collect
-              (if (listp var)
-                  (if (eq (first var) :pointer)
-                      `(,(second var) (foreign-slot-pointer
-                                       ,ptr-var ',type ',(second var)))
-                      (error
-                       "Malformed slot specification ~a; must be:`name' or `(:pointer name)'"
-                       var))
-                  `(,var (foreign-slot-value ,ptr-var ',type ',var))))
-         ,@body))))
-||#
+
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
 foreign slots in PTR of TYPE. Similar to WITH-SLOTS.
@@ -865,7 +844,6 @@ Each var can be of the form:
   (:pointer name)            name bound to pointer to slot of same name
   (name slot-name)           name bound to slot-name
   (name :pointer slot-name)  name bound to pointer to slot-name"
-
   (let ((ptr-var (gensym "PTR")))
     `(let ((,ptr-var ,ptr))
        (symbol-macrolet
