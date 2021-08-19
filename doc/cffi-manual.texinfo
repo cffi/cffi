@@ -3775,8 +3775,9 @@ pointer.  The return value is not used.
 
 @table @var
 @item vars
-A list with each element a symbol, or list of length two with the
-first element @code{:pointer} and the second a symbol.
+A list with binding descriptors; each is either a symbol, or list with
+up to 3 elements: an optional new name to bind, an optional symbol 
+@code{:pointer} and finally the required slot symbol.
 
 @item ptr
 A foreign pointer to a structure.
@@ -3789,11 +3790,14 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-slots} macro creates local symbol macros for each
-var in @var{vars} to reference foreign slots in @var{ptr} of @var{type}.
-If the var is a list starting with @code{:pointer}, it will bind the
-pointer to the slot (rather than the value). It is similar to Common
-Lisp's @code{with-slots} macro.
+The @code{with-foreign-slots} macro establishes a lexical environment for
+referring to the foreign slots of @var{type} addressed by @var{ptr}.
+Like Common Lisp's @code{with-slots} macro, each var in @var{vars} may
+be a symbol naming a slot, or a list @code{(name slot)} which creates a 
+binding to a slot with a different name.
+Prefixing the slot name with @code{:pointer} creates a binding to a
+foreign pointer that addresses the slot rather than its value.  Both
+@code{(:pointer slot)} and @code{(name :pointer slot)} are acceptable.
 
 @subheading Examples
 @lisp
@@ -3815,9 +3819,9 @@ CFFI> (with-foreign-object (time :int)
               (foreign-funcall "time" :pointer (null-pointer) :int))
         (foreign-funcall "gmtime" :pointer time (:pointer (:struct tm))))
 @result{} #<A Mac Pointer #x102A30>
-CFFI> (with-foreign-slots ((sec min hour mday mon year) * (:struct tm))
+CFFI> (with-foreign-slots ((sec min hour (day-of-month mday) mon year) * (:struct tm))
         (format nil "~A:~A:~A, ~A/~A/~A"
-                hour min sec (+ 1900 year) mon mday))
+                hour min sec (+ 1900 year) mon day-of-month))
 @result{} "7:22:47, 2005/8/2"
 @end lisp
 

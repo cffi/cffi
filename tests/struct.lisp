@@ -685,3 +685,31 @@
   42
   (1 . 2)
   42)
+
+;; Test with-foreign-slots :pointer access and new binding syntax
+(defcstruct struct.wfs
+  (tv-secs :long)
+  (tv-usecs :long))
+
+(deftest struct.with-foreign-slots.1
+    (with-foreign-object (tv 'struct.wfs)
+      (with-foreign-slots (((secs tv-secs) (usecs tv-usecs)) tv timeval)
+        (setf secs 100 usecs 200)
+        (values secs usecs)))
+  100 200)
+
+(deftest struct.with-foreign-slots.2
+    (with-foreign-object (tv 'struct.wfs)
+      (with-foreign-slots (((:pointer tv-secs) (:pointer tv-usecs)
+                            (secs tv-secs) (usecs tv-usecs))
+                           tv timeval)
+        (setf secs 100 usecs 200)
+        (values (mem-ref tv-secs :long) (mem-ref tv-usecs :long))))
+  100 200)
+
+(deftest struct.with-foreign-slots.3
+    (with-foreign-object (tv 'struct.wfs)
+      (with-foreign-slots (((psecs :pointer tv-secs) (pusecs :pointer tv-usecs) (secs tv-secs) (usecs tv-usecs)) tv timeval)
+        (setf secs 100 usecs 200)
+        (values (mem-ref psecs :long) (mem-ref pusecs :long))))
+  100 200)
