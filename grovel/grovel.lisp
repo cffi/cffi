@@ -202,7 +202,10 @@ int main(int argc, char**argv) {
                        (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
                      (case (form-kind f)
                        (in-package
-                        (setf *package* (find-package (second f)))
+                        (setf *package*
+                              (or (find-package (second f))
+                                  (error "The name ~S does not designate any package."
+                                         (second f))))
                         (push f forms))
                        (progn
                          ;; flatten progn forms
