@@ -335,11 +335,12 @@ ourselves."
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
   (dolist (lib library-list)
-    (multiple-value-bind (handle pathname)
-        (ignore-errors (load-foreign-library-helper name lib search-path))
-      (when handle
-        (return-from try-foreign-library-alternatives
-          (values handle pathname)))))
+    (when (probe-file lib)
+      (multiple-value-bind (handle pathname)
+          (ignore-errors (load-foreign-library-helper name lib search-path))
+        (when handle
+          (return-from try-foreign-library-alternatives
+            (values handle pathname))))))
   ;; Perhaps we should show the error messages we got for each
   ;; alternative if we can figure out a nice way to do that.
   (fl-error "Unable to load any of the alternatives:~%   ~S" library-list))
