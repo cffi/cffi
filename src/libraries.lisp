@@ -60,12 +60,17 @@
             #p"/usr/lib/")))
 
 (defvar *foreign-library-directories*
-  (if (featurep :darwin)
-      '((explode-path-environment-variable "LD_LIBRARY_PATH")
-        (explode-path-environment-variable "DYLD_LIBRARY_PATH")
-        (uiop:getcwd)
-        (darwin-fallback-library-path))
-      '())
+  ;; For LIBRARY_PATH see:
+  ;; https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html#Environment-Variables
+  ;; The actual use-case is Guix, where `guix shell --development foo` updates this
+  ;; variable with a pointer to the profile's lib/ directory that contains the .so's.
+  (append
+   '((explode-path-environment-variable "LIBRARY_PATH"))
+   (when (featurep :darwin)
+     '((explode-path-environment-variable "LD_LIBRARY_PATH")
+       (explode-path-environment-variable "DYLD_LIBRARY_PATH")
+       (uiop:getcwd)
+       (darwin-fallback-library-path))))
   "List onto which user-defined library paths can be pushed.")
 
 (defun fallback-darwin-framework-directories ()
