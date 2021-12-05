@@ -19,7 +19,8 @@ env:
     #- LISP=cmucl
     #- LISP=ecl
 
-jobs:
+matrix:
+  fast_finish: true
   allow_failures:
     - env: LISP=ccl32
     - env: LISP=sbcl32
