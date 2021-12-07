@@ -2,34 +2,35 @@ os: linux
 dist: focal
 language: generic
 
-branches:
-  only:
-    - master
-
 env:
   jobs:
-    #- LISP=abcl
-    #- LISP=allegro
-    - LISP=sbcl
-    - LISP=sbcl32
+    - LISP=abcl
+    - LISP=allegro
     - LISP=ccl
     - LISP=ccl32
-    #- LISP=clisp
-    #- LISP=clisp32
-    #- LISP=cmucl
-    #- LISP=ecl
+    - LISP=clisp
+    # clisp:i386 no longer available in Ubuntu Focal
+    # - LISP=clisp32
+    # cmucl not supported by CIM
+    # - LISP=cmucl
+    - LISP=ecl
+    - LISP=sbcl
+    - LISP=sbcl32
 
-matrix:
+jobs:
   fast_finish: true
   allow_failures:
+    - env: LISP=abcl
+    - env: LISP=allegro
     - env: LISP=ccl32
+    - env: LISP=clisp
+    # - env: LISP=clisp32
+    # - env: LISP=cmucl
+    - env: LISP=ecl
     - env: LISP=sbcl32
 
 install:
-  - curl -L https://github.com/luismbo/cl-travis/raw/master/install.sh | sh
-  - if [ "${LISP:(-2)}" = "32" ]; then
-      sudo apt-get install -y libc6-dev-i386 libffi-dev:i386;
-    fi
+  - curl -L https://github.com/lispci/cl-travis/raw/master/install.sh | sh
   - git clone --depth=1 git://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
   - git clone https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
   - git clone --depth=1 git://github.com/cl-babel/babel.git ~/lisp/babel

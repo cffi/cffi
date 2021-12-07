@@ -140,8 +140,11 @@
                     regression-test::*expected-failures*)))
 
 (defun run-all-cffi-tests ()
-  (append (run-cffi-tests :compiled nil)
-          (run-cffi-tests :compiled t)))
+  (let ((unexpected-failures
+          (append (run-cffi-tests :compiled nil)
+                  (run-cffi-tests :compiled t))))
+    (format t "~%~%Overall unexpected failures: ~{~%  ~A~}~%" unexpected-failures)
+    unexpected-failures))
 
 (defmacro expecting-error (&body body)
   `(handler-case (progn ,@body :no-error)
