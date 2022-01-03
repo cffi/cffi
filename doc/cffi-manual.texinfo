@@ -6086,8 +6086,9 @@ A library designator.
 @item canary
 A string denoting a foreign symbol that will be searched in core
 before attempting to load the library. If that symbol is found, the
-library is assumed to be statically linked and
-@code{load-foreign-library} only marks the library as loaded.
+library is assumed to be preloaded (either statically or dynamically
+linked) and @code{load-foreign-library} only marks the library as
+loaded.
 
 Some implementations (Clisp, ECL, SBCL) natively support static
 linking, sometimes referred to as a @emph{link kit}.
