@@ -174,6 +174,7 @@ int main(int argc, char**argv) {
   (%process-grovel-form (form-kind form) out (cdr form)))
 
 (defun form-kind (form)
+  "Returns a symbol from the CFFI-GROVEL package representing FORM's kind."
   ;; Using INTERN here instead of FIND-SYMBOL will result in less
   ;; cryptic error messages when an undefined grovel/wrapper form is
   ;; found.
@@ -741,6 +742,11 @@ string."
 (defvar *lisp-forms*)
 
 (defun generate-c-lib-file (input-file output-defaults)
+  "Translate the wrapper forms in INPUT-FILE to C code and write the results to
+a C file. If the file already exists, overwrite it.
+
+Returns two values: the C file's pathname, and a list of the wrapper forms that
+were translated to C code. "
   (let ((*lisp-forms* nil)
         (c-file (make-c-file-name output-defaults "__wrapper")))
     (with-open-file (out c-file :direction :output :if-exists :supersede)
@@ -848,6 +854,7 @@ string."
 ;;; FIXME: this function is not complete.  Should probably follow
 ;;; typedefs?  Should definitely understand pointer types.
 (defun c-type-name (typespec)
+  "Returns TYPESPEC's C typename as a string."
   (let ((spec (ensure-list typespec)))
     (if (stringp (car spec))
         (car spec)
@@ -858,7 +865,10 @@ string."
           ((:unsigned-long :ulong) "unsigned long")
           ((:long-long :llong) "long long")
           ((:unsigned-long-long :ullong) "unsigned long long")
-          (:pointer "void*")
+          (:struct (strcat "struct " (cffi::foreign-name (second spec) nil)))
+          (:pointer (if (rest spec)
+                        (strcat (c-type-name (second spec)) "*")
+                        "void*"))
           (:string "char*")
           (t (cffi::foreign-name (car spec) nil))))))
 
@@ -883,7 +893,9 @@ string."
       ;; output C code
       (format out "~A ~A" (c-type-name rettype) foreign-name-wrap)
       (format out "(~{~{~A ~A~}~^, ~})~%" fargs)
-      (format out "{~%  return ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames)
+      (if (eq rettype :void)
+          (format out "{~%  ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames)
+          (format out "{~%  return ~A(~{~A~^, ~});~%}~%~%" foreign-name fargnames))
       ;; matching bindings
       (push `(cffi:defcfun (,foreign-name-wrap ,lisp-name ,@options)
                  ,(cffi-type rettype)
