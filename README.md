@@ -20,10 +20,10 @@ complete CFFI binding for a C project using the JSON output of
 [c2ffi](https://github.com/rpav/c2ffi). c2ffi generates its output by
 using LLVM/Clang as a library to parse any C project. Until CFFI/C2FFI
 is properly documented, please see these projects as examples:
-[here](https://github.com/hu-dwim/hu.dwim.bluez),
-[here](https://github.com/hu-dwim/hu.dwim.zlib),
-[here](https://github.com/hu-dwim/hu.dwim.sdl), and
-[here](https://github.com/attila-lendvai/hu.dwim.mosquitto).
+[hu.dwim.bluez](https://github.com/hu-dwim/hu.dwim.bluez),
+[hu.dwim.zlib](https://github.com/hu-dwim/hu.dwim.zlib),
+[hu.dwim.sdl](https://github.com/hu-dwim/hu.dwim.sdl), and
+[hu.dwim.mosquitto](https://github.com/attila-lendvai/hu.dwim.mosquitto).
 
 Please consult [the
 manual](http://common-lisp.net/project/cffi/manual/html_node/) for
