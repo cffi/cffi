@@ -46,6 +46,8 @@
    #:with-foreign-pointer
    #:%foreign-funcall
    #:%foreign-funcall-pointer
+   #:%foreign-funcall-varargs
+   #:%foreign-funcall-pointer-varargs
    #:%foreign-type-alignment
    #:%foreign-type-size
    #:%load-foreign-library
@@ -286,12 +288,21 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun foreign-funcall-type-and-args (args)
   "Return an SB-ALIEN function type for ARGS."
-  (let ((return-type 'void))
-    (loop for (type arg) on args by #'cddr
-          if arg collect (convert-foreign-type type) into types
-          and collect arg into fargs
-          else do (setf return-type (convert-foreign-type type))
-          finally (return (values types fargs return-type)))))
+  (let ((return-type 'void)
+        types
+        fargs)
+    (loop while args
+          do (let ((type (pop args)))
+               (cond ((eq type '&optional)
+                      (push type types))
+                     ((not args)
+                      (setf return-type (convert-foreign-type type)))
+                     (t
+                      (push (convert-foreign-type type) types)
+                      (push (pop args) fargs)))))
+    (values (nreverse types)
+            (nreverse fargs)
+            return-type)))
 
 (defmacro %%foreign-funcall (name types fargs rettype)
   "Internal guts of %FOREIGN-FUNCALL."
@@ -314,6 +325,30 @@ WITH-POINTER-TO-VECTOR-DATA."
     (with-unique-names (function)
       `(with-alien ((,function (* (function ,rettype ,@types)) ,ptr))
          (alien-funcall ,function ,@fargs)))))
+
+(defmacro %foreign-funcall-varargs (name fixed-args varargs
+                                    &rest args &key convention library)
+  (declare (ignore convention library))
+  `(%foreign-funcall ,name ,(append fixed-args (and varargs
+                                                    ;; All SBCL platforms would understand this
+                                                    ;; but this is the only one where it's required.
+                                                    ;; Omitting elsewhere makes it work on older
+                                                    ;; versions of SBCL.
+                                                    (append #+(and darwin arm64)
+                                                            '(&optional)
+                                                            varargs)))
+                     ,@args))
+
+(defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
+                                            &rest args &key convention)
+  (declare (ignore convention))
+  `(%foreign-funcall-pointer ,pointer ,(append fixed-args
+                                               (and varargs
+                                                    (append #+(and darwin arm64)
+                                                            '(&optional)
+                                                            varargs)))
+                             ,@args))
+
 
 ;;;# Callbacks
 
