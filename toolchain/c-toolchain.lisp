@@ -260,7 +260,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 
 (defun link-executable (output-file inputs)
   (apply 'invoke-builder (list *ld* "-o") output-file
-         (append *ld-exe-flags* inputs)))
+         (append inputs *ld-exe-flags*)))
 
 (defun link-lisp-executable (output-file inputs)
   #+ecl
