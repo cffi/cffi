@@ -94,3 +94,23 @@
                    (member :inexistent-grovel-feature *grovelled-features*))
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
+
+(deftest grovel-types
+    (let* ((this #.(or *compile-file-truename* *load-truename*))
+           (include-dir (uiop:native-namestring (make-pathname :directory (pathname-directory this)))))
+      (grovel-forms `((in-package :cffi-tests)
+                      (cc-flags ,(concatenate 'string "-I" include-dir))
+                      (include "grovel-test.h")
+                      (constant (tagged-array-max-length "TAGGED_ARRAY_MAX_LENGTH")
+                       :documentation "Maximum length of tagged_array.arr (should be 64)")
+                      (cstruct tagged-array "struct tagged_array"
+                       (tagged-array-arr "arr" :type (:array :pointer 64))
+                       (tagged-array-len "len" :type :unsigned-int))))
+      (let ((arr-type (cffi:foreign-slot-type '(:struct tagged-array) 'tagged-array-arr))
+            (len-type (cffi:foreign-slot-type '(:struct tagged-array) 'tagged-array-len)))
+        (values (eql tagged-array-max-length 64)
+                (and (eql (car arr-type) :array)
+                     (eql (cadr arr-type) :pointer)
+                     (eql (caddr arr-type) tagged-array-max-length))
+                (and (eql len-type :unsigned-int)))))
+  t t t)

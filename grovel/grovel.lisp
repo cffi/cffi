@@ -141,7 +141,9 @@ int main(int argc, char**argv) {
         do (c-write out subform no-package))
      (c-format out ")"))
     ((symbolp form)
-     (c-print-symbol out form no-package))))
+     (c-print-symbol out form no-package))
+    ((numberp form)
+     (c-format out "~A" form))))
 
 ;;; Always NIL for now, add {ENABLE,DISABLE}-AUTO-EXPORT grovel forms
 ;;; later, if necessary.

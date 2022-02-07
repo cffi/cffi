@@ -92,7 +92,7 @@
   (error 'undefined-foreign-type-error :type-name type-name :namespace namespace))
 
 ;; TODO this is not according to the C namespace rules,
-;; see bug: https://bugs.launchpad.net/cffi/+bug/1527947
+;; see bug: https://github.com/cffi/cffi/issues/266
 (deftype c-namespace-name ()
   '(member :default :struct :union))
 
