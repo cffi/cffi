@@ -2872,14 +2872,14 @@ CFFI> (foreign-enum-value 'boolean :no)
 @lisp
 (defcenum numbers
   (:one 1)
-  (:another_one :one)
+  (:another-one :one)
   :two
   (:four 4))
 
 CFFI> (foreign-enum-keyword 'numbers 2)
 @result{} :TWO
 
-CFFI> (foreign-enum-value 'numbers :another_one)
+CFFI> (foreign-enum-value 'numbers :another-one)
 @result{} 1
 @end lisp
 
