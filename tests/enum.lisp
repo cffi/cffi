@@ -242,39 +242,3 @@
   0
   0
   1)
-
-(defcenum enum.date
-  :era
-  :year 
-  :month 
-  :week_of_year 
-  :week_of_month 
-  :date 
-  :day_of_year 
-  :day_of_week 
-  :day_of_week_in_month
-  :am_pm 
-  :hour 
-  :hour_of_day 
-  :minute 
-  :second 
-  :millisecond 
-  :zone_offset 
-  :dst_offset 
-  :year_woy 
-  :dow_local
-  :extended_year
-  :julian_day
-  :milliseconds_in_day
-  :is_leap_month
-  :field_count
-  (:day_of_month :date))
-
-(deftest enum.keyword-ref.2
-    (values
-     (foreign-enum-value 'enum.date :date)
-     (foreign-enum-value 'enum.date :field_count)
-     (foreign-enum-value 'enum.date :day_of_month))
-  5
-  23
-  5)
