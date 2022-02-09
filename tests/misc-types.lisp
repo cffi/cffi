@@ -294,3 +294,30 @@
 (deftest misc-type.expand.8
     (eval (expand-to-foreign "foo" (cffi::parse-type 'misc-type.expand.7)))
   "foo" second-value)
+
+;; stdint.h
+(defcfun "sizeof_ptrdiff" :unsigned-int)
+(defcfun "sizeof_size" :unsigned-int)
+(defcfun "sizeof_offset" :unsigned-int)
+(defcfun "sizeof_uintptr" :unsigned-int)
+(defcfun "sizeof_intptr" :unsigned-int)
+
+(deftest misc-types.sizeof.ptrdiff
+    (eql (sizeof-ptrdiff) (foreign-type-size :ptrdiff))
+  t)
+
+(deftest misc-types.sizeof.size
+    (eql (sizeof-size) (foreign-type-size :size))
+  t)
+
+(deftest misc-types.sizeof.offset
+    (eql (sizeof-offset) (foreign-type-size :offset))
+  t)
+
+(deftest misc-types.sizeof.uintptr
+    (eql (sizeof-uintptr) (foreign-type-size :uintptr))
+  t)
+
+(deftest misc-types.sizeof.intptr
+    (eql (sizeof-intptr) (foreign-type-size :intptr))
+  t)

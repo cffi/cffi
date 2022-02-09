@@ -31,8 +31,8 @@
   (:darwin (:or "libffi.dylib" "libffi32.dylib" "/usr/lib/libffi.dylib"))
   (:solaris (:or "/usr/lib/amd64/libffi.so" "/usr/lib/libffi.so"))
   (:openbsd "libffi.so")
-  (:unix (:or "libffi.so.7" "libffi32.so.7" "libffi.so.6" "libffi32.so.6" "libffi.so.5" "libffi32.so.5"))
-  (:windows (:or "libffi-7.dll" "libffi-6.dll" "libffi-5.dll" "libffi.dll"))
+  (:unix (:or "libffi.so.8" "libffi32.so.8" "libffi.so.7" "libffi32.so.7" "libffi.so.6" "libffi32.so.6" "libffi.so.5" "libffi32.so.5"))
+  (:windows (:or "libffi-8.dll" "libffi-7.dll" "libffi-6.dll" "libffi-5.dll" "libffi.dll"))
   (t (:default "libffi")))
 
 (load-foreign-library 'libffi)

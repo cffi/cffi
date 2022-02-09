@@ -148,16 +148,16 @@
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall-varargs
-       "sprintf" (:pointer s :string "%.2f") :double (coerce pi 'double-float) :int))
-  "3.14")
+       "sprintf" (:pointer s :string "%.0f") :double (* pi 100d0) :int))
+  "314")
 
 #+(and scl long-float)
 (deftest funcall.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
       (foreign-funcall-varargs
-       "sprintf" :pointer s :string "%.2Lf" :long-double pi :int))
-  "3.14")
+       "sprintf" :pointer s :string "%.0Lf" :long-double (* pi 100) :int))
+  "314")
 
 (deftest funcall.varargs.string
     (with-foreign-pointer-as-string (s 100)

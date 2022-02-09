@@ -54,6 +54,7 @@
 (defun darwin-fallback-library-path ()
   (or (explode-path-environment-variable "DYLD_FALLBACK_LIBRARY_PATH")
       (list (merge-pathnames #p"lib/" (user-homedir-pathname))
+            #+arm64 #p"/opt/homebrew/lib/"
             #p"/opt/local/lib/"
             #p"/usr/local/lib/"
             #p"/usr/lib/")))
@@ -98,13 +99,13 @@
 (defun find-darwin-framework (framework-name)
   "Searches for FRAMEWORK-NAME in *DARWIN-FRAMEWORK-DIRECTORIES*."
   (dolist (directory (parse-directories *darwin-framework-directories*))
-    (let ((path (make-pathname
-                 :name framework-name
-                 :directory
-                 (append (pathname-directory directory)
-                         (list (format nil "~A.framework" framework-name))))))
-      (when (probe-file path)
-        (return-from find-darwin-framework path)))))
+    (let ((framework-directory
+            (merge-pathnames (format nil "~A.framework/" framework-name)
+                             directory)))
+
+      (when (probe-file framework-directory)
+        (let ((path (merge-pathnames framework-name framework-directory)))
+          (return-from find-darwin-framework path))))))
 
 ;;;# Defining Foreign Libraries
 ;;;
@@ -135,6 +136,7 @@
    (type :initform :system :initarg :type)
    (spec :initarg :spec)
    (options :initform nil :initarg :options)
+   (load-state :initform nil :initarg :load-state :accessor foreign-library-load-state)
    (handle :initform nil :initarg :handle :accessor foreign-library-handle)
    (pathname :initform nil)))
 
@@ -188,7 +190,7 @@
         finally (return (mapcar #'pathname search-path))))
 
 (defun foreign-library-loaded-p (lib)
-  (not (null (foreign-library-handle (get-foreign-library lib)))))
+  (not (null (foreign-library-load-state (get-foreign-library lib)))))
 
 (defun list-foreign-libraries (&key (loaded-only t) type)
   "Return a list of defined foreign libraries.
@@ -230,7 +232,7 @@ all libraries are returned."
           spec))
 
 (defmethod initialize-instance :after
-    ((lib foreign-library) &key search-path
+    ((lib foreign-library) &key canary search-path
      (cconv :cdecl cconv-p)
      (calling-convention cconv calling-convention-p)
      (convention calling-convention))
@@ -250,7 +252,8 @@ all libraries are returned."
                (when value (setf (getf options key) value))))
         (set-option :convention convention)
         (set-option :search-path
-                    (mapcar #'pathname (ensure-list search-path)))))))
+                    (mapcar #'pathname (ensure-list search-path)))
+        (set-option :canary canary)))))
 
 (defun register-foreign-library (name spec &rest options)
   (let ((old-handle
@@ -374,11 +377,17 @@ This will need to be extended as we test on more OSes."
 
 (defun %do-load-foreign-library (library search-path)
   (flet ((%do-load (lib name spec)
-           (when (foreign-library-spec lib)
-             (with-slots (handle pathname) lib
-               (setf (values handle pathname)
-                     (load-foreign-library-helper
-                      name spec (foreign-library-search-path lib)))))
+           (let ((canary (getf (foreign-library-options lib) :canary)))
+             (cond
+               ((and canary (foreign-symbol-pointer canary))
+                ;; Do nothing because the library is already loaded.
+                (setf (foreign-library-load-state lib) :static))
+               ((foreign-library-spec lib)
+                (with-slots (handle pathname) lib
+                  (setf (values handle pathname)
+                        (load-foreign-library-helper
+                         name spec (foreign-library-search-path lib)))
+                  (setf (foreign-library-load-state lib) :external)))))
            lib))
     (etypecase library
       (symbol
@@ -410,7 +419,10 @@ This will need to be extended as we test on more OSes."
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
 load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
-or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
+or finally list: either (:or lib1 lib2) or (:framework <framework-name>).
+The option :CANARY can specify a symbol that will be searched to detect if
+the library is already loaded, in which case DEFINE-FOREIGN-LIBRARY will mark
+the library as loaded and return."
   (let ((library (filter-pathname library)))
     (restart-case
         (progn
@@ -446,6 +458,8 @@ or finally list: either (:or lib1 lib2) or (:framework <framework-name>)."
     (when handle
       (%close-foreign-library handle)
       (setf (foreign-library-handle lib) nil)
+      ;; Reset the load state only when the library was externally loaded.
+      (setf (foreign-library-load-state lib) nil)
       t)))
 
 (defun reload-foreign-libraries (&key (test #'foreign-library-loaded-p))

@@ -55,11 +55,11 @@
 (defmacro deftest (name &rest body)
   (destructuring-bind (name &key expected-to-fail)
       (alexandria:ensure-list name)
-    (let ((result `(rt:deftest ,name ,@body)))
+    (let ((result `(rtest:deftest ,name ,@body)))
       (when expected-to-fail
         (setf result `(progn
                         (when ,expected-to-fail
-                          (pushnew ',name rt::*expected-failures*))
+                          (pushnew ',name rtest::*expected-failures*))
                         ,result)))
       result)))
 
@@ -140,8 +140,11 @@
                     regression-test::*expected-failures*)))
 
 (defun run-all-cffi-tests ()
-  (append (run-cffi-tests :compiled nil)
-          (run-cffi-tests :compiled t)))
+  (let ((unexpected-failures
+          (append (run-cffi-tests :compiled nil)
+                  (run-cffi-tests :compiled t))))
+    (format t "~%~%Overall unexpected failures: ~{~%  ~A~}~%" unexpected-failures)
+    unexpected-failures))
 
 (defmacro expecting-error (&body body)
   `(handler-case (progn ,@body :no-error)

@@ -266,11 +266,14 @@ field-name"
              for cffi-type = (convert-uffi-type uffi-type)
              collect (list name cffi-type))))
 
+(defun convert-uffi-type-form (type-form)
+  (if (constantp type-form)
+      `',(convert-uffi-type (eval type-form))
+      `(convert-uffi-type ,type-form)))
+
 (defmacro allocate-foreign-object (type &optional (size 1))
   "Allocate one or more instance of a foreign type."
-  `(cffi:foreign-alloc ,(if (constantp type)
-                            `',(convert-uffi-type (eval type))
-                            `(convert-uffi-type ,type))
+  `(cffi:foreign-alloc ,(convert-uffi-type-form type)
                        :count ,size))
 
 (defmacro free-foreign-object (ptr)
@@ -279,7 +282,7 @@ field-name"
 
 (defmacro with-foreign-object ((var type) &body body)
   "Wrap the allocation of a foreign object around BODY."
-  `(cffi:with-foreign-object (,var (convert-uffi-type ,type))
+  `(cffi:with-foreign-object (,var ,(convert-uffi-type-form type))
      ,@body))
 
 ;; Taken from UFFI's src/objects.lisp
@@ -292,7 +295,7 @@ field-name"
 
 (defmacro size-of-foreign-type (type)
   "Return the size in bytes of a foreign type."
-  `(cffi:foreign-type-size (convert-uffi-type ,type)))
+  `(cffi:foreign-type-size ,(convert-uffi-type-form type)))
 
 (defmacro pointer-address (ptr)
   "Return the address of a pointer."
@@ -300,10 +303,10 @@ field-name"
 
 (defmacro deref-pointer (ptr type)
   "Dereference a pointer."
-  `(cffi:mem-ref ,ptr (convert-uffi-type ,type)))
+  `(cffi:mem-ref ,ptr ,(convert-uffi-type-form type)))
 
 (defsetf deref-pointer (ptr type) (value)
-  `(setf (cffi:mem-ref ,ptr (convert-uffi-type ,type)) ,value))
+  `(setf (cffi:mem-ref ,ptr ,(convert-uffi-type-form type)) ,value))
 
 (defmacro ensure-char-character (obj &environment env)
   "Convert OBJ to a character if it is an integer."

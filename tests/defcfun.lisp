@@ -175,7 +175,7 @@
     (n :unsigned-long-long))
 
   #+allegro ; lp#914500
-  (pushnew 'defcfun.unsigned-long-long rt::*expected-failures*)
+  (pushnew 'defcfun.unsigned-long-long rtest::*expected-failures*)
 
   (deftest defcfun.unsigned-long-long
       (let ((ullong-max (1- (expt 2 (* 8 (foreign-type-size :unsigned-long-long))))))
@@ -256,7 +256,7 @@
 
 (defcfun "noop" :void)
 
-#+(or allegro openmcl ecl) (pushnew 'defcfun.noop rt::*expected-failures*)
+#+(or allegro openmcl ecl) (pushnew 'defcfun.noop rtest::*expected-failures*)
 
 (deftest defcfun.noop
     (noop)
@@ -286,7 +286,7 @@
 
 ;;; CLISP and ABCL discard macro docstrings.
 #+(or clisp abcl)
-(pushnew 'defcfun.varargs.docstrings rt::*expected-failures*)
+(pushnew 'defcfun.varargs.docstrings rtest::*expected-failures*)
 
 (deftest defcfun.varargs.docstrings
     (documentation 'sprintf 'function)
@@ -314,20 +314,20 @@
 
 (deftest defcfun.varargs.float
     (with-foreign-pointer-as-string (s 100)
-      (sprintf s "%.2f" :float (float pi)))
-  "3.14")
+      (sprintf s "%.0f" :float (* pi 100)))
+  "314")
 
 (deftest defcfun.varargs.double
     (with-foreign-pointer-as-string (s 100)
-      (sprintf s "%.2f" :double (float pi 1.0d0)))
-  "3.14")
+      (sprintf s "%.0f" :double (* pi 100d0)))
+  "314")
 
 #+(and scl long-float)
 (deftest defcfun.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)
-      (sprintf s "%.2Lf" :long-double pi))
-  "3.14")
+      (sprintf s "%.0Lf" :long-double (* pi 100)))
+  "314")
 
 (deftest defcfun.varargs.string
     (with-foreign-pointer-as-string (s 100)
@@ -470,7 +470,7 @@
 ;;; throw some sort of warning, not signal an error.
 
 #+(or cmucl (and sbcl win32))
-(pushnew 'defcfun.undefined rt::*expected-failures*)
+(pushnew 'defcfun.undefined rtest::*expected-failures*)
 
 (deftest defcfun.undefined
     (progn

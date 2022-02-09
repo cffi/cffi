@@ -79,8 +79,8 @@
 (deftest fsbv.4
     (let ((ans (doublepairdouble '(pr (a 4 b 5) dbl 2.5d0))))
       (values (getf (getf ans 'pr) 'a)
-	      (getf (getf ans 'pr) 'b)
-	      (getf ans 'dbl)))
+              (getf (getf ans 'pr) 'b)
+              (getf ans 'dbl)))
   8
   10
   5.0d0)

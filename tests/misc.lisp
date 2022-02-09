@@ -113,7 +113,7 @@
 ;;;# Shareable Byte Vector Tests
 
 #+ecl
-(mapc (lambda (x) (pushnew x rt::*expected-failures*))
+(mapc (lambda (x) (pushnew x rtest::*expected-failures*))
       '(shareable-vector.1 shareable-vector.2))
 
 (deftest shareable-vector.1

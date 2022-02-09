@@ -116,7 +116,7 @@
        (setf (symbol-value sym)
              (if normalizep (normalize-flags linkset val) val))))
     (setf *ld* *cc*
-          *ld-exe-flags* `(,@*cc-flags* #-darwin "-Wl,--export-dynamic")
+          *ld-exe-flags* `(,@*cc-flags* #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
                                 #-darwin "-shared"
                                 *cc-flags*))))
@@ -214,7 +214,7 @@
            #+freebsd (list "-I" "/usr/local/include/")
            (split-cflags (getenv "CFLAGS")))
           *ld* *cc*
-          *ld-exe-flags* `(,@arch-flags #-darwin "-Wl,--export-dynamic")
+          *ld-exe-flags* `(,@arch-flags #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
                                 #-darwin "-shared"
                                 *cc-flags*)
@@ -254,9 +254,9 @@ is bound to a temporary file name, then atomically renaming that temporary file 
   (with-temporary-output (output-file)
     (apply 'invoke `(,@builder ,output-file ,@args))))
 
-(defun cc-compile (output-file inputs)
+(defun cc-compile (output-file inputs &optional cflags)
   (apply 'invoke-builder (list *cc* "-o") output-file
-         "-c" (append *cc-flags* #-windows '("-fPIC") inputs)))
+         "-c" (append *cc-flags* cflags #-windows '("-fPIC") inputs)))
 
 (defun link-executable (output-file inputs)
   (apply 'invoke-builder (list *ld* "-o") output-file
@@ -348,7 +348,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
         ((:dll :shared-library) (link-shared-library output inputs))))))
 
 (defclass c-file (source-file)
-  ((cflags :initarg :cflags :initform :default)
+  ((cflags :initarg :cflags :initform nil)
    (type :initform "c")))
 
 (defmethod output-files ((o compile-op) (c c-file))
@@ -363,7 +363,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 (defmethod perform ((o compile-op) (c c-file))
   (let ((i (first (input-files o c))))
     (destructuring-bind (.o .so) (output-files o c)
-      (cc-compile .o (list i))
+      (cc-compile .o (list i) (slot-value c 'cflags))
       (link-shared-library .so (list .o)))))
 
 (defmethod perform ((o load-op) (c c-file))
@@ -373,8 +373,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 (setf (find-class 'asdf::c-file) (find-class 'c-file))
 
 (defclass o-file (source-file)
-  ((cflags :initarg :cflags :initform :default)
-   (type :initform (bundle-pathname-type :object)))
+  ((type :initform (bundle-pathname-type :object)))
   (:documentation "class for pre-compile object components"))
 
 (defmethod output-files ((op compile-op) (c o-file))

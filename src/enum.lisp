@@ -55,7 +55,11 @@
    (value-keywords
     :initform (error "Must specify VALUE-KEYWORDS.")
     :initarg :value-keywords
-    :reader value-keywords))
+    :reader value-keywords)
+   (allow-undeclared-values
+    :initform nil
+    :initarg :allow-undeclared-values
+    :reader allow-undeclared-values))
   (:documentation "Describes a foreign enumerated type."))
 
 (deftype enum-key ()
@@ -159,7 +163,7 @@
                               bit-index->keyword :adjustable nil
                               :fill-pointer nil)))))
 
-(defun make-foreign-enum (type-name base-type values)
+(defun make-foreign-enum (type-name base-type values &key allow-undeclared-values)
   "Makes a new instance of the foreign-enum class."
   (multiple-value-bind
         (base-type keyword-values value-keywords)
@@ -168,18 +172,19 @@
                    :name type-name
                    :actual-type (parse-type base-type)
                    :keyword-values keyword-values
-                   :value-keywords value-keywords)))
+                   :value-keywords value-keywords
+                   :allow-undeclared-values allow-undeclared-values)))
 
 (defun %defcenum-like (name-and-options enum-list type-factory)
   (discard-docstring enum-list)
-  (destructuring-bind (name &optional base-type)
+  (destructuring-bind (name &optional base-type &rest args)
       (ensure-list name-and-options)
-    (let ((type (funcall type-factory name base-type enum-list)))
+    (let ((type (apply type-factory name base-type enum-list args)))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-foreign-type ',name
                               ;; ,type is not enough here, someone needs to
                               ;; define it when we're being loaded from a fasl.
-                              (,type-factory ',name ',base-type ',enum-list))
+                              (,type-factory ',name ',base-type ',enum-list ,@args))
          ,@(remove nil
                    (mapcar (lambda (key)
                              (unless (keywordp key)
@@ -239,7 +244,10 @@
         (translate-to-foreign value type)))
 
 (defmethod translate-from-foreign (value (type foreign-enum))
-  (%foreign-enum-keyword type value :errorp t))
+  (if (allow-undeclared-values type)
+      (or (%foreign-enum-keyword type value :errorp nil)
+          value)
+      (%foreign-enum-keyword type value :errorp t)))
 
 (defmethod expand-to-foreign (value (type foreign-enum))
   (once-only (value)
