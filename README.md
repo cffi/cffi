@@ -55,9 +55,9 @@ includes the `#define` macros as CL constants.
 
 Until CFFI/C2FFI is properly documented, you may check out these
 projects as examples:
-[hu.dwim.bluez](https://github.com/hu-dwim/hu.dwim.bluez),
 [hu.dwim.zlib](https://github.com/hu-dwim/hu.dwim.zlib),
-[hu.dwim.sdl](https://github.com/hu-dwim/hu.dwim.sdl), and
+[hu.dwim.sdl](https://github.com/hu-dwim/hu.dwim.sdl),
+[hu.dwim.bluez](https://github.com/hu-dwim/hu.dwim.bluez), and
 [hu.dwim.mosquitto](https://github.com/attila-lendvai/hu.dwim.mosquitto).
 
 ### Related projects

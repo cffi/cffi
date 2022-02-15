@@ -101,8 +101,10 @@
               :do (setf (mem-aref argument-values :pointer count) arg))
             (let* ((libffi-cif-cache (load-time-value (cons 'libffi-cif-cache nil)))
                    (libffi-cif (or (cdr libffi-cif-cache)
+                                   ;; TODO use compare-and-swap to set it and call
+                                   ;; FREE-LIBFFI-CIF when someone else did already.
                                    (setf (cdr libffi-cif-cache)
-                                         ;; FIXME ideally we should install a finalizer on the cons
+                                         ;; FIXME we should install a finalizer on the cons cell
                                          ;; that calls FREE-LIBFFI-CIF on the cif (when the function
                                          ;; gets redefined, and the cif becomes unreachable). but a
                                          ;; finite world is full of compromises... - attila
