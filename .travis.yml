@@ -34,6 +34,7 @@ install:
   - git clone --depth=1 git://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
   - git clone https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
   - git clone --depth=1 git://github.com/cl-babel/babel.git ~/lisp/babel
+  - git clone --depth=1 git://github.com/sharplispers/split-sequence.git ~/lisp/split-sequence
 
 script:
   - cl -e '(ql:quickload :cffi-tests)
