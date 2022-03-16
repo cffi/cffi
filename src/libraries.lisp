@@ -170,11 +170,58 @@
 (defun foreign-library-pathname (lib)
   (slot-value (get-foreign-library lib) 'pathname))
 
+(defun file-architectures (pathname)
+  (when (probe-file pathname)
+    (let* ((output
+             (with-output-to-string (s)
+               (uiop:run-program (list "file" pathname)
+                                 :output s)))
+           (lines (uiop:split-string output :separator '(#\Newline))))
+      (loop for line in lines
+            when (and (> (length line)
+                         0)
+                      (not (char= (elt line (1- (length line)))
+                                  #\])))
+              collect (car (last (uiop:split-string line)))))))
+
+(defun arch-is-compatible (pathname)
+  (loop with current-arch = (machine-type)
+        with file-supports-current-arch = nil
+        with supported = (file-architectures pathname)
+        for arch in supported
+        when (string-equal arch current-arch)
+          do (setf file-supports-current-arch t)
+        finally (return file-supports-current-arch)))
+
+(defun filter-compatible-libs (spec)
+  (typecase spec
+    ((or pathname string)
+     (when (arch-is-compatible spec)
+       spec))
+    (list
+     (case (car spec)
+       (:or (let ((compatible-files
+                    (remove nil
+                            (mapcar #'filter-compatible-libs
+                                    (cdr spec)))))
+              (when compatible-files
+                (list* :or compatible-files))))
+       ;; For other types of spec
+       ;; arch compatibility is not supported yet,
+       ;; thus we'll return them as is
+       (t
+        spec)))))
+
 (defun %foreign-library-spec (lib)
-  (assoc-if (lambda (feature)
-              (or (eq feature t)
-                  (featurep feature)))
-            (slot-value lib 'spec)))
+  "Here we not only filter specs by a feature, but also check if file's architecture
+   is compatible with architecture of the current process. This is important
+   on OSes like OSX, which can support both x86 and ARM architectures."
+  (loop for (feature spec) in (slot-value lib 'spec)
+        for compatible-spec = (filter-compatible-libs spec)
+        when (and (or (eq feature t)
+                      (featurep feature))
+                  compatible-spec)
+          do (return (list feature compatible-spec))))
 
 (defun foreign-library-spec (lib)
   (second (%foreign-library-spec lib)))
@@ -357,6 +404,7 @@ operating system.  This is used to implement the :DEFAULT option.
 This will need to be extended as we test on more OSes."
   (or (cdr (assoc-if #'featurep *cffi-feature-suffix-map*))
       (fl-error "Unable to determine the default library suffix on this OS.")))
+
 
 (defun load-foreign-library-helper (name thing &optional search-path)
   (etypecase thing
