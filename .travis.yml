@@ -31,9 +31,9 @@ jobs:
 
 install:
   - curl -L https://github.com/lispci/cl-travis/raw/master/install.sh | sh
-  - git clone --depth=1 git://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
+  - git clone --depth=1 https://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
   - git clone https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
-  - git clone --depth=1 git://github.com/cl-babel/babel.git ~/lisp/babel
+  - git clone --depth=1 https://github.com/cl-babel/babel.git ~/lisp/babel
 
 script:
   - cl -e '(ql:quickload :cffi-tests)
