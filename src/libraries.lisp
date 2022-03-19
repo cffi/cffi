@@ -201,8 +201,16 @@
                           (t nil)))))
 
 (defun foreign-library-options (lib)
+  ;; Here we are collecting options from all matched specs.
+  ;; Probably this is not correct because different specs
+  ;; might have different call conventions and search paths.
+  ;; 
+  ;; If this is a problem, then larger refactoring is required
+  ;; and probably we need to pass currently processed filename
+  ;; to this library, to return options exactly for this spec.
   (append (loop for item in (%featured-foreign-library-specs lib)
-                appending (cddr item))
+                for item-options = (cddr item)
+                appending item-options)
           (slot-value lib 'options)))
 
 (defun foreign-library-search-path (lib)
