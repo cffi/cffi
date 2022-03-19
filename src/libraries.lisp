@@ -170,17 +170,39 @@
 (defun foreign-library-pathname (lib)
   (slot-value (get-foreign-library lib) 'pathname))
 
-(defun %foreign-library-spec (lib)
-  (assoc-if (lambda (feature)
-              (or (eq feature t)
-                  (featurep feature)))
-            (slot-value lib 'spec)))
+(defun %featured-foreign-library-specs (lib)
+  "A library can have multiple specs for which feature will evaluate to true.
+   When loading such a library we need to try loading all of these specs.
+
+   This case might take a place when there are multiple library implementations
+   for different architectures. Both files will exist on machine, one for ARM
+   and other for x86. In this case we need to give CFFI a chance to try loading
+   both of them. The one with architecture matching to the current lisp's architecture
+   will be loaded."
+  (loop for spec in (slot-value lib 'spec)
+        for feature = (car spec)
+        for matches = (or (eq feature t)
+                          (featurep feature))
+        when matches
+          collect spec))
 
 (defun foreign-library-spec (lib)
-  (second (%foreign-library-spec lib)))
+  (loop for (feature spec) in (%featured-foreign-library-specs lib)
+        if (and (typep spec 'cons)
+                (eql (car spec) :or))
+          append (cdr spec) into results
+        else
+          collect spec into results
+        finally (return (cond
+                          ((= (length results) 1)
+                           (first results))
+                          (results
+                           (list* :or results))
+                          (t nil)))))
 
 (defun foreign-library-options (lib)
-  (append (cddr (%foreign-library-spec lib))
+  (append (loop for item in (%featured-foreign-library-specs lib)
+                appending (cddr item))
           (slot-value lib 'options)))
 
 (defun foreign-library-search-path (lib)
