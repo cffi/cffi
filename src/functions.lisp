@@ -77,19 +77,19 @@
       (warn-obsolete-argument :cconv :convention))
     (when calling-convention-p
       (warn-obsolete-argument :calling-convention :convention))
-    (list* :convention
-           (or convention
-               (when libraryp
-                 (let ((lib-options (foreign-library-options
-                                     (get-foreign-library library))))
-                   (getf lib-options :convention)))
-               :cdecl)
-           ;; Don't pass the library option if we're dealing with
-           ;; FOREIGN-FUNCALL-POINTER.
-           ,@(unless pointer
-               `(:library ,library))
-           ,@(when inlinep
-               `(:inline ,inline)))))
+    `(:convention
+      ,(or convention
+           (when libraryp
+             (let ((lib-options (foreign-library-options
+                                 (get-foreign-library library))))
+               (getf lib-options :convention)))
+           :cdecl)
+      ;; Don't pass the library option if we're dealing with
+      ;; FOREIGN-FUNCALL-POINTER.
+      ,@(unless pointer
+          `(:library ,library))
+      ,@(when inlinep
+          `(:inline ,inline)))))
 
 (defun structure-by-value-p (ctype)
   "A structure or union is to be called or returned by value."
