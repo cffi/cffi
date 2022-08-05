@@ -244,7 +244,7 @@ arguments and does type promotion for the variadic arguments."
              syms (mapcar #'canonicalize-foreign-type arg-types) options))
       `(progn
          ,@(when prelude `(,prelude))
-         (declaim (ftype ,ftype ,lisp-name) ,@inline)
+         ,@(when inline `(declaim ,@inline))
          (defun ,lisp-name ,arg-names
            ,@(ensure-list docstring)
            ,(if call-by-value
