@@ -5082,39 +5082,55 @@ CFFI> (with-foreign-string (foo "12345")
 @node with-foreign-pointer-as-string,  , with-foreign-string, Strings
 @heading with-foreign-pointer-as-string
 @subheading Syntax
-@Macro{with-foreign-pointer-as-string (var size &optional size-var @
+@Macro{with-foreign-pointer-as-string (var-or-vars size @
                                       &rest args) &body body @res{} string}
 
+@var{var-or-vars} ::= var | (var &optional size-var)
 @subheading Arguments and Values
 
 @table @var
 @item var
+@itemx size-var
 A symbol.
 
-@item string
-A Lisp string.
+@item size
+An integer
+
+@item args
+Arguments to be passed to @code{foreign-string-to-lisp} to create the returned string.
 
 @item body
 List of forms to be executed.
+
+@item string
+A Lisp string.
 @end table
 
 @subheading Description
 The @code{with-foreign-pointer-as-string} macro is similar to
-@code{with-foreign-pointer} except that @var{var} is used as the
-returned value of an implicit @code{progn} around @var{body}, after
-being converted to a Lisp string using the provided @var{args}.
+@code{with-foreign-pointer} except that the allocated buffer is
+transformed into a lisp string and returned once @code{body} has
+finished executing.
+
+A foreign buffer of size @code{size} is bound to @code{var} during the
+execution of @code{body}. If @code{size-var} is specified, it is bound
+to the value of @code{size}. The return value is constructed by
+transforming the foreign buffer into a lisp string using
+@code{foreign-string-to-lisp}, which is given @code{args} as
+arguments.
 
 @subheading Examples
 
 @lisp
-CFFI> (with-foreign-pointer-as-string (str 6 str-size :encoding :ascii)
+CFFI> (with-foreign-pointer-as-string ((str str-size) 6 :encoding :ascii)
         (lisp-string-to-foreign "Hello, foreign world!" str str-size))
 @result{} "Hello"
 @end lisp
 
 @subheading See Also
 @seealso{foreign-string-alloc} @*
-@seealso{with-foreign-string}
+@seealso{with-foreign-string} @*
+@seealso{with-foreign-pointer}
 
 
 @c ===================================================================
