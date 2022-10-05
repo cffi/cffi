@@ -37,7 +37,8 @@
   #+x86-64 "x86_64"
   #+(and (not (or x86-64 freebsd)) x86) "i686"
   #+(and (not x86-64) x86 freebsd) "i386"
-  #+arm "arm")
+  #+arm "arm"
+  #+arm64 "aarch64")
 
 (defun local-vendor ()
   #+(or linux windows) "-pc"
@@ -45,14 +46,17 @@
   #+(not (or linux windows darwin)) "-unknown")
 
 (defun local-os ()
-  #+linux "-linux"
+  #+(or linux android) "-linux"
   #+windows "-windows-msvc"
   #+darwin "-darwin9"
-  #+freebsd "-freebsd")
+  #+freebsd "-freebsd"
+  #+openbsd "-openbsd")
 
 (defun local-environment ()
   #+linux "-gnu"
-  #-linux "")
+  #+(and arm android) "-androideabi"
+  #+(and (not arm) android) "-android"
+  #+(not (or linux android)) "")
 
 (defun local-arch ()
   (strcat (local-cpu) (local-vendor) (local-os) (local-environment)))
@@ -65,7 +69,16 @@
     "i686-apple-darwin9"
     "x86_64-apple-darwin9"
     "i386-unknown-freebsd"
-    "x86_64-unknown-freebsd"))
+    "x86_64-unknown-freebsd"
+    "i386-unknown-openbsd"
+    "x86_64-unknown-openbsd"
+    "arm-pc-linux-gnu"
+    "aarch64-pc-linux-gnu"
+    "aarch64-apple-darwin9"
+    "arm-unknown-linux-androideabi"
+    "aarch64-unknown-linux-android"
+    "i686-unknown-linux-android"
+    "x86_64-unknown-linux-android"))
 
 (defvar *c2ffi-executable* "c2ffi")
 (defvar *c2ffi-extra-arguments* (list))
