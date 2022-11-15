@@ -98,9 +98,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
   #+(version>= 8 1)
-  (when (and (constantp size) (<= (eval size) ff:*max-stack-fobject-bytes*))
+  (when (and (constant-form-p size)
+             (<= (constant-form-value size) ff:*max-stack-fobject-bytes*))
     (return-from with-foreign-pointer
-      `(let ((,size-var ,(eval size)))
+      `(let ((,size-var ,(constant-form-value size)))
          (declare (ignorable ,size-var))
          (ff:with-static-fobject (,var '(:array :char ,(eval size))
                                        :allocation :foreign-static-gc)
@@ -171,10 +172,11 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; CFFI type is constant.  Allegro does its own transformation on the
 ;;; call that results in efficient code.
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
-        `(ff:fslot-value-typed ',(convert-foreign-type (eval type))
-                               :c ,ptr-form))
+        `(ff:fslot-value-typed
+           ',(convert-foreign-type (constant-form-value type))
+           :c ,ptr-form))
       form))
 
 (defun %mem-set (value ptr type &optional (offset 0))
@@ -187,10 +189,11 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; when the CFFI type is constant.  Allegro does its own
 ;;; transformation on the call that results in efficient code.
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       (once-only (val)
         (let ((ptr-form (if (eql off 0) ptr `(+ ,ptr ,off))))
-          `(setf (ff:fslot-value-typed ',(convert-foreign-type (eval type))
+          `(setf (ff:fslot-value-typed ',(convert-foreign-type
+                                           (constant-form-value type))
                                        :c ,ptr-form) ,val)))
       form))
 
