@@ -37,39 +37,6 @@
 ;;; once a framework exists, load it as, eg.
 ;;; (ccl::add-framework-bundle "fftw.framework" :pathname "ccl:frameworks;" )
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:ccl)
-  (:import-from #:alexandria #:once-only #:if-let)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp  ; ccl:pointerp
-   #:pointer-eq
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%mem-ref
-   #:%mem-set
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%foreign-symbol-pointer
-   #:%defcallback
-   #:%callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Misfeatures
@@ -320,12 +287,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; OpenMCL will update the address of these pointers when a saved image
 ;;; is loaded (see CCL::RESTORE-PASCAL-FUNCTIONS).
 (defvar *callbacks* (make-hash-table))
-
-;;; Create a package to contain the symbols for callback functions.  We
-;;; want to redefine callbacks with the same symbol so the internal data
-;;; structures are reused.
-(defpackage #:cffi-callbacks
-  (:use))
 
 ;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
 ;;; callback for NAME.
