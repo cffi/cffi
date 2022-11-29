@@ -342,19 +342,23 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 #+darwin
 (defun call-within-initial-thread (fn &rest args)
-  (let (result
-        error
-        (sem (sb-thread:make-semaphore)))
-    (sb-thread:interrupt-thread
-     sb-thread::*initial-thread*
-     (lambda ()
-       (multiple-value-setq (result error)
-         (ignore-errors (apply fn args)))
-       (sb-thread:signal-semaphore sem)))
-    (sb-thread:wait-on-semaphore sem)
-    (if error
-        (signal error)
-        result)))
+  (if (eq sb-thread:*current-thread*
+          sb-thread::*initial-thread*)
+      (apply fn args)
+      (let (result
+            error
+            (sem (sb-thread:make-semaphore)))
+        (sb-thread:interrupt-thread
+         sb-thread::*initial-thread*
+         (lambda ()
+           (sb-sys:with-interrupts
+             (multiple-value-setq (result error)
+               (ignore-errors (apply fn args))))
+           (sb-thread:signal-semaphore sem)))
+        (sb-thread:wait-on-semaphore sem)
+        (if error
+            (signal error)
+            result))))
 
 (declaim (inline %load-foreign-library))
 (defun %load-foreign-library (name path)
@@ -362,7 +366,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore name))
   ;; As of MacOS X 10.6.6, loading things like CoreFoundation from a
   ;; thread other than the initial one results in a crash.
-  #+(and darwin sb-thread) (call-within-initial-thread 'load-shared-object path)
+  #+(and darwin sb-thread) (call-within-initial-thread #'load-shared-object path)
   #-(and darwin sb-thread) (load-shared-object path))
 
 ;;; SBCL 1.0.21.15 renamed SB-ALIEN::SHARED-OBJECT-FILE but introduced
