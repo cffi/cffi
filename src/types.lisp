@@ -1024,6 +1024,12 @@ The buffer has dynamic extent and may be stack allocated."
       (not (zerop (eval value)))
       `(not (zerop ,value))))
 
+(defmethod expand-to-foreign-dyn-indirect
+    (value var body (type foreign-boolean-type))
+  `(with-foreign-object (,var ,(canonicalize type))
+     (translate-into-foreign-memory (if ,value 1 0) ,(actual-type type) ,var)
+     ,@body))
+
 ;;; Boolean type that represents C99 _Bool
 (defctype :bool (:boolean :char))
 
