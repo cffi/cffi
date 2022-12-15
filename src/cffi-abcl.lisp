@@ -32,48 +32,10 @@
 ;;; JNA may be automatically loaded into the current JVM process from
 ;;; abcl-1.1.0-dev via the contrib mechanism.
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (require :abcl-contrib)
-  (require :jna)
-  (require :jss))
-
 ;;; This is a preliminary version that will have to be cleaned up,
 ;;; optimized, etc. Nevertheless, it passes all of the relevant CFFI
 ;;; tests except MAKE-POINTER.HIGH. Shareable Vectors are not
 ;;; implemented yet.
-
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:cl #:java)
-  (:import-from #:alexandria #:hash-table-values #:length= #:format-symbol)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:%mem-ref
-   #:%mem-set
-   #:%foreign-symbol-pointer
-   #:%defcallback
-   #:%callback
-   #:with-pointer-to-vector-data
-   #:make-shareable-byte-vector))
 
 (in-package #:cffi-sys)
 
