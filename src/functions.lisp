@@ -417,25 +417,60 @@ arguments and does type promotion for the variadic arguments."
       (warn-obsolete-argument :calling-convention :convention))
     (list :convention convention)))
 
+(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defmacro defcallback (name-and-options return-type args &body body)
   (multiple-value-bind (body declarations)
       (parse-body body :documentation t)
-    (let ((arg-names (mapcar #'car args))
+    (let* ((arg-names (mapcar #'car args))
           (arg-types (mapcar #'cadr args))
           (name (car (ensure-list name-and-options)))
-          (options (cdr (ensure-list name-and-options))))
-      `(progn
-         (%defcallback ,name ,(canonicalize-foreign-type return-type)
-             ,arg-names ,(mapcar #'canonicalize-foreign-type arg-types)
-           ,(inverse-translate-objects
+           (options (cdr (ensure-list name-and-options)))
+           (c-return-type (canonicalize-foreign-type return-type))
+           (c-arg-types (mapcar #'canonicalize-foreign-type arg-types))
+           (translated-body (inverse-translate-objects
              arg-names arg-types declarations return-type
-             `(block ,name ,@body))
-           ,@(parse-defcallback-options options))
+             `(block ,name ,@body)))
+           (convention (parse-defcallback-options options))
+           (call-by-value (fn-call-by-value-p c-arg-types c-return-type)))
+      `(progn
+         (if ,call-by-value
+             (foreign-defcallback ',name ',c-return-type
+                                  ',arg-names ',c-arg-types ',translated-body ,@convention)
+             (%defcallback ,name ,c-return-type
+             ,arg-names ,c-arg-types ,translated-body ,@convention))
          ',name))))
+
+;; Not sure if the next two forms are needed
+;; since we use inverse-translate-objects
+#+(or)
+(funcall *foreign-structures-by-value*
+                   name
+                   fargs
+                   syms
+                   types
+                   rettype
+                   ctypes)
+
+(declaim (optimize (speed 0) (space 0) (debug 3)))
+(defun foreign-defcallback (name rettype arg-names arg-types body
+                               &key convention)
+  (let ((syms (make-gensym-list (length arg-types))))
+    (funcall *foreign-structures-by-value*
+              name
+              arg-names ;;fargs
+              syms
+              arg-types ;;types
+              rettype
+              arg-types ;;ctypes
+              nil
+              convention
+              t
+              body)))
 
 (declaim (inline get-callback))
 (defun get-callback (symbol)
   (%callback symbol))
 
 (defmacro callback (name)
-  `(%callback ',name))
+  `(handler-case (%callback ',name)
+     (t (c) (%libffi-callback ',name))))
