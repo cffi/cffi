@@ -40,15 +40,10 @@
 ;;; images, so it is safe to store the pointers directly.
 (defvar *libffi-callbacks* (make-hash-table))
 
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defun %libffi-callback (name)
-  (progn
-  (%get-callback name)
-    #+(or)
   (handler-case (%get-callback name)
-    (error (c) (libffi-error name "Undefined callback: ~S - ~S" name c)))))
+    (error (c) (libffi-error name "Undefined callback: ~S - ~S" name c))))
 
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defun %get-callback (name)
   (let ((result (gethash name *libffi-callbacks*)))
     (if (listp result)
@@ -99,13 +94,6 @@ to the corresponding executable address for a callback through libffi."
         (libffi-error function-name
                     "The 'ffi_prep_closure_loc' libffi call failed for callback ~S."
                     function-name))))
-
-#+(or)
-(defun init-libffi-closure (closure cif function codeloc)
-  "Generate or retrieve the closure needed for a callback through libffi."
-      (libffi-error function-name
-                    "The 'ffi_prep_closure_loc' libffi call failed for callback ~S."
-                    function-name))
 
 (defun free-libffi-cif (ptr)
   (foreign-free (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
@@ -169,8 +157,6 @@ to the corresponding executable address for a callback through libffi."
                    'result)))))))
 
 ;;;# Callbacks
-
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defun foreign-defcallback-form/fsbv-with-libffi (function function-arguments symbols types
                                                   return-type argument-types body
                                                   &optional (abi :default-abi))
@@ -209,7 +195,7 @@ to the corresponding executable address for a callback through libffi."
                                                           ',argument-types))))
                    (libffi-closure-cache (load-time-value (cons 'libffi-closure-cache nil)))
                    (libffi-function-binding-ptr
-                     (%defcallback-function-binder ',function ',return-type ',function-arguments ',argument-types ',body :convention ,abi))
+                     (%defcallback-function-binder ,function ',return-type ',function-arguments ',argument-types ',body))
                    (libffi-function (or (cdr libffi-closure-cache)
                                        (setf (cdr libffi-closure-cache)
                                              (init-libffi-closure libffi-closure libffi-cif libffi-function-binding-ptr (cffi:mem-aref function-ptr :pointer))))))
@@ -221,11 +207,6 @@ to the corresponding executable address for a callback through libffi."
   (if defcallbackp
       (foreign-defcallback-form/fsbv-with-libffi function function-arguments symbols types return-type argument-types body abi)
       (foreign-funcall-form/fsbv-with-libffi function function-arguments symbols types return-type argument-types pointerp abi)))
-
-(defun replace-struct-with-ptr (type)
-  (if (listp type)
-      ':pointer
-      type))
 
 (setf *foreign-structures-by-value* 'foreign-form-decider/fsbv-with-libffi)
 

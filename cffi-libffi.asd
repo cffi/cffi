@@ -40,7 +40,7 @@
   ((:module libffi
     :serial t
     :components
-    ((:file "libffi-sbcl" :if-feature :sbcl)
+    ((:file "libffi-callback")
      (:file "libffi")
      (cffi-grovel:grovel-file "libffi-types")
      (:file "libffi-functions")

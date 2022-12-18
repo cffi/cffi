@@ -417,7 +417,6 @@ arguments and does type promotion for the variadic arguments."
       (warn-obsolete-argument :calling-convention :convention))
     (list :convention convention)))
 
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defmacro defcallback (name-and-options return-type args &body body)
   (multiple-value-bind (body declarations)
       (parse-body body :documentation t)
@@ -440,18 +439,6 @@ arguments and does type promotion for the variadic arguments."
              ,arg-names ,c-arg-types ,translated-body ,@convention))
          ',name))))
 
-;; Not sure if the next two forms are needed
-;; since we use inverse-translate-objects
-#+(or)
-(funcall *foreign-structures-by-value*
-                   name
-                   fargs
-                   syms
-                   types
-                   rettype
-                   ctypes)
-
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defun foreign-defcallback (name rettype arg-names arg-types body
                                &key convention)
   (let ((syms (make-gensym-list (length arg-types))))
