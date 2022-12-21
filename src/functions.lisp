@@ -432,15 +432,15 @@ arguments and does type promotion for the variadic arguments."
            (convention (parse-defcallback-options options))
            (call-by-value (fn-call-by-value-p c-arg-types c-return-type)))
       `(progn
-         (if ,call-by-value
-             (foreign-defcallback ',name ',c-return-type
+         ,(if call-by-value
+             `(foreign-defcallback ',name ',c-return-type
                                   ',arg-names ',c-arg-types ',translated-body ,@convention)
-             (%defcallback ,name ,c-return-type
+             `(%defcallback ,name ,c-return-type
              ,arg-names ,c-arg-types ,translated-body ,@convention))
          ',name))))
 
 (defun foreign-defcallback (name rettype arg-names arg-types body
-                               &key convention)
+                            &key convention)
   (let ((syms (make-gensym-list (length arg-types))))
     (funcall *foreign-structures-by-value*
               name

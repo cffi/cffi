@@ -197,3 +197,23 @@
 (deftest (fsbv.return-value-typedef)
     (sumpair-with-typedef '(40 . 2))
   42)
+
+;;; void callback
+(defparameter *pair-struct* -1)
+
+(defcfun pass-struct-pair :void (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(declaim (optimize (speed 0) (space 0) (debug 3)))
+(defcallback read-struct-pair :void ((p (:struct struct-pair)))
+  (setq *pair-struct* p))
+
+#+(and darwin cmucl)
+(pushnew 'callbacks.void rtest::*expected-failures*)
+
+(deftest fsbv.callbacks.void
+    (progn
+      (pass-struct-pair (callback read-struct-pair))
+      *pair-struct*)
+  (1984 . 1994))

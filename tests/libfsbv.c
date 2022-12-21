@@ -78,6 +78,7 @@ int enumpair (numeros mynum, struct struct_pair sp);
 struct struct_pair doublepair (struct struct_pair dp);
 double prodsumpair (struct struct_pair_double spd);
 struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
+void pass_struct_pair(void (*f)(struct struct_pair));
 
 DLLEXPORT
 int sumpair (struct struct_pair sp)
@@ -176,4 +177,13 @@ struct bitfield_struct structbitfield (unsigned int x) {
   struct bitfield_struct ret;
   ret.b = x;
   return ret;
+}
+
+DLLEXPORT
+void pass_struct_pair(void (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+    f(ret);
 }

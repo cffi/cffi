@@ -41,8 +41,8 @@
 (defvar *libffi-callbacks* (make-hash-table))
 
 (defun %libffi-callback (name)
-  (handler-case (%get-callback name)
-    (error (c) (libffi-error name "Undefined callback: ~S - ~S" name c))))
+  (or (%get-callback name)
+    (error (libffi-error name "Undefined callback: ~S - ~S" name c))))
 
 (defun %get-callback (name)
   (let ((result (gethash name *libffi-callbacks*)))
