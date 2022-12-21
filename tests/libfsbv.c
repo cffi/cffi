@@ -79,6 +79,7 @@ struct struct_pair doublepair (struct struct_pair dp);
 double prodsumpair (struct struct_pair_double spd);
 struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
 void pass_struct_pair(void (*f)(struct struct_pair));
+void pass_struct_pair_int(void (*f)(struct struct_pair, int));
 
 DLLEXPORT
 int sumpair (struct struct_pair sp)
@@ -179,6 +180,8 @@ struct bitfield_struct structbitfield (unsigned int x) {
   return ret;
 }
 
+/* Callbacks */
+
 DLLEXPORT
 void pass_struct_pair(void (*f)(struct struct_pair))
 {
@@ -186,4 +189,14 @@ void pass_struct_pair(void (*f)(struct struct_pair))
     ret.a = 1984;
     ret.b = 1994;
     f(ret);
+}
+
+DLLEXPORT
+void pass_struct_pair_int(void (*f)(struct struct_pair, int))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+    int x = 13;
+    f(ret, x);
 }

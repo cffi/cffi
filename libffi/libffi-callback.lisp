@@ -33,7 +33,7 @@
                  for index from 0 to (length arg-names)
                  ;; Need to pass pointer non translated object
                  ;; Room for improvement here
-                 collect (list sym (if (listp type) `(mem-aref ,args-ptr :pointer ,index) `(mem-aref (mem-aref ,args-ptr :pointer ,index) :pointer))))
+                 collect (list sym (if (listp type) `(mem-aref ,args-ptr :pointer ,index) `(mem-aref (mem-aref ,args-ptr :pointer ,index) ,type))))
        ,body))))
     (unless (eq :void rettype) (setf (mem-aref ret-ptr :pointer)
                                      computed-ptr))))

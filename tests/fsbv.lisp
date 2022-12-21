@@ -205,15 +205,32 @@
 
 ;;; CMUCL chokes on this one for some reason.
 ;; #-(and darwin cmucl)
-(declaim (optimize (speed 0) (space 0) (debug 3)))
 (defcallback read-struct-pair :void ((p (:struct struct-pair)))
   (setq *pair-struct* p))
 
 #+(and darwin cmucl)
-(pushnew 'callbacks.void rtest::*expected-failures*)
+(pushnew 'fsbv.callbacks.void rtest::*expected-failures*)
 
 (deftest fsbv.callbacks.void
     (progn
       (pass-struct-pair (callback read-struct-pair))
       *pair-struct*)
   (1984 . 1994))
+
+(defparameter *pair-struct-pair-int* -1)
+
+(defcfun pass-struct-pair-int :void (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(defcallback read-struct-pair-int :void ((p (:struct struct-pair)) (num :int))
+  (setq *pair-struct-pair-int* (cons (+ (car p) num) (+ (cdr p) num))))
+
+#+(and darwin cmucl)
+(pushnew 'fsbv.callbacks.void.int rtest::*expected-failures*)
+
+(deftest fsbv.callbacks.void.int
+    (progn
+      (pass-struct-pair-int (callback read-struct-pair-int))
+      *pair-struct-pair-int*)
+  (1997 . 2007))
