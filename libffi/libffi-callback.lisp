@@ -27,7 +27,7 @@
 
 (defun %defcallback-function (rettype ret-ptr arg-names arg-types args-ptr body)
   ;; We need to able to return
-  (let ((computed-ptr (eval
+  (let ((rtn-value (eval
     `(let ,(loop for sym in arg-names
                  for type in arg-types
                  for index from 0 to (length arg-names)
@@ -35,8 +35,8 @@
                  ;; Room for improvement here
                  collect (list sym (if (listp type) `(mem-aref ,args-ptr :pointer ,index) `(mem-aref (mem-aref ,args-ptr :pointer ,index) ,type))))
        ,body))))
-    (unless (eq :void rettype) (setf (mem-aref ret-ptr :pointer)
-                                     computed-ptr))))
+    (unless (eql :void rettype) (setf (mem-aref ret-ptr rettype)
+                                      rtn-value))))
 
 (defun %defcallback-symbol (name)
   (intern (format nil "~A-FSBV" (remove #\: (string name)))))

@@ -80,6 +80,8 @@ double prodsumpair (struct struct_pair_double spd);
 struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
 void pass_struct_pair(void (*f)(struct struct_pair));
 void pass_struct_pair_int(void (*f)(struct struct_pair, int));
+struct struct_pair rtn_struct_pass_struct_pair(struct struct_pair (*f)(struct struct_pair));
+int rtn_int_pass_struct_pair(int (*f)(struct struct_pair));
 
 DLLEXPORT
 int sumpair (struct struct_pair sp)
@@ -199,4 +201,24 @@ void pass_struct_pair_int(void (*f)(struct struct_pair, int))
     ret.b = 1994;
     int x = 13;
     f(ret, x);
+}
+
+DLLEXPORT
+struct struct_pair rtn_struct_pass_struct_pair(struct struct_pair (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+
+    return f(ret);
+}
+
+DLLEXPORT
+int rtn_int_pass_struct_pair(int (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1994;
+    ret.b = 13;
+
+    return f(ret);
 }

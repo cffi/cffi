@@ -234,3 +234,27 @@
       (pass-struct-pair-int (callback read-struct-pair-int))
       *pair-struct-pair-int*)
   (1997 . 2007))
+
+(defcfun rtn-struct-pass-struct-pair (:struct struct-pair) (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(defcallback read-rtn-struct-pass-struct-pair (:struct struct-pair) ((p (:struct struct-pair)))
+  (cons (+ (car p) 13) (+ (cdr p) 13)))
+
+;; Expect this to fail until FSBV is fixed for defcfun calls
+;; Pointer to struct is instead of struct type
+(deftest (fsbv.callbacks.struct.struct :expected-to-fail t)
+      (rtn-struct-pass-struct-pair (callback read-rtn-struct-pass-struct-pair))
+  (1997 . 2007))
+
+(defcfun rtn-int-pass-struct-pair :int (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+#-(and darwin cmucl)
+(defcallback read-rtn-int-pass-struct-pair :int ((p (:struct struct-pair)))
+  (+ (car p) (cdr p)))
+
+(deftest fsbv.callbacks.int.struct
+      (rtn-int-pass-struct-pair (callback read-rtn-int-pass-struct-pair))
+  2007)
