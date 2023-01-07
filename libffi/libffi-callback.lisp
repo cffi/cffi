@@ -36,7 +36,7 @@
                  collect (list sym (if (listp type) `(mem-aref ,args-ptr :pointer ,index) `(mem-aref (mem-aref ,args-ptr :pointer ,index) ,type))))
        ,body))))
     (unless (eql :void rettype) (setf (mem-aref ret-ptr rettype)
-                                      rtn-value))))
+                                      (convert-from-foreign rtn-value rettype)))))
 
 (defun %defcallback-symbol (name)
   (intern (format nil "~A-FSBV" (remove #\: (string name)))))
