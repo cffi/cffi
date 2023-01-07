@@ -242,8 +242,6 @@
 (defcallback read-rtn-struct-pass-struct-pair (:struct struct-pair) ((p (:struct struct-pair)))
   (cons (+ (car p) 13) (+ (cdr p) 13)))
 
-;; Expect this to fail until FSBV is fixed for defcfun calls
-;; Pointer to struct is instead of struct type
 (deftest fsbv.callbacks.struct.struct
     (rtn-struct-pass-struct-pair (callback read-rtn-struct-pass-struct-pair))
   (1997 . 2007))
