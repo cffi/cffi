@@ -35,9 +35,8 @@
   ())
 
 ;;; The *CALLBACKS* hash table contains a direct mapping of CFFI
-;;; callback names to SYSTEM-AREA-POINTERs obtained by ALIEN-LAMBDA.
-;;; SBCL will maintain the addresses of the callbacks across saved
-;;; images, so it is safe to store the pointers directly.
+;;; callback names to SYSTEM-AREA-POINTERs obtained by CL implementation's
+;;; foreign function API.
 (defvar *libffi-callbacks* (make-hash-table))
 
 (defun %libffi-callback (name)
@@ -161,21 +160,10 @@ to the corresponding executable address for a callback through libffi."
                                                   return-type argument-types body
                                                   &optional (abi :default-abi))
   "A body of foreign-defcallback calling the libffi function #'call (ffi_prep_closure_loc)."
-  ;; 1. Allocate memory, cif, arguments, closure, function ptr (bounds_puts)
-  ;; 2. Initialze closure (cffi_closure_alloc)
-  ;; 3. Ensure closure isn't null
-  ;; 4. Initialize the cif (ffi_prep_cffi)
-  ;; 5. Initialize closure for use (ffi_prep_closure_loc)
-  ;; ???. Need to create non-portable pointer to function like %defcallback
-  ;; 6. Store function pointer and pass back?
-  ;; 7. Finally, dellocate both closure and function ptr (ffi_closure_free), when redefined or no longer used.
   (let ((argument-count (length argument-types)))
     (setf (gethash function cffi::*libffi-callbacks*)
            `(with-foreign-objects ((cffi :pointer)
                             (function-ptr :pointer))
-       ;; Will need to
-       ;; (translate-objects-ret
-       ;;   ',symbols ',function-arguments ',types ',return-type
          ;; NOTE: We must delay the cif creation until the first call
          ;; because it's FOREIGN-ALLOC'd, i.e. it gets corrupted by an
          ;; image save/restore cycle. This way a lib will remain usable
