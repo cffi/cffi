@@ -25,38 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:alexandria)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%mem-ref
-   #:%mem-set
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%defcallback
-   #:%callback
-   #:%foreign-symbol-pointer))
-
 (in-package #:cffi-sys)
 
 ;;;# Mis-features

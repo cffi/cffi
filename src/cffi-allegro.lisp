@@ -25,40 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp)
-  (:import-from #:alexandria #:if-let #:with-unique-names #:once-only)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:%mem-ref
-   #:%mem-set
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%foreign-symbol-pointer
-   #:defcfun-helper-forms
-   #:%defcallback
-   #:%callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Mis-features
@@ -370,10 +336,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;; CFFI is restarted.
 (eval-when (:load-toplevel :execute)
   (pushnew 'restore-callbacks excl:*restart-actions*))
-
-;;; Create a package to contain the symbols for callback functions.
-(defpackage #:cffi-callbacks
-  (:use))
 
 (defun intern-callback (name)
   (intern (format nil "~A::~A"

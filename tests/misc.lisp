@@ -130,3 +130,33 @@
           (strcpy pointer "xpto")
           (return vector))))
   #(120 112 116 111 0))
+
+;;; Inline foreign-type-size
+
+(deftest foreign-type-size.inline.int
+    (eql (foreign-type-size :int) (locally (declare (notinline foreign-type-size)) (foreign-type-size :int)))
+  t)
+
+(deftest foreign-type-size.inline.uint32
+    (eql (foreign-type-size :uint32) (locally (declare (notinline foreign-type-size)) (foreign-type-size :uint32)))
+  t)
+
+(deftest foreign-type-size.inline.ptrdiff
+    (eql (foreign-type-size :ptrdiff) (locally (declare (notinline foreign-type-size)) (foreign-type-size :ptrdiff)))
+  t)
+
+(deftest foreign-type-size.inline.size
+    (eql (foreign-type-size :size) (locally (declare (notinline foreign-type-size)) (foreign-type-size :size)))
+  t)
+
+(deftest foreign-type-size.inline.offset
+    (eql (foreign-type-size :offset) (locally (declare (notinline foreign-type-size)) (foreign-type-size :offset)))
+  t)
+
+(deftest foreign-type-size.inline.uintptr
+    (eql (foreign-type-size :uintptr) (locally (declare (notinline foreign-type-size)) (foreign-type-size :uintptr)))
+  t)
+
+(deftest foreign-type-size.inline.intptr
+    (eql (foreign-type-size :intptr) (locally (declare (notinline foreign-type-size)) (foreign-type-size :intptr)))
+  t)

@@ -92,7 +92,7 @@
   (error 'undefined-foreign-type-error :type-name type-name :namespace namespace))
 
 ;; TODO this is not according to the C namespace rules,
-;; see bug: https://bugs.launchpad.net/cffi/+bug/1527947
+;; see bug: https://github.com/cffi/cffi/issues/266
 (deftype c-namespace-name ()
   '(member :default :struct :union))
 
@@ -163,6 +163,11 @@ Signals an error if FOREIGN-TYPE is undefined."))
 (defgeneric foreign-type-size (foreign-type)
   (:documentation
    "Return the size in bytes of a foreign type."))
+
+(define-compiler-macro foreign-type-size (&whole form foreign-type)
+  (if (constant-form-p foreign-type)
+      (foreign-type-size (constant-form-value foreign-type))
+      form))
 
 (defgeneric unparse-type (foreign-type)
   (:documentation

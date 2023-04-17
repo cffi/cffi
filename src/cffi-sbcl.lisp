@@ -25,40 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:sb-alien)
-  (:import-from #:alexandria
-                #:once-only #:with-unique-names #:when-let #:removef)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:%mem-ref
-   #:%mem-set
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%foreign-symbol-pointer
-   #:%defcallback
-   #:%callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Misfeatures
@@ -286,12 +252,21 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun foreign-funcall-type-and-args (args)
   "Return an SB-ALIEN function type for ARGS."
-  (let ((return-type 'void))
-    (loop for (type arg) on args by #'cddr
-          if arg collect (convert-foreign-type type) into types
-          and collect arg into fargs
-          else do (setf return-type (convert-foreign-type type))
-          finally (return (values types fargs return-type)))))
+  (let ((return-type 'void)
+        types
+        fargs)
+    (loop while args
+          do (let ((type (pop args)))
+               (cond ((eq type '&optional)
+                      (push type types))
+                     ((not args)
+                      (setf return-type (convert-foreign-type type)))
+                     (t
+                      (push (convert-foreign-type type) types)
+                      (push (pop args) fargs)))))
+    (values (nreverse types)
+            (nreverse fargs)
+            return-type)))
 
 (defmacro %%foreign-funcall (name types fargs rettype)
   "Internal guts of %FOREIGN-FUNCALL."
@@ -314,6 +289,30 @@ WITH-POINTER-TO-VECTOR-DATA."
     (with-unique-names (function)
       `(with-alien ((,function (* (function ,rettype ,@types)) ,ptr))
          (alien-funcall ,function ,@fargs)))))
+
+(defmacro %foreign-funcall-varargs (name fixed-args varargs
+                                    &rest args &key convention library)
+  (declare (ignore convention library))
+  `(%foreign-funcall ,name ,(append fixed-args (and varargs
+                                                    ;; All SBCL platforms would understand this
+                                                    ;; but this is the only one where it's required.
+                                                    ;; Omitting elsewhere makes it work on older
+                                                    ;; versions of SBCL.
+                                                    (append #+(and darwin arm64)
+                                                            '(&optional)
+                                                            varargs)))
+                     ,@args))
+
+(defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
+                                            &rest args &key convention)
+  (declare (ignore convention))
+  `(%foreign-funcall-pointer ,pointer ,(append fixed-args
+                                               (and varargs
+                                                    (append #+(and darwin arm64)
+                                                            '(&optional)
+                                                            varargs)))
+                             ,@args))
+
 
 ;;;# Callbacks
 
@@ -343,19 +342,23 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 #+darwin
 (defun call-within-initial-thread (fn &rest args)
-  (let (result
-        error
-        (sem (sb-thread:make-semaphore)))
-    (sb-thread:interrupt-thread
-     sb-thread::*initial-thread*
-     (lambda ()
-       (multiple-value-setq (result error)
-         (ignore-errors (apply fn args)))
-       (sb-thread:signal-semaphore sem)))
-    (sb-thread:wait-on-semaphore sem)
-    (if error
-        (signal error)
-        result)))
+  (if (eq sb-thread:*current-thread*
+          sb-thread::*initial-thread*)
+      (apply fn args)
+      (let (result
+            error
+            (sem (sb-thread:make-semaphore)))
+        (sb-thread:interrupt-thread
+         sb-thread::*initial-thread*
+         (lambda ()
+           (sb-sys:with-interrupts
+             (multiple-value-setq (result error)
+               (ignore-errors (apply fn args))))
+           (sb-thread:signal-semaphore sem)))
+        (sb-thread:wait-on-semaphore sem)
+        (if error
+            (signal error)
+            result))))
 
 (declaim (inline %load-foreign-library))
 (defun %load-foreign-library (name path)
@@ -363,7 +366,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore name))
   ;; As of MacOS X 10.6.6, loading things like CoreFoundation from a
   ;; thread other than the initial one results in a crash.
-  #+(and darwin sb-thread) (call-within-initial-thread 'load-shared-object path)
+  #+(and darwin sb-thread) (call-within-initial-thread #'load-shared-object path)
   #-(and darwin sb-thread) (load-shared-object path))
 
 ;;; SBCL 1.0.21.15 renamed SB-ALIEN::SHARED-OBJECT-FILE but introduced

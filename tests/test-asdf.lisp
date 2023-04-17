@@ -27,6 +27,8 @@
 
 (in-package #:cffi-tests)
 
+;; See lp#1953686.
+#-sbcl
 (when (cffi-toolchain::static-ops-enabled-p)
   (deftest test-static-program
       (progn

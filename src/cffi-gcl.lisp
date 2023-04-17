@@ -39,30 +39,6 @@
 ;;; *** this port is broken ***
 ;;; gcl doesn't compile the rest of CFFI anyway..
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:alexandria)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:pointerp
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-ptr
-   #:null-ptr
-   #:null-ptr-p
-   #:inc-ptr
-   #:%mem-ref
-   #:%mem-set
-   #:%foreign-funcall
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   ;#:make-shareable-byte-vector
-   ;#:with-pointer-to-vector-data
-   #:foreign-var-ptr
-   #:make-callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Mis-*features*

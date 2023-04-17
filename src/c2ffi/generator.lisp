@@ -267,7 +267,7 @@
 (defun find-cffi-type-or-die (type-name &optional (namespace :default))
   (when (eq namespace :enum)
     ;; TODO FIXME this should be cleaned up in CFFI. more about namespace confusion at:
-    ;; https://bugs.launchpad.net/cffi/+bug/1527947
+    ;; https://github.com/cffi/cffi/issues/266
     (setf namespace :default))
   (cffi::find-type-parser type-name namespace))
 
@@ -580,7 +580,7 @@ target package."
             (output/code `(cffi:define-foreign-library ,foreign-library-name
                             ,@foreign-library-spec))
             ;; TODO: Unconditionally emitting a USE-FOREIGN-LIBRARY may not be smart.
-            ;; For details see: https://bugs.launchpad.net/cffi/+bug/1593635
+            ;; For details see: https://github.com/cffi/cffi/issues/272
             (output/code `(cffi:use-foreign-library ,foreign-library-name)))
           (etypecase prelude
             (null)

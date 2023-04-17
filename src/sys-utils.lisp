@@ -1,8 +1,8 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
-;;; libffi.lisp --- Load libffi
+;;; sys-utils.lisp --- Various utilities.
 ;;;
-;;; Copyright (C) 2009, 2011 Liam M. Healy
+;;; Copyright (C) 2022, Stelian Ionescu <sionescu@cddr.org>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,14 +25,29 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cffi)
+(in-package #:cffi-sys)
 
-(define-foreign-library (libffi)
-  (:darwin (:or "libffi.dylib" "libffi32.dylib" "/usr/lib/libffi.dylib"))
-  (:solaris (:or "/usr/lib/amd64/libffi.so" "/usr/lib/libffi.so"))
-  ((:or :netbsd :freebsd :openbsd) "libffi.so")
-  (:unix (:or "libffi.so.8" "libffi32.so.8" "libffi.so.7" "libffi32.so.7" "libffi.so.6" "libffi32.so.6" "libffi.so.5" "libffi32.so.5" "libffi.so" "libffi32.so"))
-  (:windows (:or "libffi-8.dll" "libffi-7.dll" "libffi-6.dll" "libffi-5.dll" "libffi.dll"))
-  (t (:default "libffi")))
+(defun quoted-form-p (form)
+  (and (proper-list-p form)
+       (= 2 (length form))
+       (eql 'quote (car form))))
 
-(load-foreign-library 'libffi)
+(defun constant-form-p (form &optional env)
+  (let ((form (if (symbolp form)
+                  (macroexpand form env)
+                  form)))
+    (or (quoted-form-p form)
+        (constantp form env))))
+
+(defun constant-form-value (form &optional env)
+  (declare (ignorable env))
+  (cond
+    ((quoted-form-p form)
+     (second form))
+    (t
+     #+clozure
+     (ccl::eval-constant form)
+     #+sbcl
+     (sb-int:constant-form-value form env)
+     #-(or clozure sbcl)
+     (eval form))))

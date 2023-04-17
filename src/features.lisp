@@ -38,39 +38,6 @@
 ;;; deprecated and this code will stay here for a while for backwards
 ;;; compatibility purposes, to be removed in a future release.
 
-(defpackage #:cffi-features
-  (:use #:cl)
-  (:export
-   #:cffi-feature-p
-
-   ;; Features related to the CFFI-SYS backend.  Why no-*?  This
-   ;; reflects the hope that these symbols will go away completely
-   ;; meaning that at some point all lisps will support long-longs,
-   ;; the foreign-funcall primitive, etc...
-   #:no-long-long
-   #:no-foreign-funcall
-   #:no-stdcall
-   #:flat-namespace
-
-   ;; Only SCL supports long-double...
-   ;;#:no-long-double
-
-   ;; Features related to the operating system.
-   ;; More should be added.
-   #:darwin
-   #:unix
-   #:windows
-
-   ;; Features related to the processor.
-   ;; More should be added.
-   #:ppc32
-   #:x86
-   #:x86-64
-   #:sparc
-   #:sparc64
-   #:hppa
-   #:hppa64))
-
 (in-package #:cffi-features)
 
 (defun cffi-feature-p (feature-expression)
