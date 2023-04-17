@@ -106,7 +106,11 @@
     (restart-case
         (error "Unable to call structures by value without cffi-libffi loaded.")
       (load-cffi-libffi () :report "Load cffi-libffi."
-        (asdf:operate 'asdf:load-op 'cffi-libffi))))
+        ;;(asdf:operate 'asdf:load-op 'cffi-libffi)
+        ;; Protect against loading this as a monolithic compile bundle which
+        ;; doesn't have asdf in it. 
+        (funcall (read-from-string "asdf:operate")
+                     (read-from-string "asdf:load-op") 'cffi-libffi))))
   "A function that produces a form suitable for calling structures by value.")
 
 (defun foreign-funcall-form (thing options args pointerp)
