@@ -108,7 +108,7 @@
       (load-cffi-libffi () :report "Load cffi-libffi."
         (if (find-package :asdf)
             (uiop:symbol-call (find-package :asdf) '#:operate
-                              (intern '#:load-op :asdf) 'cffi-libffi)
+                              (read-from-string "asdf:load-op") 'cffi-libffi)
             (error "ASDF not available to load cffi-libffi.~%")))))
   "A function that produces a form suitable for calling structures by value.")
 
