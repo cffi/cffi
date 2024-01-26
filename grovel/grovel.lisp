@@ -333,7 +333,7 @@ int main(int argc, char**argv) {
 (define-grovel-syntax constant ((lisp-name &rest c-names)
                                 &key (type 'integer) documentation optional)
   (when (keywordp lisp-name)
-    (setf lisp-name (format-symbol "~A" lisp-name)))
+    (setf lisp-name (format-symbol t "~A" lisp-name)))
   (c-section-header out "constant" lisp-name)
   (dolist (c-name c-names)
     (format out "~&#ifdef ~A~%" c-name)
