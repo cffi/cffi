@@ -136,8 +136,9 @@ to the corresponding executable address for a callback through libffi."
               :do (setf (mem-aref argument-values :pointer count) arg))
             (let* ((libffi-cif-cache (load-time-value (cons 'libffi-cif-cache nil)))
                    (libffi-cif (or (cdr libffi-cif-cache)
-                                   ;; TODO use compare-and-swap to set it and call
-                                   ;; FREE-LIBFFI-CIF when someone else did already.
+                                   ;; TODO use compare-and-swap to set it, and call
+                                   ;; FREE-LIBFFI-CIF if it was set by another
+                                   ;; thread before us.
                                    (setf (cdr libffi-cif-cache)
                                          ;; FIXME we should install a finalizer on the cons cell
                                          ;; that calls FREE-LIBFFI-CIF on the cif (when the function

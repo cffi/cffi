@@ -106,7 +106,7 @@ int main(int argc, char**argv) {
 (defun c-print-integer-constant (out arg &optional foreign-type)
   (let ((foreign-type (or foreign-type :int)))
     (c-format out "#.(cffi-grovel::convert-intmax-constant ")
-    (format out "~&  fprintf(output, \"%\"PRIiMAX, (intmax_t)~A);~%"
+    (format out "~&  fprintf(output, \"%\" PRIiMAX, (intmax_t)~A);~%"
             arg)
     (c-format out " ")
     (c-write out `(quote ,foreign-type))
@@ -186,10 +186,10 @@ int main(int argc, char**argv) {
 (defun header-form-p (form)
   (member (form-kind form) *header-forms*))
 
-(defun generate-c-file (input-file output-defaults)
+(defun generate-c-file (input-file output-defaults &optional c-file)
   (nest
    (with-standard-io-syntax)
-   (let ((c-file (make-c-file-name output-defaults "__grovel"))
+   (let ((c-file (or c-file (make-c-file-name output-defaults "__grovel")))
          (*print-readably* nil)
          (*print-escape* t)))
    (with-open-file (out c-file :direction :output :if-exists :supersede))

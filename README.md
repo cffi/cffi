@@ -42,16 +42,29 @@ project page at [cffi.common-lisp.dev](https://cffi.common-lisp.dev/).
 ### CFFI/C2FFI
 
 CFFI/C2FFI is an ASDF-integrated mechanism to automatically generate a
-complete CFFI binding from a C header file. It requires a CLI tool
-called [c2ffi](https://github.com/rpav/c2ffi), but only for the
-developers of the libraries, not their users. `c2ffi` is written in
-C++, and it uses LLVM/Clang as the parsing library. It generates JSON
-output that can be checked in into the repositories. CFFI/C2FFI uses
-these JSON files to automatically generate a CL file that contains the
-CFFI definition forms. The generated bindings mirror the C namespace
-into an otherwise empty CL package as closely as possible. It means
-that they retain the upper/lower case of the names, and it also
-includes the `#define` macros as CL constants.
+complete CFFI binding from C header files.
+
+Its input is one `.h` file (with possible `#include`s of course), and
+its final output is a lisp file with the relevant CFFI binding forms.
+
+It requires a CLI tool called [c2ffi](https://github.com/rpav/c2ffi),
+but only for the developers of the C binding libraries, not their
+users. `c2ffi` is written in C++, and it uses Clang as a library to
+parse the C code, and emit the result as JSON. To skip this step,
+these host-specific JSON files can be checked into the repos of the
+binding libraries. This breaks the dependence on a working c2ffi
+binary and the C header files, which can be a hurdle.
+
+These JSON files are then used to automatically generate a CL file
+with the corresponding CFFI forms. The generated bindings mirror the C
+namespace into an empty CL package as closely as possible. This means
+that the upper/lower case of the C names are retained. It helps with
+reading the original docs and with rewriting C examples into
+lisp. `#define`s are also mirrored as CL `defconstant`s.
+
+Binding library developers are advised to introduce another package on
+top of this raw layer to add more lispy constructs where appropriate
+(e.g. `with-` macros that manage resources, etc).
 
 Until CFFI/C2FFI is properly documented, you may check out these
 projects as examples:
