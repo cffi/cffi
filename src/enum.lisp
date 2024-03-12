@@ -82,6 +82,16 @@
           (ensure-list pair)
         (check-type keyword enum-key)
         ;;(check-type value integer)
+        ;; resolve field reference
+        (when (keywordp value)
+          (setf value (gethash value keyword-values)))
+        (when (listp value)
+          (setf value (eval
+                       (list 'let (loop for k
+                                        being the hash-key
+                                        using (hash-value v) of keyword-values
+                                        collect (list (intern (string k)) v))
+                             value))))
         (when (> (abs value) (abs most-extreme-value))
           (setf most-extreme-value value))
         (when (minusp value)
