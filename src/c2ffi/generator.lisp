@@ -594,8 +594,10 @@ target package."
              (funcall prelude 'output/code)))
           ;;
           ;; Let's enumerate the entries
-          (multiple-value-bind (form-callback epilogue-callback)
+          (multiple-value-bind (form-callback epilogue-callback prologue-callback)
               (funcall *callback-factory*)
+            (when prologue-callback
+              (map nil 'output/code (call-hook prologue-callback)))
             (dolist (json-entry json)
               (with-json-values (json-entry name location)
                 (let ((source-location-file (subseq location
