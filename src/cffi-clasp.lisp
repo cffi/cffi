@@ -107,11 +107,10 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
 WITH-POINTER-TO-VECTOR-DATA."
   (make-array size :element-type '(unsigned-byte 8)))
 
-;; frgo, 2016-07-02: TODO: Implemenent!
-;; (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
-;;   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-;;   `(let ((,ptr-var (si:make-foreign-data-from-array ,vector)))
-;;      ,@body))
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
+  `(let ((,ptr-var (ext:array-pointer ,vector)))
+     ,@body))
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
