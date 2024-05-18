@@ -60,7 +60,7 @@
             #p"/usr/lib/")))
 
 (defvar *foreign-library-directories*
-  (if (featurep :darwin)
+  (if (or (featurep :darwin) (featurep :unix))
       '((explode-path-environment-variable "LD_LIBRARY_PATH")
         (explode-path-environment-variable "DYLD_LIBRARY_PATH")
         (uiop:getcwd)
