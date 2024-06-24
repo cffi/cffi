@@ -1391,9 +1391,10 @@ size_t
 @var{function}(void *ptr, size_t size, size_t nmemb, void *stream);
 @end example
 
-@impnote{size_t is almost always an unsigned int.  You can get this
-and many other types using feature tests for your system by using
-cffi-grovel.}
+@impnote{@code{size_t} is almost always an unsigned int with the same number
+of bits as a pointer.  It is provided in @cffi{} as @code{:size}.
+You can also get this and many other types using feature tests for
+your system by using cffi-grovel.}
 
 The above signature trivially translates into a @cffi{}
 @code{defcallback} form, as follows.
@@ -1857,6 +1858,13 @@ respectively.
 
 Foreign integer types of specific sizes, corresponding to the C types
 defined in @code{stdint.h}.
+
+
+@code{:size}, @code{:ssize},
+@code{:intptr}, @code{:uintptr}, @code{:ptrdiff}, and @code{:offset}
+correspond to C types  @code{size_t}, @code{ssize_t},
+@code{intptr_t}, @code{uintptr_t}, @code{ptrdiff_t}, and @code{offset_t}.
+
 
 @c @ForeignType{:time}
 
