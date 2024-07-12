@@ -689,6 +689,7 @@ The foreign array must be freed with foreign-array-free."
       options
     (let ((struct (make-instance class :name name))
           (current-offset 0)
+          (max-offset 0)
           (max-align 1)
           (firstp t))
       (with-tentative-type-definition (name struct :struct)
@@ -707,14 +708,15 @@ The foreign array must be freed with foreign-array-free."
               (setf (gethash slotname (slots struct)) slot)
               (when (> align max-align)
                 (setq max-align align)))
-            (incf current-offset (* count (foreign-type-size type))))
+            (incf current-offset (* count (foreign-type-size type)))
+            (setf max-offset (max max-offset current-offset)))
           (setq firstp nil))
         ;; calculate padding and alignment
         (setf (alignment struct) max-align) ; See point 1 above.
-        (let ((tail-padding (- max-align (rem current-offset max-align))))
+        (let ((tail-padding (- max-align (rem max-offset max-align))))
           (unless (= tail-padding max-align) ; See point 3 above.
-            (incf current-offset tail-padding)))
-        (setf (size struct) (or size current-offset))))))
+            (incf max-offset tail-padding)))
+        (setf (size struct) (or size max-offset))))))
 
 (defun generate-struct-accessors (name conc-name slot-names)
   (loop with pointer-arg = (symbolicate '#:pointer-to- name)
