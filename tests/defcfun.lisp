@@ -199,11 +199,11 @@
   6.0d0)
 
 
-#+(and scl long-float)
+#+(and (or ecl scl) long-float)
 (defcfun ("sqrtl" c-sqrtl) :long-double
   (n :long-double))
 
-#+(and scl long-float)
+#+(and (or ecl scl) long-float)
 (deftest defcfun.long-double
     (c-sqrtl 36.0l0)
   6.0l0)
@@ -322,7 +322,7 @@
       (sprintf s "%.0f" :double (* pi 100d0)))
   "314")
 
-#+(and scl long-float)
+#+(and (or ecl scl) long-float)
 (deftest defcfun.varargs.long-double
     (with-foreign-pointer-as-string (s 100)
       (setf (mem-ref s :char) 0)

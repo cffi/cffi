@@ -1882,7 +1882,7 @@ precision, among each respective category.
 
 @ForeignType{:long-double}
 
-This type is only supported on SCL.
+This type is only supported on ECL and SCL.
 
 @ForeignType{:pointer &optional type}
 

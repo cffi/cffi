@@ -129,7 +129,7 @@
 ;;; TODO: use something like *DOUBLE-MIN/MAX* above once we actually
 ;;; have an available lisp that supports long double.
 ;#-cffi-sys::no-long-float
-#+(and scl long-double)
+#+(and (or ecl scl) long-float)
 (progn
   (deftest deref.long-double.1
       (with-foreign-object (p :long-double)
