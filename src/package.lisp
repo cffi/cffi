@@ -124,7 +124,7 @@
    #:no-stdcall
    #:flat-namespace
 
-   ;; Only SCL supports long-double...
+   ;; Only ECL and SCL support long-double...
    ;;#:no-long-double
 
    ;; Features related to the operating system.

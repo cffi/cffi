@@ -159,6 +159,8 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:unsigned-long-long :unsigned-long-long "unsigned long long")
     (:float           :float           "float")
     (:double          :double          "double")
+    #+long-float
+    (:long-double     :long-double     "long double")
     (:pointer         :pointer-void    "void*")
     (:void            :void            "void")))
 

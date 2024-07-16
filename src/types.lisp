@@ -102,7 +102,7 @@
 
 ;;; When some lisp other than SCL supports :long-double we should
 ;;; use #-cffi-sys::no-long-double here instead.
-#+(and scl long-float) (define-built-in-foreign-type :long-double)
+#+(and (or ecl scl) long-float) (define-built-in-foreign-type :long-double)
 
 (defparameter *possible-float-types* '(:float :double :long-double))
 
