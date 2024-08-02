@@ -62,11 +62,11 @@
   (2 . 4))
 
 ;;; return struct by value
-(deftest (fsbv.makepair.1 :expected-to-fail t)
+(deftest (fsbv.makepair.1)
     (makepair nil)
   (-127 . 43))
 
-(deftest (fsbv.makepair.2 :expected-to-fail t)
+(deftest (fsbv.makepair.2)
     (makepair t)
   (-127 . 42))
 
@@ -345,3 +345,15 @@
       (assert (pointerp p))
       (values s (cffi:mem-ref p :char)))
   "2,3" 50)
+
+(defcfun ("enumpair" enumpair-boolret) :boolean
+  (e :int)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.boolret.1
+  (enumpair-boolret 1 '(0 . 0))
+  nil)
+
+(deftest fsbv.boolret.2
+  (enumpair-boolret 1 '(1 . 0))
+  t)
