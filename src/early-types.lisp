@@ -626,6 +626,15 @@ Signals an error if the type cannot be resolved."
 (defmethod expand-to-foreign-dyn-indirect (value var body (type foreign-type-alias))
   (expand-to-foreign-dyn-indirect value var body (actual-type type)))
 
+(defmethod expand-to-foreign-dyn-indirect (value var body (type enhanced-foreign-type))
+  (with-unique-names (foreign-value)
+    (expand-to-foreign-dyn
+     value
+     foreign-value
+     (list
+      (expand-to-foreign-dyn-indirect foreign-value var body (actual-type type)))
+     type)))
+
 ;;; User interface for converting values from/to foreign using the
 ;;; type translators.  The compiler macros use the expanders when
 ;;; possible.
