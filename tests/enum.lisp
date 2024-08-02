@@ -246,3 +246,16 @@
       (eval '(defbitfield (bf1 :float)
               (:foo 0))))
   :error)
+
+(defcenum enum.calendar
+  :traditional 
+  (:default :traditional)
+  :gregorian)
+
+(deftest enum.keyword-ref.1
+    (values-list
+     (mapcar (alexandria:curry 'foreign-enum-value 'enum.calendar)
+             '(:traditional :default :gregorian)))
+  0
+  0
+  1)
