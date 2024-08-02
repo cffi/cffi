@@ -197,3 +197,40 @@
 (deftest (fsbv.return-value-typedef)
     (sumpair-with-typedef '(40 . 2))
   42)
+
+;;; tests for various other types combined with fsbv
+
+(defctype numeros-alias numeros)
+(defctype boolean32 (:boolean :int32))
+
+(defcfun ("enumpair" enumpair-typedef) (:int)
+  (e numeros-alias)
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-boolean) (:int)
+  (e (:boolean :int32))
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-boolean-typedef) (:int)
+  (e boolean32)
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-enumret) numeros
+  (e numeros)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.typedef
+  (enumpair-typedef :one '(2 . 3))
+  5)
+
+(deftest fsbv.boolean
+  (enumpair-boolean t '(4 . 5))
+  9)
+
+(deftest fsbv.boolean-typedef
+  (enumpair-boolean t '(5 . 6))
+  11)
+
+(deftest fsbv.enumret
+  (enumpair-enumret :two '(20 . 11))
+  :forty-two)
