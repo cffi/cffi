@@ -773,6 +773,7 @@ string."
                      (cffi:define-foreign-library
                          (,named-library-name
                           :type :grovel-wrapper
+                          :reload-on-restart nil
                           :search-path ,(directory-namestring lib-file))
                        (t ,(namestring (make-so-file-name lib-soname))))
                      (cffi:use-foreign-library ,named-library-name))
