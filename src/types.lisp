@@ -732,15 +732,36 @@ The foreign array must be freed with foreign-array-free."
 
 (defvar *defcstruct-hook* nil)
 
+(defvar *nested-structs*)
+(defun parse-substructure (parent field)
+  (destructuring-bind (name type &rest options) field
+    (when (atom type)
+      (return-from parse-substructure field))
+    (destructuring-bind (head &rest subfields) type
+      (unless (member head '(:struct :union))
+        (return-from parse-substructure field))
+      (when (and (= 1 (length subfields))
+                 (atom (car subfields)))
+        (return-from parse-substructure field))
+      (let ((anontype (symbolicate parent '/ name))
+            (macro (ecase head
+                     (:struct 'defcstruct)
+                     (:union  'defcunion))))
+        (push `(,macro ,anontype ,@subfields) *nested-structs*)
+        `(,name (,head ,anontype) ,@options)))))
+
 (defmacro defcstruct (name-and-options &body fields)
   "Define the layout of a foreign structure."
   (discard-docstring fields)
   (destructuring-bind (name . options)
       (ensure-list name-and-options)
-    (let ((conc-name (getf options :conc-name)))
+    (let ((conc-name (getf options :conc-name))
+          *nested-structs*)
       (remf options :conc-name)
       (unless (getf options :class) (setf (getf options :class) (symbolicate name '-tclass)))
+      (setf fields (mapcar (lambda (field) (parse-substructure name field)) fields))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
+         ,@*nested-structs*
          ;; m-f-s-t could do with this with mop:ensure-class.
          ,(when-let (class (getf options :class))
             `(defclass ,class (foreign-struct-type
@@ -937,11 +958,14 @@ slots will be defined and stored."
   (destructuring-bind (name &key size)
       (ensure-list name-and-options)
     (declare (ignore size))
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (notice-foreign-union-definition ',name-and-options ',fields)
-       (define-parse-method ,name ()
-         (parse-deprecated-struct-type ',name :union))
-       '(:union ,name))))
+    (let (*nested-structs*)
+      (setf fields (mapcar (lambda (field) (parse-substructure name field)) fields))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+         ,@*nested-structs*
+         (notice-foreign-union-definition ',name-and-options ',fields)
+         (define-parse-method ,name ()
+           (parse-deprecated-struct-type ',name :union))
+         '(:union ,name)))))
 
 ;;;# Operations on Types
 
