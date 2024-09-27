@@ -30,7 +30,7 @@
 ;;; - integer vector arguments are copied
 ;;; - return values are not typed
 ;;; - a shared library must be packaged as a framework and statically loaded
-;;; 
+;;;
 ;;; on the topic of shared libraries, see
 ;;; http://developer.apple.com/library/mac/#documentation/DeveloperTools/Conceptual/MachOTopics/1-Articles/loading_code.html
 ;;; which describes how to package a shared library as a framework.
@@ -150,16 +150,16 @@ WITH-POINTER-TO-VECTOR-DATA."
                 collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
-      (if (constantp type)
-          (ecase (eval type)
+      (if (constant-form-p type)
+          (ecase (constant-form-value type)
             ,@(loop for (keyword fn) in pairs
                     collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
-      (if (constantp type)
+      (if (constant-form-p type)
           (once-only (value)
-            (ecase (eval type)
+            (ecase (constant-form-value type)
               ,@(loop for (keyword fn) in pairs
                       collect `(,keyword `(setf (,',fn ,ptr ,offset)
                                                 ,value)))))
