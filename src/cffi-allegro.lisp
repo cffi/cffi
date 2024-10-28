@@ -257,7 +257,8 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore convention library))
   (multiple-value-bind (types fargs rettype)
       (foreign-funcall-type-and-args args)
-    `(system::ff-funcall
+    `(#+(version>= 11 0) system::ff_funcall
+      #-(version>= 11 0) system::ff-funcall
       (load-time-value (excl::determine-foreign-address
                         '(,name :language :c)
                         #-(version>= 8 1) ff::ep-flag-never-release
@@ -297,7 +298,8 @@ WITH-POINTER-TO-VECTOR-DATA."
     (with-unique-names (entry-vec)
       `(let ((,entry-vec (excl::make-entry-vec-boa)))
          (setf (aref ,entry-vec 1) ,ptr) ; set jump address
-         (system::ff-funcall
+         (#+(version>= 11 0) system::ff_funcall
+          #-(version>= 11 0) system::ff-funcall
           ,entry-vec
           ;; arg types {'(:c-type lisp-type) argN}*
           ,@(mapcan (lambda (type arg)
