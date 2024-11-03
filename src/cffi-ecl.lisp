@@ -25,42 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:alexandria)
-  (:import-from #:si #:null-pointer-p)
-  (:export
-   #:*cffi-ecl-method*
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%mem-ref
-   #:%mem-set
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-funcall-varargs
-   #:%foreign-funcall-pointer-varargs
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%defcallback
-   #:%callback
-   #:%foreign-symbol-pointer))
-
 (in-package #:cffi-sys)
 
 ;;;
@@ -195,6 +159,8 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:unsigned-long-long :unsigned-long-long "unsigned long long")
     (:float           :float           "float")
     (:double          :double          "double")
+    #+long-float
+    (:long-double     :long-double     "long double")
     (:pointer         :pointer-void    "void*")
     (:void            :void            "void")))
 
@@ -402,12 +368,6 @@ WITH-POINTER-TO-VECTOR-DATA."
   (namestring pathname))
 
 ;;;# Callbacks
-
-;;; Create a package to contain the symbols for callback functions.
-;;; We want to redefine callbacks with the same symbol so the internal
-;;; data structures are reused.
-(defpackage #:cffi-callbacks
-  (:use))
 
 (defvar *callbacks* (make-hash-table))
 

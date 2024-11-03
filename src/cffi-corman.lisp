@@ -29,38 +29,6 @@
 ;;; is too funky with ASDF, crashes easily, makes it very painful to
 ;;; do any testing.  -- luis
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:c-types)
-  (:import-from #:alexandria #:with-unique-names)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:%foreign-funcall
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:native-namestring
-   #:%mem-ref
-   #:%mem-set
-   ;#:make-shareable-byte-vector
-   ;#:with-pointer-to-vector-data
-   #:foreign-symbol-pointer
-   #:defcfun-helper-forms
-   #:%defcallback
-   #:%callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Misfeatures

@@ -43,7 +43,9 @@
   ((:module "src"
     :serial t
     :components
-    ((:file "cffi-openmcl" :if-feature :openmcl)
+    ((:file "package")
+     (:file "sys-utils")
+     (:file "cffi-openmcl" :if-feature :openmcl)
      (:file "cffi-mcl" :if-feature :mcl)
      (:file "cffi-sbcl" :if-feature :sbcl)
      (:file "cffi-cmucl" :if-feature :cmucl)
@@ -56,7 +58,6 @@
      (:file "cffi-abcl" :if-feature :abcl)
      (:file "cffi-mkcl" :if-feature :mkcl)
      (:file "cffi-clasp" :if-feature :clasp)
-     (:file "package")
      (:file "utils")
      (:file "libraries")
      (:file "early-types")

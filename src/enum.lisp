@@ -195,6 +195,15 @@
 ;;; These [four] functions could be good canditates for compiler macros
 ;;; when the value or keyword is constant.  I am not going to bother
 ;;; until someone has a serious performance need to do so though. --jamesjb
+(define-compiler-macro %foreign-enum-value (&whole whole
+                                            type keyword &key errorp)
+  (if (constantp keyword)
+      (let ((v (eval keyword)))
+        (if (typep v 'enum-key)
+            (foreign-enum-value type v :errorp errorp)
+            v))
+      whole))
+
 (defun %foreign-enum-value (type keyword &key errorp)
   (check-type keyword enum-key)
   (or (gethash keyword (keyword-values type))
@@ -240,10 +249,17 @@
       (%foreign-enum-keyword type value :errorp t)))
 
 (defmethod expand-to-foreign (value (type foreign-enum))
-  (once-only (value)
-    `(if (typep ,value 'enum-key)
-         (%foreign-enum-value ,type ,value :errorp t)
-         ,value)))
+  ;; once-only prevents compiler macro on %foreign-enum-value, so
+  ;; expand constant values here too
+  (if (constantp value)
+      (let ((v (eval value)))
+        (if (typep v 'enum-key)
+            (%foreign-enum-value type v :errorp t)
+            v))
+      (once-only (value)
+        `(if (typep ,value 'enum-key)
+             (%foreign-enum-value ,type ,value :errorp t)
+             ,value))))
 
 ;;; There are two expansions necessary for an enum: first, the enum
 ;;; keyword needs to be translated to an int, and then the int needs

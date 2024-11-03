@@ -3,6 +3,8 @@
 ;;; package.lisp --- Package definition for CFFI.
 ;;;
 ;;; Copyright (C) 2005-2006, James Bielman  <jamesjb@jamesjb.com>
+;;; Copyright (C) 2009, Luis Oliveira  <loliveira@common-lisp.net>
+;;; Copyright (C) 2012, Mark Evenson  <evenson.not.org@gmail.com>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,7 +27,121 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-(in-package #:cl-user)
+#+abcl
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require :abcl-contrib)
+  (require :jna)
+  (require :jss))
+
+;;;# Administrivia
+
+(defpackage #:cffi-sys
+  (:use #:common-lisp #:alexandria
+        #+abcl #:java
+        #+(or ccl mcl) #:ccl
+        #+cmu #:alien #+cmu #:c-call
+        #+corman #:c-types
+        #+sbcl #:sb-alien)
+  #+ecl
+  (:import-from #:si #:null-pointer-p)
+  (:shadow #:copy-file                  ; Conflicts with ccl:copy-file
+           )
+  (:export
+   ;; Platform-specific functionality
+   #+ecl #:*cffi-ecl-method*
+
+   ;; C ABI utils
+   #:canonicalize-symbol-name-case
+   #:defcfun-helper-forms
+
+   ;; Pointers
+   #:foreign-pointer
+   #:pointerp
+   #:pointer-eq
+   #:null-pointer
+   #:null-pointer-p
+   #:inc-pointer
+   #:make-pointer
+   #:pointer-address
+
+   ;; Memory operators
+   #:%mem-ref
+   #:%mem-set
+
+   ;; Foreign symbols
+   #:%foreign-symbol-pointer
+
+   ;; Memory management
+   #:%foreign-alloc
+   #:foreign-free
+   #:with-foreign-pointer
+
+   ;; Foreign functions
+   #:%foreign-funcall
+   #:%foreign-funcall-pointer
+   #:%foreign-funcall-varargs
+   #:%foreign-funcall-pointer-varargs
+   #:%foreign-type-alignment
+
+   ;; Foreign types
+   #:%foreign-type-size
+
+   ;; Foreign libraries
+   #:%load-foreign-library
+   #:%close-foreign-library
+   #:native-namestring
+
+   ;; Callbacks
+   #:%defcallback
+   #:%callback
+
+   ;; Shareable vectors
+   #:make-shareable-byte-vector
+   #:with-pointer-to-vector-data
+
+   ;; Compiler macro utils
+   #:constant-form-p
+   #:constant-form-value))
+
+;;; Create a package to contain the symbols for callback functions.
+;;; We want to redefine callbacks with the same symbol so the internal
+;;; data structures are reused.
+#+(or allegro ccl cmu ecl lispworks mkcl)
+(defpackage #:cffi-callbacks
+  (:use))
+
+(defpackage #:cffi-features
+  (:use #:cl)
+  (:export
+   #:cffi-feature-p
+
+   ;; Features related to the CFFI-SYS backend.  Why no-*?  This
+   ;; reflects the hope that these symbols will go away completely
+   ;; meaning that at some point all lisps will support long-longs,
+   ;; the foreign-funcall primitive, etc...
+   #:no-long-long
+   #:no-foreign-funcall
+   #:no-stdcall
+   #:flat-namespace
+
+   ;; Only ECL and SCL support long-double...
+   ;;#:no-long-double
+
+   ;; Features related to the operating system.
+   ;; More should be added.
+   #:darwin
+   #:unix
+   #:windows
+
+   ;; Features related to the processor.
+   ;; More should be added.
+   #:ppc32
+   #:x86
+   #:x86-64
+   #:sparc
+   #:sparc64
+   #:hppa
+   #:hppa64))
 
 (defpackage #:cffi
   (:use #:common-lisp #:cffi-sys #:babel-encodings)

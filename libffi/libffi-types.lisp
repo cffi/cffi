@@ -53,28 +53,8 @@
  ((:bad-typedef "FFI_BAD_TYPEDEF"))
  ((:bad-abi "FFI_BAD_ABI")))
 
-#+freebsd
 (cenum abi
  ((:default-abi "FFI_DEFAULT_ABI")))
-
-#+(and windows x86-64)
-(cenum abi
- ((:default-abi "FFI_DEFAULT_ABI"))
- ((:win64 "FFI_WIN64")))
-
-#+(and windows (not x86-64))
-(cenum abi
- ((:default-abi "FFI_DEFAULT_ABI"))
- ((:sysv "FFI_SYSV"))
- ((:stdcall "FFI_STDCALL")))
-
-#-(or freebsd windows)
-(cenum abi
- ((:default-abi "FFI_DEFAULT_ABI"))
- #-x86-64
- ((:sysv "FFI_SYSV"))
- #+x86-64
- ((:unix64 "FFI_UNIX64")))
 
 (ctype ffi-abi "ffi_abi")
 

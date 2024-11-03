@@ -25,39 +25,6 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;;# Administrivia
-
-(defpackage #:cffi-sys
-  (:use #:common-lisp #:alien #:c-call)
-  (:import-from #:alexandria #:once-only #:with-unique-names #:if-let)
-  (:export
-   #:canonicalize-symbol-name-case
-   #:foreign-pointer
-   #:pointerp
-   #:pointer-eq
-   #:null-pointer
-   #:null-pointer-p
-   #:inc-pointer
-   #:make-pointer
-   #:pointer-address
-   #:%foreign-alloc
-   #:foreign-free
-   #:with-foreign-pointer
-   #:%foreign-funcall
-   #:%foreign-funcall-pointer
-   #:%foreign-type-alignment
-   #:%foreign-type-size
-   #:%load-foreign-library
-   #:%close-foreign-library
-   #:native-namestring
-   #:%mem-ref
-   #:%mem-set
-   #:make-shareable-byte-vector
-   #:with-pointer-to-vector-data
-   #:%foreign-symbol-pointer
-   #:%defcallback
-   #:%callback))
-
 (in-package #:cffi-sys)
 
 ;;;# Misfeatures
@@ -286,12 +253,6 @@ WITH-POINTER-TO-VECTOR-DATA."
 ;;;# Callbacks
 
 (defvar *callbacks* (make-hash-table))
-
-;;; Create a package to contain the symbols for callback functions.  We
-;;; want to redefine callbacks with the same symbol so the internal data
-;;; structures are reused.
-(defpackage #:cffi-callbacks
-  (:use))
 
 ;;; Intern a symbol in the CFFI-CALLBACKS package used to name the internal
 ;;; callback for NAME.

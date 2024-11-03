@@ -713,3 +713,28 @@
         (setf secs 100 usecs 200)
         (values (mem-ref psecs :long) (mem-ref pusecs :long))))
   100 200)
+
+;;; regression test: if slots use :offset, struct should still be big
+;;; enough to hold all of the slots.
+(defcstruct struct.offsets
+  (a :int32 :offset 0 :count 4)
+  (b :int32)
+  (c :uint8) ;; end at odd offset to check final padding
+  (d :uint8 :offset 1)
+  (e :uint8) ;; offsets increase normally after an explicit offset
+  (f :uint8)
+  (g :uint8 :offset 6)
+  (h :uint32) ;; offset is aligned without explicit offset
+  (i :uint32 :offset 3) ;; explicit offset isn't aligned
+  (j :uint32 :offset 0)) ;; ending in middle shouldn't truncate total size
+
+(deftest struct.offset.1
+    (foreign-type-size '(:struct struct.offsets))
+  24)
+
+;; Add some tests for :offset in general
+(deftest struct.offset.2
+    (mapcar (lambda (slot)
+              (foreign-slot-offset '(:struct struct.offsets) slot))
+            '(a b c d e f g h i j))
+  (0 16 20 1 2 3 6 8 3 0))
