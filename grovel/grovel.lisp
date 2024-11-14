@@ -289,7 +289,7 @@ int main(int argc, char**argv) {
         (progn
           (run-program program+args
                        :output (make-broadcast-stream output-stream *debug-io*)
-                       :error-output output-stream)
+                       :error-output *debug-io*)
           (appendf *cc-flags*
                    (parse-command-flags (get-output-stream-string output-stream))))
       (error (e)
