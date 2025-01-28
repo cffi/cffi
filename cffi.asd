@@ -36,7 +36,10 @@
   :author "James Bielman  <jamesjb@jamesjb.com>"
   :maintainer "Luis Oliveira  <loliveira@common-lisp.net>"
   :licence "MIT"
-  :depends-on (:uiop :alexandria :trivial-features :babel)
+  :defsystem-depends-on (:trivial-features)
+  :depends-on ((:feature :darwin :uiop)
+               :alexandria
+               :babel)
   :in-order-to ((test-op (load-op :cffi-tests)))
   :perform (test-op (o c) (operate 'asdf:test-op :cffi-tests))
   :components
@@ -59,6 +62,7 @@
      (:file "cffi-mkcl" :if-feature :mkcl)
      (:file "cffi-clasp" :if-feature :clasp)
      (:file "utils")
+     (:file "darwin-frameworks" :if-feature :darwin)
      (:file "libraries")
      (:file "early-types")
      (:file "types")
