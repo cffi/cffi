@@ -45,40 +45,9 @@
 ;;; (eg: on Linux LD_LIBRARY_PATH, /etc/ld.so.cache, /usr/lib/, /lib)
 ;;; do we try to find the library ourselves.
 
-(defun explode-path-environment-variable (name)
-  (mapcar #'uiop:ensure-directory-pathname
-          (split-if (lambda (c) (eql #\: c))
-                    (uiop:getenv name)
-                    :elide)))
-
-(defun darwin-fallback-library-path ()
-  (or (explode-path-environment-variable "DYLD_FALLBACK_LIBRARY_PATH")
-      (list (merge-pathnames #p"lib/" (user-homedir-pathname))
-            #+arm64 #p"/opt/homebrew/lib/"
-            #p"/opt/local/lib/"
-            #p"/usr/local/lib/"
-            #p"/usr/lib/")))
-
 (defvar *foreign-library-directories*
-  (if (featurep :darwin)
-      '((explode-path-environment-variable "LD_LIBRARY_PATH")
-        (explode-path-environment-variable "DYLD_LIBRARY_PATH")
-        (uiop:getcwd)
-        (darwin-fallback-library-path))
-      '())
+  '()
   "List onto which user-defined library paths can be pushed.")
-
-(defun fallback-darwin-framework-directories ()
-  (or (explode-path-environment-variable "DYLD_FALLBACK_FRAMEWORK_PATH")
-      (list (uiop:getcwd)
-            (merge-pathnames #p"Library/Frameworks/" (user-homedir-pathname))
-            #p"/Library/Frameworks/"
-            #p"/System/Library/Frameworks/")))
-
-(defvar *darwin-framework-directories*
-  '((explode-path-environment-variable "DYLD_FRAMEWORK_PATH")
-    (fallback-darwin-framework-directories))
-  "List of directories where Frameworks are searched for.")
 
 (defun mini-eval (form)
   "Simple EVAL-like function to evaluate the elements of
@@ -95,17 +64,6 @@
   "Searches for PATH in a list of DIRECTORIES and returns the first it finds."
   (some (lambda (directory) (probe-file (merge-pathnames path directory)))
         directories))
-
-(defun find-darwin-framework (framework-name)
-  "Searches for FRAMEWORK-NAME in *DARWIN-FRAMEWORK-DIRECTORIES*."
-  (dolist (directory (parse-directories *darwin-framework-directories*))
-    (let ((framework-directory
-            (merge-pathnames (format nil "~A.framework/" framework-name)
-                             directory)))
-
-      (when (probe-file framework-directory)
-        (let ((path (merge-pathnames framework-name framework-directory)))
-          (return-from find-darwin-framework path))))))
 
 ;;;# Defining Foreign Libraries
 ;;;
@@ -296,15 +254,6 @@ the USE-FOREIGN-LIBRARY macro."
 
 ;;;# Loading Foreign Libraries
 
-(defun load-darwin-framework (name framework-name)
-  "Tries to find and load a darwin framework in one of the directories
-in *DARWIN-FRAMEWORK-DIRECTORIES*. If unable to find FRAMEWORK-NAME,
-it signals a LOAD-FOREIGN-LIBRARY-ERROR."
-  (let ((framework (find-darwin-framework framework-name)))
-    (if framework
-        (load-foreign-library-path name (native-namestring framework))
-        (fl-error "Unable to find framework ~A" framework-name))))
-
 (defun report-simple-error (name error)
   (fl-error "Unable to load foreign library (~A).~%  ~A"
             name
@@ -364,7 +313,9 @@ This will need to be extended as we test on more OSes."
      (load-foreign-library-path name (filter-pathname thing) search-path))
     (cons
      (ecase (first thing)
-       (:framework (load-darwin-framework name (second thing)))
+       (:framework
+        #+darwin (load-darwin-framework name (second thing))
+        #-darwin (error "Cannot load darwin frameworks on non-darwin platform."))
        (:default
         (unless (stringp (second thing))
           (fl-error "Argument to :DEFAULT must be a string."))
