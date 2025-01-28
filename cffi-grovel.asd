@@ -28,7 +28,7 @@
 (defsystem "cffi-grovel"
   :description "The CFFI Groveller"
   :author "Dan Knapp <dankna@accela.net>"
-  :depends-on ("cffi" "cffi-toolchain" "alexandria")
+  :depends-on ("uiop" "cffi" "cffi-toolchain" "alexandria")
   :licence "MIT"
   :components
   ((:module "grovel"
