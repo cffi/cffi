@@ -311,7 +311,10 @@ is bound to a temporary file name, then atomically renaming that temporary file 
   #-(or ecl mkcl)
   ;; Don't use a temporary file, because linking is sensitive to the output file name :-/ (or put it in a temporary directory?)
   (apply 'invoke *ld* "-o" output-file
-         (append *ld-dll-flags* inputs)))
+         (append *ld-dll-flags*
+		 #-(or windows darwin) (list (format nil "-Wl,-soname=~a"
+						     (file-namestring output-file)))
+		 inputs)))
 
 
 ;;; Computing file names
