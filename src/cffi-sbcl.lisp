@@ -119,11 +119,13 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
                  (,var (alien-sap ,alien-var)))
              (declare (ignorable ,size-var))
              ,@body)))
-      `(let* ((,size-var ,size)
-              (,var (%foreign-alloc ,size-var)))
-         (unwind-protect
-              (progn ,@body)
-           (foreign-free ,var)))))
+      (let ((free-ptr (gensym "FREE-PTR")))
+        `(let* ((,size-var ,size)
+                (,var (%foreign-alloc ,size-var))
+                (,free-ptr ,var))
+           (unwind-protect
+                (progn ,@body)
+             (foreign-free ,free-ptr))))))
 
 ;;;# Shareable Vectors
 ;;;
