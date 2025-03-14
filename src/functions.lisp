@@ -103,10 +103,13 @@
 (defvar *foreign-structures-by-value*
   (lambda (&rest args)
     (declare (ignore args))
-    (restart-case
+    (restart-case 
         (error "Unable to call structures by value without cffi-libffi loaded.")
       (load-cffi-libffi () :report "Load cffi-libffi."
-        (asdf:operate 'asdf:load-op 'cffi-libffi))))
+        (if (find-package :asdf)
+            (uiop:symbol-call (find-package :asdf) '#:operate
+                              (read-from-string "asdf:load-op") 'cffi-libffi)
+            (error "ASDF not available to load cffi-libffi.~%")))))
   "A function that produces a form suitable for calling structures by value.")
 
 (defun foreign-funcall-form (thing options args pointerp)
