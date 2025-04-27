@@ -70,23 +70,26 @@
   (destructuring-bind (&key (library :default libraryp)
                             (cconv nil cconv-p)
                             (calling-convention cconv calling-convention-p)
-                            (convention calling-convention))
+                            (convention calling-convention)
+                            (inline t inlinep))
       options
     (when cconv-p
       (warn-obsolete-argument :cconv :convention))
     (when calling-convention-p
       (warn-obsolete-argument :calling-convention :convention))
-    (list* :convention
-           (or convention
-               (when libraryp
-                 (let ((lib-options (foreign-library-options
-                                     (get-foreign-library library))))
-                   (getf lib-options :convention)))
-               :cdecl)
-           ;; Don't pass the library option if we're dealing with
-           ;; FOREIGN-FUNCALL-POINTER.
-           (unless pointer
-             (list :library library)))))
+    `(:convention
+      ,(or convention
+           (when libraryp
+             (let ((lib-options (foreign-library-options
+                                 (get-foreign-library library))))
+               (getf lib-options :convention)))
+           :cdecl)
+      ;; Don't pass the library option if we're dealing with
+      ;; FOREIGN-FUNCALL-POINTER.
+      ,@(unless pointer
+          `(:library ,library))
+      ,@(when inlinep
+          `(:inline ,inline)))))
 
 (defun structure-by-value-p (ctype)
   "A structure or union is to be called or returned by value."
@@ -225,7 +228,14 @@ arguments and does type promotion for the variadic arguments."
   (let* ((arg-names (mapcar #'first args))
          (arg-types (mapcar #'second args))
          (syms (make-gensym-list (length args)))
-         (call-by-value (fn-call-by-value-p arg-types return-type)))
+         (call-by-value (fn-call-by-value-p arg-types return-type))
+         (inline
+          (destructuring-bind
+              (&key (inline t inlinep) &allow-other-keys) options
+            (when inlinep
+              (setf options (copy-list options))
+              (remf options :inline))
+            (and inline `((inline ,lisp-name))))))
     (multiple-value-bind (prelude caller)
         (if call-by-value
             (values nil nil)
@@ -233,7 +243,8 @@ arguments and does type promotion for the variadic arguments."
              foreign-name lisp-name (canonicalize-foreign-type return-type)
              syms (mapcar #'canonicalize-foreign-type arg-types) options))
       `(progn
-         ,prelude
+         ,@(when prelude `(,prelude))
+         ,@(when inline `(declaim ,@inline))
          (defun ,lisp-name ,arg-names
            #+cmucl (declare (notinline alien::%heap-alien))
            ,@(ensure-list docstring)
