@@ -198,6 +198,12 @@ Foreign Types
 * with-foreign-object::         Allocates a foreign object with dynamic extent.
 * with-foreign-objects::        Plural form of @code{with-foreign-object}.
 * with-foreign-slots::          Accesses the slots of a foreign structure.
+* foreign-array-alloc::         Allocate a foreign array copying data from lisp.
+* foreign-array-free::          Free allocated foreign array.
+* foreign-array-to-lisp::       Copy foreign array to lisp.
+* lisp-array-to-foreign::       Copy lisp array data to foreign array memory.
+* with-foreign-array::          Allocate a foreign array with dynamic extent.
+* foreign-aref::                Access foreign array like multidimensional array.
 
 Pointers
 
@@ -1771,6 +1777,7 @@ define new types.
 * Foreign Type Translators::
 * Optimizing Type Translators::
 * Foreign Structure Types::
+* Foreign Array Types::
 * Allocating Foreign Objects::
 
 Dictionary
@@ -1802,6 +1809,12 @@ Dictionary
 * translate-to-foreign::
 * translate-into-foreign-memory::
 * with-foreign-slots::
+* foreign-array-alloc::
+* foreign-array-free::
+* foreign-array-to-lisp::
+* lisp-array-to-foreign::
+* with-foreign-array::
+* foreign-aref::
 @end menu
 
 @node Built-In Types, Other Types, Foreign Types, Foreign Types
@@ -1933,6 +1946,30 @@ from C to Lisp: a Lisp string and the C string's foreign pointer.
 @lisp
 CFFI> (foreign-funcall "getenv" :string "SHELL" :string+ptr)
 @result{} ("/bin/bash" #.(SB-SYS:INT-SAP #XBFFFFC6F))
+@end lisp
+
+@ForeignType{:array base-type &rest dimensions}
+
+The @code{:array} type performs automatic conversion between Lisp and C arrays.
+Similar to @code{:string}, during function call the converted C array will have
+dynamic extent.
+
+@lisp
+CFFI> (concatenate 'vector (map 'vector #'char-code "Hello!") #(0))
+@result{} #(72 101 108 108 111 33 0)
+CFFI> (foreign-funcall "strlen" (:array :char 7) #(72 101 108 108 111 33 0) :int)
+@result{} 6
+@end lisp
+
+But the benefit of @code{:array} extends beyond one dimenstional
+array. It bridges the 1D view of arrays in C to the multidimensional
+arrays in lisp. You can convert mulitdimensional arrays to C arrays
+and back.
+
+@lisp
+CFFI> (with-foreign-array (ptr #(1 2 3 4 5 6) '(:array :int32 6))
+            (foreign-array-to-lisp ptr '(:array :int32 3 2)))
+@result{} #2A((1 2) (3 4) (5 6))
 @end lisp
 
 @ForeignType{:boolean &optional (base-type :int)}
@@ -2237,7 +2274,7 @@ before compiling files with forms that ought to use them.  Otherwise,
 they will not be found and the runtime translators will be used
 instead.
 
-@node Foreign Structure Types, Allocating Foreign Objects, Optimizing Type Translators, Foreign Types
+@node Foreign Structure Types, Foreign Array Types, Optimizing Type Translators, Foreign Types
 @section Foreign Structure Types
 
 For more involved C types than simple aliases to built-in types, such
@@ -2396,7 +2433,15 @@ In order to obtain the pointer, you should use the function @ref{mem-aptr}.
 
 See @ref{defcstruct} for more details.
 
-@node Allocating Foreign Objects, convert-from-foreign, Foreign Structure Types, Foreign Types
+@node Foreign Array Types, Allocating Foreign Objects, Foreign Structure Types, Foreign Types
+@section Foreign Array Types
+
+CFFI's foreign array facilities bridge the gap between C's low-level, flat memory model and Common Lisp's higher-level, multidimensional arrays. Working directly with C arrays using @code{mem-ref} and manual offset computation is tedious and error-prone, especially for nested or multidimensional data. CFFI’s foreign array utilities provide a convenient abstraction: they handle allocating storage, offset calculations, and copying between Lisp and C representations automatically.
+
+The @code{(:array element-type dim1 dim2 ...)} foreign type lets you define multidimensional arrays in a way that aligns with Lisp expectations, while still allocating memory as C expects. Functions like @ref{foreign-array-alloc}, @ref{foreign-array-to-lisp}, and @ref{foreign-aref} simplify the manipulation of such data, reducing boilerplate and improving readability.
+
+
+@node Allocating Foreign Objects, convert-from-foreign, Foreign Array Types, Foreign Types
 @section Allocating Foreign Objects
 
 @c I moved this because I moved with-foreign-object to the Pointers
@@ -3829,6 +3874,243 @@ CFFI> (with-foreign-slots ((sec min hour (day-of-month mday) mon year) * (:struc
 @seealso{defcstruct} @*
 @seealso{defcunion} @*
 @seealso{foreign-slot-value}
+
+@page
+@node foreign-array-alloc, foreign-array-free, with-foreign-slots, Foreign Types
+@heading foreign-array-alloc
+
+@subheading Syntax
+@Function{foreign-array-alloc array array-type}
+
+@subheading Arguments and Values
+
+@table @var
+@item array
+A Lisp array (of any rank).
+
+@item array-type
+A CFFI array type specified as @code{(:array element-type dim1 dim2 ...)}.
+
+@item pointer
+A foreign pointer to newly allocated memory initialized with the contents of the array.
+@end table
+
+@subheading Description
+Allocates a block of foreign memory sufficient to store the contents of a Lisp array of the specified type and dimensions. The contents of the Lisp array are copied into the allocated memory.
+
+The returned foreign pointer must be explicitly freed using @code{foreign-array-free} to avoid memory leaks.
+
+This function is useful for passing a Lisp array to a foreign function expecting a pointer to an array.
+
+@subheading Examples
+@lisp
+(let ((ptr (foreign-array-alloc #(1 2 3 4) '(:array :int32 4))))
+  (unwind-protect
+       (foreign-aref ptr '(:array :int32 4) 2) ;; => 3
+    (foreign-array-free ptr)))
+@end lisp
+
+@subheading See Also
+
+@seealso{foreign-array-free} @*
+@seealso{lisp-array-to-foreign} @*
+@seealso{foreign-aref}
+
+@page
+@node foreign-array-free, foreign-array-to-lisp, foreign-array-alloc, Foreign Types
+@heading foreign-array-free
+
+@subheading Syntax
+@Function{foreign-array-free ptr}
+
+@subheading Arguments and Values
+
+@table @var
+@item ptr
+A foreign pointer returned by @code{foreign-array-alloc}.
+@end table
+
+@subheading Description
+Frees foreign memory previously allocated by @code{foreign-array-alloc}. This should be called after the memory is no longer needed to avoid memory leaks.
+
+Does nothing if the pointer is null.
+
+@subheading Examples
+@lisp
+(let ((ptr (foreign-array-alloc #(1 2 3) '(:array :int32 3))))
+  (foreign-array-free ptr))
+@end lisp
+
+@subheading See Also
+@seealso{foreign-array-alloc} @*
+
+@page
+@node foreign-array-to-lisp, lisp-array-to-foreign, foreign-array-free, Foreign Types
+@heading foreign-array-to-lisp
+
+@subheading Syntax
+@Function{foreign-array-to-lisp pointer array-type &key element-type adjustable displaced-to displaced-index-offset}
+
+@subheading Arguments and Values
+
+@table @var
+@item pointer
+A foreign pointer to an array.
+
+@item array-type
+A CFFI array type like @code{(:array :int32 2 2)}.
+
+@item element-type
+Element type to use in the resulting Lisp array. Passed to @code{make-array}.
+
+@item adjustable
+Whether the resulting Lisp array should be adjustable. Passed to @code{make-array}.
+
+@item displaced-to
+An array to which the resulting array will be displaced. Passed to @code{make-array}.
+
+@item displaced-index-offset
+Offset into the displaced array. Passed to @code{make-array}.
+
+@item lisp-array
+A Lisp array populated with contents from the foreign array.
+@end table
+
+@subheading Description
+Copies data from a foreign array at the specified pointer into a newly allocated Lisp array. The @var{array-type} describes the element type and dimensions of the foreign array. Additional options are passed to @code{make-array} to control the element type, adjustability, and displacement.
+
+Returns NIL if the pointer is null.
+
+@subheading Examples
+@lisp
+(with-foreign-array (ptr #(1 2 3 4) '(:array :int32 4))
+  (foreign-array-to-lisp ptr '(:array :int32 4)))
+;; => #(1 2 3 4)
+@end lisp
+
+@subheading See Also
+@seealso{lisp-array-to-foreign} @*
+@seealso{with-foreign-array}
+
+@page
+@node lisp-array-to-foreign, with-foreign-array, foreign-array-to-lisp, Foreign Types
+@heading lisp-array-to-foreign
+
+@subheading Syntax
+@Function{lisp-array-to-foreign array pointer array-type}
+
+@subheading Arguments and Values
+
+@table @var
+@item array
+A Lisp array.
+
+@item pointer
+A foreign pointer to memory.
+
+@item array-type
+A CFFI array type describing the layout of the foreign array.
+@end table
+
+@subheading Description
+Copies the contents of a Lisp array into foreign memory pointed to by @var{pointer}, using the specified CFFI @var{array-type} to determine layout and element type.
+
+The layout must match that of the foreign memory region allocated for this purpose.
+
+@subheading Examples
+@lisp
+(with-foreign-pointer (ptr (* 4 (foreign-type-size :int32)))
+  (lisp-array-to-foreign #(10 20 30 40) ptr '(:array :int32 4))
+  (foreign-aref ptr '(:array :int32 4) 2)) ;; => 30
+@end lisp
+
+@subheading See Also
+@seealso{foreign-array-alloc} @*
+@seealso{foreign-array-to-lisp}
+
+@page
+@node with-foreign-array, foreign-aref, lisp-array-to-foreign, Foreign Types
+@heading with-foreign-array
+
+@subheading Syntax
+@Macro{with-foreign-array (var lisp-array array-type) &body body}
+
+@subheading Arguments and Values
+
+@table @var
+@item var
+A symbol to be bound to the foreign pointer.
+
+@item lisp-array
+A Lisp array whose contents are to be copied to foreign memory.
+
+@item array-type
+A CFFI array type describing the foreign representation.
+
+@item body
+A series of forms evaluated with @var{var} bound to the foreign pointer.
+
+@item result
+The result of the last form in @var{body}.
+@end table
+
+@subheading Description
+Allocates a temporary foreign array initialized with the contents of @var{lisp-array}, binding the foreign pointer to @var{var} for the duration of @var{body}. The foreign memory is automatically deallocated when @var{body} finishes execution.
+
+Useful for safely passing arrays to foreign functions that do not retain pointers.
+
+@subheading Examples
+@lisp
+(with-foreign-array (ptr #(42 99) '(:array :int32 2))
+  (foreign-aref ptr '(:array :int32 2) 1)) ;; => 99
+@end lisp
+
+@subheading See Also
+@seealso{foreign-array-alloc} @*
+@seealso{foreign-array-to-lisp}
+
+@page
+@node foreign-aref, Pointers, with-foreign-array, Foreign Types
+@heading foreign-aref
+
+@subheading Syntax
+@Function{foreign-aref pointer array-type &rest indexes}
+@Function{(setf foreign-aref) value pointer array-type &rest indexes}
+
+@subheading Arguments and Values
+
+@table @var
+@item pointer
+A foreign pointer to an array.
+
+@item array-type
+A CFFI array type.
+
+@item indexes
+A list of integers specifying the position in the array.
+
+@item value
+The value read from or written to the specified array element.
+@end table
+
+@subheading Description
+Accesses a single element in a foreign array given its type and indices. The array is assumed to be in row-major order. The accessor can be used both for reading and writing.
+
+Performs no bounds checking. The layout and dimensions must match the actual memory structure.
+
+@subheading Examples
+@lisp
+(with-foreign-array (ptr #(1 2 3 4) '(:array :int32 4))
+  (foreign-aref ptr '(:array :int32 4) 2)) ;; => 3
+
+(with-foreign-array (ptr #(1 2 3 4) '(:array :int32 4))
+  (setf (foreign-aref ptr '(:array :int32 4) 1) 99)
+  (foreign-aref ptr '(:array :int32 4) 1)) ;; => 99
+@end lisp
+
+@subheading See Also
+@seealso{lisp-array-to-foreign} @*
+@seealso{foreign-array-to-lisp}
 
 
 @c ===================================================================
