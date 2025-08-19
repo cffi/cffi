@@ -318,14 +318,14 @@ WITH-POINTER-TO-VECTOR-DATA."
       ((null ret) (cdr (rassoc path sys::*global-table* :test #'string=)))
       ;; The library has been loaded, but since SYS::LOAD-OBJECT-FILE
       ;; returns an alist of *all* loaded libraries along with their addresses
-      ;; we return only the handler associated with the library just loaded.
+      ;; we return only the handle associated with the library just loaded.
       (t (cdr (rassoc path ret :test #'string=))))))
 
 ;;; XXX: doesn't work on Darwin; does not check for errors. I suppose we'd
 ;;; want something like SBCL's dlclose-or-lose in foreign-load.lisp:66
-(defun %close-foreign-library (handler)
+(defun %close-foreign-library (handle)
   "Closes a foreign library."
-  (let ((lib (rassoc (ext:unix-namestring handler) sys::*global-table*
+  (let ((lib (rassoc handle sys::*global-table*
                      :test #'string=)))
     (sys::dlclose (car lib))
     (setf (car lib) (sys:int-sap 0))))
