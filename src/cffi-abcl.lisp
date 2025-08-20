@@ -669,7 +669,7 @@ interface extends specified as fully qualifed dotted Java names."
       (write-byte (jarray-ref class-bytes i) stream))))
 
 (defun %callback (name)
-  (or (#"getFunctionPointer" 'com.sun.jna.CallbackReference
+  (or (#"getFunctionPointer" '|com.sun.jna.CallbackReference|
                              (gethash name *callbacks*))
       (error "Undefined callback: ~S" name)))
 
