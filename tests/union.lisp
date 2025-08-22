@@ -37,10 +37,7 @@
   "Convert N to a list of bytes using a union."
   (with-foreign-object (obj 'uint32-bytes)
     (setf (foreign-slot-value obj 'uint32-bytes 'int-value) n)
-    (loop for i from 0 below 4
-          collect (mem-aref
-                   (foreign-slot-value obj 'uint32-bytes 'bytes)
-                   :unsigned-char i))))
+    (foreign-slot-value obj 'uint32-bytes 'bytes)))
 
 (deftest union.1
     (let ((bytes (int-to-bytes #x12345678)))
