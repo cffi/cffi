@@ -337,8 +337,8 @@
 (define-compiler-macro foreign-bitfield-value (&whole form type symbols)
   "Optimize for when TYPE and SYMBOLS are constant."
   (declare (notinline foreign-bitfield-value))
-  (if (and (constantp type) (constantp symbols))
-      (foreign-bitfield-value (eval type) (eval symbols))
+  (if (and (constant-form-p type) (constant-form-p symbols))
+      (foreign-bitfield-value (constant-form-value type) (constant-form-value symbols))
       form))
 
 (defun %foreign-bitfield-symbols (type value)
@@ -364,8 +364,8 @@ the bitfield TYPE."
 (define-compiler-macro foreign-bitfield-symbols (&whole form type value)
   "Optimize for when TYPE and SYMBOLS are constant."
   (declare (notinline foreign-bitfield-symbols))
-  (if (and (constantp type) (constantp value))
-      `(quote ,(foreign-bitfield-symbols (eval type) (eval value)))
+  (if (and (constant-form-p type) (constant-form-p value))
+      `(quote ,(foreign-bitfield-symbols (constant-form-value type) (constant-form-value value)))
       form))
 
 (defmethod translate-to-foreign (value (type foreign-bitfield))
@@ -381,13 +381,13 @@ the bitfield TYPE."
            `(if (integerp ,value)
                 ,value
                 (%foreign-bitfield-value ,type (ensure-list ,value)))))
-    (if (constantp value)
-        (eval (expander value type))
+    (if (constant-form-p value)
+        (constant-form-value (expander value type))
         (expander value type))))
 
 (defmethod expand-from-foreign (value (type foreign-bitfield))
   (flet ((expander (value type)
            `(%foreign-bitfield-symbols ,type ,value)))
-    (if (constantp value)
-        (eval (expander value type))
+    (if (constant-form-p value)
+        (constant-form-value (expander value type))
         (expander value type))))

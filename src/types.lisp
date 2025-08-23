@@ -124,8 +124,8 @@
 ;;;# Foreign Pointers
 
 (define-compiler-macro inc-pointer (&whole form pointer offset)
-  (if (and (constantp offset)
-           (eql 0 (eval offset)))
+  (if (and (constant-form-p offset)
+           (eql 0 (constant-form-value offset)))
       pointer
       form))
 
@@ -150,8 +150,8 @@ we don't return its 'value' but a pointer to it, which is PTR itself."
 
 (define-compiler-macro mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code MEM-REF when TYPE is constant."
-  (if (constantp type)
-      (let* ((parsed-type (parse-type (eval type)))
+  (if (constant-form-p type)
+      (let* ((parsed-type (parse-type (constant-form-value type)))
              (ctype (canonicalize parsed-type)))
         ;; Bail out when using emulated long long types.
         #+cffi-sys::no-long-long
@@ -188,27 +188,27 @@ to open-code (SETF MEM-REF) forms."
     ;; so that the compiler macros on MEM-SET and %MEM-SET work.
     (with-unique-names (store type-tmp offset-tmp)
       (values
-       (append (unless (constantp type)   (list type-tmp))
-               (unless (constantp offset) (list offset-tmp))
+       (append (unless (constant-form-p type)   (list type-tmp))
+               (unless (constant-form-p offset) (list offset-tmp))
                dummies)
-       (append (unless (constantp type)   (list type))
-               (unless (constantp offset) (list offset))
+       (append (unless (constant-form-p type)   (list type))
+               (unless (constant-form-p offset) (list offset))
                vals)
        (list store)
        `(progn
           (mem-set ,store ,getter
-                   ,@(if (constantp type)   (list type)   (list type-tmp))
-                   ,@(if (constantp offset) (list offset) (list offset-tmp)))
+                   ,@(if (constant-form-p type)   (list type)   (list type-tmp))
+                   ,@(if (constant-form-p offset) (list offset) (list offset-tmp)))
           ,store)
        `(mem-ref ,getter
-                 ,@(if (constantp type)   (list type)   (list type-tmp))
-                 ,@(if (constantp offset) (list offset) (list offset-tmp)))))))
+                 ,@(if (constant-form-p type)   (list type)   (list type-tmp))
+                 ,@(if (constant-form-p offset) (list offset) (list offset-tmp)))))))
 
 (define-compiler-macro mem-set
     (&whole form value ptr type &optional (offset 0))
   "Compiler macro to open-code (SETF MEM-REF) when type is constant."
-  (if (constantp type)
-      (let* ((parsed-type (parse-type (eval type)))
+  (if (constant-form-p type)
+      (let* ((parsed-type (parse-type (constant-form-value type)))
              (ctype (canonicalize parsed-type)))
         ;; Bail out when using emulated long long types.
         #+cffi-sys::no-long-long
@@ -230,11 +230,11 @@ to open-code (SETF MEM-REF) forms."
 
 (define-compiler-macro mem-aref (&whole form ptr type &optional (index 0))
   "Compiler macro to open-code MEM-AREF when TYPE (and eventually INDEX)."
-  (if (constantp type)
-      (if (constantp index)
+  (if (constant-form-p type)
+      (if (constant-form-p index)
           `(mem-ref ,ptr ,type
-                    ,(* (eval index) (foreign-type-size (eval type))))
-          `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (eval type)))))
+                    ,(* (constant-form-value index) (foreign-type-size (constant-form-value type))))
+          `(mem-ref ,ptr ,type (* ,index ,(foreign-type-size (constant-form-value type)))))
       form))
 
 (define-setf-expander mem-aref (ptr type &optional (index 0) &environment env)
@@ -247,34 +247,34 @@ to open-code (SETF MEM-REF) forms."
     ;; on MEM-SET or %MEM-SET can work.
     (with-unique-names (store type-tmp index-tmp)
       (values
-       (append (unless (constantp type)
+       (append (unless (constant-form-p type)
                  (list type-tmp))
-               (unless (and (constantp type) (constantp index))
+               (unless (and (constant-form-p type) (constant-form-p index))
                  (list index-tmp))
                dummies)
-       (append (unless (constantp type)
+       (append (unless (constant-form-p type)
                  (list type))
-               (unless (and (constantp type) (constantp index))
+               (unless (and (constant-form-p type) (constant-form-p index))
                  (list index))
                vals)
        (list store)
        ;; Here we'll try to calculate the offset from the type and index,
        ;; or if not possible at least get the type size early.
        `(progn
-          ,(if (constantp type)
-               (if (constantp index)
+          ,(if (constant-form-p type)
+               (if (constant-form-p index)
                    `(mem-set ,store ,getter ,type
-                             ,(* (eval index) (foreign-type-size (eval type))))
+                             ,(* (constant-form-value index) (foreign-type-size (constant-form-value type))))
                    `(mem-set ,store ,getter ,type
-                             (* ,index-tmp ,(foreign-type-size (eval type)))))
+                             (* ,index-tmp ,(foreign-type-size (constant-form-value type)))))
                `(mem-set ,store ,getter ,type-tmp
                          (* ,index-tmp (foreign-type-size ,type-tmp))))
           ,store)
        `(mem-aref ,getter
-                  ,@(if (constantp type)
+                  ,@(if (constant-form-p type)
                         (list type)
                         (list type-tmp))
-                  ,@(if (and (constantp type) (constantp index))
+                  ,@(if (and (constant-form-p type) (constant-form-p index))
                         (list index)
                         (list index-tmp)))))))
 
@@ -292,15 +292,15 @@ to open-code (SETF MEM-REF) forms."
 
 (define-compiler-macro mem-aptr (&whole form ptr type &optional (index 0))
   "The pointer to the element."
-  (cond ((not (constantp type))
+  (cond ((not (constant-form-p type))
          form)
-        ((not (constantp index))
-         `(inc-pointer ,ptr (* ,index ,(foreign-type-size (eval type)))))
-        ((zerop (eval index))
+        ((not (constant-form-p index))
+         `(inc-pointer ,ptr (* ,index ,(foreign-type-size (constant-form-value type)))))
+        ((zerop (constant-form-value index))
          ptr)
         (t
-         `(inc-pointer ,ptr ,(* (eval index)
-                                (foreign-type-size (eval type)))))))
+         `(inc-pointer ,ptr ,(* (constant-form-value index)
+                                (foreign-type-size (constant-form-value type)))))))
 
 (define-foreign-type foreign-array-type ()
   ((dimensions :reader dimensions :initarg :dimensions)
@@ -386,10 +386,10 @@ newly allocated memory."
                                       &key (count 1 count-p) &allow-other-keys)
   (if (or (and count-p (<= (length args) 2)) (null args))
       (cond
-        ((and (constantp type) (constantp count))
-         `(%foreign-alloc ,(* (eval count) (foreign-type-size (eval type)))))
-        ((constantp type)
-         `(%foreign-alloc (* ,count ,(foreign-type-size (eval type)))))
+        ((and (constant-form-p type) (constant-form-p count))
+         `(%foreign-alloc ,(* (constant-form-value count) (foreign-type-size (constant-form-value type)))))
+        ((constant-form-p type)
+         `(%foreign-alloc (* ,count ,(foreign-type-size (constant-form-value type)))))
         (t form))
       form))
 
@@ -776,9 +776,9 @@ The foreign array must be freed with foreign-array-free."
   (foreign-struct-slot-pointer ptr (get-slot-info type slot-name)))
 
 (define-compiler-macro foreign-slot-pointer (&whole whole ptr type slot-name)
-  (if (and (constantp type) (constantp slot-name))
+  (if (and (constant-form-p type) (constant-form-p slot-name))
       (foreign-struct-slot-pointer-form
-       ptr (get-slot-info (eval type) (eval slot-name)))
+       ptr (get-slot-info (constant-form-value type) (constant-form-value slot-name)))
       whole))
 
 (defun foreign-slot-type (type slot-name)
@@ -799,9 +799,9 @@ The foreign array must be freed with foreign-array-free."
 
 (define-compiler-macro foreign-slot-value (&whole form ptr type slot-name)
   "Optimizer for FOREIGN-SLOT-VALUE when TYPE is constant."
-  (if (and (constantp type) (constantp slot-name))
+  (if (and (constant-form-p type) (constant-form-p slot-name))
       (foreign-struct-slot-value-form
-       ptr (get-slot-info (eval type) (eval slot-name)))
+       ptr (get-slot-info (constant-form-value type) (constant-form-value slot-name)))
       form))
 
 (define-setf-expander foreign-slot-value (ptr type slot-name &environment env)
@@ -809,7 +809,7 @@ The foreign array must be freed with foreign-array-free."
   (multiple-value-bind (dummies vals newval setter getter)
       (get-setf-expansion ptr env)
     (declare (ignore setter newval))
-    (if (and (constantp type) (constantp slot-name))
+    (if (and (constant-form-p type) (constant-form-p slot-name))
         ;; if TYPE and SLOT-NAME are constant we avoid rebinding them
         ;; so that the compiler macro on FOREIGN-SLOT-SET works.
         (with-unique-names (store)
@@ -839,16 +839,16 @@ The foreign array must be freed with foreign-array-free."
 (define-compiler-macro foreign-slot-set
     (&whole form value ptr type slot-name)
   "Optimizer when TYPE and SLOT-NAME are constant."
-  (if (and (constantp type) (constantp slot-name))
+  (if (and (constant-form-p type) (constant-form-p slot-name))
       (foreign-struct-slot-set-form
-       value ptr (get-slot-info (eval type) (eval slot-name)))
+       value ptr (get-slot-info (constant-form-value type) (constant-form-value slot-name)))
       form))
 
 (defmacro with-foreign-slots ((vars ptr type) &body body)
   "Create local symbol macros for each var in VARS to reference
 foreign slots in PTR of TYPE. Similar to WITH-SLOTS.
-Each var can be of the form: 
-  name                       name bound to slot of same name              
+Each var can be of the form:
+  name                       name bound to slot of same name
   (:pointer name)            name bound to pointer to slot of same name
   (name slot-name)           name bound to slot-name
   (name :pointer slot-name)  name bound to pointer to slot-name"
@@ -859,7 +859,7 @@ Each var can be of the form:
                :collect
                  (if (listp var)
                      (let ((p1 (first var)) (p2 (second var)) (p3 (third var)))
-                        (if (eq p1 :pointer)	
+                        (if (eq p1 :pointer)
                            `(,p2 (foreign-slot-pointer ,ptr-var ',type ',p2))
                            (if (eq p2 :pointer)
                                `(,p1 (foreign-slot-pointer ,ptr-var ',type ',p3))
@@ -953,11 +953,11 @@ slots will be defined and stored."
   "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
 The buffer has dynamic extent and may be stack allocated."
   `(with-foreign-pointer
-       (,var ,(if (constantp type)
+       (,var ,(if (constant-form-p type)
                   ;; with-foreign-pointer may benefit from constant folding:
-                  (if (constantp count)
-                      (* (eval count) (foreign-type-size (eval type)))
-                      `(* ,count ,(foreign-type-size (eval type))))
+                  (if (constant-form-p count)
+                      (* (constant-form-value count) (foreign-type-size (constant-form-value type)))
+                      `(* ,count ,(foreign-type-size (constant-form-value type))))
                   `(* ,count (foreign-type-size ,type))))
      ,@body))
 
@@ -1016,14 +1016,14 @@ The buffer has dynamic extent and may be stack allocated."
 
 (defmethod expand-to-foreign (value (type foreign-boolean-type))
   "Optimization for the :boolean type."
-  (if (constantp value)
-      (if (eval value) 1 0)
+  (if (constant-form-p value)
+      (if (constant-form-value value) 1 0)
       `(if ,value 1 0)))
 
 (defmethod expand-from-foreign (value (type foreign-boolean-type))
   "Optimization for the :boolean type."
-  (if (constantp value) ; very unlikely, heh
-      (not (zerop (eval value)))
+  (if (constant-form-p value) ; very unlikely, heh
+      (not (zerop (constant-form-value value)))
       `(not (zerop ,value))))
 
 ;;; Boolean type that represents C99 _Bool

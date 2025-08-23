@@ -88,9 +88,10 @@
   (unless size-var
     (setf size-var (gensym (symbol-name '#:size))))
   ;; If the size is constant we can stack-allocate.
-  (cond ((constantp size)
+  (cond ((constant-form-p size)
          (let ((alien-var (gensym (symbol-name '#:alien))))
-           `(with-alien ((,alien-var (array (unsigned 8) ,(eval size))))
+           `(with-alien ((,alien-var (array (unsigned 8)
+                                            ,(constant-form-value size))))
              (let ((,size-var ,size)
                    (,var (alien-sap ,alien-var)))
                (declare (ignorable ,size-var))
@@ -153,16 +154,16 @@
                 collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
-      (if (constantp type)
-          (ecase (eval type)
+      (if (constant-form-p type)
+          (ecase (constant-form-value type)
             ,@(loop for (keyword fn) in pairs
                     collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
-      (if (constantp type)
+      (if (constant-form-p type)
           (once-only (value)
-            (ecase (eval type)
+            (ecase (constant-form-value type)
               ,@(loop for (keyword fn) in pairs
                       collect `(,keyword `(setf (,',fn ,ptr ,offset)
                                                 ,value)))))

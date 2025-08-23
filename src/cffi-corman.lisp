@@ -161,7 +161,7 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
     (:pointer          (cref (:handle *) ptr 0))))
 
 ;(define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
-;  (if (constantp type)
+;  (if (constant-form-p type)
 ;      `(cref (,(convert-foreign-type type) *) ,ptr ,offset)
 ;      form))
 
