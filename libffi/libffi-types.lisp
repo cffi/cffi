@@ -30,17 +30,6 @@
 #+linux
 (define "_GNU_SOURCE")
 
-;; When installed through Mac Ports, libffi include files
-;; will be found in /opt/local/include.
-#+darwin
-(cc-flags "-I/opt/local/include/")
-
-#+openbsd
-(cc-flags "-I/usr/local/include")
-
-#+freebsd
-(cc-flags "-I/usr/local/include")
-
 (pkg-config-cflags "libffi" :optional t)
 
 #+darwin
