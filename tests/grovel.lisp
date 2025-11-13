@@ -81,16 +81,16 @@
 (deftest grovel-feature
     (let ((*grovelled-features* nil))
       (grovel-forms `((in-package :cffi-tests)
-                      (include "limits.h")
-                      (feature grovel-test-feature "CHAR_BIT")
-                      (feature :char-bit "CHAR_BIT"
+                      (include "headers/feature-test.h")
+                      (feature grovel-test-feature "PRESENT_FEAUTRE")
+                      (feature :present-feature "PRESENT_FEAUTRE"
                                :feature-list *grovelled-features*)
                       (feature :inexistent-grovel-feature
                                "INEXISTENT_CFFI_GROVEL_FEATURE"
                                :feature-list *grovelled-features*)))
       (unwind-protect
            (values (and (member 'grovel-test-feature *features*) t)
-                   (and (member :char-bit *grovelled-features*) t)
+                   (and (member :present-feature *grovelled-features*) t)
                    (member :inexistent-grovel-feature *grovelled-features*))
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
