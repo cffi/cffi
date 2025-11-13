@@ -95,6 +95,27 @@
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
 
+(deftest grovel-feature-values
+    (let ((*grovelled-features* nil))
+      (grovel-forms `((in-package :cffi-tests)
+                      (include "headers/feature-test.h")
+                      (feature grovel-test-feature "PRESENT_FEATURE_TRUTHY"
+                               :check-value t)
+                      (feature :present-feature "PRESENT_FEATURE_TRUTHY"
+                               :feature-list *grovelled-features*
+                               :check-value t)
+                      (feature :inexistent-grovel-feature
+                               "PRESENT_FEATURE_FALSY"
+                               :feature-list *grovelled-features*
+                               :check-value t)))
+      (unwind-protect
+           (values (and (member 'grovel-test-feature *features*) t)
+                   (and (member :present-feature *grovelled-features*) t)
+                   (member :inexistent-grovel-feature *grovelled-features*))
+        (alexandria:removef *features* 'grovel-test-feature)))
+  t t nil)
+
+
 (deftest grovel-types
     (let* ((this #.(or *compile-file-truename* *load-truename*))
            (include-dir (uiop:native-namestring (make-pathname :directory (pathname-directory this)))))
