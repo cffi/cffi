@@ -100,7 +100,7 @@
            (include-dir (uiop:native-namestring (make-pathname :directory (pathname-directory this)))))
       (grovel-forms `((in-package :cffi-tests)
                       (cc-flags ,(concatenate 'string "-I" include-dir))
-                      (include "grovel-test.h")
+                      (include "headers/grovel-test.h")
                       (constant (tagged-array-max-length "TAGGED_ARRAY_MAX_LENGTH")
                        :documentation "Maximum length of tagged_array.arr (should be 64)")
                       (cstruct tagged-array "struct tagged_array"
