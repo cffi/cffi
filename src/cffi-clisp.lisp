@@ -193,18 +193,16 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a foreign pointer to the data in VECTOR."
-  (with-unique-names (vector-var size-var)
+  (with-unique-names (vector-var size-var c-type)
     `(let ((,vector-var ,vector))
        (check-type ,vector-var shareable-byte-vector)
        (with-foreign-pointer (,ptr-var (length ,vector-var) ,size-var)
-         ;; copy-in
-         (loop for i below ,size-var do
-               (%mem-set (aref ,vector-var i) ,ptr-var :unsigned-char i))
-         (unwind-protect (progn ,@body)
-           ;; copy-out
-           (loop for i below ,size-var do
-                 (setf (aref ,vector-var i)
-                       (%mem-ref ,ptr-var :unsigned-char i))))))))
+         (let ((,c-type (ffi:parse-c-type `(ffi:c-array ffi:uint8 ,,size-var))))
+           ;; copy-in
+           (setf (ffi:memory-as ,ptr-var ,c-type) ,vector-var)
+           (unwind-protect (progn ,@body)
+             ;; copy-out
+             (replace ,vector-var (ffi:memory-as ,ptr-var ,c-type))))))))
 
 ;;;# Foreign Function Calling
 
