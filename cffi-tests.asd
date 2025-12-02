@@ -52,7 +52,9 @@
 
 (defsystem "cffi-tests"
   :description "Unit tests for CFFI."
-  :depends-on ("uiop" "cffi-grovel" "cffi-libffi" "bordeaux-threads" #-ecl "rt" #+ecl (:require "rt"))
+  :depends-on ("uiop" "cffi-grovel" "cffi-libffi"
+               #-(and clisp (not :mt)) "bordeaux-threads"
+               #-ecl "rt" #+ecl (:require "rt"))
   :components
   ((:module "tests"
     :components
