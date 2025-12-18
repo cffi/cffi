@@ -230,7 +230,7 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defmacro %%foreign-funcall (name types fargs rettype)
   "Internal guts of %FOREIGN-FUNCALL."
-  `(let ()
+  `(locally
      ; https://gitlab.common-lisp.net/cmucl/cmucl/-/issues/74
      (declare (notinline alien::%heap-alien))
      (alien-funcall
