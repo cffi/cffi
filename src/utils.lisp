@@ -38,9 +38,7 @@ string."
 set twos-complement bit."
   (if (<= integer 0)
       nil                            ; infinite set bits for negatives
-      (loop until (logbitp 0 integer)
-            do (setf integer (ash integer -1))
-            finally (return (zerop (ash integer -1))))))
+      (= (logcount integer) 1)))
 
 ;;; This function is here because it needs to be defined early. It's
 ;;; used by DEFINE-PARSE-METHOD and DEFCTYPE to warn users when
