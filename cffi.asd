@@ -28,7 +28,7 @@
 
 (in-package :asdf)
 
-#-(or openmcl mcl sbcl cmucl scl clisp lispworks ecl allegro cormanlisp abcl mkcl clasp)
+#-(or openmcl mcl sbcl cmucl scl clisp lispworks ecl allegro cormanlisp abcl mkcl clasp cl-amiga)
 (error "Sorry, this Lisp is not yet supported.  Patches welcome!")
 
 (defsystem "cffi"
@@ -61,6 +61,7 @@
      (:file "cffi-abcl" :if-feature :abcl)
      (:file "cffi-mkcl" :if-feature :mkcl)
      (:file "cffi-clasp" :if-feature :clasp)
+     (:file "cffi-clamiga" :if-feature :cl-amiga)
      (:file "utils")
      (:file "darwin-frameworks" :if-feature :darwin)
      (:file "libraries")
