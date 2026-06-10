@@ -152,7 +152,8 @@ WITH-POINTER-TO-VECTOR-DATA."
 
 (defun %foreign-symbol-pointer (name library)
   "Returns a pointer to a foreign symbol NAME."
-  (clasp-ffi:%foreign-symbol-pointer name library))
+  ;; CFFI's :default library marker means the global namespace (RTLD_DEFAULT).
+  (clasp-ffi:%foreign-symbol-pointer name (if (eq library :default) :rtld-default library)))
 
 (defun native-namestring (pathname)
   (namestring pathname))
