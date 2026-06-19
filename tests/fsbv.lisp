@@ -62,11 +62,11 @@
   (2 . 4))
 
 ;;; return struct by value
-(deftest (fsbv.makepair.1 :expected-to-fail t)
+(deftest (fsbv.makepair.1)
     (makepair nil)
   (-127 . 43))
 
-(deftest (fsbv.makepair.2 :expected-to-fail t)
+(deftest (fsbv.makepair.2)
     (makepair t)
   (-127 . 42))
 
@@ -197,3 +197,163 @@
 (deftest (fsbv.return-value-typedef)
     (sumpair-with-typedef '(40 . 2))
   42)
+
+;;; tests for various other types combined with fsbv
+
+(defctype numeros-alias numeros)
+(defctype boolean32 (:boolean :int32))
+
+(defcfun ("enumpair" enumpair-typedef) (:int)
+  (e numeros-alias)
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-bitfield) (:int)
+  (e bf2)
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-boolean) (:int)
+  (e (:boolean :int32))
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-boolean-typedef) (:int)
+  (e boolean32)
+  (p (:struct struct-pair)))
+
+(defcfun ("enumpair" enumpair-enumret) numeros
+  (e numeros)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.typedef
+  (enumpair-typedef :one '(2 . 3))
+  5)
+
+(deftest fsbv.bitfield
+  (enumpair-bitfield '(one two) '(1 . 2))
+  4)
+
+(deftest fsbv.boolean
+  (enumpair-boolean t '(4 . 5))
+  9)
+
+(deftest fsbv.boolean-typedef
+  (enumpair-boolean t '(5 . 6))
+  11)
+
+(deftest fsbv.enumret
+  (enumpair-enumret :two '(20 . 11))
+  :forty-two)
+
+(defcfun ("enumpair" enumpair-not-an-int) :int
+  (e not-an-int)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.not-an-int
+  (enumpair-not-an-int :foo '(1 . 0))
+  41)
+
+(defcfun ("enumpair" enumpair-int+1) int+1
+  (e int+1)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.int+1
+  (enumpair-int+1 0 '(1 . 2))
+  4)
+
+
+(define-foreign-type checked-result ()
+  ()
+  (:actual-type :int)
+  (:simple-parser checked-result))
+
+(defmethod translate-from-foreign (v (type checked-result))
+  (if (= v 1)
+      :error
+      v))
+
+(defcfun ("enumpair" enumpair-checked-result) checked-result
+  (e :bool)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.checked-result
+  (enumpair-checked-result t '(1 . 0))
+  :error)
+
+
+(eval-when (:load-toplevel :compile-toplevel :execute)
+  (define-foreign-type string-key ()
+    ()
+    (:actual-type :string)
+    (:simple-parser string-key))
+
+  (defmethod expand-to-foreign-dyn (value var body (type string-key))
+    (let ((keys '(:a "a" :b "bb")))
+      `(with-foreign-string (,var
+                             ,(cond
+                                ((and (constantp value) (symbolp value))
+                                 (getf keys value))
+                                ((and (constantp value) (stringp value))
+                                 value)
+                                (t
+                                 (alexandria:once-only (value)
+                                   `(if (symbolp ,value)
+                                        (getf ',keys ,value)
+                                        ,value)))))
+         ,@body))))
+
+(defcfun ("stringlenpair" stringlenpair-string-key) (:struct struct-pair)
+  (s string-key)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.string-key
+  (stringlenpair-string-key :b '(1 . 2))
+  (2 . 4))
+
+(define-foreign-type ensure-int ()
+  ()
+  (:actual-type :int)
+  (:simple-parser ensure-int))
+
+(defmethod translate-to-foreign (value (type ensure-int))
+  (round value))
+
+(defmethod expand-to-foreign (value (type ensure-int))
+  (if (constantp value)
+      (round value)
+      `(round ,value)))
+
+(defcfun ("enumpair" enumpair-ensure-int) :int
+  (e ensure-int)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.ensure-int
+  (enumpair-ensure-int 4/3 '(1 . 2))
+  3)
+
+(defcfun "stringretpair" :string
+  (p (:struct struct-pair)))
+
+(defcfun ("stringretpair" stringretpair+ptr) :string+ptr
+  (p (:struct struct-pair)))
+
+(deftest fsbv.stringret
+  (stringretpair '(1 . 2))
+  "1,2")
+
+(deftest fsbv.stringret+ptr
+    (destructuring-bind (s p)
+        (stringretpair+ptr '(2 . 3))
+      (assert (pointerp p))
+      (values s (cffi:mem-ref p :char)))
+  "2,3" 50)
+
+(defcfun ("enumpair" enumpair-boolret) :boolean
+  (e :int)
+  (p (:struct struct-pair)))
+
+(deftest fsbv.boolret.1
+  (enumpair-boolret 1 '(0 . 0))
+  nil)
+
+(deftest fsbv.boolret.2
+  (enumpair-boolret 1 '(1 . 0))
+  t)
