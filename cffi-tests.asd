@@ -86,6 +86,7 @@
      ((:file "package")
       (:cffi-wrapper-file "wrapper-example" :depends-on ("package"))
       (:cffi-grovel-file "grovel-example" :depends-on ("package"))
+      (:c-file "test" :cflags ("-DTEST=1"))
       (:file "main-example" :depends-on ("package"))))))
 
 ;;; vim: ft=lisp et
