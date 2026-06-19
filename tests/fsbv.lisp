@@ -197,3 +197,10 @@
 (deftest (fsbv.return-value-typedef)
     (sumpair-with-typedef '(40 . 2))
   42)
+
+(defcfun (return-string "fsbv_return_string") :string
+  (p (:struct struct-pair)))
+
+(deftest fsbv.return-string
+    (return-string '(40 . 2))
+  "CFFI")

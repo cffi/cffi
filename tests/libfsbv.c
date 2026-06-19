@@ -177,3 +177,10 @@ struct bitfield_struct structbitfield (unsigned int x) {
   ret.b = x;
   return ret;
 }
+
+DLLEXPORT
+const char *fsbv_return_string(struct struct_pair sp)
+{
+    (void)sp;
+    return "CFFI";
+}
