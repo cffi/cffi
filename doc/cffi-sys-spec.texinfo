@@ -140,8 +140,9 @@ defined in @code{stdint.h}.
 @deftpx {Foreign Type} :ssize
 @deftpx {Foreign Type} :ptrdiff
 @deftpx {Foreign Type} :time
-Foreign integer types corresponding to the standard C types (without
-the @code{_t} suffix).
+Foreign integer types corresponding to the standard C types.   They correspond to C types
+@code{size_t}, @code{ssize_t}, @code{ptrdiff_t}, and @code{time_t}, respectively.
+
 @end deftp
 
 @impnote{I'm sure there are more of these that could be useful, let's
