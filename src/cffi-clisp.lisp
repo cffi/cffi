@@ -154,8 +154,8 @@ or Lisp number."
 
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (offset 0))
   "Compiler macro to open-code when TYPE is constant."
-  (if (constantp type)
-      (let* ((ftype (convert-foreign-type (eval type)))
+  (if (constant-form-p type)
+      (let* ((ftype (convert-foreign-type (constant-form-value type)))
              (form `(ffi:memory-as ,ptr ',ftype ,offset)))
         (if (eq type :pointer)
             `(or ,form (null-pointer))
@@ -169,11 +169,11 @@ foreign TYPE to VALUE."
 
 (define-compiler-macro %mem-set
     (&whole form value ptr type &optional (offset 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       ;; (setf (ffi:memory-as) value) is exported, but not so nice
       ;; w.r.t. the left to right evaluation rule
       `(ffi::write-memory-as
-        ,value ,ptr ',(convert-foreign-type (eval type)) ,offset)
+        ,value ,ptr ',(convert-foreign-type (constant-form-value type)) ,offset)
       form))
 
 ;;;# Shareable Vectors

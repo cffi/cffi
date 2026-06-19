@@ -85,10 +85,11 @@ SIZE-VAR is supplied, it will be bound to SIZE during BODY."
   (unless size-var
     (setf size-var (gensym "SIZE")))
   ;; If the size is constant we can stack-allocate.
-  (if (constantp size)
+  (if (constant-form-p size)
       (let ((alien-var (gensym "ALIEN")))
-        `(with-alien ((,alien-var (array (unsigned 8) ,(eval size))))
-           (let ((,size-var ,(eval size))
+        `(with-alien ((,alien-var (array (unsigned 8)
+                                         ,(constant-form-value size))))
+           (let ((,size-var ,(constant-form-value size))
                  (,var (alien-sap ,alien-var)))
              (declare (ignorable ,size-var))
              ,@body)))
@@ -157,16 +158,16 @@ WITH-POINTER-TO-VECTOR-DATA."
                 collect `(,keyword (setf (,fn ptr offset) value)))))
     (define-compiler-macro %mem-ref
         (&whole form ptr type &optional (offset 0))
-      (if (constantp type)
-          (ecase (eval type)
+      (if (constant-form-p type)
+          (ecase (constant-form-value type)
             ,@(loop for (keyword fn) in pairs
                     collect `(,keyword `(,',fn ,ptr ,offset))))
           form))
     (define-compiler-macro %mem-set
         (&whole form value ptr type &optional (offset 0))
-      (if (constantp type)
+      (if (constant-form-p type)
           (once-only (value)
-            (ecase (eval type)
+            (ecase (constant-form-value type)
               ,@(loop for (keyword fn) in pairs
                       collect `(,keyword `(setf (,',fn ,ptr ,offset)
                                                 ,value)))))
