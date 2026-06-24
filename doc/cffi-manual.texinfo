@@ -2874,8 +2874,14 @@ enumerations of which we only care about a subset of values, or for
 enumerations that should allow for client or vendor extensions that we
 cannot know about.
 
-Types defined with @code{defcenum} canonicalize to @var{base-type}
-which is @code{:int} by default.
+Types defined with @code{defcenum} canonicalize to @var{base-type}. If
+not specified, CFFI picks the smallest integer type that fits the
+values specified as defined by the C standard.@footnote{This is
+defined in
+@url{https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3299.pdf#subsubsection.6.7.3.3,
+Section 6.7.3.3}}@sup{,}@footnote{Note that on MS Windows,
+@url{https://learn.microsoft.com/en-us/cpp/build/reference/zc-enumtypes?view=msvc-180,
+the underlying enum type is not always standard compliant.}}
 
 @subheading Examples
 @lisp
