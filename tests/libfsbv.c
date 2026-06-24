@@ -78,6 +78,10 @@ int enumpair (numeros mynum, struct struct_pair sp);
 struct struct_pair doublepair (struct struct_pair dp);
 double prodsumpair (struct struct_pair_double spd);
 struct struct_pair_double doublepairdouble (struct struct_pair_double pd);
+void pass_struct_pair(void (*f)(struct struct_pair));
+void pass_struct_pair_int(void (*f)(struct struct_pair, int));
+struct struct_pair rtn_struct_pass_struct_pair(struct struct_pair (*f)(struct struct_pair));
+int rtn_int_pass_struct_pair(int (*f)(struct struct_pair));
 
 DLLEXPORT
 int sumpair (struct struct_pair sp)
@@ -176,4 +180,45 @@ struct bitfield_struct structbitfield (unsigned int x) {
   struct bitfield_struct ret;
   ret.b = x;
   return ret;
+}
+
+/* Callbacks */
+
+DLLEXPORT
+void pass_struct_pair(void (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+    f(ret);
+}
+
+DLLEXPORT
+void pass_struct_pair_int(void (*f)(struct struct_pair, int))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+    int x = 13;
+    f(ret, x);
+}
+
+DLLEXPORT
+struct struct_pair rtn_struct_pass_struct_pair(struct struct_pair (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1984;
+    ret.b = 1994;
+
+    return f(ret);
+}
+
+DLLEXPORT
+int rtn_int_pass_struct_pair(int (*f)(struct struct_pair))
+{
+    struct struct_pair ret;
+    ret.a = 1994;
+    ret.b = 13;
+
+    return f(ret);
 }

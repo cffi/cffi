@@ -74,6 +74,11 @@
  (bytes          "bytes"     :type :unsigned-int)
  (flags          "flags"     :type :unsigned-int))
 
+(cstruct ffi-closure "ffi_closure"
+ (cif            "cif"       :type ffi-cif)
+ (fun            "fun"       :type :pointer)
+ (user-data      "user_data" :type :pointer))
+
 (constant (+type-void+ "FFI_TYPE_VOID"))
 (constant (+type-int+ "FFI_TYPE_INT"))
 (constant (+type-float+ "FFI_TYPE_FLOAT"))
