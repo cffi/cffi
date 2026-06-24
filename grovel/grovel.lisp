@@ -569,6 +569,44 @@ int main(int argc, char**argv) {
       (c-format out " :read-only t"))
     (c-format out ")~%")))
 
+(defun print-enum-values (out enum-list base-type)
+  (dolist (enum enum-list)
+    (destructuring-bind ((lisp-name &optional c-name) &key documentation)
+        enum
+      (declare (ignore documentation))
+      (check-type lisp-name keyword)
+      (c-format out "~%  (")
+      (c-print-symbol out lisp-name)
+      (when c-name
+        (check-type c-name string)
+        (c-format out " ")
+        (c-print-integer-constant out c-name base-type))
+      (c-format out ")"))))
+
+(defun print-const-values (out const-list base-type)
+  (dolist (const const-list)
+    (destructuring-bind ((lisp-name &rest c-names) &key optional documentation)
+        const
+      (declare (ignore documentation))
+      (check-type lisp-name keyword)
+      (c-format out "~% (")
+      (c-print-symbol out lisp-name)
+      (c-format out " ")
+      (dolist (c-name c-names)
+        (check-type c-name string)
+        (format out "~&#ifdef ~A~%" c-name)
+        (c-print-integer-constant out c-name base-type)
+        (format out "~&#else~%"))
+      (unless optional
+        (c-format out
+                  "~% #.(cl:progn ~
+                          (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
+                          -1)"
+                  lisp-name))
+      (dotimes (i (length c-names))
+        (format out "~&#endif~%"))
+      (c-format out ")"))))
+
 ;;; FIXME: where would docs on enum elements go?
 (define-grovel-syntax cenum (name &rest enum-list)
   (destructuring-bind (name &key base-type define-constants)
@@ -581,18 +619,7 @@ int main(int argc, char**argv) {
       (c-printf out " ")
       (c-print-symbol out base-type t))
     (c-format out ")")
-    (dolist (enum enum-list)
-      (destructuring-bind ((lisp-name &rest c-names) &key documentation)
-          enum
-        (declare (ignore documentation))
-        (check-type lisp-name keyword)
-        (loop for c-name in c-names do
-          (check-type c-name string)
-          (c-format out "  (")
-          (c-print-symbol out lisp-name)
-          (c-format out " ")
-          (c-print-integer-constant out c-name base-type)
-          (c-format out ")~%"))))
+    (print-enum-values out enum-list base-type)
     (c-format out ")~%")
     (when define-constants
       (define-constants-from-enum out enum-list))))
@@ -608,28 +635,7 @@ int main(int argc, char**argv) {
       (c-printf out " ")
       (c-print-symbol out base-type t))
     (c-format out ")")
-    (dolist (enum enum-list)
-      (destructuring-bind ((lisp-name &rest c-names)
-                           &key optional documentation) enum
-        (declare (ignore documentation))
-        (check-type lisp-name keyword)
-        (c-format out "~%  (")
-        (c-print-symbol out lisp-name)
-        (loop for c-name in c-names do
-          (check-type c-name string)
-          (format out "~&#ifdef ~A~%" c-name)
-          (c-format out " ")
-          (c-print-integer-constant out c-name base-type)
-          (format out "~&#else~%"))
-        (unless optional
-          (c-format out
-                    "~%  #.(cl:progn ~
-                           (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
-                           -1)"
-                    lisp-name))
-        (dotimes (i (length c-names))
-          (format out "~&#endif~%"))
-        (c-format out ")")))
+    (print-const-values out enum-list base-type)
     (c-format out ")~%")
     (when define-constants
       (define-constants-from-enum out enum-list))))
@@ -697,30 +703,23 @@ string."
       (c-printf out " ")
       (c-print-symbol out base-type t))
     (c-format out ")")
-    (dolist (mask masks)
-      (destructuring-bind ((lisp-name &rest c-names)
-                           &key optional documentation) mask
-        (declare (ignore documentation))
-        (check-type lisp-name symbol)
-        (c-format out "~%  (")
-        (c-print-symbol out lisp-name)
-        (c-format out " ")
-        (dolist (c-name c-names)
-          (check-type c-name string)
-          (format out "~&#ifdef ~A~%" c-name)
-          (format out "~&  fprintf(output, ~A, ~A);~%"
-                  (foreign-type-to-printf-specification (or base-type :int))
-                  c-name)
-          (format out "~&#else~%"))
-        (unless optional
-          (c-format out
-                    "~%  #.(cl:progn ~
-                           (cl:warn 'cffi-grovel:missing-definition :name '~A) ~
-                           -1)"
-                    lisp-name))
-        (dotimes (i (length c-names))
-          (format out "~&#endif~%"))
-        (c-format out ")")))
+    (print-const-values out masks base-type)
+    (c-format out ")~%")))
+
+;; Similar to bitfield, but gets values from an enum rather than
+;; macro definitions.
+(define-grovel-syntax bitfield-enum (name-and-opts &rest masks)
+  (destructuring-bind (name &key base-type)
+      (ensure-list name-and-opts)
+    (c-section-header out "bitfield-enum" name)
+    (c-export out name)
+    (c-format out "(cffi:defbitfield (")
+    (c-print-symbol out name t)
+    (when base-type
+      (c-printf out " ")
+      (c-print-symbol out base-type t))
+    (c-format out ")")
+    (print-enum-values out masks base-type)
     (c-format out ")~%")))
 
 
