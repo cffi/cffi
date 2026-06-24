@@ -2850,16 +2850,21 @@ An index value for a keyword.
 
 @subheading Description
 The @code{defcenum} macro is used to define foreign types that map
-keyword symbols to integer values, similar to the C @code{enum} type.
+symbols to integer values, similar to the C @code{enum}
+type.
 
 If @var{value} is omitted its value will either be 0, if it's the
 first entry, or it it will continue the progression from the last
 specified value.
 
-Keywords will be automatically converted to values and vice-versa when
-being passed as arguments to or returned from foreign functions,
-respectively. The same applies to any other situations where an object
-of an @code{enum} type is expected.
+When keywords are used for the enum value identifiers, they will be
+automatically converted to values and vice-versa when being passed as
+arguments to or returned from foreign functions, respectively. The
+same applies to any other situations where an object of an @code{enum}
+type is expected.
+
+When normal symbols are used as enum value identifiers, constants with
+the enum's value are also defined for those symbols.
 
 If a value should be translated to lisp that is not declared in the
 enum, an error will be signalled. You can elide this error and instead
@@ -2890,6 +2895,15 @@ CFFI> (foreign-enum-value 'boolean :no)
 
 CFFI> (foreign-enum-keyword 'numbers 2)
 @result{} :TWO
+@end lisp
+@lisp
+(defcenum enum-with-constants
+  (+one+ 1)
+  +two+
+  +three+)
+
+CFFI> +one+
+@result{} 1
 @end lisp
 @lisp
 (defcenum (masks :uint32)
