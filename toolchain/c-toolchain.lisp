@@ -72,12 +72,22 @@
         `("-Wl,-force_load" ,lib)
         `("-Wl,--whole-archive" ,lib "-Wl,--no-whole-archive"))))
 
+(defun normalize-flag (directory flag)
+  (cond
+    ((find (first-char flag) "-+/") flag)
+    ((probe-file* (subpathname directory flag)))
+    (t flag)))
+
+(defun normalize-compound-flag (directory flag)
+  (format nil "~{~A~^,~}"
+          (loop for val in (split-string flag :separator '(#\,)) collect
+                (program-argument (normalize-flag directory val)))))
+
 (defun normalize-flags (directory flags)
   (loop for val in (parse-command-flags flags) collect
-        (cond
-          ((find (first-char val) "-+/") val)
-          ((probe-file* (subpathname directory val)))
-          (t val))))
+        (if (position #\, val)
+            (normalize-compound-flag directory val)
+            (normalize-flag directory val))))
 
 (defun implementation-file (file &optional type)
   (subpathname (lisp-implementation-directory) file
