@@ -832,6 +832,15 @@ string."
   (dolist (string strings)
     (write-line string out)))
 
+(define-wrapper-syntax flags (&rest flags)
+  (appendf *cc-flags* (parse-command-flags-list flags)))
+
+(define-wrapper-syntax cc-flags (&rest flags)
+  (appendf *cc-flags* (parse-command-flags-list flags)))
+
+(define-wrapper-syntax ld-flags (&rest flags)
+  (appendf *ld-dll-flags* (parse-command-flags-list flags)))
+
 (define-wrapper-syntax flag (&rest flags)
   (appendf *cc-flags* (parse-command-flags-list flags)))
 

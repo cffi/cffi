@@ -82,7 +82,30 @@
 (defun foreign-funcall-form/fsbv-with-libffi (function function-arguments symbols types
                                               return-type argument-types
                                               &optional pointerp (abi :default-abi))
-  "A body of foreign-funcall calling the libffi function #'call (ffi_call)."
+  "A body of foreign-funcall calling the libffi function #'call (ffi_call).
+
+Parameters:
++ FUNCTION: string of foreign symbol if POINTERP is nil
+  foreign-pointer if POINTERP is t
++ FUNCTION-ARGUMENTS: arguments values passed to actual ffi_call
++ SYMBOLS: a place holder names
+  see `cffi::translate-objects-ret', use to name the foreign object
+  as value holder
++ TYPES: a list of foreign types
++ RETURN-TYPE: return CFFI type
++ ARGUMENT-TYPES: list of `cffi::canonicalize-foreign-type' CFFI types
+  of TYPES, which should be used as actuall foreign type of the
+  place holder
+
+Dev Note:
+Refer man ffi_call(3), doing a ffi_call needs:
+
+    void *arg_values[2];    // (with-foreign-objects ((argument-values ...)) ...
+    arg_values[0] = &arg1;  // (setf (mem-aref ,argument-values :pointer count) ,arg)
+    arg_values[1] = &arg2;  // ...
+
+    ffi_call(&cif, FFI_FN(foo), &result, arg_values); // libffi/call
+"
   (let ((argument-count (length argument-types)))
     `(with-foreign-objects ((argument-values :pointer ,argument-count)
                             ,@(unless (eql return-type :void)
@@ -95,10 +118,9 @@
          ;; through a save/restore cycle if the save happens before any
          ;; FFI calls will have been made, i.e. nothing is malloc'd yet.
          `(progn
-            (loop
-              :for arg :in (list ,@symbols)
-              :for count :from 0
-              :do (setf (mem-aref argument-values :pointer count) arg))
+            ,@(loop :for arg :in symbols
+                    :for count :from 0
+                    :collect `(setf (mem-aref argument-values :pointer ,count) ,arg))
             (let* ((libffi-cif-cache (load-time-value (cons 'libffi-cif-cache nil)))
                    (libffi-cif (or (cdr libffi-cif-cache)
                                    ;; TODO use compare-and-swap to set it, and call
