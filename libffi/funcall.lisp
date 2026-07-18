@@ -1,9 +1,9 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
-;;;
+;;; 
 ;;; funcall.lisp -- FOREIGN-FUNCALL implementation using libffi
-;;;
+;;; 
 ;;; Copyright (C) 2009, 2010, 2011 Liam M. Healy  <lhealy@common-lisp.net>
-;;;
+;;; 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
 ;;; files (the "Software"), to deal in the Software without
@@ -11,10 +11,10 @@
 ;;; modify, merge, publish, distribute, sublicense, and/or sell copies
 ;;; of the Software, and to permit persons to whom the Software is
 ;;; furnished to do so, subject to the following conditions:
-;;;
+;;; 
 ;;; The above copyright notice and this permission notice shall be
 ;;; included in all copies or substantial portions of the Software.
-;;;
+;;; 
 ;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 ;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 ;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -23,7 +23,7 @@
 ;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE.
-;;;
+;;; 
 
 (in-package #:cffi)
 
@@ -33,6 +33,22 @@
 
 (define-condition simple-libffi-error (simple-error libffi-error)
   ())
+
+;;; The *LIBFFI-CALLBACKS* hash table contains a direct mapping of CFFI
+;;; callback names to pointers obtained through libffi's closure API.
+(defvar *libffi-callbacks* (make-hash-table))
+
+(defun %libffi-callback (name)
+  "Retrieve a libffi callback by name or signal an error if not found."
+  (or (%get-callback name)
+      (libffi-error name "Undefined callback: ~S" name)))
+
+(defun %get-callback (name)
+  "Get callback from hash table, evaluating if it's stored as a form."
+  (let ((result (gethash name *libffi-callbacks*)))
+    (if (listp result)
+        (let ((ptr (eval result))) (setf (gethash name *libffi-callbacks*) ptr))
+        result)))
 
 (defun libffi-error (function-name format-control &rest format-arguments)
   (error 'simple-libffi-error
@@ -58,6 +74,26 @@
                     "The 'ffi_prep_cif' libffi call failed for function ~S."
                     function-name))
     cif))
+
+
+(defun alloc-libffi-closure (function-name exe-address-ptr)
+  "Allocate closure and return a pointer to the writable address.
+Sets exe-address-ptr to the corresponding executable address for a callback through libffi."
+  (let ((closure (libffi/closure-alloc (foreign-type-size '(:struct ffi-closure)) exe-address-ptr)))
+    (if (null-pointer-p closure)
+      (libffi-error function-name
+                    "The 'ffi_closure_alloc' libffi call failed for callback ~S."
+                    function-name)
+      closure)))
+
+(defun init-libffi-closure (function-name closure cif function codeloc)
+  "Initialize the closure needed for a callback through libffi."
+  (let ((result (libffi/prep-closure-loc closure cif function (null-pointer) codeloc)))
+    (if (eql :ok result)
+        cif
+        (libffi-error function-name
+                    "The 'ffi_prep_closure_loc' libffi call failed for callback ~S."
+                    function-name))))
 
 (defun free-libffi-cif (ptr)
   (foreign-free (foreign-slot-value ptr '(:struct ffi-cif) 'argument-types))
@@ -121,13 +157,53 @@
                    '(values)
                    'result)))))))
 
-(setf *foreign-structures-by-value* 'foreign-funcall-form/fsbv-with-libffi)
+;;;# Callbacks
+(defun foreign-defcallback-form/fsbv-with-libffi (function function-arguments symbols types
+                                                  return-type argument-types body
+                                                  &optional (abi :default-abi))
+  "Generate form for foreign callback using libffi's closure API (ffi_prep_closure_loc)."
+  (let ((argument-count (length argument-types)))
+    (setf (gethash function cffi::*libffi-callbacks*)
+           `(with-foreign-objects ((cffi :pointer)
+                            (function-ptr :pointer))
+         ;; NOTE: We must delay the cif creation until the first call
+         ;; because it's FOREIGN-ALLOC'd, i.e. it gets corrupted by an
+         ;; image save/restore cycle. This way a lib will remain usable
+         ;; through a save/restore cycle if the save happens before any
+         ;; FFI calls will have been made, i.e. nothing is malloc'd yet.
+           (let* ((libffi-closure (alloc-libffi-closure ',function function-ptr))
+                   (libffi-cif-cache (load-time-value (cons 'libffi-cif-cache nil)))
+                   (libffi-cif (or (cdr libffi-cif-cache)
+                                   ;; TODO use compare-and-swap to set it and call
+                                   ;; FREE-LIBFFI-CIF when someone else did already.
+                                   (setf (cdr libffi-cif-cache)
+                                         ;; FIXME we should install a finalizer on the cons cell
+                                         ;; that calls FREE-LIBFFI-CIF on the cif (when the function
+                                         ;; gets redefined, and the cif becomes unreachable). but a
+                                         ;; finite world is full of compromises... - attila
+                                         (make-libffi-cif ',function ',return-type
+                                                          ',argument-types))))
+                   (libffi-closure-cache (load-time-value (cons 'libffi-closure-cache nil)))
+                   (libffi-function-binding-ptr
+                     (%defcallback-function-binder ,function ',return-type ',function-arguments ',argument-types ',body))
+                   (libffi-function (or (cdr libffi-closure-cache)
+                                       (setf (cdr libffi-closure-cache)
+                                             (init-libffi-closure ',function libffi-closure libffi-cif libffi-function-binding-ptr (cffi:mem-aref function-ptr :pointer)) ))))
+              (cffi:mem-aref function-ptr :pointer))))))
+
+(defun foreign-form-decider/fsbv-with-libffi (function function-arguments symbols types
+                                              return-type argument-types
+                                              &optional pointerp (abi :default-abi) defcallbackp body)
+  (if defcallbackp
+      (foreign-defcallback-form/fsbv-with-libffi function function-arguments symbols types return-type argument-types body abi)
+      (foreign-funcall-form/fsbv-with-libffi function function-arguments symbols types return-type argument-types pointerp abi)))
+
+(setf *foreign-structures-by-value* 'foreign-form-decider/fsbv-with-libffi)
 
 ;; DEPRECATED Its presence encourages the use of #+fsbv which may lead to the
 ;; situation where a fasl was produced by an image that has fsbv feature
 ;; and then ends up being loaded into an image later that has no fsbv support
-;; loaded. Use explicit ASDF dependencies instead and assume the presence
-;; of the feature accordingly.
+;; loaded.
 (pushnew :fsbv *features*)
 
 ;; DEPRECATED This is here only for backwards compatibility until its fate is
