@@ -711,7 +711,7 @@ Signals an error if the type cannot be resolved."
   (declare (ignore documentation))
   (warn-if-kw-or-belongs-to-cl name)
   (let* ((btype (parse-type base-type))
-         (dtype (if (typep btype 'enhanced-foreign-type)
+         (dtype (if (typep btype 'translatable-foreign-type)
                     'enhanced-typedef
                     'foreign-typedef)))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
