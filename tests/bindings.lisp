@@ -63,6 +63,7 @@
                         ,result)))
       result)))
 
+#+bordeaux-threads
 (defun call-within-new-thread (fn &rest args)
   (let (result
         error
