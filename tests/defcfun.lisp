@@ -469,9 +469,6 @@
 ;;; regression test: defining an undefined foreign function should only
 ;;; throw some sort of warning, not signal an error.
 
-#+(and sbcl win32)
-(pushnew 'defcfun.undefined rtest::*expected-failures*)
-
 (deftest defcfun.undefined
     (progn
       (eval '(defcfun ("undefined_foreign_function" undefined-foreign-function) :void))
