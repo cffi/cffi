@@ -62,6 +62,7 @@
      (:file "package")
      (:file "bindings" :depends-on ("package" "libtest" "libtest2" "libfsbv"))
      (:file "funcall" :depends-on ("bindings"))
+     (:file "libffi-cif-cache" :depends-on ("bindings"))
      (:file "defcfun" :depends-on ("bindings"))
      (:file "callbacks" :depends-on ("bindings"))
      (:file "foreign-globals" :depends-on ("package"))
