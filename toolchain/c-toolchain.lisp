@@ -171,6 +171,14 @@
      (destructuring-bind (sym &optional normalizep) param
        (setf (symbol-value sym)
              (if normalizep (normalize-flags sbcl-home val) val))))
+    (setf *cc-flags*
+          (append
+           #+freebsd
+           (list "-I" "/usr/local/include/")
+           #+openbsd
+           (list "-I" "/usr/local/include/")
+           #+netbsd
+           (list "-I" "/usr/pkg/include/")))
     (setf *ld* *cc* ;; !
           *ld-dll-flags* (list* #+darwin "-dynamiclib" #-darwin "-shared"
                                 *cc-flags*))))
