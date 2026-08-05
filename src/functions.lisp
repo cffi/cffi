@@ -360,7 +360,7 @@ arguments and does type promotion for the variadic arguments."
        (cond
          ((or (null options)
               (keywordp (first options)))
-          (values lisp-name (foreign-name spec varp) options))
+          (values lisp-name (foreign-name lisp-name varp) options))
          (t
           (assert (stringp (first options)))
           (values lisp-name (first options) (rest options))))))
