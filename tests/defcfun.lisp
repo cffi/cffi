@@ -479,6 +479,14 @@
       t)
   t)
 
+(deftest defcfun.undefined-vararg
+  (progn
+    (eval '(defcfun ("undef-vararg" undef-vararg) :void &rest))
+    (eval '(defun undef-vararg-caller () (undef-vararg)))
+    (compile 'undef-vararg-caller)
+    t)
+  t)
+
 ;;; Test whether all doubles are passed correctly. On some platforms, eg.
 ;;; darwin/ppc, some are passed on registers others on the stack.
 (defcfun "sum_double26" :double

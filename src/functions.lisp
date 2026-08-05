@@ -235,7 +235,6 @@ arguments and does type promotion for the variadic arguments."
       `(progn
          ,prelude
          (defun ,lisp-name ,arg-names
-           #+cmucl (declare (notinline alien::%heap-alien))
            ,@(ensure-list docstring)
            ,(if call-by-value
                 `(foreign-funcall
