@@ -69,14 +69,20 @@
    function-arguments
    types
    return-type
-   (if (or (eql return-type :void)
-           (typep (parse-type return-type) 'translatable-foreign-type))
-       call-form
-       ;; built-in types won't be translated by
-       ;; expand-from-foreign, we have to do it here
-       `(mem-ref
-         ,call-form
-         ',(canonicalize-foreign-type return-type)))
+   (let ((parsed (parse-type return-type)))
+     (if (or (eql return-type :void)
+             (and (typep parsed 'translatable-foreign-type)
+                  ;; ENHANCED-FOREIGN-TYPE is a
+                  ;; TRANSLATABLE-FOREIGN-TYPE, but the actual type
+                  ;; might not be
+                  (not (and (typep parsed 'enhanced-foreign-type)
+                            (not (typep (actual-type parsed) 'translatable-foreign-type))))))
+         call-form
+         ;; built-in types won't be translated by
+         ;; expand-from-foreign, we have to do it here
+         `(mem-ref
+           ,call-form
+           ',(canonicalize-foreign-type return-type))))
    t))
 
 (defun foreign-funcall-form/fsbv-with-libffi (function function-arguments symbols types

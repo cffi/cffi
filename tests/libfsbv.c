@@ -177,3 +177,13 @@ struct bitfield_struct structbitfield (unsigned int x) {
   ret.b = x;
   return ret;
 }
+
+char buf[256];
+
+DLLEXPORT
+char* stringretpair (struct struct_pair dp)
+{
+  sprintf(buf,"%d,%d",dp.a,dp.b);
+  return buf;
+}
+
