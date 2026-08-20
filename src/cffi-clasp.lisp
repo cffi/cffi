@@ -140,6 +140,30 @@ WITH-POINTER-TO-VECTOR-DATA."
   (declare (ignore convention))
   `(clasp-ffi:%foreign-funcall-pointer ,ptr ,@args))
 
+;;; Without these, CFFI falls back to appending FIXED-ARGS and VARARGS and calling
+;;; %FOREIGN-FUNCALL, which loses the distinction. Clasp then lowers the call
+;;; through a non-variadic function type. That is harmless on x86-64 SysV, where
+;;; variadic arguments use the same registers as fixed ones, and wrong on Darwin
+;;; arm64, where they are passed on the stack: the callee reads an unwritten slot,
+;;; so every variadic argument arrives as zero. shm_open's mode is the usual
+;;; casualty -- the object is created with st_mode 0 and cannot be reopened.
+;;; FIXED-ARGS is a flat type/value list, so the callee's fixed parameter count is
+;;; half its length; VARARGS carries the remaining pairs and the return type.
+
+(defmacro %foreign-funcall-varargs (name fixed-args varargs
+                                    &rest args &key convention library)
+  "Call a variadic foreign function."
+  (declare (ignore convention library))
+  `(clasp-ffi:%foreign-funcall-varargs ,name ,(floor (length fixed-args) 2)
+                                       ,@(append fixed-args varargs)))
+
+(defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
+                                            &rest args &key convention)
+  "Funcall a pointer to a variadic foreign function."
+  (declare (ignore convention))
+  `(clasp-ffi:%foreign-funcall-pointer-varargs ,pointer ,(floor (length fixed-args) 2)
+                                               ,@(append fixed-args varargs)))
+
 ;;;# Foreign Libraries
 
 (defun %load-foreign-library (name path)
