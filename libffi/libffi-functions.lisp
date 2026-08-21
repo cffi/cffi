@@ -36,6 +36,14 @@
   (rtype :pointer)
   (argtypes :pointer))
 
+(defcfun ("ffi_prep_cif_var" libffi/prep-cif-var) status
+  (ffi-cif :pointer)
+  (ffi-abi abi)
+  (nfixedargs :uint)
+  (varntotalargs :uint)
+  (rtype :pointer)
+  (argtypes :pointer))
+
 (defcfun ("ffi_call" libffi/call) :void
   (ffi-cif :pointer)
   (function :pointer)
