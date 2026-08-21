@@ -635,24 +635,24 @@ Signals an error if the type cannot be resolved."
   (translate-to-foreign value (parse-type type)))
 
 (define-compiler-macro convert-to-foreign (value type)
-  (if (constantp type)
-      (expand-to-foreign value (parse-type (eval type)))
+  (if (constant-form-p type)
+      (expand-to-foreign value (parse-type (constant-form-value type)))
       `(translate-to-foreign ,value (parse-type ,type))))
 
 (defun convert-from-foreign (value type)
   (translate-from-foreign value (parse-type type)))
 
 (define-compiler-macro convert-from-foreign (value type)
-  (if (constantp type)
-      (expand-from-foreign value (parse-type (eval type)))
+  (if (constant-form-p type)
+      (expand-from-foreign value (parse-type (constant-form-value type)))
       `(translate-from-foreign ,value (parse-type ,type))))
 
 (defun convert-into-foreign-memory (value type ptr)
   (translate-into-foreign-memory value (parse-type type) ptr))
 
 (define-compiler-macro convert-into-foreign-memory (value type ptr)
-  (if (constantp type)
-      (expand-into-foreign-memory value (parse-type (eval type)) ptr)
+  (if (constant-form-p type)
+      (expand-into-foreign-memory value (parse-type (constant-form-value type)) ptr)
       `(translate-into-foreign-memory ,value (parse-type ,type) ,ptr)))
 
 (defun free-converted-object (value type param)

@@ -214,8 +214,8 @@ WITH-POINTER-TO-VECTOR-DATA."
         collect (list cffi-type ecl-type string)))
 
 (define-compiler-macro %mem-ref (&whole whole ptr type &optional (offset 0))
-  (if (and (constantp type) (constantp offset))
-      (let ((record (assoc (eval type) +mem-ref-strings+)))
+  (if (and (constant-form-p type) (constant-form-p offset))
+      (let ((record (assoc (constant-form-value type) +mem-ref-strings+)))
         `(ffi:c-inline (,ptr ,offset)
                        (:pointer-void :cl-index) ; argument types
                        ,(second record)          ; return type
@@ -224,8 +224,8 @@ WITH-POINTER-TO-VECTOR-DATA."
       whole))
 
 (define-compiler-macro %mem-set (&whole whole value ptr type &optional (offset 0))
-  (if (and (constantp type) (constantp offset))
-      (let ((record (assoc (eval type) +mem-set-strings+)))
+  (if (and (constant-form-p type) (constant-form-p offset))
+      (let ((record (assoc (constant-form-value type) +mem-set-strings+)))
         `(ffi:c-inline (,ptr ,offset ,value) ; arguments with type translated
                        (:pointer-void :cl-index ,(second record))
                        :void            ; does not return anything
