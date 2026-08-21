@@ -206,13 +206,8 @@
           *cc-flags*
           (append
            arch-flags
-           ;; For MacPorts
-           #+darwin (list "-I" "/opt/local/include/")
            ;; ECL internal flags
-           #+ecl (parse-command-flags c::*cc-flags*)
-           ;; FreeBSD non-base header files
-           #+freebsd (list "-I" "/usr/local/include/")
-           (split-cflags (getenv "CFLAGS")))
+           #+ecl (parse-command-flags c::*cc-flags*))
           *ld* *cc*
           *ld-exe-flags* `(,@arch-flags #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
@@ -221,12 +216,24 @@
           *linkkit-start* nil
           *linkkit-end* nil)))
 
+(defun common-toolchain-parameters ()
+  (setf *cc-flags*
+        (append
+         (split-cflags (getenv "CFLAGS"))
+         *cc-flags*
+         ;; For MacPorts
+         #+darwin (list "-I" "/opt/local/include/")
+         ;; FreeBSD non-base header files
+         #+(or freebsd openbsd) (list "-I" "/usr/local/include/"))))
+
 (defun ensure-toolchain-parameters ()
-  #+clisp (unless *cc* (clisp-toolchain-parameters))
-  #+ecl (unless *cc* (ecl-toolchain-parameters))
-  #+mkcl (unless *cc* (mkcl-toolchain-parameters))
-  #+sbcl (unless *cc* (sbcl-toolchain-parameters))
-  (unless *cc* (default-toolchain-parameters)))
+  (unless *cc*
+    #+clisp (clisp-toolchain-parameters)
+    #+ecl (ecl-toolchain-parameters)
+    #+mkcl (mkcl-toolchain-parameters)
+    #+sbcl (sbcl-toolchain-parameters)
+    (unless *cc* (default-toolchain-parameters))
+    (common-toolchain-parameters)))
 
 ;; Actually initialize toolchain parameters
 (ignore-errors (ensure-toolchain-parameters))
