@@ -81,26 +81,47 @@
 (deftest grovel-feature
     (let ((*grovelled-features* nil))
       (grovel-forms `((in-package :cffi-tests)
-                      (include "limits.h")
-                      (feature grovel-test-feature "CHAR_BIT")
-                      (feature :char-bit "CHAR_BIT"
+                      (include "headers/feature-test.h")
+                      (feature grovel-test-feature "PRESENT_FEAUTRE")
+                      (feature :present-feature "PRESENT_FEAUTRE"
                                :feature-list *grovelled-features*)
                       (feature :inexistent-grovel-feature
                                "INEXISTENT_CFFI_GROVEL_FEATURE"
                                :feature-list *grovelled-features*)))
       (unwind-protect
            (values (and (member 'grovel-test-feature *features*) t)
-                   (and (member :char-bit *grovelled-features*) t)
+                   (and (member :present-feature *grovelled-features*) t)
                    (member :inexistent-grovel-feature *grovelled-features*))
         (alexandria:removef *features* 'grovel-test-feature)))
   t t nil)
+
+(deftest grovel-feature-values
+    (let ((*grovelled-features* nil))
+      (grovel-forms `((in-package :cffi-tests)
+                      (include "headers/feature-test.h")
+                      (feature grovel-test-feature "PRESENT_FEATURE_TRUTHY"
+                               :check-value t)
+                      (feature :present-feature "PRESENT_FEATURE_TRUTHY"
+                               :feature-list *grovelled-features*
+                               :check-value t)
+                      (feature :inexistent-grovel-feature
+                               "PRESENT_FEATURE_FALSY"
+                               :feature-list *grovelled-features*
+                               :check-value t)))
+      (unwind-protect
+           (values (and (member 'grovel-test-feature *features*) t)
+                   (and (member :present-feature *grovelled-features*) t)
+                   (member :inexistent-grovel-feature *grovelled-features*))
+        (alexandria:removef *features* 'grovel-test-feature)))
+  t t nil)
+
 
 (deftest grovel-types
     (let* ((this #.(or *compile-file-truename* *load-truename*))
            (include-dir (uiop:native-namestring (make-pathname :directory (pathname-directory this)))))
       (grovel-forms `((in-package :cffi-tests)
                       (cc-flags ,(concatenate 'string "-I" include-dir))
-                      (include "grovel-test.h")
+                      (include "headers/grovel-test.h")
                       (constant (tagged-array-max-length "TAGGED_ARRAY_MAX_LENGTH")
                        :documentation "Maximum length of tagged_array.arr (should be 64)")
                       (cstruct tagged-array "struct tagged_array"

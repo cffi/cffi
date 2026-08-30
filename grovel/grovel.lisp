@@ -359,9 +359,11 @@ int main(int argc, char**argv) {
   (dotimes (i (length c-names))
     (format out "~&#endif~%")))
 
-(define-grovel-syntax feature (lisp-feature-name c-name &key (feature-list 'cl:*features*))
+(define-grovel-syntax feature (lisp-feature-name c-name &key (feature-list 'cl:*features*) check-value)
   (c-section-header out "feature" lisp-feature-name)
-  (format out "~&#ifdef ~A~%" c-name)
+  (if check-value
+      (format out "~&#if ~A~%" c-name)
+      (format out "~&#ifdef ~A~%" c-name))
   (c-format out "(cl:pushnew '")
   (c-print-symbol out lisp-feature-name t)
   (c-format out " ")
