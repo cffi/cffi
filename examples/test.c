@@ -1,0 +1,4 @@
+int mytest()
+{
+	return TEST;
+}
