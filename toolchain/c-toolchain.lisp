@@ -300,7 +300,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
     #-(or bsd linux windows)
     (error "Not implemented on your system")))
 
-(defun link-shared-library (output-file inputs)
+(defun link-shared-library (output-file inputs &optional ldflags)
   ;; remove the library so we won't possibly be overwriting
   ;; the code of any existing process
   (delete-file-if-exists output-file)
@@ -311,7 +311,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
   #-(or ecl mkcl)
   ;; Don't use a temporary file, because linking is sensitive to the output file name :-/ (or put it in a temporary directory?)
   (apply 'invoke *ld* "-o" output-file
-         (append *ld-dll-flags* inputs)))
+         (append *ld-dll-flags* inputs ldflags)))
 
 
 ;;; Computing file names
@@ -349,6 +349,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
 
 (defclass c-file (source-file)
   ((cflags :initarg :cflags :initform nil)
+   (ldflags :initarg :ldflags :initform nil)
    (type :initform "c")))
 
 (defmethod output-files ((o compile-op) (c c-file))
@@ -364,7 +365,7 @@ is bound to a temporary file name, then atomically renaming that temporary file 
   (let ((i (first (input-files o c))))
     (destructuring-bind (.o .so) (output-files o c)
       (cc-compile .o (list i) (slot-value c 'cflags))
-      (link-shared-library .so (list .o)))))
+      (link-shared-library .so (list .o) (slot-value c 'ldflags)))))
 
 (defmethod perform ((o load-op) (c c-file))
   (let ((o (second (input-files o c))))
