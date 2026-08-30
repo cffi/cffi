@@ -162,8 +162,8 @@ be stack allocated if supported by the implementation."
 ;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-REF.
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
-  (if (constantp type)
-      (let ((type (eval type)))
+  (if (constant-form-p type)
+      (let ((type (constant-form-value type)))
         (if (or #+(and lispworks-64bit lispworks5.0) (64-bit-type-p type)
                 (eql type :pointer))
             (let ((fli-type (convert-foreign-type type))
@@ -179,9 +179,9 @@ be stack allocated if supported by the implementation."
 ;;; macroexpansion time, when FLI:FOREIGN-TYPED-AREF is not available.
 #-#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-ref (&whole form ptr type &optional (off 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
-            (type (convert-foreign-type (eval type))))
+            (type (convert-foreign-type (constant-form-value type))))
         `(fli:dereference ,ptr-form :type ',type))
       form))
 
@@ -195,9 +195,9 @@ be stack allocated if supported by the implementation."
 ;;; it instead of FLI:DEREFERENCE in the optimizer for %MEM-SET.
 #+#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       (once-only (val)
-        (let ((type (eval type)))
+        (let ((type (constant-form-value type)))
           (if (or #+(and lispworks-64bit lispworks5.0) (64-bit-type-p type)
                   (eql type :pointer))
               (let ((fli-type (convert-foreign-type type))
@@ -215,10 +215,10 @@ be stack allocated if supported by the implementation."
 ;;; at macroexpansion time.
 #-#.(cl:if (cl:find-symbol "FOREIGN-TYPED-AREF" "FLI") '(and) '(or))
 (define-compiler-macro %mem-set (&whole form val ptr type &optional (off 0))
-  (if (constantp type)
+  (if (constant-form-p type)
       (once-only (val)
         (let ((ptr-form (if (eql off 0) ptr `(inc-pointer ,ptr ,off)))
-              (type (convert-foreign-type (eval type))))
+              (type (convert-foreign-type (constant-form-value type))))
           `(setf (fli:dereference ,ptr-form :type ',type) ,val)))
       form))
 
