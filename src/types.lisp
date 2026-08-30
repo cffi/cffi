@@ -336,15 +336,6 @@ to open-code (SETF MEM-REF) forms."
                       subscripts
                       dimensions)))
 
-(defun row-major-index-to-indexes (index dimensions)
-  (loop with idx = index
-        with rank = (length dimensions)
-        with indexes = (make-list rank)
-        for dim-index from (- rank 1) downto 0 do
-        (setf (values idx (nth dim-index indexes))
-              (floor idx (nth dim-index dimensions)))
-        finally (return indexes)))
-
 (defun foreign-alloc (type &key (initial-element nil initial-element-p)
                       (initial-contents nil initial-contents-p)
                       (count 1 count-p) null-terminated-p)
@@ -403,8 +394,7 @@ type."
           with size = (reduce #'* dimensions)
           for i from 0 below size
           for offset = (* i foreign-type-size)
-          for element = (apply #'aref array
-                               (row-major-index-to-indexes i dimensions))
+          for element = (row-major-aref array i)
           do (setf (mem-ref pointer el-type offset) element))))
 
 (defun foreign-array-to-lisp (pointer array-type &rest make-array-args)
@@ -421,9 +411,7 @@ that are then passed to MAKE-ARRAY. If POINTER is a null pointer, returns NIL."
             for i from 0 below size
             for offset = (* i foreign-type-size)
             for element = (mem-ref pointer el-type offset)
-            do (setf (apply #'aref array
-                            (row-major-index-to-indexes i dimensions))
-                     element))
+            do (setf (row-major-aref array i) element))
       array)))
 
 (defun foreign-array-alloc (array array-type)
