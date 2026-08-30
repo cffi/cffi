@@ -63,6 +63,7 @@
                         (setf asdf:*central-registry* ',asdf:*central-registry*)
                         (initialize-source-registry ',asdf::*source-registry-parameter*)
                         (initialize-output-translations ',asdf::*output-translations-parameter*)
+                        (pushnew :static-image-op *features*)
                         (upgrade-asdf)
                         ,@(if-let (ql-home
                                    (symbol-value (find-symbol* '*quicklisp-home* 'ql-setup nil)))
