@@ -176,7 +176,9 @@ WITH-POINTER-TO-VECTOR-DATA."
     (:float               :single-float)
     (:double              :double-float)
     (:pointer             :address)
-    (:void                :void)))
+    (:void                :void)
+    #+(and darwin arm64)
+    (:variadic            :variadic)))
 
 (defun %foreign-type-size (type-keyword)
   "Return the size in bytes of a foreign type."
@@ -273,3 +275,22 @@ WITH-POINTER-TO-VECTOR-DATA."
   "Returns a pointer to a foreign symbol NAME."
   (declare (ignore library))
   (foreign-symbol-address (convert-external-name name)))
+
+(defmacro %foreign-funcall-varargs (name fixed-args varargs
+                                    &rest args &key convention library)
+  (declare (ignore convention library))
+  `(%foreign-funcall ,name ,(append fixed-args (and varargs
+                                                    (append #+(and darwin arm64)
+                                                            '(:variadic t)
+                                                            varargs)))
+                     ,@args))
+
+(defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
+                                            &rest args &key convention)
+  (declare (ignore convention))
+  `(%foreign-funcall-pointer ,pointer ,(append fixed-args
+                                               (and varargs
+                                                    (append #+(and darwin arm64)
+                                                            '(:variadic t)
+                                                            varargs)))
+                             ,@args))
