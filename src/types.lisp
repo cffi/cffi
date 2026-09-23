@@ -789,6 +789,11 @@ The foreign array must be freed with foreign-array-free."
   "Return the offset of SLOT in a struct TYPE."
   (slot-offset (get-slot-info type slot-name)))
 
+(define-compiler-macro foreign-slot-offset (&whole whole type slot-name)
+  (if (and (constantp type) (constantp slot-name))
+      (slot-offset (get-slot-info (eval type) (eval slot-name)))
+      whole))
+
 (defun foreign-slot-count (type slot-name)
   "Return the number of items in SLOT in a struct TYPE."
   (slot-count (get-slot-info type slot-name)))
