@@ -197,3 +197,62 @@
 (deftest (fsbv.return-value-typedef)
     (sumpair-with-typedef '(40 . 2))
   42)
+
+;;; void callback
+(defparameter *pair-struct* -1)
+
+(defcfun pass-struct-pair :void (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(defcallback read-struct-pair :void ((p (:struct struct-pair)))
+  (setq *pair-struct* p))
+
+#+(and darwin cmucl)
+(pushnew 'fsbv.callbacks.void rtest::*expected-failures*)
+
+(deftest fsbv.callbacks.void
+    (progn
+      (pass-struct-pair (callback read-struct-pair))
+      *pair-struct*)
+  (1984 . 1994))
+
+(defparameter *pair-struct-pair-int* -1)
+
+(defcfun pass-struct-pair-int :void (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(defcallback read-struct-pair-int :void ((p (:struct struct-pair)) (num :int))
+  (setq *pair-struct-pair-int* (cons (+ (car p) num) (+ (cdr p) num))))
+
+#+(and darwin cmucl)
+(pushnew 'fsbv.callbacks.void.int rtest::*expected-failures*)
+
+(deftest fsbv.callbacks.void.int
+    (progn
+      (pass-struct-pair-int (callback read-struct-pair-int))
+      *pair-struct-pair-int*)
+  (1997 . 2007))
+
+(defcfun rtn-struct-pass-struct-pair (:struct struct-pair) (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+;; #-(and darwin cmucl)
+(defcallback read-rtn-struct-pass-struct-pair (:struct struct-pair) ((p (:struct struct-pair)))
+  (cons (+ (car p) 13) (+ (cdr p) 13)))
+
+(deftest fsbv.callbacks.struct.struct
+    (rtn-struct-pass-struct-pair (callback read-rtn-struct-pass-struct-pair))
+  (1997 . 2007))
+
+(defcfun rtn-int-pass-struct-pair :int (f :pointer))
+
+;;; CMUCL chokes on this one for some reason.
+#-(and darwin cmucl)
+(defcallback read-rtn-int-pass-struct-pair :int ((p (:struct struct-pair)))
+  (+ (car p) (cdr p)))
+
+(deftest fsbv.callbacks.int.struct
+      (rtn-int-pass-struct-pair (callback read-rtn-int-pass-struct-pair))
+  2007)

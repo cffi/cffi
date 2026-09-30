@@ -41,3 +41,19 @@
   (function :pointer)
   (rvalue :pointer)
   (avalues :pointer))
+
+;;; The Closure API
+
+(defcfun ("ffi_closure_alloc" libffi/closure-alloc) :pointer
+  (size-t size-t)
+  (code :pointer))
+
+(defcfun ("ffi_closure_free" libffi/closure-free) :void
+  (ffi-closure :pointer))
+
+(defcfun ("ffi_prep_closure_loc" libffi/prep-closure-loc) status
+  (ffi-closure :pointer)
+  (ffi-cif :pointer)
+  (function :pointer)
+  (user-data :pointer)
+  (codeloc :pointer))
