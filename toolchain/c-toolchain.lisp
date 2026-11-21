@@ -115,6 +115,13 @@
      (destructuring-bind (sym &optional normalizep) param
        (setf (symbol-value sym)
              (if normalizep (normalize-flags linkset val) val))))
+    ;; makevars gives CC as a command, not necessarily a program name:
+    ;; CLISP 24.9.7 has CC='cc -std=gnu99'.  *cc* is passed as argv[0],
+    ;; so everything past the program name belongs in *cc-flags*.
+    (when *cc*
+      (let ((cc (parse-command-flags *cc*)))
+        (setf *cc* (first cc)
+              *cc-flags* (append (rest cc) *cc-flags*))))
     (setf *ld* *cc*
           *ld-exe-flags* `(,@*cc-flags* #-(or sunos darwin) "-Wl,--export-dynamic")
           *ld-dll-flags* (list* #+darwin "-dynamiclib" ;; -bundle ?
