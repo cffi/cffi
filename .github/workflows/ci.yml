@@ -26,20 +26,25 @@ jobs:
         # would have used anyway -- spelling it "bash" instead would add
         # --noprofile --norc -o pipefail and change how the steps behave.
         shell: ${{ matrix.shell || 'bash -e {0}' }}
-    # Experimental jobs report failures without failing the whole build,
-    # like Travis' allow_failures used to.
-    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
+        # Every row here is required: there is nothing left that is
+        # expected to fail, so a failure is news.
         include:
           - { os: ubuntu-latest, lisp: sbcl-bin }
           - { os: ubuntu-latest, lisp: ccl }
           - { os: ubuntu-latest, lisp: ecl }
-          - { os: ubuntu-latest, lisp: clisp, experimental: true }
-          # ABCL has real failures (MISC-TYPES.SIZEOF.{PTRDIFF,SIZE,OFFSET}
-          # and TEST-ASDF-LOAD), so it stays experimental for now.
-          - { os: ubuntu-latest, lisp: abcl, experimental: true }
+          - { os: ubuntu-latest, lisp: abcl }
+          #
+          # CLISP is commented out because it cannot be installed at all,
+          # so the row ran no tests whatsoever.  Roswell builds CLISP from
+          # source, and 2.49 -- from 2010 -- is still the last release;
+          # today's GCC cannot compile it ("stdbool.h: No such file or
+          # directory" while generating clisp.h, then a cascade of unknown
+          # types in modules.c).  Uncomment once there is a CLISP that
+          # builds against a current toolchain.
+          #- { os: ubuntu-latest, lisp: clisp }
           # Both of these are pinned to work around Roswell bugs: left to
           # itself it picks a version whose download is gone.  It defaults
           # to Allegro 10.1express, which Franz no longer serves -- fixed
@@ -48,13 +53,13 @@ jobs:
           # newest CMUCL while its installer only knows how to fetch
           # .tar.bz2, which CMUCL stopped publishing after 21e.  Drop both
           # pins once a Roswell release carries the fixes.
-          - { os: ubuntu-latest, lisp: allegro/11.0express, experimental: true }
-          - { os: ubuntu-latest, lisp: cmu-bin/21e, multilib: true, experimental: true }
+          - { os: ubuntu-latest, lisp: allegro/11.0express }
+          - { os: ubuntu-latest, lisp: cmu-bin/21e, multilib: true }
           - { os: macos-latest, lisp: sbcl-bin }
           - { os: windows-latest, lisp: sbcl-bin, shell: 'msys2 {0}' }
           # Tracks the development versions of the libraries CFFI is
           # developed alongside, as the Travis setup used to.
-          - { os: ubuntu-latest, lisp: sbcl-bin, deps: git, experimental: true }
+          - { os: ubuntu-latest, lisp: sbcl-bin, deps: git }
           #
           # CCL on macOS is missing: the macos-latest runners are arm64
           # and Roswell says "Not supported platform arm64" because there
@@ -136,6 +141,17 @@ jobs:
           git clone --depth=1 https://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
           git clone --depth=1 https://github.com/cl-babel/babel.git ~/lisp/babel
           git clone --depth=1 https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
+
+      # MISC-TYPES.SIZEOF.{PTRDIFF,SIZE,OFFSET} fail with the dist's
+      # trivial-features, which reports :32-BIT on a 64-bit JVM.  Fixed by
+      # trivial-features#27, merged but not in any Quicklisp dist yet
+      # (there has been none since 2026-01-01).  Drop this step once one
+      # ships, so that ABCL is tested against the same code users get --
+      # and expect those three tests to fail again until it does.
+      - name: Use trivial-features from git
+        if: matrix.lisp == 'abcl'
+        run: |
+          git clone --depth=1 https://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
 
       - name: Run the test suite
         run: |
