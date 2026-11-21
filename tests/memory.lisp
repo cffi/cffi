@@ -601,11 +601,14 @@
     (pointerp 'not-a-pointer)
   nil)
 
-(deftest pointerp.4
+;;; Allegro represents foreign pointers as integers, so it has no way of
+;;; telling one from any other integer, and no way of signalling an error
+;;; when handed something that isn't a pointer.
+(deftest (pointerp.4 :expected-to-fail (alexandria:featurep :allegro))
     (pointerp 42)
   nil)
 
-(deftest pointerp.5
+(deftest (pointerp.5 :expected-to-fail (alexandria:featurep :allegro))
     (pointerp 0)
   nil)
 
@@ -636,11 +639,12 @@
   42 ; should this be 43?
   44)
 
-(deftest pointer-eq.non-pointers.1
+;;; See the comment on POINTERP.4 for why these don't hold on Allegro.
+(deftest (pointer-eq.non-pointers.1 :expected-to-fail (alexandria:featurep :allegro))
     (expecting-error (pointer-eq 1 2))
   :error)
 
-(deftest pointer-eq.non-pointers.2
+(deftest (pointer-eq.non-pointers.2 :expected-to-fail (alexandria:featurep :allegro))
     (expecting-error (pointer-eq 'a 'b))
   :error)
 
@@ -648,7 +652,8 @@
     (expecting-error (null-pointer-p 'not-a-pointer))
   :error)
 
-(deftest null-pointer-p.non-pointer.2
+;;; 0 is Allegro's null pointer, so it can't be rejected as a non-pointer.
+(deftest (null-pointer-p.non-pointer.2 :expected-to-fail (alexandria:featurep :allegro))
     (expecting-error (null-pointer-p 0))
   :error)
 
