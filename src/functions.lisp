@@ -188,7 +188,12 @@
                               collect `(float ,sym 1.0d0)
                             else collect sym))
               (list (canonicalize-foreign-type rettype)))
-            ,@options))))))
+            ;; As in FOREIGN-FUNCALL-FORM: the options have to go through
+            ;; PARSE-FUNCTION-OPTIONS, which is what defaults :CONVENTION
+            ;; and picks up the library's own.  Passing them raw left the
+            ;; convention NIL, which CLISP rejects outright and which
+            ;; silently ignored a library's :stdcall everywhere else.
+            ,@(parse-function-options options :pointer pointerp)))))))
 
 (defmacro foreign-funcall-varargs (name-and-options fixed-args
                                    &rest varargs)
