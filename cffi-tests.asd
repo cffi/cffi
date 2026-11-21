@@ -52,7 +52,10 @@
 
 (defsystem "cffi-tests"
   :description "Unit tests for CFFI."
-  :depends-on ("uiop" "cffi-grovel" "cffi-libffi" "bordeaux-threads" #-ecl "rt" #+ecl (:require "rt"))
+  ;; bordeaux-threads is only wanted by LOAD-CORE-FOUNDATION, which only
+  ;; runs on Darwin -- and it refuses to load on CLISP at all.
+  :depends-on ("uiop" "cffi-grovel" "cffi-libffi" #+darwin "bordeaux-threads"
+               #-ecl "rt" #+ecl (:require "rt"))
   :components
   ((:module "tests"
     :components

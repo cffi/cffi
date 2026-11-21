@@ -63,6 +63,7 @@
                         ,result)))
       result)))
 
+#+bordeaux-threads
 (defun call-within-new-thread (fn &rest args)
   (let (result
         error
@@ -79,7 +80,10 @@
       (values result error))))
 
 ;;; As of OSX 10.6.6, loading CoreFoundation on something other than
-;;; the initial thread results in a crash.
+;;; the initial thread results in a crash.  There is nothing to check
+;;; anywhere else, and running it there only tests whether the
+;;; implementation can make threads at all, which CMUCL can't.
+#+darwin
 (deftest load-core-foundation
     (progn
       #+bordeaux-threads
