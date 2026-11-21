@@ -36,15 +36,16 @@ jobs:
           - { os: ubuntu-latest, lisp: ccl }
           - { os: ubuntu-latest, lisp: ecl }
           - { os: ubuntu-latest, lisp: abcl }
-          #
-          # CLISP is commented out because it cannot be installed at all,
-          # so the row ran no tests whatsoever.  Roswell builds CLISP from
-          # source, and 2.49 -- from 2010 -- is still the last release;
-          # today's GCC cannot compile it ("stdbool.h: No such file or
-          # directory" while generating clisp.h, then a cascade of unknown
-          # types in modules.c).  Uncomment once there is a CLISP that
-          # builds against a current toolchain.
-          #- { os: ubuntu-latest, lisp: clisp }
+          # "clisp-head", not "clisp": the latter has Roswell build CLISP
+          # from source, and 2.49 -- from 2010 -- is still the last
+          # release, which today's GCC cannot compile ("stdbool.h: No such
+          # file or directory" while generating clisp.h, then a cascade of
+          # unknown types in modules.c).  clisp-head downloads a prebuilt
+          # binary of a current CLISP instead, so there is nothing to
+          # compile; Roswell picks the glibc2.19 variant on Linux, which
+          # needs no symbol newer than GLIBC_2.15 and links libffcall and
+          # libsigsegv statically.
+          - { os: ubuntu-latest, lisp: clisp-head }
           # Both of these are pinned to work around Roswell bugs: left to
           # itself it picks a version whose download is gone.  It defaults
           # to Allegro 10.1express, which Franz no longer serves -- fixed
