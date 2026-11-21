@@ -132,8 +132,11 @@
     (let (failed)
       ;;; FIXME: UTF-{32,16} and friends fail due to lack of BOM. See
       ;;; STRING.ENCODING.UTF-16.BASIC for more details.
+      ;;; KSC_5601 is skipped because Babel's encoder for it signals a
+      ;;; type error on plain ASCII input; that's a bug in Babel.
       (dolist (encoding (remove-if (lambda (x)
-                                     (member x '(:utf-32 :utf-16 :ucs-2)))
+                                     (member x '(:utf-32 :utf-16 :ucs-2
+                                                 :ksc_5601)))
                                    (babel:list-character-encodings)))
         ;; (format t "Testing ~S~%" encoding)
         (with-foreign-string (ptr *basic-latin-alphabet* :encoding encoding)
