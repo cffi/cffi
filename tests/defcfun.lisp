@@ -436,8 +436,6 @@
     (a121 :int) (a122 :float) (a123 :unsigned-char) (a124 :unsigned-char)
     (a125 :double) (a126 :unsigned-long-long) (a127 :char))
 
-  #+(and sbcl x86) (push 'defcfun.bff.2 rtest::*expected-failures*)
-
   (deftest defcfun.bff.2
       (sum-127
        (make-pointer 2746181372) (make-pointer 177623060) -32334.0 3158055028
@@ -464,7 +462,16 @@
        -3336232268263990050 -1906114671562979758 -27925.0d0 9695970875869913114
        27033.0d0 1096518219 -12 104 3392025403 -27911 60 89 509297051
        -533066551 29158.0 110 54 -9802.0d0 593950442165910888 -79)
-    7758614658402721936))
+    ;; SUM_127 casts its pointer arguments to intptr_t.  Eight of the ones
+    ;; above sit above 2^31, so where a pointer is 32 bits wide each of
+    ;; them sign-extends to a negative number and the sum comes out
+    ;; 8 * 2^32 lower -- a different total, but the right one for the
+    ;; platform.  Ask for the pointer size rather than testing for the
+    ;; :32-BIT feature, which isn't always right: ABCL reports it on a
+    ;; 64-bit JVM.
+    #.(if (= 4 (cffi:foreign-type-size :pointer))
+          (- 7758614658402721936 (* 8 (expt 2 32)))
+          7758614658402721936)))
 
 ;;; regression test: defining an undefined foreign function should only
 ;;; throw some sort of warning, not signal an error.
