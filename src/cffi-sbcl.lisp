@@ -290,6 +290,27 @@ WITH-POINTER-TO-VECTOR-DATA."
       `(with-alien ((,function (* (function ,rettype ,@types)) ,ptr))
          (alien-funcall ,function ,@fargs)))))
 
+;;; A Win64 callee reads its variadic arguments from the integer
+;;; registers and the stack: va_arg has no way to look at the XMM
+;;; registers, which is where SBCL puts a double whatever the alien
+;;; function type says -- marking the arguments &optional makes no
+;;; difference there.  So hand a float across as its bit pattern in an
+;;; integer slot, which is the one place the callee will read it from.
+#+win32
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun varargs-floats-as-integers (varargs)
+    (loop for rest on varargs by #'cddr
+          append (if (null (cdr rest))
+                     (list (car rest)) ; the trailing return type
+                     (destructuring-bind (type value &rest ignored) rest
+                       (declare (ignore ignored))
+                       (if (member type '(:float :double))
+                           (list :unsigned-long-long
+                                 `(ldb (byte 64 0)
+                                       (sb-kernel:double-float-bits
+                                        (float ,value 1.0d0))))
+                           (list type value)))))))
+
 (defmacro %foreign-funcall-varargs (name fixed-args varargs
                                     &rest args &key convention library)
   (declare (ignore convention library))
@@ -300,7 +321,8 @@ WITH-POINTER-TO-VECTOR-DATA."
                                                     ;; versions of SBCL.
                                                     (append #+(and darwin arm64)
                                                             '(&optional)
-                                                            varargs)))
+                                                            #+win32 (varargs-floats-as-integers varargs)
+                                                            #-win32 varargs)))
                      ,@args))
 
 (defmacro %foreign-funcall-pointer-varargs (pointer fixed-args varargs
@@ -310,7 +332,8 @@ WITH-POINTER-TO-VECTOR-DATA."
                                                (and varargs
                                                     (append #+(and darwin arm64)
                                                             '(&optional)
-                                                            varargs)))
+                                                            #+win32 (varargs-floats-as-integers varargs)
+                                                            #-win32 varargs)))
                              ,@args))
 
 
