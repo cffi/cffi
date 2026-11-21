@@ -1070,4 +1070,8 @@ The buffer has dynamic extent and may be stack allocated."
 (defctype :size #+64-bit :uint64 #+32-bit :uint32)
 (defctype :ssize #+64-bit :int64 #+32-bit :int32)
 (defctype :ptrdiff :ssize)
-(defctype :offset #+(or 64-bit bsd) :int64 #-(or 64-bit bsd) :int32)
+;; off_t is 64 bits wide on the BSDs and on 64-bit unices, but on Windows
+;; it stays the 32-bit long it has always been, even in a 64-bit build,
+;; unless the C side asks for _FILE_OFFSET_BITS=64.
+(defctype :offset #+(or (and 64-bit (not windows)) bsd) :int64
+                  #-(or (and 64-bit (not windows)) bsd) :int32)
