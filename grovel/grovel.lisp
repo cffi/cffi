@@ -773,7 +773,12 @@ string."
                      (cffi:define-foreign-library
                          (,named-library-name
                           :type :grovel-wrapper
-                          :search-path ,(directory-namestring lib-file))
+                          ;; Not DIRECTORY-NAMESTRING: on Windows that
+                          ;; drops the device, leaving a path that no
+                          ;; longer names the directory the library is in.
+                          :search-path ,(make-pathname :name nil :type nil
+                                                       :version nil
+                                                       :defaults lib-file))
                        (t ,(namestring (make-so-file-name lib-soname))))
                      (cffi:use-foreign-library ,named-library-name))
                   out)
