@@ -228,11 +228,39 @@ WITH-POINTER-TO-VECTOR-DATA."
           else do (setf return-type (convert-foreign-type type))
           finally (return (values types fargs return-type)))))
 
+;;; ALIEN-FUNCALL doesn't narrow an integer return value that is smaller
+;;; than a word: a C function returning char or short only writes the low
+;;; 8 or 16 bits of the return register, and whatever was in the rest of
+;;; it comes back as part of the result -- a function returning (_Bool)0
+;;; hands back -410255616 rather than 0.  Narrow it ourselves.  This is a
+;;; no-op for a value that is already in range, so it stays correct if
+;;; ALIEN-FUNCALL learns to do it.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun narrow-return-form (rettype form)
+    (multiple-value-bind (bits signedp)
+        (case rettype
+          (char            (values 8 t))
+          (unsigned-char   (values 8 nil))
+          (short           (values 16 t))
+          (unsigned-short  (values 16 nil))
+          (t               (values nil nil)))
+      (if (null bits)
+          form
+          (with-unique-names (value)
+            `(let ((,value (ldb (byte ,bits 0) ,form)))
+               ,(if signedp
+                    `(if (logbitp ,(1- bits) ,value)
+                         (- ,value ,(ash 1 bits))
+                         ,value)
+                    value)))))))
+
 (defmacro %%foreign-funcall (name types fargs rettype)
   "Internal guts of %FOREIGN-FUNCALL."
-  `(alien-funcall
-    (extern-alien ,name (function ,rettype ,@types))
-    ,@fargs))
+  (narrow-return-form
+   rettype
+   `(alien-funcall
+     (extern-alien ,name (function ,rettype ,@types))
+     ,@fargs)))
 
 (defmacro %foreign-funcall (name args &key library convention)
   "Perform a foreign function call, document it more later."
@@ -248,7 +276,7 @@ WITH-POINTER-TO-VECTOR-DATA."
       (foreign-funcall-type-and-args args)
     (with-unique-names (function)
       `(with-alien ((,function (* (function ,rettype ,@types)) ,ptr))
-         (alien-funcall ,function ,@fargs)))))
+         ,(narrow-return-form rettype `(alien-funcall ,function ,@fargs))))))
 
 ;;;# Callbacks
 
