@@ -27,10 +27,29 @@
 
 (in-package #:cffi-tests)
 
+(defun linkkit-missing-files ()
+  "Files named by this implementation's linkkit that are not installed.
+A binary distribution can record paths from the machine it was built on
+without shipping the libraries they point at -- Roswell's prebuilt CLISP
+24.9.7 asks for /tmp/clisp/../ffcall/lib/libffcall.a -- and then nothing
+can be linked, however well CFFI behaves."
+  (loop for entry in (append cffi-toolchain:*linkkit-start*
+                             cffi-toolchain:*linkkit-end*)
+        ;; NORMALIZE-FLAGS turns the entries it resolves into pathnames
+        ;; and leaves everything else, flags included, as strings.
+        when (and (stringp entry)
+                  (not (find (char entry 0) "-+"))
+                  (not (uiop:probe-file* entry)))
+          collect entry))
+
 ;; See lp#1953686.
 #-sbcl
 (when (cffi-toolchain::static-ops-enabled-p)
-  (deftest test-static-program
+  (alexandria:when-let (missing (linkkit-missing-files))
+    (format *error-output*
+            "~&;; TEST-STATIC-PROGRAM is expected to fail; the linkkit names files that are not installed:~{~%;;   ~a~}~%"
+            missing))
+  (deftest (test-static-program :expected-to-fail (linkkit-missing-files))
       (progn
         (asdf:operate :static-program-op :cffi-tests/example)
         (let ((program (asdf:output-file :static-program-op :cffi-tests/example)))
