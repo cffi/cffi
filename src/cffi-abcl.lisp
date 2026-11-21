@@ -66,7 +66,7 @@
         ;; "libXXX.so.6" and "XXX" should have succesfully loaded.
         (let ((p (pathname path)))
           (if (and (not (pathname-directory p))
-                   (= (search "lib" (pathname-name p)) 0))
+                   (eql 0 (search "lib" (pathname-name p))))
               (let ((short-name (if (foreign-library-type-p (pathname-type p))
                                     (subseq (pathname-name p) 3)
                                     (pathname-name p))))
