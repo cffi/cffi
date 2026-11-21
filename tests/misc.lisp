@@ -33,7 +33,11 @@
 ;;; pointers. http://thread.gmane.org/gmane.lisp.cffi.devel/694
 (defcfun "compare_against_abs" :boolean (p :pointer))
 
-(deftest foreign-symbol-pointer.1
+;;; Windows links a separate import thunk for a CRT function into every
+;;; module, so the "abs" FOREIGN-SYMBOL-POINTER hands back is not the
+;;; address libtest.c sees for (void*)abs.  Both are callable; they are
+;;; just not the same pointer, and nothing can make them one.
+(deftest (foreign-symbol-pointer.1 :expected-to-fail (alexandria:featurep :windows))
     (compare-against-abs (foreign-symbol-pointer "abs"))
   t)
 
