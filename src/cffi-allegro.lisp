@@ -88,7 +88,8 @@
 
 (defun foreign-free (ptr)
   "Free a PTR allocated by FOREIGN-ALLOC."
-  (ff:free-fobject ptr))
+  (ff:free-fobject ptr)
+  nil)
 
 (defmacro with-foreign-pointer ((var size &optional size-var) &body body)
   "Bind VAR to SIZE bytes of foreign memory during BODY.  The
@@ -272,6 +273,21 @@ WITH-POINTER-TO-VECTOR-DATA."
       ;; return type '(:c-type lisp-type)
       ',(allegro-type-pair rettype))))
 
+;;; A direct call takes the return value straight out of the register
+;;; the C function left it in, without narrowing it to the declared
+;;; return type.  That is fine for types as wide as a register, but a C
+;;; function returning one of these only sets the low 8 or 16 bits and
+;;; leaves the rest as it found them, so the caller sees garbage in the
+;;; high bits.  (On x86-64 this is why :int is safe and :char is not:
+;;; writing EAX clears the upper half of RAX, writing AL or AX doesn't.)
+(defparameter *sub-word-return-types*
+  '(:char :unsigned-char :short :unsigned-short))
+
+(defun call-direct-p (rettype args)
+  "Whether DEF-FOREIGN-CALL may compile calls to a direct call."
+  (and args                             ; not worth it with no arguments
+       (not (member rettype *sub-word-return-types*))))
+
 (defun defcfun-helper-forms (name lisp-name rettype args types options)
   "Return 2 values for DEFCFUN. A prelude form and a caller form."
   (declare (ignore options))
@@ -281,8 +297,7 @@ WITH-POINTER-TO-VECTOR-DATA."
            ,(loop for type in types
                   collect (list* (gensym) (allegro-type-pair type)))
          :returning ,(allegro-type-pair rettype)
-         ;; Don't use call-direct when there are no arguments.
-         ,@(unless (null args) '(:call-direct t))
+         ,@(when (call-direct-p rettype args) '(:call-direct t))
          :arg-checking nil
          :strings-convert nil
          #+(version>= 8 1) ,@'(:release-heap :when-ok
