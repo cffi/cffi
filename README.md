@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cffi/cffi.svg?branch=master)](https://travis-ci.org/cffi/cffi)
+[![CI](https://github.com/cffi/cffi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/cffi/cffi/actions/workflows/ci.yml)
 
 # What
 

@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly, so that bit rot in the implementations, in Quicklisp or in
+    # the runner images is noticed even when nothing is being pushed.
+    - cron: '17 5 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.lisp }} on ${{ matrix.os }}${{ matrix.deps == 'git' && ' (deps from git)' || '' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        # Roswell on Windows lives inside MSYS2 and has to be driven from
+        # its shell.  Everywhere else this is exactly the shell GitHub
+        # would have used anyway -- spelling it "bash" instead would add
+        # --noprofile --norc -o pipefail and change how the steps behave.
+        shell: ${{ matrix.shell || 'bash -e {0}' }}
+    # Experimental jobs report failures without failing the whole build,
+    # like Travis' allow_failures used to.
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, lisp: sbcl-bin }
+          - { os: ubuntu-latest, lisp: ccl }
+          - { os: ubuntu-latest, lisp: ecl }
+          - { os: ubuntu-latest, lisp: clisp, experimental: true }
+          # ABCL has real failures (MISC-TYPES.SIZEOF.{PTRDIFF,SIZE,OFFSET}
+          # and TEST-ASDF-LOAD), so it stays experimental for now.
+          - { os: ubuntu-latest, lisp: abcl, experimental: true }
+          # Both of these are pinned to work around Roswell bugs: left to
+          # itself it picks a version whose download is gone.  It defaults
+          # to Allegro 10.1express, which Franz no longer serves -- fixed
+          # in Roswell 9709c0d, but that postdates the v26.02.116 release
+          # that install-for-ci.sh installs.  And it defaults to the
+          # newest CMUCL while its installer only knows how to fetch
+          # .tar.bz2, which CMUCL stopped publishing after 21e.  Drop both
+          # pins once a Roswell release carries the fixes.
+          - { os: ubuntu-latest, lisp: allegro/11.0express, experimental: true }
+          - { os: ubuntu-latest, lisp: cmu-bin/21e, multilib: true, experimental: true }
+          - { os: macos-latest, lisp: sbcl-bin }
+          - { os: windows-latest, lisp: sbcl-bin, shell: 'msys2 {0}' }
+          # Tracks the development versions of the libraries CFFI is
+          # developed alongside, as the Travis setup used to.
+          - { os: ubuntu-latest, lisp: sbcl-bin, deps: git, experimental: true }
+          #
+          # CCL on macOS is missing: the macos-latest runners are arm64
+          # and Roswell says "Not supported platform arm64" because there
+          # is no arm64 macOS build to install -- roswell/ccl_bin only
+          # publishes darwinx86, and upstream has nothing past the
+          # v1.13-arm64-pre1 prerelease.  It needs an Intel runner or an
+          # arm64 release.
+    env:
+      # Read by scripts/install-for-ci.sh to pick the implementation.
+      LISP: ${{ matrix.lisp }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Brings its own gcc, libffi and pkg-config, so the Linux step below
+      # has no Windows counterpart.
+      - name: Set up MSYS2
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          # MINGW64 is deprecated in favour of UCRT64, which links the
+          # Universal CRT instead of the ancient msvcrt.dll.
+          msystem: UCRT64
+          # Roswell shells out to what it finds on PATH, so let it see the
+          # runner's tools as well as MSYS2's.
+          path-type: inherit
+          install: >-
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-libffi
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-roswell
+
+      - name: Install C dependencies
+        if: runner.os == 'Linux'
+        run: |
+          # CMUCL is 32-bit x86, so it builds the test libraries with -m32
+          # and needs an i386 libffi for cffi-libffi.
+          if [ "${{ matrix.multilib }}" = true ]; then
+            sudo dpkg --add-architecture i386
+          fi
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libffi-dev pkg-config
+          if [ "${{ matrix.multilib }}" = true ]; then
+            sudo apt-get install -y --no-install-recommends gcc-multilib libffi-dev:i386
+          fi
+        # macOS: ffi.h comes with the SDK and libffi.dylib with the system.
+
+      - name: Compute cache key
+        id: cache-key
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Roswell and Quicklisp
+        uses: actions/cache@v6
+        with:
+          path: ~/.roswell
+          key: roswell-${{ runner.os }}-${{ runner.arch }}-${{ matrix.lisp }}-${{ steps.cache-key.outputs.month }}
+          restore-keys: roswell-${{ runner.os }}-${{ runner.arch }}-${{ matrix.lisp }}-
+
+      # The flakiest part of the build: `ros use` fails outright if a
+      # restored cache doesn't hold the version Roswell now resolves to,
+      # and the version listings it fetches are not always reachable.
+      # Neither is worth a red build, so try once more from scratch.
+      - name: Install Roswell and ${{ matrix.lisp }}
+        id: roswell
+        continue-on-error: true
+        run: curl -fsSL https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+
+      - name: Install Roswell and ${{ matrix.lisp }} (retry, without the cache)
+        if: steps.roswell.outcome == 'failure'
+        run: |
+          rm -rf ~/.roswell
+          curl -fsSL https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+
+      # install-for-ci.sh puts both $GITHUB_WORKSPACE and ~/lisp in ASDF's
+      # source registry, so anything cloned here shadows the Quicklisp dist.
+      - name: Use development versions of CFFI's dependencies
+        if: matrix.deps == 'git'
+        run: |
+          git clone --depth=1 https://github.com/trivial-features/trivial-features.git ~/lisp/trivial-features
+          git clone --depth=1 https://github.com/cl-babel/babel.git ~/lisp/babel
+          git clone --depth=1 https://gitlab.common-lisp.net/alexandria/alexandria.git ~/lisp/alexandria
+
+      - name: Run the test suite
+        run: |
+          extra=()
+          if [ "$LISP" = abcl ]; then
+            # CFFI's ABCL backend needs JNA, which neither the ABCL
+            # distribution nor Roswell ships, and ABCL's own (require :jna)
+            # only works where Maven can resolve it.
+            curl -fsSL --retry 3 -o "$HOME/jna.jar" \
+              https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar
+            extra=(-e "(java:add-to-classpath \"$HOME/jna.jar\")")
+          fi
+          # cffi-tests.asd loads trivial-features while it is being read, so
+          # the dependencies have to be there before cffi-tests is quickloaded.
+          # Without a debugger hook an error during loading drops into the
+          # debugger, reads EOF and exits 0 -- a green job that ran no tests.
+          ros "${extra[@]}" \
+              -e '(setf *debugger-hook*
+                        (lambda (condition hook)
+                          (declare (ignore hook))
+                          (format *error-output* "~&Unhandled ~a:~%  ~a~%"
+                                  (type-of condition) condition)
+                          (uiop:quit 3)))' \
+              -e '(ql:quickload (list "trivial-features" "babel" "rt"))' \
+              -e '(ql:quickload "cffi-tests")' \
+              -e '(uiop:quit (if (cffi-tests:run-all-cffi-tests) 1 0))'
