@@ -1,0 +1,6 @@
+# Lisp sources must keep LF endings even when checked out on Windows: a
+# FORMAT control string ending in ~ continues on the next line, and a CR
+# in between makes it an unknown directive.  cffi-grovel has several.
+* text=auto eol=lf
+
+*.bat text eol=crlf
