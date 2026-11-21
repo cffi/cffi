@@ -43,7 +43,13 @@
            #+clisp (implementation-file "base/lispinit.mem")
            #+sbcl (subpathname (lisp-implementation-directory) "sbcl.core"))
          (output (output-file o s))
-         (child-op (if (typep o 'program-op) 'program-op 'image-op)))
+         (child-op (if (typep o 'program-op) 'program-op 'image-op))
+         (quicklisp-home (symbol-value (find-symbol* '*quicklisp-home* 'ql-setup nil)))
+         ;; Not every implementation has an ASDF for REQUIRE to find --
+         ;; CLISP doesn't ship one -- so note where Quicklisp keeps its
+         ;; copy, to load if REQUIRE comes up empty in the child.
+         (quicklisp-asdf (when quicklisp-home
+                           (probe-file* (subpathname quicklisp-home "asdf.lisp")))))
     (with-temporary-output (tmp output)
       (apply 'invoke runtime
              #+clisp "-M" #+sbcl "--core" image
@@ -57,16 +63,18 @@
                      ;; as required for CLISP not to print output for the first form,
                      ;; yet allow subsequent forms to rely on packages defined by former forms.
                      nil "'(~@{#.~S~^ ~})"
-                     '(require "asdf")
+                     `(unless (find-package :asdf)
+                        (or (ignore-errors (require "asdf"))
+                            ,@(when quicklisp-asdf
+                                `((load ,(namestring quicklisp-asdf))))))
                      '(in-package :asdf)
                      `(progn
                         (setf asdf:*central-registry* ',asdf:*central-registry*)
                         (initialize-source-registry ',asdf::*source-registry-parameter*)
                         (initialize-output-translations ',asdf::*output-translations-parameter*)
                         (upgrade-asdf)
-                        ,@(if-let (ql-home
-                                   (symbol-value (find-symbol* '*quicklisp-home* 'ql-setup nil)))
-                            `((load ,(subpathname ql-home "setup.lisp"))))
+                        ,@(when quicklisp-home
+                            `((load ,(subpathname quicklisp-home "setup.lisp"))))
                         (load-system "cffi-grovel")
                         ;; We force the (final step of the) operation to take place
                         (defmethod operation-done-p
