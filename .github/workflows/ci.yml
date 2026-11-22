@@ -46,15 +46,15 @@ jobs:
           # needs no symbol newer than GLIBC_2.15 and links libffcall and
           # libsigsegv statically.
           - { os: ubuntu-latest, lisp: clisp-head }
-          # Both of these are pinned to work around Roswell bugs: left to
-          # itself it picks a version whose download is gone.  It defaults
-          # to Allegro 10.1express, which Franz no longer serves -- fixed
-          # in Roswell 9709c0d, but that postdates the v26.02.116 release
-          # that install-for-ci.sh installs.  And it defaults to the
-          # newest CMUCL while its installer only knows how to fetch
-          # .tar.bz2, which CMUCL stopped publishing after 21e.  Drop both
-          # pins once a Roswell release carries the fixes.
-          - { os: ubuntu-latest, lisp: allegro/11.0express }
+          - { os: ubuntu-latest, lisp: allegro }
+          # CMUCL stays pinned, but not for the reason this comment used
+          # to give: Roswell can fetch a newer one now -- 21f's .tar.xz
+          # downloads fine -- it just cannot run it.  It exports CMUCLLIB
+          # as <impl>/lib/cmucl/lib (src/cmd-run-cmu.c), which is where
+          # the core lived up to 21e; 21f moved it to lib/cmucl/21f/lib,
+          # so `lisp' starts and dies with "Cannot find core file".  Left
+          # to itself Roswell picks the newest release, so the pin names
+          # the newest one it can actually use.
           - { os: ubuntu-latest, lisp: cmu-bin/21e, multilib: true }
           - { os: macos-latest, lisp: sbcl-bin }
           # The macos-latest runners are arm64, where Roswell cannot
