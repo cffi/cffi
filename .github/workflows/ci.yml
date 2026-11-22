@@ -57,17 +57,16 @@ jobs:
           - { os: ubuntu-latest, lisp: allegro/11.0express }
           - { os: ubuntu-latest, lisp: cmu-bin/21e, multilib: true }
           - { os: macos-latest, lisp: sbcl-bin }
+          # The macos-latest runners are arm64, where Roswell cannot
+          # install CCL, so the "Install CCL ... for arm64 macOS" step
+          # below does it and this row runs the result as a system CCL.
+          # Hence the pinned version: that step builds the download URL
+          # itself, so it cannot ask Roswell what the newest CCL is.
+          - { os: macos-latest, lisp: ccl-bin/system, ccl_arm64: '1.14' }
           - { os: windows-latest, lisp: sbcl-bin, shell: 'msys2 {0}' }
           # Tracks the development versions of the libraries CFFI is
           # developed alongside, as the Travis setup used to.
           - { os: ubuntu-latest, lisp: sbcl-bin, deps: git }
-          #
-          # CCL on macOS is missing: the macos-latest runners are arm64
-          # and Roswell says "Not supported platform arm64" because there
-          # is no arm64 macOS build to install -- roswell/ccl_bin only
-          # publishes darwinx86, and upstream has nothing past the
-          # v1.13-arm64-pre1 prerelease.  It needs an Intel runner or an
-          # arm64 release.
     env:
       # Read by scripts/install-for-ci.sh to pick the implementation.
       LISP: ${{ matrix.lisp }}
@@ -126,13 +125,50 @@ jobs:
       - name: Install Roswell and ${{ matrix.lisp }}
         id: roswell
         continue-on-error: true
+        env:
+          # On the arm64 macOS row let the script set up Roswell, Quicklisp
+          # and the ASDF source registry with its sbcl-bin default -- which
+          # it needs anyway, since `ros install` and `ros setup` themselves
+          # run on sbcl-bin -- and leave CCL to the step after it.
+          LISP: ${{ matrix.ccl_arm64 && 'sbcl-bin' || matrix.lisp }}
         run: curl -fsSL https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
 
       - name: Install Roswell and ${{ matrix.lisp }} (retry, without the cache)
         if: steps.roswell.outcome == 'failure'
+        env:
+          LISP: ${{ matrix.ccl_arm64 && 'sbcl-bin' || matrix.lisp }}
         run: |
           rm -rf ~/.roswell
           curl -fsSL https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+
+      # Roswell refuses to install ccl-bin on an arm64 host: install-ccl-bin.lisp
+      # bails out with "Not supported platform arm64".  That guard dates from
+      # 2017 and was aimed at aarch64 Linux, which had no CCL build then, but
+      # it keys off uname -m alone, so macOS arm64 trips it too; it is still
+      # there in v26.10.119, the release install-for-ci.sh installs.  There is
+      # a build to install now -- CCL 1.14 (2026-10-28) ships darwinarm64, and
+      # roswell/ccl_bin mirrors it -- so fetch it and let Roswell run it as a
+      # system CCL.  That is also the one arm64-clean path through Roswell's
+      # cmd-run-ccl.c: for a managed version it derives the kernel name from
+      # uname -m and would look for "dcl" rather than "darm64cl".  CCL's own
+      # scripts/ccl doesn't know darwin arm64 either, hence the wrapper.
+      # Replace all of this with a plain matrix row once Roswell installs
+      # ccl-bin on arm64 itself.
+      - name: Install CCL ${{ matrix.ccl_arm64 }} for arm64 macOS
+        if: matrix.ccl_arm64
+        run: |
+          version='${{ matrix.ccl_arm64 }}'
+          mkdir -p "$HOME/ccl" "$HOME/bin"
+          curl -fsSL --retry 3 \
+            "https://github.com/roswell/ccl_bin/releases/download/$version/ccl-$version-darwinarm64.tar.gz" \
+            | tar -xz -C "$HOME/ccl" --strip-components=1
+          printf '#!/bin/sh\nexec "%s/darm64cl" "$@"\n' "$HOME/ccl" > "$HOME/bin/ccl"
+          chmod +x "$HOME/bin/ccl"
+          # GITHUB_PATH only takes effect in later steps, so `ros use` --
+          # which validates the choice by running `ccl --version` -- needs
+          # the directory on PATH here as well.
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          PATH="$HOME/bin:$PATH" ros use "$LISP"
 
       # install-for-ci.sh puts both $GITHUB_WORKSPACE and ~/lisp in ASDF's
       # source registry, so anything cloned here shadows the Quicklisp dist.
