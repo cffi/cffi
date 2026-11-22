@@ -427,14 +427,20 @@
 
 (defcfun "call_double26" :double (f :pointer))
 
-#+(and darwin (or allegro cmucl))
+;;; CCL on arm64 gets the first eight of these -- the ones AAPCS64 passes
+;;; in v0-v7 -- as zero, and sums only the eighteen that arrive on the
+;;; stack: 3.14 * 18 = 56.52 rather than 81.64.  The call direction is
+;;; fine (FUNCALL.DOUBLE26 passes), so this is the callback generator,
+;;; tripping on the same register/stack boundary as the float26 callbacks
+;;; below.  CCL on darwin x86 has always passed this, hence the arm64.
+#+(and darwin (or allegro cmucl (and openmcl arm64)))
 (pushnew 'callbacks.double26 rtest::*expected-failures*)
 
 (deftest callbacks.double26
     (call-double26 (callback double26))
   81.64d0)
 
-#+(and darwin cmucl)
+#+(and darwin (or cmucl (and openmcl arm64)))
 (pushnew 'callbacks.double26.funcall rtest::*expected-failures*)
 
 #-cffi-sys::no-foreign-funcall
